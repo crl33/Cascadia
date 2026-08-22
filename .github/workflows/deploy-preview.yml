@@ -1,0 +1,23 @@
+name: Deploy preview
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  trigger-cloudflare-pages:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Trigger Cloudflare Pages deploy hook
+        env:
+          HOOK: ${{ secrets.CF_PAGES_DEPLOY_HOOK }}
+        run: |
+          set -euo pipefail
+          if [ -z "${HOOK:-}" ]; then
+            echo "Missing repo secret CF_PAGES_DEPLOY_HOOK"
+            exit 1
+          fi
+          curl -fsS -X POST "$HOOK"
+          echo "Triggered Cloudflare Pages rebuild of main"
