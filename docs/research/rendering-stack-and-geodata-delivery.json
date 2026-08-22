@@ -1,0 +1,720 @@
+{
+  "category": "rendering-stack-and-geodata-delivery",
+  "summary": "As of 2026-08-22 the current CesiumJS stable is 1.144.0 (npm publish 2026-08-04; Apache-2.0; Node >=22; WebGL2 default since 1.102 with WebGL1 fallback; WebGPU is only 'longer term, explore' on Cesium's roadmap). Measured Build/Cesium/Cesium.js is 5.97 MB minified / 1.73 MB gzip. Native vector-tile support finally exists: MVTDataProvider (1.142, marked experimental) loads MVT as 3D Tiles with Cesium3DTileStyle styling and picking, and 1.144 drapes clamped vector polygons/polylines on terrain; GeoJsonPrimitive (1.142) bypasses the entity layer. Viewer defaults (baseLayer = ImageryLayer.fromWorldImagery, geocoder, baseLayerPicker) all hit Cesium ion; an ion-free Viewer needs baseLayer/geocoder:false/baseLayerPicker:false and a non-ion terrain provider. Ion-free imagery that works from plain UrlTemplateImageryProvider: OSM (policy forbids heavy/production use, no SLA), Esri Static Basemap Tiles (token required, 2M tiles/mo free then $0.15/1k, 'Powered by Esri' + data credits), MapTiler (key required; Free plan non-commercial + logo; Flex $30/mo), Mapbox Raster Tiles (750k/mo free then $0.25/1k; text + logo attribution). Cesium ion Community plan is free but personal/non-commercial (paid plan required above $50K revenue/funding), 5 GB storage, 15 GB/mo streaming, 1,000 Global Imagery sessions, 1,000 Google 3D root tiles; ion logo must be displayed; Bing imagery via ion persists until Microsoft's 2028-06-30 enterprise cutoff, with Google Maps 2D Tiles added as replacement. Google Photorealistic 3D Tiles direct: https://tile.googleapis.com/v1/3dtiles/root.json?key=, Enterprise SKU, 1,000 free root-tile requests/mo then $6.00 per 1,000; caching prohibited beyond HTTP cache headers; Google logo + per-tile copyright required; createGooglePhotorealistic3DTileset falls back to ion asset 2275207 when no key is set. Open terrain: AWS Terrarium tiles (s3.amazonaws.com/elevation-tiles-prod, z0-15, 3DEP-derived in WA, USGS attribution) are raster-RGB and need conversion to quantized-mesh (ctb quantized-mesh fork via tum-gis Docker, or ion Terrain Tiler fusing with Cesium World Terrain, whose US West Coast resolution is 50 cm). WA-specific 3D inputs: WA DNR Lidar Portal (DEM/hillshade/point clouds; described as 'publicly available', no license text found) and USGS 3DEP EPT on AWS (usgs-lidar-public, public domain); no open photogrammetric mesh for WA was found. Cloud-native delivery stack that is current and permissively licensed: COG (OGC 21-026) + TiTiler 2.2.1/rio-tiler 9.4.3, PMTiles v3 + tippecanoe 2.79.0/Planetiler 0.10.2, Martin 1.14.0 (PostGIS/PMTiles/MBTiles/GeoParquet) or pg_tileserv 1.0.11, Zarr 3.3.0 + Kerchunk 0.2.10/VirtualiZarr 2.7.3, GeoParquet 2.0.0 (pending OGC). React: Resium 1.25.0 (2026-08-07, peer cesium 1.x, react >=18.2) is alive; vite-plugin-cesium 1.2.23 last published 2024-08-06 and Cesium's own Vite example uses vite-plugin-static-copy + define instead.",
+  "providers": [
+    {
+      "name": "CesiumJS (core library)",
+      "authority": "Cesium GS, Inc. (open source, Apache-2.0)",
+      "data_kind": "static",
+      "access": {
+        "mechanism": "npm package `cesium` (also @cesium/engine + @cesium/widgets); Build/Cesium static dirs (Workers, ThirdParty, Assets, Widgets) must be served at window.CESIUM_BASE_URL",
+        "base_urls": [
+          "https://registry.npmjs.org/cesium",
+          "https://github.com/CesiumGS/cesium",
+          "https://cesium.com/learn/cesiumjs/ref-doc/"
+        ],
+        "auth": "None for the library. Viewer defaults call Cesium ion (api.cesium.com) and need Ion.defaultAccessToken unless overridden.",
+        "rate_limits": "n/a (client library)",
+        "formats": ["ESM (type: module)", "IIFE Build/Cesium/Cesium.js", "TypeScript definitions"]
+      },
+      "cadence": "Monthly release on the 1st (1.140 2026-04-01 ... 1.144 2026-08-01; 1.145 header pre-staged for 2026-09-02 on main)",
+      "latency": "n/a",
+      "spatial_resolution": "n/a",
+      "temporal_resolution": "n/a",
+      "historical_depth": "CHANGES.md back to 1.0; npm history available",
+      "missing_data_semantics": "n/a",
+      "quality_flags": "Experimental APIs (MVTDataProvider, Voxel*, Scene.snap) are 'subject to change without Cesium's standard deprecation policy'",
+      "units": "n/a",
+      "licensing": "Apache-2.0 (npm registry license field). Third-party notices shipped in package.",
+      "limitations": [
+        "Measured 1.144.0 sizes: Build/Cesium/Cesium.js 5,974,765 bytes minified (1,729,722 bytes gzip); Build/CesiumUnminified/Cesium.js 15,662,452 bytes; widgets.css 30,710 bytes; npm unpackedSize 147,990,197 bytes. Static Workers/Assets/ThirdParty/Widgets dirs must be copied and served in addition to the JS bundle.",
+        "Minimum Node 22.0.0 since 1.142 (tooling only; not a browser requirement).",
+        "Renderer is WebGL2 by default since 1.102 (2023-02-01) with automatic WebGL1 fallback; ContextOptions.requestWebgl1 forces WebGL1. No WebGPU renderer; Cesium's June 2025 roadmap says only 'Longer term, we'll explore using WebGPU'. Community thread: staff said no immediate plans (2023-04-12), no later commitment.",
+        "Voxel rendering requires WebGL2.",
+        "No native Cesium-side tree-shaking guidance found; ESM bundle size depends on bundler (INFERENCE).",
+        "Viewer default baseLayer is ImageryLayer.fromWorldImagery() (ion/Bing), default terrainProvider is EllipsoidTerrainProvider, geocoder default IonGeocodeProviderType.DEFAULT, baseLayerPicker default true — all ion-dependent unless overridden."
+      ],
+      "evidence": [
+        {"claim": "npm latest cesium = 1.144.0, published 2026-08-04T03:34:37Z, license Apache-2.0, engines node >=22.0.0, type module, deps @cesium/engine ^26.2.0 and @cesium/widgets ^16.1.1", "url": "https://registry.npmjs.org/cesium", "status": "FACT"},
+        {"claim": "GitHub latest release tag 1.144 published 2026-08-04T03:26:57Z", "url": "https://api.github.com/repos/CesiumGS/cesium/releases/latest", "status": "FACT"},
+        {"claim": "CHANGES.md headers: 1.145 - 2026-09-02 (pre-staged), 1.144 - 2026-08-01, 1.143 - 2026-07-01, 1.142 - 2026-06-01; 1.142 bumped minimum Node to 22.0.0", "url": "https://raw.githubusercontent.com/CesiumGS/cesium/main/CHANGES.md", "status": "FACT"},
+        {"claim": "1.102 (2023-02-01): CesiumJS now defaults to a WebGL2 context; falls back to WebGL1; set requestWebgl1:true in ContextOptions to force WebGL1; requestWebgl2 deprecated in 1.101", "url": "https://app.unpkg.com/cesium@1.103.0/files/CHANGES.md", "status": "FACT"},
+        {"claim": "Roadmap: 'Longer term, we'll explore using WebGPU as a generational advancement in Graphics API.'", "url": "https://cesium.com/blog/2025/06/23/cesium-roadmap-for-bridging-the-built-and-natural-environment/", "status": "FACT"},
+        {"claim": "Cesium staff 2023-04-12: 'We don't have any immediate plans, but WebGPU is definitely on our radar for CesiumJS'; no later commitment in thread", "url": "https://community.cesium.com/t/is-there-a-plan-to-support-webgpu/23381", "status": "FACT"},
+        {"claim": "Measured byte sizes of Build/Cesium/Cesium.js (5,974,765; gzip 1,729,722), Build/CesiumUnminified/Cesium.js (15,662,452), Widgets/widgets.css (30,710) for cesium@1.144.0 via unpkg", "url": "https://unpkg.com/cesium@1.144.0/Build/Cesium/Cesium.js", "status": "FACT"},
+        {"claim": "Quickstart: window.CESIUM_BASE_URL must be set before import; Workers, ThirdParty, Assets, Widgets dirs must be served; Ion.defaultAccessToken setup", "url": "https://cesium.com/learn/cesiumjs-learn/cesiumjs-quickstart/", "status": "FACT"},
+        {"claim": "Viewer defaults: baseLayer ImageryLayer.fromWorldImagery(), terrainProvider new EllipsoidTerrainProvider(), baseLayerPicker true, geocoder IonGeocodeProviderType.DEFAULT, contextOptions passed to Scene", "url": "https://cesium.com/learn/cesiumjs/ref-doc/Viewer.html", "status": "FACT"},
+        {"claim": "Offline guide: imagery (api.cesium.com, dev.virtualearth.net), geocoder (api.cesium.com) and BaseLayerPicker are the external dependencies; configure baseLayer from another provider, geocoder:false, baseLayerPicker:false", "url": "https://raw.githubusercontent.com/CesiumGS/cesium/main/Documentation/OfflineGuide/README.md", "status": "FACT"},
+        {"claim": "Voxel rendering requires a WebGL2 context (CHANGES)", "url": "https://raw.githubusercontent.com/CesiumGS/cesium/main/CHANGES.md", "status": "FACT"}
+      ],
+      "relevance_to_cascade_oracle": "Base 3D globe engine. Budget ~1.7 MB gzip JS plus static assets; plan the Viewer as ion-free by default (own imagery/terrain, geocoder off) and opt into ion only where licensed. WebGL2 is safe to assume; do not plan on WebGPU."
+    },
+    {
+      "name": "CesiumJS imagery, vector and time-dynamic ingestion APIs",
+      "authority": "Cesium GS, Inc. (CesiumJS reference docs / source)",
+      "data_kind": "static",
+      "access": {
+        "mechanism": "UrlTemplateImageryProvider, OpenStreetMapImageryProvider, WebMapTileServiceImageryProvider (times/clock), WebMapServiceImageryProvider (times/clock), ImageryLayer (show/alpha/splitDirection/colorToAlpha), GeoJsonDataSource/CzmlDataSource, GeoJsonPrimitive + BufferPrimitiveCollections (1.142), MVTDataProvider.fromUrl (1.142, experimental), Cesium3DTileset, CesiumTerrainProvider.fromUrl (quantized-mesh/heightmap), Credit/CreditDisplay",
+        "base_urls": [
+          "https://cesium.com/learn/cesiumjs/ref-doc/UrlTemplateImageryProvider.html",
+          "https://cesium.com/learn/cesiumjs/ref-doc/WebMapTileServiceImageryProvider.html",
+          "https://cesium.com/learn/cesiumjs/ref-doc/WebMapServiceImageryProvider.html",
+          "https://cesium.com/learn/cesiumjs/ref-doc/ImageryLayer.html",
+          "https://cesium.com/learn/cesiumjs/ref-doc/MVTDataProvider.html",
+          "https://cesium.com/learn/cesiumjs/ref-doc/GeoJsonDataSource.html",
+          "https://cesium.com/learn/cesiumjs/ref-doc/CesiumTerrainProvider.html",
+          "https://cesium.com/learn/cesiumjs/ref-doc/Credit.html"
+        ],
+        "auth": "None in the API; whatever the upstream tile service requires",
+        "rate_limits": "n/a",
+        "formats": ["XYZ/TMS raster tiles (png/jpg/webp)", "WMTS/WMS", "GeoJSON/TopoJSON", "CZML", "MVT/PBF via MVTDataProvider", "3D Tiles 1.0/1.1", "quantized-mesh-1.0 and heightmap-1.0 terrain"]
+      },
+      "cadence": "Follows CesiumJS monthly releases",
+      "latency": "n/a",
+      "spatial_resolution": "n/a",
+      "temporal_resolution": "WMTS/WMS time dimension: TimeIntervalCollection (e.g. ISO8601 '2025-01-01/2025-09-01/P5D') drives a {Time} placeholder from the Viewer clock",
+      "historical_depth": "n/a",
+      "missing_data_semantics": "Imagery tile 404s surface via ImageryLayer.errorEvent; no built-in nodata masking beyond colorToAlpha",
+      "quality_flags": "MVTDataProvider 'is not final and is subject to change without Cesium's standard deprecation policy'",
+      "units": "n/a",
+      "licensing": "Apache-2.0 (part of CesiumJS)",
+      "limitations": [
+        "UrlTemplateImageryProvider placeholders: {z},{x},{y},{reverseX},{reverseY},{reverseZ},{s},{width},{height},{westDegrees}..{northDegrees},{westProjected}.., plus customTags; tilingScheme defaults to Web Mercator — set GeographicTilingScheme for WGS84 tiles (e.g. TiTiler WGS1984Quad).",
+        "Default OpenStreetMapImageryProvider credit string is the stale 'MapQuest, Open Street Map and contributors, CC-BY-SA' — override credit with '© OpenStreetMap contributors' (ODbL) to satisfy the OSM policy.",
+        "MVTDataProvider.fromUrl(url,{minZoom:0,maxZoom:14,extent,featureIdProperty}) builds a Cesium3DTileset at runtime; per-feature styling via Cesium3DTileStyle and picking via getProperty; 1.144 added draping of clamped vector polygons/polylines onto terrain with screen-space-constant width. Geometry coverage and clamp behavior need hands-on validation (INFERENCE).",
+        "Before 1.142 there was no native MVT path; community providers (hongfaqiu/kikitte MVTImageryProvider, davenquinn/cesium-vector-provider) rasterize MVT to imagery. Cesium has no 'MapboxVectorTile' imagery provider.",
+        "GeoJsonDataSource is entity-based (clampToGround, stroke/fill/strokeWidth/markerSymbol/credit; GeoJSON+TopoJSON+simplestyle); for large datasets use GeoJsonPrimitive (1.142) which loads directly into BufferPrimitiveCollections 'for significantly improved performance'.",
+        "Time-dynamic imagery: WMTS/WMS providers accept options.times (TimeIntervalCollection whose data object supplies dimension values such as Time) and options.clock (required when times is set). The alternative 'pre-create next layer with alpha 0, then swap' pattern is a community/TerriaJS practice, not an API (INFERENCE).",
+        "Provider credits appear in the 'Data attribution' lightbox unless Credit(html, showOnScreen=true); providers like Mapbox/Esri/MapTiler/Google require on-screen attribution and logos, so construct on-screen Credits and add logos via your own HTML.",
+        "CesiumTerrainProvider.fromUrl expects layer.json + {z}/{x}/{y}.terrain (quantized-mesh) or heightmap tiles; options requestVertexNormals/requestWaterMask/requestMetadata."
+      ],
+      "evidence": [
+        {"claim": "UrlTemplateImageryProvider placeholders and options (credit, subdomains, minimumLevel, maximumLevel, rectangle, tilingScheme default Web Mercator, customTags)", "url": "https://cesium.com/learn/cesiumjs/ref-doc/UrlTemplateImageryProvider.html", "status": "FACT"},
+        {"claim": "OpenStreetMapImageryProvider default url https://tile.openstreetmap.org/, default credit 'MapQuest, Open Street Map and contributors, CC-BY-SA'", "url": "https://raw.githubusercontent.com/CesiumGS/cesium/main/packages/engine/Source/Scene/OpenStreetMapImageryProvider.js", "status": "FACT"},
+        {"claim": "WMTS provider options clock ('Required when times is specified') and times (TimeIntervalCollection with data object of dimension values); NASA GIBS example uses {Time} and '2025-01-01/2025-09-01/P5D'", "url": "https://cesium.com/learn/cesiumjs/ref-doc/WebMapTileServiceImageryProvider.html", "status": "FACT"},
+        {"claim": "WMS provider has the same clock/times options", "url": "https://cesium.com/learn/cesiumjs/ref-doc/WebMapServiceImageryProvider.html", "status": "FACT"},
+        {"claim": "ImageryLayer properties show, alpha, dayAlpha/nightAlpha, brightness, contrast, hue, saturation, gamma, splitDirection, colorToAlpha, cutoutRectangle; fromWorldImagery() uses ion; fromProviderAsync(); readyEvent/errorEvent", "url": "https://cesium.com/learn/cesiumjs/ref-doc/ImageryLayer.html", "status": "FACT"},
+        {"claim": "MVTDataProvider.fromUrl(url template with {z}/{x}/{y}, options minZoom=0, maxZoom=14, extent, featureIdProperty); extends UrlTemplate3DTilesDataProvider; exposes tileset; marked experimental", "url": "https://cesium.com/learn/cesiumjs/ref-doc/MVTDataProvider.html", "status": "FACT"},
+        {"claim": "1.142 added MVTDataProvider (MVT as 3D Tiles; Cesium3DTileStyle styling; picking with getProperty; EXT_structural_metadata) and GeoJsonPrimitive; 1.144 added draping clamped vector tile polygons/polylines onto terrain with screen-space-constant width", "url": "https://raw.githubusercontent.com/CesiumGS/cesium/main/CHANGES.md", "status": "FACT"},
+        {"claim": "Cesium blog 2026-06-29: vector data in 3D Tiles via 3DTILES_content_gltf_vector, KHR_mesh_primitive_restart, EXT_mesh_polygon; CesiumJS MVT support reuses the 3D Tiles pipeline; prototypes, phased rollout", "url": "https://cesium.com/blog/2026/06/29/help-shape-vector-data-support-in-3d-tiles/", "status": "FACT"},
+        {"claim": "Community MVT workarounds exist (cesium-vector-provider, MVTImageryProvider forks); issue #2132 dates to 2014", "url": "https://github.com/CesiumGS/cesium/issues/2132", "status": "INFERENCE"},
+        {"claim": "GeoJsonDataSource load options clampToGround, stroke, fill, strokeWidth, markerSymbol, credit; GeoJSON and TopoJSON; simplestyle", "url": "https://cesium.com/learn/cesiumjs/ref-doc/GeoJsonDataSource.html", "status": "FACT"},
+        {"claim": "Credit(html, showOnScreen=false): default credits go to the lightbox; showOnScreen:true puts them in the on-screen credit container", "url": "https://cesium.com/learn/cesiumjs/ref-doc/Credit.html", "status": "FACT"},
+        {"claim": "CesiumTerrainProvider.fromUrl/fromIonAssetId; requestVertexNormals, requestWaterMask, requestMetadata; supports quantized-mesh and heightmap-1.0", "url": "https://cesium.com/learn/cesiumjs/ref-doc/CesiumTerrainProvider.html", "status": "FACT"},
+        {"claim": "Layer-swap pattern for time-stepped WMS comes from community/TerriaJS practice", "url": "https://community.cesium.com/t/how-to-use-timeline-widget-with-different-wms-time-steps/1680", "status": "INFERENCE"}
+      ],
+      "relevance_to_cascade_oracle": "Defines how river/flood/snow rasters (COG via TiTiler, WMTS with time), vector hydrography (PMTiles/MVT via MVTDataProvider, or GeoJsonPrimitive), and gauge points get onto the globe, and how time-stepping forecasts are animated."
+    },
+    {
+      "name": "Cesium ion (Community plan, global content, terms)",
+      "authority": "Cesium GS, Inc.",
+      "data_kind": "mixed",
+      "access": {
+        "mechanism": "REST via api.cesium.com with Ion.defaultAccessToken; CesiumJS helpers createWorldTerrainAsync (asset 1), createOsmBuildingsAsync (asset 96188), IonImageryProvider styles AERIAL=2, AERIAL_WITH_LABELS=3, ROAD=4 (Bing), Google Photorealistic via ion asset 2275207, Google Maps 2D Tiles; Terrain Tiler for uploaded DEMs",
+        "base_urls": [
+          "https://api.cesium.com/",
+          "https://cesium.com/platform/cesium-ion/pricing/",
+          "https://cesium.com/legal/terms-of-service/",
+          "https://cesium.com/platform/cesium-ion/content/",
+          "https://cesium.com/learn/3d-tiling/ion-tile-terrain/"
+        ],
+        "auth": "ion access token (Ion.defaultAccessToken); per-asset endpoint calls",
+        "rate_limits": "Community: 5 GB storage, 15 GB/month streaming, 1,000 Global Imagery (Bing/Google/Azure) sessions/month, 1,000 Google Photorealistic 3D Tiles root tiles/month, 50,000 geocodes/month, 20 gigapixels reality modeling. Exceeding quota: 'your account will continue to work without interruption' and Cesium contacts you.",
+        "formats": ["quantized-mesh terrain", "3D Tiles", "imagery tiles", "geocoding"]
+      },
+      "cadence": "Cesium World Terrain and OSM Buildings updated by Cesium on unpublished schedules; imagery partner-driven",
+      "latency": "n/a",
+      "spatial_resolution": "Cesium World Terrain: US West Coast 50 cm, US 1-30 m, -60..60 lat 30-90 m, global 1 km (sources incl. USGS NED/SRTM/GTOPO30)",
+      "temporal_resolution": "n/a",
+      "historical_depth": "n/a",
+      "missing_data_semantics": "Terrain Tiler fuses user DEM with Cesium World Terrain: 'heights from your data where it is defined, and heights from the base layer everywhere else'",
+      "quality_flags": "n/a",
+      "units": "Terrain heights stored relative to the WGS84 ellipsoid; ion converts 'Mean Sea Level' input on upload",
+      "licensing": "Community plan: 'Personal and non-commercial use'; exploratory commercial/government development allowed; paid plan required if company revenue exceeds $50K annually or $50K+ funding. Commercial $149/mo individual ($524 team), Premium $499/mo ($874 team). Terms: 'the Cesium ion logo must be prominently displayed on the main application window'; 'You may not copy, store, or redistribute any portion of Cesium Data Output in, or for use in, an offline, disconnected, or local computer environment' (except Clips); no operating the services on behalf of third parties.",
+      "limitations": [
+        "Every ion asset (World Terrain, OSM Buildings, Bing/Google imagery, Google 3D Tiles via ion) requires an ion token and counts toward streaming/session quotas; 15 GB/month streaming is small for a public hydrology app (INFERENCE).",
+        "OSM Buildings: '© OpenStreetMap contributors' attribution required (auto-applied by Cesium software); underlying license ODbL (INFERENCE — license name not on the page).",
+        "Bing imagery via ion: Cesium is an Enterprise customer so access continues past Microsoft's 2025-06-30 basic cutoff, at the latest to 2028-06-30; Cesium plans to remove Bing assets before 2028 and has added Google Maps 2D Tiles (2025-10-02) with Azure Maps support in progress.",
+        "Bing content third-party terms forbid 'Copy, store, archive, or create a database of the Content', fleet/asset tracking and turn-by-turn use; Cesium may suspend Bing availability at its discretion.",
+        "Terrain Tiler input: GeoTIFF (single band float/int), Floating Point Raster, Arc/Info ASCII Grid, Erdas Imagine, USGS ASCII DEM/CDED, Cesium Terrain Database, DTED; reprojected to EPSG:4326; output quantized-mesh."
+      ],
+      "evidence": [
+        {"claim": "Plans and prices; Community quotas (5 GB storage, 15 GB/mo streaming, 1,000 Global Imagery sessions, 1,000 Google 3D root tiles, 50,000 geocodes); 'Personal and non-commercial use'; paid plan required above $50K revenue or funding", "url": "https://cesium.com/platform/cesium-ion/pricing/", "status": "FACT"},
+        {"claim": "Terms: Cesium ion logo must be prominently displayed on the main application window; prohibition on offline/disconnected storage of Cesium Data Output; no sublicensing/operating for third parties", "url": "https://cesium.com/legal/terms-of-service/", "status": "FACT"},
+        {"claim": "Quota definitions: streaming = bytes of ion assets streamed (excluding Bing); a Bing session = successful GET of /v1/assets/<id>/endpoint; over-quota accounts continue to work", "url": "https://cesium.com/learn/ion/optimizing-quotas/", "status": "FACT"},
+        {"claim": "createWorldTerrainAsync uses CesiumTerrainProvider.fromIonAssetId(1); createOsmBuildingsAsync uses Cesium3DTileset.fromIonAssetId(96188); IonWorldImageryStyle AERIAL=2, AERIAL_WITH_LABELS=3, ROAD=4; Ion.defaultServer https://api.cesium.com/", "url": "https://raw.githubusercontent.com/CesiumGS/cesium/main/packages/engine/Source/Core/createWorldTerrainAsync.js", "status": "FACT"},
+        {"claim": "Cesium World Terrain resolution table (US West Coast 50 cm) and sources (LINZ, Geoscience Australia, Environment Agency, EU-DEM, CGIAR SRTM, USGS GTOPO30/SRTM/NED); quantized-mesh 1.0", "url": "https://cesium.com/platform/cesium-ion/content/cesium-world-terrain/", "status": "FACT"},
+        {"claim": "Cesium OSM Buildings: 350M+ buildings; '© OpenStreetMap contributors' required; createOsmBuildingsAsync()", "url": "https://cesium.com/platform/cesium-ion/content/cesium-osm-buildings/", "status": "FACT"},
+        {"claim": "ion global content list includes Bing Maps Aerial Imagery, Google Maps 2D Tiles, Google Photorealistic 3D Tiles, Vexcel 3D Cities, Cesium World Bathymetry, Sentinel-2", "url": "https://cesium.com/platform/cesium-ion/content/", "status": "FACT"},
+        {"claim": "Cesium staff: Bing deprecated by Microsoft 2025-06-30; Cesium's enterprise access 'remains in place until 2028'; Azure Maps support being added to CesiumJS and native runtimes", "url": "https://community.cesium.com/t/google-maps-2d-tiles-assets-available-through-cesium-ion/43525", "status": "FACT"},
+        {"claim": "Cesium plans to remove Bing assets before 2028 and is evaluating replacements (Google 2D, Azure Maps)", "url": "https://community.cesium.com/t/bing-maps-end-of-life-timeline-in-cesium-ion/40002", "status": "FACT"},
+        {"claim": "Bing third-party terms: no copying/storing/archiving content; no asset tracking, turn-by-turn, lead generation; availability at Cesium's sole discretion", "url": "https://cesium.com/legal/terms-for-bing/", "status": "FACT"},
+        {"claim": "Microsoft: no new Bing Maps for Enterprise customers from 2024-06-30; services and support end 2028-06-30; Basic accounts shut down 2025-06-30", "url": "https://blogs.bing.com/maps/2024-05/Microsoft-Announces-Vision-for-Next-Generation-of-Enterprise-Maps", "status": "FACT"},
+        {"claim": "Terrain Tiler input formats, base-terrain fusion with Cesium World Terrain, ellipsoid height storage with Mean Sea Level conversion, reprojection to EPSG:4326", "url": "https://cesium.com/learn/3d-tiling/ion-tile-terrain/", "status": "FACT"},
+        {"claim": "Azure Maps imagery in ion is a 'Technology Preview' not for production", "url": "https://cesium.com/platform/cesium-ion/content/", "status": "INFERENCE"}
+      ],
+      "relevance_to_cascade_oracle": "Cheapest way to get high-quality WA terrain (50 cm West Coast) and buildings, but the Community plan's non-commercial/$50K rule, 15 GB/month streaming and mandatory ion logo make it unsuitable as the production default; consider ion only under a paid plan or use ion's Terrain Tiler for a one-off WA DEM fusion."
+    },
+    {
+      "name": "Google Photorealistic 3D Tiles (Map Tiles API) via CesiumJS",
+      "authority": "Google Maps Platform",
+      "data_kind": "static",
+      "access": {
+        "mechanism": "3D Tiles tileset at https://tile.googleapis.com/v1/3dtiles/root.json?key=YOUR_API_KEY; CesiumJS createGooglePhotorealistic3DTileset({key|GoogleMaps.defaultApiKey, onlyUsingWithGoogleGeocoder:true}); with no key it falls back to Cesium ion asset 2275207",
+        "base_urls": [
+          "https://tile.googleapis.com/v1/3dtiles/root.json",
+          "https://developers.google.com/maps/documentation/tile/3d-tiles",
+          "https://developers.google.com/maps/billing-and-pricing/pricing",
+          "https://developers.google.com/maps/documentation/tile/policies"
+        ],
+        "auth": "Google Maps Platform API key (Map Tiles API enabled) or Cesium ion token",
+        "rate_limits": "Billing counts root tileset requests; one root request enables ~3 hours of child tile requests; 'Tile requests for Photorealistic 3D Tiles don't impact your daily quota'. Enterprise SKU: 1,000 free events/month, then $6.00 per 1,000 (cap-100,000), $5.10 (100,001-500,000), $4.20 (500,001-1,000,000), $3.30 (1,000,001-5,000,000), $2.40 (5,000,000+).",
+        "formats": ["3D Tiles (glTF mesh)"]
+      },
+      "cadence": "Google 'regularly updates and adds imagery' (no schedule)",
+      "latency": "n/a",
+      "spatial_resolution": "City-scale photogrammetric mesh; coverage page marks US Map Tiles 2D/3D available; Seattle-area coverage is city-level, rural Skagit/Nooksack headwaters likely not covered (INFERENCE)",
+      "temporal_resolution": "n/a (single current epoch)",
+      "historical_depth": "None exposed",
+      "missing_data_semantics": "Outside coverage the tileset has no content; Cesium docs recommend globe:false when using it as the global base",
+      "quality_flags": "n/a",
+      "units": "n/a",
+      "licensing": "Map Tiles API policies: 'you must not pre-fetch, index, store, or cache any Content except under the limited conditions stated'; HTTP Cache-Control/ETag honored. Must show Google Maps logo (16-19 dp, clear space) and per-tile copyright text in full; no overlapping the Google logo with other logos. Prohibited: image analysis, machine interpretation, object detection, geodata extraction/resale, offline use.",
+      "limitations": [
+        "Cesium's createGooglePhotorealistic3DTileset warns that only the Google geocoder may be used with the tileset (Viewer geocoder: IonGeocodeProviderType.GOOGLE); pass onlyUsingWithGoogleGeocoder:true to silence.",
+        "Default credit in Cesium is a Google logo image served from assets.ion.cesium.com shown on screen (Credit(..., true)).",
+        "Cesium tutorial: turn off default terrain/imagery via globe:false because Google tiles cover the globe; mixing with your own terrain/hydro drapes is therefore awkward (INFERENCE).",
+        "Cesium docs state CesiumJS 1.91+ is required; Cesium sets cacheBytes 1.5 GiB and maximumCacheOverflowBytes 1 GiB defaults for this tileset.",
+        "Via ion: Community plan allows 1,000 root tiles/month."
+      ],
+      "evidence": [
+        {"claim": "Root endpoint https://tile.googleapis.com/v1/3dtiles/root.json?key=YOUR_API_KEY; one root request ≈ three hours of tile requests; showCreditsOnScreen:true in example; CesiumJS 1.91+ supported", "url": "https://developers.google.com/maps/documentation/tile/3d-tiles", "status": "FACT"},
+        {"claim": "Pricing rows: 'Map Tiles API: Photorealistic 3D Tiles' Enterprise, 1,000 free monthly events, $6.00/1k to 100,000, $5.10, $4.20, $3.30, $2.40 tiers; '2D Map Tiles' Essentials 100,000 free then $0.60/1k", "url": "https://developers.google.com/maps/billing-and-pricing/pricing", "status": "FACT"},
+        {"claim": "Root tile requests count against quota; child tile requests do not; $200 credit ended 2025-02-28", "url": "https://developers.google.com/maps/documentation/tile/usage-and-billing", "status": "FACT"},
+        {"claim": "Policies: no pre-fetch/index/store/cache except limited conditions; Google logo 16-19dp with clear space; copyright in full; prohibited image analysis/offline use; do not overlap Google logo", "url": "https://developers.google.com/maps/documentation/tile/policies", "status": "FACT"},
+        {"claim": "createGooglePhotorealistic3DTileset: key defaults to GoogleMaps.defaultApiKey; if no key, requestCachedIonTileset with ionAssetId 2275207; URL `${GoogleMaps.mapTilesApiEndpoint}v1/3dtiles/root.json`; warning about Google-only geocoder; cacheBytes defaults", "url": "https://raw.githubusercontent.com/CesiumGS/cesium/main/packages/engine/Source/Scene/createGooglePhotorealistic3DTileset.js", "status": "FACT"},
+        {"claim": "GoogleMaps.getDefaultCredit returns an on-screen Credit with <img alt=\"Google\" src=\"https://assets.ion.cesium.com/google-credit.png\">; mapTilesApiEndpoint https://tile.googleapis.com/", "url": "https://raw.githubusercontent.com/CesiumGS/cesium/main/packages/engine/Source/Core/GoogleMaps.js", "status": "FACT"},
+        {"claim": "Cesium tutorial: recommend globe:false with Google tiles; ion account path", "url": "https://cesium.com/learn/cesiumjs-learn/cesiumjs-photorealistic-3d-tiles/", "status": "FACT"},
+        {"claim": "US row on coverage page shows Map Tiles 2D/3D available; no city list on that page", "url": "https://developers.google.com/maps/coverage", "status": "FACT"}
+      ],
+      "relevance_to_cascade_oracle": "Striking for urban flood context (Seattle, Everett, Bellingham, Tacoma) but expensive at scale ($6/1k root requests), non-cacheable, requires Google geocoder and Google logo, and conflicts with draping custom terrain/hydro layers. Treat as an optional 'photoreal' toggle, not the base."
+    },
+    {
+      "name": "OpenStreetMap standard raster tiles (tile.openstreetmap.org)",
+      "authority": "OpenStreetMap Foundation Operations Working Group",
+      "data_kind": "static",
+      "access": {
+        "mechanism": "XYZ PNG tiles; CesiumJS OpenStreetMapImageryProvider or UrlTemplateImageryProvider",
+        "base_urls": ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
+        "auth": "None, but a 'clear, unique User-Agent' naming your app (or valid Referer for browsers) is mandatory; generic UAs are blocked",
+        "rate_limits": "Best-effort, no SLA, 'access may be withdrawn at any point'; bulk download/pre-seeding/offline packaging banned; heavy use blocked",
+        "formats": ["PNG 256px Web Mercator"]
+      },
+      "cadence": "Minutely OSM data; tile re-render on demand",
+      "latency": "n/a",
+      "spatial_resolution": "Zoom 0-19 street map",
+      "temporal_resolution": "n/a",
+      "historical_depth": "None",
+      "missing_data_semantics": "n/a",
+      "quality_flags": "n/a",
+      "units": "n/a",
+      "licensing": "Data ODbL; policy requires visible '© OpenStreetMap contributors' credit; honor cache headers or cache ≥7 days; HTTPS only; no restrictive Referrer-Policy.",
+      "limitations": [
+        "Policy explicitly says: if you cannot meet requirements 'use an alternative OSM-derived service or run your own' — a public production app with meaningful traffic should not depend on it (INFERENCE from policy wording).",
+        "Cesium's default credit string is outdated ('MapQuest ... CC-BY-SA'); set credit manually."
+      ],
+      "evidence": [
+        {"claim": "Tile usage policy requirements (URL/HTTPS, unique User-Agent, attribution, 7-day caching, Referer), prohibitions (bulk download, offline), best-effort/no SLA, withdrawal at any time", "url": "https://operations.osmfoundation.org/policies/tiles/", "status": "FACT"},
+        {"claim": "OpenStreetMapImageryProvider default url and credit string", "url": "https://cesium.com/learn/cesiumjs/ref-doc/OpenStreetMapImageryProvider.html", "status": "FACT"}
+      ],
+      "relevance_to_cascade_oracle": "Fine for local development and demos; for production build self-hosted OSM vector tiles (Planetiler → PMTiles) or use a commercial OSM-derived provider."
+    },
+    {
+      "name": "Esri ArcGIS basemaps (Basemap Styles v2, Static Basemap Tiles, World Imagery) and World Elevation",
+      "authority": "Esri (ArcGIS Location Platform / ArcGIS Online)",
+      "data_kind": "static",
+      "access": {
+        "mechanism": "Basemap Styles v2 (vector styles + /webmaps) and Static Basemap Tiles (raster PNG XYZ) — the latter is usable from CesiumJS UrlTemplateImageryProvider; legacy ArcGisMapServerImageryProvider.fromBasemapType/fromUrl; ArcGISTiledElevationTerrainProvider for World Elevation",
+        "base_urls": [
+          "https://basemapstyles-api.arcgis.com/arcgis/rest/services/styles/v2",
+          "https://static-map-tiles-api.arcgis.com/arcgis/rest/services/static-basemap-tiles-service/v1/{style}/static/tile/{level}/{row}/{column}",
+          "https://elevation3d.arcgis.com/arcgis/rest/services/WorldElevation3D/Terrain3D/ImageServer",
+          "https://location.arcgis.com/pricing/"
+        ],
+        "auth": "ArcGIS Location Platform (or ArcGIS Online) account with API key access token; CesiumJS: ArcGisMapService.defaultAccessToken or {token} — 'An ArcGIS Access Token is required to authenticate requests to an ArcGIS Image Tile service'",
+        "rate_limits": "Basemap tiles: 2,000,000 free per month, then $0.15 per 1,000 (ArcGIS Location Platform); included in ArcGIS Online subscriptions",
+        "formats": ["Static tiles: 512x512 PNG, Web Mercator, zoom 0-22; styles incl. arcgis/imagery, imagery/labels, open OSM-style (Overture)", "Vector basemap styles (MapLibre style JSON)", "Elevation ImageServer (LERC) for Cesium terrain"]
+      },
+      "cadence": "World Imagery updated continuously by Esri/partners (no published cadence)",
+      "latency": "n/a",
+      "spatial_resolution": "World Imagery: 0.3 m in continental US, 1 m or better widely (from Esri marketing via search, INFERENCE)",
+      "temporal_resolution": "n/a",
+      "historical_depth": "Not exposed through basemap tiles",
+      "missing_data_semantics": "n/a",
+      "quality_flags": "n/a",
+      "units": "n/a",
+      "licensing": "Esri attribution = requirement to display 'Powered by Esri' in apps using Esri technology, services or data (even via third-party libraries); plus data-source provider credits. Full terms at Esri legal documentation (not fetched).",
+      "limitations": [
+        "Esri's own CesiumJS migration guide positions ArcGisMapServerImageryProvider (replacing Bing) and ArcGISTiledElevationTerrainProvider (replacing Cesium World Terrain) with API key/OAuth token; the Basemap Styles raster endpoints it references use ArcGIS:Imagery:Standard style names.",
+        "Static Basemap Tiles 'Not supported on ArcGIS Online' (Location Platform only).",
+        "CesiumJS does not auto-render 'Powered by Esri' or dynamic data-provider credits — you must add them (INFERENCE from glossary + Cesium Credit behavior).",
+        "Esri's detailed 'Esri and data attribution' page rendered empty in fetch; confirm exact logo/format rules there."
+      ],
+      "evidence": [
+        {"claim": "Basemap Styles v2 base URL; account required; /styles/arcgis/imagery; '2 million free basemap tiles consumed per month then $0.15 per 1,000 tiles'", "url": "https://developers.arcgis.com/rest/basemap-styles/", "status": "FACT"},
+        {"claim": "Static Basemap Tiles base URL and /{style}/static/tile/{level}/{row}/{column}; 512x512 PNG Web Mercator zoom 0-22; style families incl. imagery/labels and Overture-based open styles; Location Platform account required; 2M free then $0.15/1k; not supported on ArcGIS Online; must display basemap and data attribution", "url": "https://developers.arcgis.com/rest/static-basemap-tiles/", "status": "FACT"},
+        {"claim": "Pricing: '2M free then $0.15 per 1,000 tiles'", "url": "https://location.arcgis.com/pricing/", "status": "FACT"},
+        {"claim": "Cesium ArcGisMapServerImageryProvider: ArcGIS Access Token required; ArcGisMapService.defaultAccessToken; fromBasemapType/fromUrl accept {token}", "url": "https://cesium.com/learn/cesiumjs/ref-doc/ArcGisMapServerImageryProvider.html", "status": "FACT"},
+        {"claim": "ArcGISTiledElevationTerrainProvider.fromUrl with WorldElevation3D/Terrain3D/ImageServer and token option", "url": "https://cesium.com/learn/cesiumjs/ref-doc/ArcGISTiledElevationTerrainProvider.html", "status": "FACT"},
+        {"claim": "Esri CesiumJS migration guide: classes, API key/OAuth2 requirement, Basemap Styles URLs such as .../styles/ArcGIS:Imagery:Standard", "url": "https://developers.arcgis.com/cesiumjs/migration/", "status": "FACT"},
+        {"claim": "'Esri attribution' is 'a requirement to display the text Powered by Esri in applications that use Esri technology', including via third-party libraries and REST access", "url": "https://developers.arcgis.com/documentation/glossary/esri-attribution/", "status": "FACT"},
+        {"claim": "Two attribution types (Powered by Esri + data-source providers); most Esri APIs add it automatically, others must add manually", "url": "https://developers.arcgis.com/documentation/mapping-apis-and-services/deployment/basemap-attribution/", "status": "INFERENCE"}
+      ],
+      "relevance_to_cascade_oracle": "Best ion-free satellite basemap for WA (0.3 m CONUS) with a generous free tier; token must be proxied or restricted by referrer; attribution must be hand-built in Cesium."
+    },
+    {
+      "name": "MapTiler Cloud (raster/vector basemaps, Terrain-RGB v2, Cesium quantized-mesh terrain)",
+      "authority": "MapTiler AG",
+      "data_kind": "static",
+      "access": {
+        "mechanism": "XYZ tiles https://api.maptiler.com/tiles/{tilesId}/{z}/{x}/{y}?key=; TileJSON https://api.maptiler.com/tiles/{tilesId}/tiles.json?key=; tilesIds terrain-rgb-v2 (webp, z0-14) and terrain-quantized-mesh-v2 (quantized-mesh-1.0, EPSG:4326, z0-15, EGM96) — the latter's tiles.json works as CesiumTerrainProvider.fromUrl layer.json",
+        "base_urls": [
+          "https://api.maptiler.com/tiles/{tilesId}/{z}/{x}/{y}",
+          "https://api.maptiler.com/tiles/terrain-rgb-v2/tiles.json",
+          "https://api.maptiler.com/tiles/terrain-quantized-mesh-v2/tiles.json",
+          "https://www.maptiler.com/cloud/pricing/",
+          "https://www.maptiler.com/terms/cloud/"
+        ],
+        "auth": "API key (?key=) required",
+        "rate_limits": "Free: 100,000 API requests/month, 5,000 map sessions, 2,000 3D sessions, 100 uploads; raster 256 tile = 1 request, 512 tile = 4, vector tile = 1, elevation = 1. Flex $30/month + pay-as-you-go.",
+        "formats": ["raster png/jpg/webp", "vector MVT (OpenMapTiles schema)", "Terrain-RGB webp", "quantized-mesh-1.0"]
+      },
+      "cadence": "Basemaps updated by MapTiler (OSM-derived); terrain static",
+      "latency": "n/a",
+      "spatial_resolution": "Terrain-RGB v2 max zoom 14; quantized mesh max zoom 15 (≈ 3-5 m/px at mid-latitudes, INFERENCE)",
+      "temporal_resolution": "n/a",
+      "historical_depth": "None",
+      "missing_data_semantics": "n/a",
+      "quality_flags": "n/a",
+      "units": "Terrain-RGB elevation meters (Mapbox-style encoding -10000 + value*0.1 — INFERENCE); quantized mesh heights EGM96",
+      "licensing": "Terms: 'Usage of the Free Plan is limited to non-commercial use and research & development for commercial products applications'; 'MapTiler attribution is required to be shown on screen while the map is displayed'; Free plan must show the MapTiler logo; required text '© MapTiler © OpenStreetMap contributors' with links; server-side caching/redistribution prohibited, single-user client caching allowed.",
+      "limitations": [
+        "Cesium does not add MapTiler attribution automatically — MapTiler's guide says Cesium 'Requires manual specification using the Credit API' and Free-plan logo via HTML.",
+        "USA source data for terrain-rgb-v2 not identified on the docs page ('composite of high-resolution DEMs').",
+        "Exact {z}/{x}/{y}.webp pattern for terrain-rgb-v2 inferred from the generic tiles endpoint + tilesId (not printed on a fetched page)."
+      ],
+      "evidence": [
+        {"claim": "Plans (Free $0, Flex $30/mo, Custom); Free limits (100k requests, 5k map sessions, 2k 3D sessions); request weighting; Free 'Suitable for testing, personal or non-commercial use' with MapTiler logo", "url": "https://www.maptiler.com/cloud/pricing/", "status": "FACT"},
+        {"claim": "Cloud terms: Free plan non-commercial/R&D only; on-screen attribution required; no server-side cache/redistribution; single-user temporary cache allowed", "url": "https://www.maptiler.com/terms/cloud/", "status": "FACT"},
+        {"claim": "Required attribution '© MapTiler © OpenStreetMap contributors' with links; Free plan logo; Cesium requires manual Credit", "url": "https://docs.maptiler.com/guides/map-design/attribution/add-attribution/", "status": "FACT"},
+        {"claim": "Generic tiles endpoints: https://api.maptiler.com/tiles/{tilesId}/{z}/{x}/{y}?key= and /tiles/{tilesId}/tiles.json", "url": "https://docs.maptiler.com/cloud/api/tiles/", "status": "FACT"},
+        {"claim": "terrain-rgb-v2 tiles.json URL used as MapLibre terrain source: https://api.maptiler.com/tiles/terrain-rgb-v2/tiles.json?key=", "url": "https://docs.maptiler.com/guides/maps-apis/maps-platform/how-to-build-a-3d-map-with-maplibre-v2-gl-js/", "status": "FACT"},
+        {"claim": "Terrain RGB schema page: format webp, min zoom 0, max zoom 14, composite of high-resolution DEMs", "url": "https://docs.maptiler.com/schema-raster/terrain-rgb/", "status": "FACT"},
+        {"claim": "Terrain 3D: dataset id terrain-quantized-mesh-v2, quantized-mesh-1.0, WGS84 EPSG:4326, zoom 0-15, EGM96", "url": "https://docs.maptiler.com/schema-raster/terrain-3d/", "status": "FACT"},
+        {"claim": "Terrain-RGB decoding formula -10000 + ((R*256*256 + G*256 + B)*0.1)", "url": "https://docs.maptiler.com/schema-raster/terrain-rgb/", "status": "OPEN_QUESTION"}
+      ],
+      "relevance_to_cascade_oracle": "The only hosted quantized-mesh terrain that works with CesiumTerrainProvider.fromUrl without ion; Free tier is non-commercial, so budget Flex ($30/mo + usage) and add Credit + logo manually."
+    },
+    {
+      "name": "Mapbox Raster Tiles / Styles in CesiumJS",
+      "authority": "Mapbox, Inc.",
+      "data_kind": "static",
+      "access": {
+        "mechanism": "CesiumJS MapboxImageryProvider (https://api.mapbox.com/v4/, accessToken required) and MapboxStyleImageryProvider (https://api.mapbox.com/styles/v1/, styleId, tilesize 512, accessToken)",
+        "base_urls": ["https://api.mapbox.com/v4/", "https://api.mapbox.com/styles/v1/", "https://www.mapbox.com/pricing", "https://docs.mapbox.com/help/getting-started/attribution/"],
+        "auth": "Public access token (required; DeveloperError if missing)",
+        "rate_limits": "Raster Tiles API 750,000 free tile requests/month then $0.25 per 1,000 (750k-2M); Vector Tiles API 200,000 free then $0.25/1k; Static Tiles 200,000 free then $0.50/1k; Map Loads (GL JS) 50,000 free then $5/1k",
+        "formats": ["raster 256/512 px tiles", "vector MVT (not natively consumable by Cesium imagery providers)"]
+      },
+      "cadence": "Mapbox updates streets/satellite continuously",
+      "latency": "n/a",
+      "spatial_resolution": "Satellite styles include Maxar imagery",
+      "temporal_resolution": "n/a",
+      "historical_depth": "None",
+      "missing_data_semantics": "n/a",
+      "quality_flags": "n/a",
+      "units": "n/a",
+      "licensing": "Attribution: '© Mapbox' (link to mapbox.com/about/maps), '© OpenStreetMap' (link to openstreetmap.org/copyright) and 'Improve this map'; Mapbox logo must remain visible; satellite styles add '© Maxar'. Non-Mapbox renderers (Leaflet/Cesium) must add attribution and the SVG logo manually.",
+      "limitations": [
+        "Cesium's MapboxImageryProvider default credit already contains © Mapbox © OpenStreetMap Improve this map, but it lands in the lightbox unless showOnScreen is set, and the logo is never added (INFERENCE).",
+        "Mapbox TOS caching rules not fetched."
+      ],
+      "evidence": [
+        {"claim": "Pricing tiers and free allowances for Raster Tiles, Vector Tiles, Static Tiles, Map Loads", "url": "https://www.mapbox.com/pricing", "status": "FACT"},
+        {"claim": "Required attribution text/links, logo requirement, manual handling in Leaflet/Cesium, Maxar credit for satellite", "url": "https://docs.mapbox.com/help/getting-started/attribution/", "status": "FACT"},
+        {"claim": "MapboxImageryProvider default url https://api.mapbox.com/v4/, accessToken required, default credit HTML '© Mapbox © OpenStreetMap Improve this map'", "url": "https://raw.githubusercontent.com/CesiumGS/cesium/main/packages/engine/Source/Scene/MapboxImageryProvider.js", "status": "FACT"},
+        {"claim": "MapboxStyleImageryProvider default url https://api.mapbox.com/styles/v1/, styleId required, tilesize 512", "url": "https://cesium.com/learn/cesiumjs/ref-doc/MapboxStyleImageryProvider.html", "status": "FACT"}
+      ],
+      "relevance_to_cascade_oracle": "Viable satellite/streets raster basemap with 750k free raster tiles per month; requires token proxying and manual logo/attribution."
+    },
+    {
+      "name": "AWS Terrain Tiles (Mapzen/Tilezen Terrarium, Normal, GeoTIFF, Skadi)",
+      "authority": "Mapzen (Linux Foundation project) / Tilezen, hosted on AWS Open Data",
+      "data_kind": "derived",
+      "access": {
+        "mechanism": "Public S3 (no key, no AWS account): https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png, .../normal/{z}/{x}/{y}.png, .../geotiff/{z}/{x}/{y}.tif, .../skadi/{N|S}{y}/{N|S}{y}{E|W}{x}.hgt.gz; bucket elevation-tiles-prod (us-east-1), EU replica elevation-tiles-prod-eu (eu-central-1)",
+        "base_urls": ["https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png", "https://registry.opendata.aws/terrain-tiles/"],
+        "auth": "None",
+        "rate_limits": "None published; not requester-pays",
+        "formats": ["Terrarium PNG (elevation = (R*256 + G + B/256) - 32768)", "Normal PNG", "GeoTIFF 512x512", "Skadi .hgt.gz 1°x1°"]
+      },
+      "cadence": "'New data is added based on community feedback' (effectively static; joerd repo last pushed 2021-03-22)",
+      "latency": "n/a",
+      "spatial_resolution": "Zoom 0-15 on S3 (256 px tiles; no new information past z15 ≈ 4.8 m/px at equator); US coverage from USGS 3DEP/NED",
+      "temporal_resolution": "n/a",
+      "historical_depth": "Single static compilation",
+      "missing_data_semantics": "Requests past z15 return 404; ocean/void areas filled from ETOPO1/GMTED (INFERENCE)",
+      "quality_flags": "None",
+      "units": "meters (Terrarium encoding)",
+      "licensing": "joerd attribution.md (MIT-licensed repo): US tiles require 'United States 3DEP (formerly NED) and global GMTED2010 and SRTM terrain data courtesy of the U.S. Geological Survey'; ETOPO1 via NOAA; sources public domain but credit requested.",
+      "limitations": [
+        "CesiumJS has no Terrarium/Terrain-RGB terrain provider; using these as 3D terrain requires a custom TerrainProvider or offline conversion to quantized-mesh (INFERENCE).",
+        "Data vintage predates recent WA DNR lidar; for sub-10 m WA terrain prefer DNR/3DEP DEMs tiled with ctb or ion."
+      ],
+      "evidence": [
+        {"claim": "Bucket elevation-tiles-prod us-east-1 and EU replica; license link to joerd attribution.md; maintained by Mapzen (Linux Foundation); AWS CLI access without account; 'New data is added based on community feedback'", "url": "https://registry.opendata.aws/terrain-tiles/", "status": "FACT"},
+        {"claim": "S3 URL patterns for terrarium/normal/geotiff/skadi; zooms 0-15; max z for 256 px tiles is 15; no new information after zoom 15", "url": "https://raw.githubusercontent.com/tilezen/joerd/master/docs/use-service.md", "status": "FACT"},
+        {"claim": "Terrarium decode (R*256 + G + B/256) - 32768; formats and tile sizes", "url": "https://github.com/tilezen/joerd/blob/master/docs/formats.md", "status": "FACT"},
+        {"claim": "Required US attribution strings (3DEP, SRTM, GMTED2010 courtesy USGS; ETOPO1 NOAA)", "url": "https://github.com/tilezen/joerd/blob/master/docs/attribution.md", "status": "FACT"},
+        {"claim": "joerd repo license MIT; last push 2021-03-22", "url": "https://api.github.com/repos/tilezen/joerd", "status": "FACT"}
+      ],
+      "relevance_to_cascade_oracle": "Free global fallback elevation for hillshade/2D analysis and for regions outside WA lidar; not directly a Cesium terrain source."
+    },
+    {
+      "name": "Open quantized-mesh terrain production (Cesium Terrain Builder + quantized-mesh spec)",
+      "authority": "geo-data/cesium-terrain-builder (Apache-2.0), ahuarte47 quantized-mesh fork packaged by tum-gis Docker; CesiumGS/quantized-mesh spec",
+      "data_kind": "derived",
+      "access": {
+        "mechanism": "ctb-tile -f Mesh -C -N -o terrain input.vrt then ctb-tile -f Mesh -C -N -l -o terrain input.vrt (writes layer.json); serve {z}/{x}/{y}.terrain gzip with Content-Type application/vnd.quantized-mesh; load with CesiumTerrainProvider.fromUrl",
+        "base_urls": ["https://github.com/geo-data/cesium-terrain-builder", "https://github.com/tum-gis/cesium-terrain-builder-docker", "https://github.com/CesiumGS/quantized-mesh"],
+        "auth": "None (self-hosted)",
+        "rate_limits": "n/a",
+        "formats": ["quantized-mesh-1.0 (.terrain)", "heightmap-1.0 (.terrain)", "layer.json (tilejson-derived; projection EPSG:4326 TMS default, 2 root tiles)"]
+      },
+      "cadence": "Batch; rerun when DEM changes",
+      "latency": "n/a",
+      "spatial_resolution": "Limited by input DEM (WA DNR 1 m / 3DEP 1 m) and max zoom chosen",
+      "temporal_resolution": "n/a",
+      "historical_depth": "n/a",
+      "missing_data_semantics": "NODATA must be pre-filled/interpolated before ctb; otherwise holes/spikes",
+      "quality_flags": "ctb upstream is 'beta quality'; quantized-mesh output only in the fork",
+      "units": "meters, heights relative to WGS84 ellipsoid expected by Cesium (convert NAVD88/orthometric DEMs first — INFERENCE)",
+      "licensing": "Apache-2.0 (ctb); quantized-mesh spec open (CesiumGS); outputs inherit the DEM's license",
+      "limitations": [
+        "Upstream geo-data/cesium-terrain-builder lists quantized-mesh as TODO and appears unmaintained; rely on the ahuarte47 fork / tum-gis image.",
+        "Input should be GDAL-readable, preferably WGS84, single band; large WA statewide 1 m lidar DEMs need tiling/VRT and many cores (INFERENCE).",
+        "Extensions (octvertexnormals=1, watermask=2, metadata=4) are requested via Accept header; generate normals with -N for lighting."
+      ],
+      "evidence": [
+        {"claim": "ctb-tile converts GDAL DEMs to heightmap .terrain tiles; quantized-mesh listed as TODO upstream; Apache-2.0; beta quality", "url": "https://github.com/geo-data/cesium-terrain-builder", "status": "FACT"},
+        {"claim": "Docker image with ahuarte47 fork: ctb-tile -f Mesh -C -N, -l for layer.json", "url": "https://github.com/tum-gis/cesium-terrain-builder-docker", "status": "FACT"},
+        {"claim": "quantized-mesh-1.0: {z}/{x}/{y}.terrain, layer.json, Accept application/vnd.quantized-mesh, gzip, extensions 1/2/4, EPSG:4326 TMS default with two root tiles", "url": "https://github.com/CesiumGS/quantized-mesh", "status": "FACT"},
+        {"claim": "CesiumTerrainProvider.fromUrl consumes layer.json quantized-mesh/heightmap", "url": "https://cesium.com/learn/cesiumjs/ref-doc/CesiumTerrainProvider.html", "status": "FACT"}
+      ],
+      "relevance_to_cascade_oracle": "The ion-free path to high-resolution WA terrain: tile DNR/3DEP DEMs to quantized-mesh once, host on object storage + CDN with no per-request licensing."
+    },
+    {
+      "name": "3D Tiles 1.1 specification and 3d-tiles-tools",
+      "authority": "Cesium GS / OGC Community Standard",
+      "data_kind": "static",
+      "access": {
+        "mechanism": "Spec on GitHub; npx 3d-tiles-tools upgrade --targetVersion 1.1 (converts pnts/b3dm/i3dm/cmpt to glTF), convertPntsToGlb, merge, combine, gzip",
+        "base_urls": ["https://github.com/CesiumGS/3d-tiles", "https://docs.ogc.org/cs/22-025r4/22-025r4.html", "https://github.com/CesiumGS/3d-tiles-tools"],
+        "auth": "None",
+        "rate_limits": "n/a",
+        "formats": ["tileset.json", "glTF/GLB tile content (1.1)", "legacy b3dm/i3dm/pnts/cmpt (1.0)", "implicit tiling, metadata (EXT_structural_metadata), multiple contents"]
+      },
+      "cadence": "1.0 approved 2018-12-14 (OGC 18-053r2); 1.1 approved 2022-12-17, published 2023-01-12 (OGC 22-025r4); 2.0 in development",
+      "latency": "n/a",
+      "spatial_resolution": "n/a",
+      "temporal_resolution": "n/a",
+      "historical_depth": "n/a",
+      "missing_data_semantics": "n/a",
+      "quality_flags": "3d-tiles-tools glTF conversion of legacy formats is 'preview-level'",
+      "units": "n/a",
+      "licensing": "3d-tiles-tools Apache-2.0 (npm 0.5.4, 2026-07-15); spec license not confirmed (repo shows no SPDX license via API)",
+      "limitations": [
+        "Vector content in 3D Tiles (3DTILES_content_gltf_vector + EXT_mesh_polygon + KHR_mesh_primitive_restart) is a 2026 proposal/prototype, not in 1.1."
+      ],
+      "evidence": [
+        {"claim": "3D Tiles 1.1 current; 2.0 in development; 1.1 adds glTF content, implicit tiling, metadata, multiple contents; 1.0 OGC 18-053r2 approved 2018-12-14", "url": "https://github.com/CesiumGS/3d-tiles", "status": "FACT"},
+        {"claim": "OGC lists 3D Tiles 1.1 as 22-025r4 and 1.0 as 18-053r2", "url": "https://www.ogc.org/standards/3dtiles/", "status": "FACT"},
+        {"claim": "22-025r4 Approval Date 2022-12-17, Publication Date 2023-01-12, Version 1.1", "url": "https://docs.ogc.org/cs/22-025r4/22-025r4.html", "status": "FACT"},
+        {"claim": "3d-tiles-tools commands upgrade (--targetVersion 1.1), convertPntsToGlb, merge/combine/gzip; Apache-2.0", "url": "https://github.com/CesiumGS/3d-tiles-tools", "status": "FACT"},
+        {"claim": "npm 3d-tiles-tools 0.5.4 published 2026-07-15, Apache-2.0", "url": "https://registry.npmjs.org/3d-tiles-tools", "status": "FACT"}
+      ],
+      "relevance_to_cascade_oracle": "Target format for lidar point clouds, buildings and any custom 3D (levees, gauges); prefer 1.1 glTF content and upgrade legacy pnts with 3d-tiles-tools."
+    },
+    {
+      "name": "Point cloud → 3D Tiles toolchain (py3dtiles, gocesiumtiler, point-tiler, PDAL)",
+      "authority": "Oslandia/LIRIS (py3dtiles), mfbonfigli (gocesiumtiler), MIERUNE (point-tiler), PDAL project",
+      "data_kind": "derived",
+      "access": {
+        "mechanism": "py3dtiles convert --out 3dtiles pointcloud.las (pnts/b3dm, 3D Tiles 1.0); gocesiumtiler (LAS 1.4 → pnts 1.0, experimental 1.1 glTF; CRS via EPSG/proj4/WKT, PROJ 9.5 vertical conversions); point-tiler (LAS/LAZ/CSV → native 3D Tiles 1.1 GLB, PROJ EPSG transforms, recommended EPSG:4979 output); PDAL for preprocessing (writers: arrow, bpf, copc, draco, e57, ept_addon, fbi, fbx, gdal, gltf, las, matlab, nitf, null, ogr, pcd, pgpointcloud, ply, raster, sbet, spz, text, tiledb — no 3D Tiles/pnts writer)",
+        "base_urls": ["https://pypi.org/project/py3dtiles/", "https://github.com/mfbonfigli/gocesiumtiler", "https://github.com/MIERUNE/point-tiler", "https://pdal.io/"],
+        "auth": "None",
+        "rate_limits": "n/a",
+        "formats": ["LAS/LAZ/XYZ/PLY/WKB in", "pnts/b3dm (1.0) or GLB (1.1) out"]
+      },
+      "cadence": "py3dtiles 12.1.1 (2026-03-20); gocesiumtiler v2.0.1 (2024-11-21); point-tiler v0.0.11 (2026-03-10); PDAL python 3.5.5 (2026-07-31)",
+      "latency": "n/a",
+      "spatial_resolution": "Native lidar density",
+      "temporal_resolution": "n/a",
+      "historical_depth": "n/a",
+      "missing_data_semantics": "n/a",
+      "quality_flags": "gocesiumtiler LAZ input 'planned'; py3dtiles glTF output on roadmap",
+      "units": "Heights must be converted from orthometric (NAVD88/EGM) to ellipsoidal for Cesium; gocesiumtiler/PROJ and point-tiler handle via grids",
+      "licensing": "py3dtiles Apache-2.0; gocesiumtiler MPL-2.0; point-tiler MIT; PDAL BSD",
+      "limitations": [
+        "PDAL cannot emit 3D Tiles; pipeline is PDAL (merge/clip/classify/reproject, writers.copc) → tiler.",
+        "py3dtiles still outputs 1.0 pnts (convert with 3d-tiles-tools convertPntsToGlb if 1.1 is required)."
+      ],
+      "evidence": [
+        {"claim": "py3dtiles 12.1.1 released 2026-03-20, Apache-2.0, Python >=3.10,<3.15, inputs las/laz/xyz/ply/wkb, outputs pnts/b3dm (1.0), glTF on roadmap", "url": "https://pypi.org/project/py3dtiles/", "status": "FACT"},
+        {"claim": "gocesiumtiler: LAS 1.4 in (LAZ planned), 3D Tiles 1.0 pnts + experimental 1.1 glTF, CRS via EPSG/Proj4/WKT, PROJ 9.5 vertical datum, v2.0.1, MPL-2.0", "url": "https://github.com/mfbonfigli/gocesiumtiler", "status": "FACT"},
+        {"claim": "point-tiler: LAS/LAZ/CSV → 3D Tiles 1.1 GLB, Rust, PROJ EPSG transforms, EPSG:4979 recommended, MIT; v0.0.11 2026-03-10", "url": "https://github.com/MIERUNE/point-tiler", "status": "FACT"},
+        {"claim": "PDAL doc/stages writer list contains no 3D Tiles/pnts writer; includes writers.copc, writers.gltf, writers.las", "url": "https://api.github.com/repos/PDAL/PDAL/contents/doc/stages", "status": "FACT"},
+        {"claim": "pdal python package 3.5.5 uploaded 2026-07-31, BSD", "url": "https://pypi.org/pypi/pdal/json", "status": "FACT"}
+      ],
+      "relevance_to_cascade_oracle": "Turns WA DNR / 3DEP lidar into streamable 3D Tiles for floodplain/levee visualization; pick point-tiler for 1.1 output or py3dtiles for maturity."
+    },
+    {
+      "name": "Washington lidar and 3D inputs (WA DNR Lidar Portal, USGS 3DEP EPT on AWS; open photogrammetry)",
+      "authority": "Washington DNR / Washington Geological Survey; USGS 3DEP (EPT hosted by Hobu, Inc. on AWS Open Data)",
+      "data_kind": "observational",
+      "access": {
+        "mechanism": "DNR portal interactive download (point and area-of-interest tools) for DEMs, hillshade derivatives and point clouds; DNR ArcGIS services (e.g. gis.dnr.wa.gov Public_Geology/Lidar_Hillshade MapServer, WKID 2927, copyright 'Washington Geological Survey'); USGS 3DEP EPT: s3://usgs-lidar-public (us-west-2, public, no requester-pays), STAC catalog https://usgs-lidar-stac.s3-us-west-2.amazonaws.com/ept/catalog.json; raw LAZ 1.4 in requester-pays s3://usgs-lidar",
+        "base_urls": ["https://lidarportal.dnr.wa.gov/", "https://dnr.wa.gov/lidar", "https://registry.opendata.aws/usgs-lidar/", "https://usgs-lidar-stac.s3-us-west-2.amazonaws.com/ept/catalog.json"],
+        "auth": "None",
+        "rate_limits": "None published",
+        "formats": ["DNR: DEM rasters, hillshade, point clouds (LAZ per third-party description)", "3DEP: Entwine Point Tiles (EPT), LAZ 1.4"]
+      },
+      "cadence": "DNR adds datasets as collected (2015 legislative mandate); 3DEP EPT updated as USGS publishes projects",
+      "latency": "Months to years after acquisition (INFERENCE)",
+      "spatial_resolution": "Typically ≥8 pts/m² QL1/QL2 lidar; 1 m DEMs (INFERENCE from program norms)",
+      "temporal_resolution": "Project epochs (single acquisition per project)",
+      "historical_depth": "Puget Sound Lidar Consortium projects back to ~2000 consolidated in the portal (INFERENCE)",
+      "missing_data_semantics": "Project-based coverage; DNR portal covers 'about a third of DNR's data holdings' per search snippet",
+      "quality_flags": "USGS 3DEP QL metadata per project; some raw usgs-lidar resources have incomplete CRS",
+      "units": "DNR services in NAD83(HARN) WA State Plane South feet (WKID 2927 seen on the hillshade service); 3DEP EPT in project CRS (meters) — convert to ellipsoidal heights for Cesium",
+      "licensing": "3DEP: 'US Government Public Domain'. DNR: page says the portal provides 'publically available lidar data'; no explicit license/public-domain statement found on DNR pages (a third-party blog asserts public domain without citation).",
+      "limitations": [
+        "No open photogrammetric 3D mesh for Washington basins was found; only commercial city models and Google Photorealistic 3D Tiles (licensed). Cesium OSM Buildings (ODbL) is the open 3D-buildings option.",
+        "DNR portal has no documented bulk API; download?ids= links exist in the wild but are undocumented (OPEN_QUESTION)."
+      ],
+      "evidence": [
+        {"claim": "DNR portal offers DEMs, hillshade derivatives and point cloud data; portal download; partner sites PSLC, OpenTopography, USGS National Map, NOAA DAV", "url": "https://www.dnr.wa.gov/lidar", "status": "FACT"},
+        {"claim": "'The Washington Lidar Portal is designed to allow for easy access and download of publically available lidar data'", "url": "https://dnr.wa.gov/see-forests-without-trees", "status": "FACT"},
+        {"claim": "Portal help: point selection and area-of-interest download tools; no licensing text", "url": "https://lidarportal.dnr.wa.gov/help.html", "status": "FACT"},
+        {"claim": "DNR Lidar_Hillshade MapServer: not cached, WKID 2927, Copyright 'Washington Geological Survey'", "url": "https://gis.dnr.wa.gov/site1/rest/services/Public_Geology/Lidar_Hillshade/MapServer", "status": "FACT"},
+        {"claim": "Third-party blog claims 'All of the DNR LiDAR data is the public domain' without an official citation; WMS endpoint https://lidarportal.dnr.wa.gov/arcgis/services/lidar/wadnr_hillshade/MapServer/WmsServer", "url": "https://www.jakelow.com/blog/using-wa-dnr-lidar-imagery-in-id", "status": "INFERENCE"},
+        {"claim": "USGS 3DEP EPT bucket usgs-lidar-public us-west-2, public domain, STAC catalog, Hobu maintainer, raw LAZ requester-pays bucket", "url": "https://registry.opendata.aws/usgs-lidar/", "status": "FACT"},
+        {"claim": "No open photogrammetry/3D mesh dataset for Seattle/WA surfaced in search (only commercial models)", "url": "https://www.cgtrader.com/3d-models/exterior/cityscape/seattle-washington-55km", "status": "OPEN_QUESTION"}
+      ],
+      "relevance_to_cascade_oracle": "Primary source for sub-meter WA terrain and point clouds across all six target basins; confirm DNR license terms before redistribution."
+    },
+    {
+      "name": "Cloud Optimized GeoTIFF + TiTiler / rio-tiler (dynamic raster tiles)",
+      "authority": "OGC (COG standard 21-026); Development Seed (TiTiler, rio-tiler)",
+      "data_kind": "derived",
+      "access": {
+        "mechanism": "COG on object storage read via HTTP range requests; TiTiler FastAPI endpoints /cog/tiles/{tileMatrixSetId}/{z}/{x}/{y}, /cog/{tileMatrixSetId}/tilejson.json, /xarray (Zarr/NetCDF), /mosaicjson, /stac; TileMatrixSets via morecantile incl. WebMercatorQuad and WGS1984Quad (use GeographicTilingScheme in Cesium)",
+        "base_urls": ["https://cogeo.org/", "https://docs.ogc.org/is/21-026/21-026.html", "https://developmentseed.org/titiler/", "https://pypi.org/pypi/titiler.core/json", "https://pypi.org/pypi/rio-tiler/json"],
+        "auth": "Self-hosted; none by default",
+        "rate_limits": "n/a",
+        "formats": ["COG (GeoTIFF with internal tiling + overviews)", "PNG/JPEG/WebP tiles", "TileJSON", "algorithms/colormaps endpoints"]
+      },
+      "cadence": "COG OGC 21-026 approved 2023-05-08, published 2023-07-14; titiler.core 2.2.1 (2026-07-29); rio-tiler 9.4.3 (2026-08-20)",
+      "latency": "On-demand tile render (ms-level per tile; depends on COG overviews)",
+      "spatial_resolution": "Native raster resolution",
+      "temporal_resolution": "Per-file; time handled by serving one COG per timestep or /xarray over Zarr",
+      "historical_depth": "n/a",
+      "missing_data_semantics": "COG nodata → transparent tiles; rio-tiler masks",
+      "quality_flags": "Validate with rio-cogeo / GDAL COG driver",
+      "units": "Raster native; TiTiler rescale/colormap at request time",
+      "licensing": "TiTiler MIT; rio-tiler BSD-3-Clause; COG spec open OGC standard",
+      "limitations": [
+        "Deploy behind a cache/CDN; Cesium will request many tiles for a 3D view (INFERENCE).",
+        "Large multi-temporal stacks are better served from Zarr via /xarray than hundreds of COGs (INFERENCE)."
+      ],
+      "evidence": [
+        {"claim": "COG definition, OGC 21-026, GDAL COG driver, validators (rio-cogeo, cog-validator)", "url": "https://cogeo.org/", "status": "FACT"},
+        {"claim": "OGC 21-026 Approval Date 2023-05-08, Publication Date 2023-07-14", "url": "https://docs.ogc.org/is/21-026/21-026.html", "status": "FACT"},
+        {"claim": "TiTiler endpoints (/cog/tiles/..., tilejson, /stac, /mosaicjson, /xarray, /algorithms, /colormaps, /tileMatrixSets), morecantile TMS incl. WGS84, Docker/Lambda/Helm deployment", "url": "https://developmentseed.org/titiler/", "status": "FACT"},
+        {"claim": "titiler.core 2.2.1 uploaded 2026-07-29, MIT, Python >=3.11", "url": "https://pypi.org/pypi/titiler.core/json", "status": "FACT"},
+        {"claim": "rio-tiler 9.4.3 uploaded 2026-08-20, BSD 3-Clause, Python >=3.11", "url": "https://pypi.org/pypi/rio-tiler/json", "status": "FACT"}
+      ],
+      "relevance_to_cascade_oracle": "Serve SNODAS/SWE, precipitation, inundation depth grids and DEM derivatives as COGs with dynamic color ramps; pair with Cesium UrlTemplateImageryProvider (WGS1984Quad + GeographicTilingScheme)."
+    },
+    {
+      "name": "PMTiles + tippecanoe + Planetiler (static vector/raster tile archives)",
+      "authority": "Protomaps (PMTiles spec v3), Felt (tippecanoe), onthegomap (Planetiler)",
+      "data_kind": "derived",
+      "access": {
+        "mechanism": "Single-file .pmtiles on S3/R2 (CORS + HTTP range); tippecanoe -o out.pmtiles from GeoJSON/FlatGeobuf/CSV; planetiler --area=washington --output=washington.pmtiles from Geofabrik OSM extract; pmtiles CLI converts MBTiles",
+        "base_urls": ["https://docs.protomaps.com/pmtiles/", "https://github.com/felt/tippecanoe", "https://github.com/onthegomap/planetiler", "https://registry.npmjs.org/pmtiles"],
+        "auth": "None (object storage policy)",
+        "rate_limits": "n/a",
+        "formats": ["PMTiles v3 (MVT or raster inside)", "MBTiles", "directory of tiles"]
+      },
+      "cadence": "tippecanoe 2.79.0 (2025-07-24); Planetiler v0.10.2 (2026-03-29); pmtiles JS 4.5.0 (2026-08-10)",
+      "latency": "Static; rebuild to update (PMTiles is read-only, full rewrite on change)",
+      "spatial_resolution": "Configurable zoom (tippecanoe preserves density across zooms)",
+      "temporal_resolution": "n/a",
+      "historical_depth": "n/a",
+      "missing_data_semantics": "n/a",
+      "quality_flags": "n/a",
+      "units": "n/a",
+      "licensing": "tippecanoe BSD-2-Clause; Planetiler Apache-2.0; pmtiles JS BSD-3-Clause; PMTiles spec/tools BSD (OSM-derived tiles remain ODbL)",
+      "limitations": [
+        "CesiumJS cannot read PMTiles archives directly; MVTDataProvider needs a {z}/{x}/{y} URL — front PMTiles with a range-request tile endpoint (e.g. Martin PMTiles source, Cloudflare/Lambda PMTiles serverless, or Protomaps' worker) (INFERENCE).",
+        "Planetiler for WA: Java 21+, RAM ≈0.5x OSM extract size; US-wide needs 5-10 GB RAM and hours."
+      ],
+      "evidence": [
+        {"claim": "PMTiles single-file archive, HTTP range requests, v3 spec, read-only, 70%+ storage savings, tippecanoe direct output, BSD/ODbL licensing", "url": "https://docs.protomaps.com/pmtiles/", "status": "FACT"},
+        {"claim": "tippecanoe inputs GeoJSON/FlatGeobuf/CSV, outputs MBTiles/PMTiles/directory, BSD-2-Clause, Felt", "url": "https://github.com/felt/tippecanoe", "status": "FACT"},
+        {"claim": "tippecanoe latest release 2.79.0 (2025-07-24)", "url": "https://api.github.com/repos/felt/tippecanoe/releases/latest", "status": "FACT"},
+        {"claim": "Planetiler OpenMapTiles-schema tiles, MBTiles/PMTiles, Java 21+, --area=washington example, Apache-2.0", "url": "https://github.com/onthegomap/planetiler", "status": "FACT"},
+        {"claim": "Planetiler latest v0.10.2 (2026-03-29)", "url": "https://api.github.com/repos/onthegomap/planetiler/releases/latest", "status": "FACT"},
+        {"claim": "npm pmtiles 4.5.0 (2026-08-10) BSD-3-Clause", "url": "https://registry.npmjs.org/pmtiles", "status": "FACT"}
+      ],
+      "relevance_to_cascade_oracle": "Self-hosted OSM basemap + NHD/hydrography/levee vector layers for WA with zero per-tile fees; removes dependence on OSM.org tiles."
+    },
+    {
+      "name": "Martin and pg_tileserv (PostGIS → MVT servers)",
+      "authority": "MapLibre (Martin); Crunchy Data (pg_tileserv)",
+      "data_kind": "derived",
+      "access": {
+        "mechanism": "Martin: PostGIS tables/functions auto-discovery, PMTiles (local/remote), MBTiles, GeoJSON, GeoParquet via DuckDB, sprites/fonts/styles, MBTiles cache; pg_tileserv: /{schema}.{table}/{z}/{x}/{y}.pbf and /{schema}.{function}/{z}/{x}/{y}.pbf",
+        "base_urls": ["https://maplibre.org/martin/", "https://github.com/maplibre/martin/releases", "https://github.com/CrunchyData/pg_tileserv"],
+        "auth": "Self-hosted",
+        "rate_limits": "n/a",
+        "formats": ["MVT", "TileJSON", "sprites", "glyphs"]
+      },
+      "cadence": "Martin martin-v1.14.0 (2026-08-18), repo pushed 2026-08-21; pg_tileserv v1.0.11 (2024-02-02), repo pushed 2025-12-11",
+      "latency": "Live SQL per tile (ST_AsMVT)",
+      "spatial_resolution": "n/a",
+      "temporal_resolution": "Function layers accept parameters (e.g. a timestamp) for time-filtered tiles",
+      "historical_depth": "Whatever PostGIS holds",
+      "missing_data_semantics": "Empty tiles for no features",
+      "quality_flags": "n/a",
+      "units": "n/a",
+      "licensing": "Martin Apache-2.0 (GitHub license field); pg_tileserv Apache-2.0",
+      "limitations": [
+        "pg_tileserv release cadence is slow (last release 2024-02); Martin is the actively developed choice (INFERENCE from release dates).",
+        "Martin's latest notes add passthrough proxy sources with caching and MBTiles cache — useful as the {z}/{x}/{y} front for PMTiles consumed by Cesium's MVTDataProvider."
+      ],
+      "evidence": [
+        {"claim": "Martin sources: PostGIS, PMTiles, MBTiles, GeoJSON, GeoParquet via DuckDB; sprites/fonts; MapLibre project", "url": "https://maplibre.org/martin/", "status": "FACT"},
+        {"claim": "Martin latest release martin-v1.14.0 published 2026-08-18; license Apache-2.0; pushed 2026-08-21", "url": "https://api.github.com/repos/maplibre/martin/releases/latest", "status": "FACT"},
+        {"claim": "Martin v1.14.0 notes: GeoParquet via DuckDB, passthrough tile sources with caching, MBTiles cache schema", "url": "https://github.com/maplibre/martin/releases", "status": "FACT"},
+        {"claim": "pg_tileserv endpoint patterns, function layers, Apache-2.0, Docker images", "url": "https://github.com/CrunchyData/pg_tileserv", "status": "FACT"},
+        {"claim": "pg_tileserv latest v1.0.11 (2024-02-02)", "url": "https://api.github.com/repos/CrunchyData/pg_tileserv/releases/latest", "status": "FACT"}
+      ],
+      "relevance_to_cascade_oracle": "Live vector tiles of gauges, forecast polygons and reach status straight from PostGIS for Cesium MVTDataProvider; Martin also fronts static PMTiles."
+    },
+    {
+      "name": "Zarr v3 + Kerchunk / VirtualiZarr (NetCDF/GRIB cloud access)",
+      "authority": "Zarr community; fsspec (Kerchunk); VirtualiZarr project (Apache-2.0)",
+      "data_kind": "derived",
+      "access": {
+        "mechanism": "Kerchunk builds virtual Zarr reference sets (JSON/Parquet) over NetCDF4/HDF5, GRIB2, TIFF, FITS without copying; VirtualiZarr offers a zarr-native API with the same goal and can commit references to Kerchunk formats or Icechunk; TiTiler /xarray serves tiles from Zarr",
+        "base_urls": ["https://fsspec.github.io/kerchunk/", "https://virtualizarr.readthedocs.io/en/latest/", "https://pypi.org/pypi/zarr/json"],
+        "auth": "Object storage credentials as needed",
+        "rate_limits": "n/a",
+        "formats": ["Zarr v3 (zarr-python 3.3.0)", "Kerchunk JSON/Parquet references", "Icechunk stores"]
+      },
+      "cadence": "zarr 3.3.0 (2026-07-30); kerchunk 0.2.10 (2026-03-30); virtualizarr 2.7.3 (2026-08-07)",
+      "latency": "Chunk-level range reads",
+      "spatial_resolution": "Native model grid",
+      "temporal_resolution": "Native (hourly NWM/HRRR etc.)",
+      "historical_depth": "Archive-dependent",
+      "missing_data_semantics": "_FillValue/NaN per variable",
+      "quality_flags": "n/a",
+      "units": "Per-variable CF attributes",
+      "licensing": "Kerchunk MIT; VirtualiZarr Apache-2.0; zarr-python (license field empty on PyPI; MIT per project, INFERENCE)",
+      "limitations": [
+        "GRIB2 support in VirtualiZarr is referenced only via a blog post; Kerchunk's grib2 backend is the documented path.",
+        "Browsers cannot read Zarr into Cesium directly; tile via TiTiler /xarray or precompute COGs (INFERENCE)."
+      ],
+      "evidence": [
+        {"claim": "Kerchunk: virtual Zarr references over NetCDF4/HDF5, GRIB2, TIFF, FITS; JSON and Parquet references; parallel cloud access", "url": "https://fsspec.github.io/kerchunk/", "status": "FACT"},
+        {"claim": "VirtualiZarr relation to Kerchunk, netCDF4/HDF5 inputs, Kerchunk or Icechunk outputs, Apache-2.0", "url": "https://virtualizarr.readthedocs.io/en/latest/", "status": "FACT"},
+        {"claim": "PyPI versions: zarr 3.3.0 (2026-07-30), kerchunk 0.2.10 (2026-03-30, MIT), virtualizarr 2.7.3 (2026-08-07)", "url": "https://pypi.org/pypi/kerchunk/json", "status": "FACT"}
+      ],
+      "relevance_to_cascade_oracle": "Cloud-native access to NWM/HRRR/SNODAS archives feeding the forecast engine and TiTiler-based time-dynamic imagery."
+    },
+    {
+      "name": "GeoParquet",
+      "authority": "OGC GeoParquet Standards Working Group (opengeospatial/geoparquet)",
+      "data_kind": "static",
+      "access": {
+        "mechanism": "Parquet files with geometry/geography logical types (2.0.0) readable by GDAL/OGR, GeoPandas, DuckDB spatial, Martin (via DuckDB)",
+        "base_urls": ["https://github.com/opengeospatial/geoparquet", "https://geoparquet.org/releases/v2.0.0/"],
+        "auth": "None",
+        "rate_limits": "n/a",
+        "formats": ["GeoParquet 2.0.0 (Parquet geospatial logical types); 1.x WKB-based"]
+      },
+      "cadence": "2.0.0 is latest; 'still pending OGC approval'",
+      "latency": "n/a",
+      "spatial_resolution": "n/a",
+      "temporal_resolution": "n/a",
+      "historical_depth": "n/a",
+      "missing_data_semantics": "Parquet nulls",
+      "quality_flags": "n/a",
+      "units": "n/a",
+      "licensing": "Spec repo Apache-2.0",
+      "limitations": ["Not a browser/Cesium format; use as the analytic interchange layer and tile from it (tippecanoe/Martin)."],
+      "evidence": [
+        {"claim": "Latest stable 2.0.0 based on Parquet Geospatial Logical Types; OGC SWG; pending OGC approval; Apache-2.0", "url": "https://raw.githubusercontent.com/opengeospatial/geoparquet/main/README.md", "status": "FACT"}
+      ],
+      "relevance_to_cascade_oracle": "Store gauge metadata, reach geometries and model outputs for DuckDB/Python analytics and for Martin/tippecanoe tiling."
+    },
+    {
+      "name": "React integration: Resium, vite-plugin-cesium, official cesium-vite-example",
+      "authority": "Re:Earth (Resium, MIT); nshen (vite-plugin-cesium, MIT); Cesium GS (cesium-vite-example)",
+      "data_kind": "static",
+      "access": {
+        "mechanism": "Resium declarative React components over CesiumJS; vite-plugin-cesium copies Build assets, sets CESIUM_BASE_URL and injects widgets.css; Cesium's own example uses vite-plugin-static-copy for ThirdParty/Workers/Assets/Widgets plus define for CESIUM_BASE_URL and ESM imports",
+        "base_urls": ["https://registry.npmjs.org/resium", "https://registry.npmjs.org/vite-plugin-cesium", "https://github.com/CesiumGS/cesium-vite-example", "https://github.com/reearth/resium"],
+        "auth": "None",
+        "rate_limits": "n/a",
+        "formats": ["npm packages"]
+      },
+      "cadence": "Resium 1.25.0 published 2026-08-07 (peer cesium 1.x, react >=18.2.0, node >=20.19); vite-plugin-cesium 1.2.23 published 2024-08-06 (peer cesium ^1.95.0, vite >=2.7.1)",
+      "latency": "n/a",
+      "spatial_resolution": "n/a",
+      "temporal_resolution": "n/a",
+      "historical_depth": "n/a",
+      "missing_data_semantics": "n/a",
+      "quality_flags": "n/a",
+      "units": "n/a",
+      "licensing": "Resium MIT; vite-plugin-cesium MIT; Cesium example Apache-2.0 (INFERENCE)",
+      "limitations": [
+        "vite-plugin-cesium has not been published in two years and pins rollup-plugin-external-globals/serve-static; Cesium's official guidance does not need it.",
+        "Resium wraps the entity/DataSource/primitives API; new 1.142+ primitives (GeoJsonPrimitive, MVTDataProvider) may need plain CesiumJS calls via refs until Resium adds components (INFERENCE).",
+        "React 19 compatibility: peer range >=18.2.0 admits 19 but was not verified by testing."
+      ],
+      "evidence": [
+        {"claim": "resium latest 1.25.0 published 2026-08-07; peerDependencies cesium 1.x, react >=18.2.0, react-dom >=18.2.0; engines node >=20.19.0; MIT", "url": "https://registry.npmjs.org/resium", "status": "FACT"},
+        {"claim": "vite-plugin-cesium latest 1.2.23 published 2024-08-06; peer vite >=2.7.1, cesium ^1.95.0; MIT; rebuildCesium option", "url": "https://registry.npmjs.org/vite-plugin-cesium", "status": "FACT"},
+        {"claim": "Official Vite example copies ThirdParty/Workers/Assets/Widgets with vite-plugin-static-copy and defines CESIUM_BASE_URL; supports @cesium/engine", "url": "https://github.com/CesiumGS/cesium-vite-example", "status": "FACT"},
+        {"claim": "Resium repo: React components for Cesium, TypeScript, HMR, MIT, 1,226 commits", "url": "https://github.com/reearth/resium", "status": "FACT"}
+      ],
+      "relevance_to_cascade_oracle": "Use Vite + vite-plugin-static-copy (per Cesium) and either Resium for declarative layers or a thin custom hook; avoid vite-plugin-cesium."
+    }
+  ],
+  "open_questions": [
+    "WA DNR lidar licensing: DNR pages describe the data only as 'publicly available'; the 'public domain' claim appears only on a third-party blog. Confirm redistribution terms with DNR (lidar manager listed on the portal help page) before rehosting DEM/point-cloud derivatives.",
+    "No open photogrammetric 3D mesh for any Washington basin was found; Google Photorealistic 3D Tiles coverage is city-level and the per-city list for Skagit/Nooksack/Snohomish towns was not verified.",
+    "MapTiler terrain-rgb-v2: the {z}/{x}/{y}.webp pattern and the decoding formula were not printed on a fetched docs page (inferred from the generic tiles endpoint and Mapbox-style encoding); max zoom is 14 on the schema page but a search snippet said 12.",
+    "Esri's 'Esri and data attribution' page rendered empty; exact logo/format rules for data-provider credits in a non-Esri client remain unconfirmed (the 'Powered by Esri' text requirement is confirmed via the glossary).",
+    "Cesium MVTDataProvider (experimental) geometry coverage, clamping behavior and performance with PMTiles-backed hydrography at maxZoom 14 need a hands-on test on 1.144.",
+    "Cesium ion Community plan eligibility for Cascade Oracle depends on its revenue/funding status (<$50K) and non-commercial use; a legal read of the $50K rule and the mandatory ion logo is needed before shipping ion assets.",
+    "Google Map Tiles caching exceptions ('limited conditions stated' in the agreement) were not read in the Google Maps Platform Terms; confirm whether browser HTTP caching of 3D tiles for a multi-hour session is compliant.",
+    "Azure Maps imagery in Cesium ion was labeled 'Technology Preview / not for production' only in a search snippet, not on a fetched page.",
+    "CHANGES.md on main already carries a '1.145 - 2026-09-02' header; treat 1.144.0 as stable today and re-check after 2026-09-02.",
+    "The 3D Tiles specification's own license and the GeoParquet 2.0.0 OGC approval date were not confirmed.",
+    "Production OSM raster use: decide early between Planetiler/PMTiles self-hosting and a commercial OSM-derived provider; tile.openstreetmap.org explicitly offers no SLA and may block heavy use."
+  ]
+}

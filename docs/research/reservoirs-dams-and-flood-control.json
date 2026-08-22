@@ -1,0 +1,740 @@
+{
+  "category": "Reservoirs, dams, levees, and flood-control operations for Western Washington basins",
+  "summary": "Seattle District (NWS) reservoir data for Howard A. Hanson (HAH) and Mud Mountain (MMD) dams, Lake Washington Ship Canal (LWSC), and the Section 7 utility dams (Ross, Upper/Lower Baker, Diablo, Gorge, Chester Morse) IS machine-accessible, but not where the prompt assumed: the public CWMS Data API (cwms-data.usace.army.mil/cwms-data) returns zero time series for office=NWS; the same series are published under office=NWDP (Pacific Northwest Region, 27,826 series) and also via (a) the undocumented-but-working water.usace.army.mil/cda/reporting/providers/nws/... JSON/CSV endpoints, (b) the legacy NWD Dataquery 2.0 web service (getjson/ecsv; decommission date 'to be announced'), and (c) NOAA NWRFC xml.cgi / NWPS API (HHDW1, MMRW1, RODW1, UBDW1, DIAW1, MORW1, TLRW1). USGS NWIS carries hourly pool elevation/storage for HHD (12105800), MMD (12098000), Ross/Diablo/Gorge (12175000/12176500/12177700), Baker Lake/Lake Shannon (12191600/12193000), Chester Morse (12115900), SF Tolt Reservoir (12147900) and Lake Tapps plus its diversion/return (12101000, 12098920, 12101100). Regulation rules are documented in fetched water control manuals and USACE's 2013 Skagit hydrology report (HHD: 12,000 cfs control / 10,000 cfs rising target at Auburn, pools 1,141/1,167/1,206 ft; MMD: 106,000 ac-ft, 45,000 cfs target at Puyallup, 12,000 cfs White River secondary; Ross: 120,000 ac-ft by Dec 1 through Mar 15, Corps takes control when Concrete forecast exceeds 90,000 cfs; Upper Baker: 74,000 ac-ft Nov 15-Mar 1; no authorized flood storage at Lower Baker, Diablo or Gorge). The pending Skagit settlement (filed May 2026) would raise Ross storage to 140,000 ac-ft by Nov 1 with a 165,000 ac-ft buffer (secondary sources). NID (OpenAPI + 67 MB national CSV + ArcGIS FeatureServer, 835 WA records) and NLD (ArcGIS FeatureServer/MapServer + OGC WFS; 339 WA levee systems incl. Skagit Dike Districts 1/3/9/12/17/22, Green, Cedar, Puyallup, Nooksack, Snohomish) are fully machine-readable. The Nooksack has no major dams and is unregulated (NOAA 2025 EA). Ecology's dam inventory is report/Excel-only (Jan 2026 revision; scripted fetches blocked by WAF) with a 2017 GIS layer available by request. County flood warning systems are mostly web-only: King County's app API requires an Azure APIM subscription key; Skagit and Whatcom counties link to USGS/NWPS; Snohomish County's OneRain portal now redirects to a login.",
+  "providers": [
+    {
+      "name": "USACE CWMS Data API (CDA) - Seattle District data under office NWDP",
+      "authority": "U.S. Army Corps of Engineers, Hydrologic Engineering Center / Northwestern Division (data owner: Seattle District, NWS)",
+      "data_kind": "mixed",
+      "access": {
+        "mechanism": "REST/JSON. Requires header 'Accept: application/json;version=2' (requests without it return HTTP 406). Catalog: GET /catalog/TIMESERIES?office=NWDP&like=<regex>&page-size=N (&include-extents=true for period of record). Data: GET /timeseries?office=NWDP&name=<tsid>&begin=<ISO8601>&end=<ISO8601>&timezone=UTC (other params: unit/units, datum, version-date, trim, format, page, page-size default 500). Key TSIDs verified in catalog: HAH.Elev-Forebay.Inst.1Hour.0.NWSRADIO-REV, HAH.Elev-Forebay.Ave.1Hour.1Hour.IRIDIUM-REV, HAH.Flow-In.Ave.1Hour.1Hour.NWSRADIO-COMPUTED-REV, HAHW.Flow.Inst.1Hour.0.NWSRADIO-REV (outflow), MMD.Elev-Forebay.Inst.1Hour.0.IRIDIUM-REV, MMD-896,0ft.Stor.Inst.1Hour.0.IRIDIUM-REV, LWSC.Elev-Lake.Inst.15Minutes.0.IRIDIUM-REV, LWSC.Elev-Lake.Ave.1Hour.1Hour.IRIDIUM-REV, ROS.Elev-Forebay.Inst.1Hour.0.GOES-REV, ROS.Flow-In.Inst.1Hour.0.SCL-RAW, ROS.Flow-Out.Ave.~1Day.1Day.CBT-REV, DIA.Elev-Forebay.Ave.1Hour.1Hour.SCL-RAW, GOR.Elev-Forebay.Inst.1Hour.0.GOES-RAW, GORW.Flow.Inst.15Minutes.0.GOES-REV. No LKW/Chittenden-named series; Lake Washington is LWSC (locks) and LWKW (Kenmore).",
+        "base_urls": [
+          "https://cwms-data.usace.army.mil/cwms-data/",
+          "https://cwms.sec.usace.army.mil/cwms-data/ (secondary production alias)",
+          "https://cwms-data.usace.army.mil/cwms-data/swagger-docs (OpenAPI JSON, version 2026.05.12-f)",
+          "https://cwms-data-api.readthedocs.io/latest/"
+        ],
+        "auth": "None for public read (GET). /auth/keys endpoints exist for write access (CAC/API key) - not needed.",
+        "rate_limits": "None documented on fetched pages (OPEN_QUESTION). Paginated responses (default page-size 500).",
+        "formats": ["JSON (application/json;version=2)", "XML/CSV via format param per swagger (not tested)"]
+      },
+      "cadence": "Hourly and 15-minute series; catalog 'last-update' for HAH hourly elevation was 2026-08-22T08:33Z at a 2026-08-22T08:00Z latest value (near-real-time).",
+      "latency": "Observed ~30-60 minutes behind wall clock for hourly REV series.",
+      "spatial_resolution": "Point (dam/gauge). Seattle District projects and gauges in WA.",
+      "temporal_resolution": "15Minutes, 1Hour, ~1Day variants per TSID; also 6-hour RFC forecast series (e.g., HAH.Elev-Forebay.Ave.6Hours.6Hours.RFC-FCST).",
+      "historical_depth": "HAH.Elev-Forebay.Inst.1Hour.0.NWSRADIO-REV extents: earliest 1991-03-14, latest 2026-08-22 (a 2012 window returned data). IRIDIUM-REV series noted '(2024-2026)' in Dataquery. Depth varies by TSID.",
+      "missing_data_semantics": "Values array rows are [epoch_ms, value, quality-code]; quality-code 0 = unscreened, other codes per CWMS quality bitmask (2012 rows showed code 3). Missing periods are omitted rather than filled unless 'trim' behavior changes this (not tested).",
+      "quality_flags": "TSID version suffix encodes provenance: -RAW vs -REV (revised/screened), source tags (IRIDIUM, GOES, NWSRADIO, USGS-SNAPPED, SCL-RAW, PSE-RAW, CBT, RFC-FCST, CENWS-COMPUTED). Per-value quality-code integer.",
+      "units": "Catalog lists SI (m, cms, m3) as default catalog units, but GET /timeseries returned 'ft' for HAH elevation (EN defaults); set unit/units explicitly. Elevation datum: NGVD29 for HAH/MMD; LWSC in Corps datum (6.82 ft below NGVD29); Ross in SCL datum (1.79 ft above NGVD29). 'datum' param available.",
+      "licensing": "U.S. federal government data (public domain by default); API software MIT-licensed. No explicit data terms page found (OPEN_QUESTION). Provisional-data warnings apply on the NWD project pages.",
+      "limitations": [
+        "office=NWS, NWP, NWW all return total 0; Northwestern Division district data are published only under office=NWDP - filter by location prefix instead.",
+        "HTTP 406 without the versioned Accept header; WebFetch-style clients fail.",
+        "/levels endpoint returned 400 for a level-id-mask query (parameter handling unclear); use A2W 'levels' or water control manuals for pool/storage thresholds.",
+        "Catalog 'earliest-time' is null unless include-extents=true is passed.",
+        "Unit defaults differ between catalog (SI) and timeseries (EN) responses."
+      ],
+      "evidence": [
+        {"claim": "Offices list includes NWS (Seattle District, reports to NWDP) and NWDP (Pacific Northwest Region, MSCR).", "url": "https://cwms-data.usace.army.mil/cwms-data/offices", "status": "FACT"},
+        {"claim": "catalog/TIMESERIES?office=NWS returns total 0; office=NWP 0; office=NWW 0; office=NWDP total 27,826; office=SPK 1,288.", "url": "https://cwms-data.usace.army.mil/cwms-data/catalog/TIMESERIES?office=NWDP&page-size=1", "status": "FACT"},
+        {"claim": "catalog office=NWDP like=HAH.* returned 115 series; MMD.* 110; LWSC.* 48; ROS.* 33; DIA.* 52; GOR.* 31; LKW.* 0.", "url": "https://cwms-data.usace.army.mil/cwms-data/catalog/TIMESERIES?office=NWDP&like=HAH.*&page-size=100", "status": "FACT"},
+        {"claim": "GET /timeseries?office=NWDP&name=HAH.Elev-Forebay.Ave.1Hour.1Hour.IRIDIUM-REV&begin=2026-08-20T00:00:00Z&end=2026-08-22T00:00:00Z returned 49 hourly values in ft (e.g., 1156.5 ft at 2026-08-22T00:00Z).", "url": "https://cwms-data.usace.army.mil/cwms-data/timeseries?office=NWDP&name=HAH.Elev-Forebay.Ave.1Hour.1Hour.IRIDIUM-REV&begin=2026-08-20T00:00:00Z&end=2026-08-22T00:00:00Z&timezone=UTC", "status": "FACT"},
+        {"claim": "include-extents=true shows HAH.Elev-Forebay.Inst.1Hour.0.NWSRADIO-REV earliest-time 1991-03-14T07:00:00Z, latest 2026-08-22T08:00:00Z.", "url": "https://cwms-data.usace.army.mil/cwms-data/catalog/TIMESERIES?office=NWDP&like=HAH.Elev-Forebay.Inst.1Hour.0.NWSRADIO-REV&include-extents=true", "status": "FACT"},
+        {"claim": "Swagger lists GET /timeseries params name, office, unit, units, version-date, datum, begin, end, timezone, trim, format, include-entry-date, page, cursor, page-size (default 500); API version 2026.05.12-f.", "url": "https://cwms-data.usace.army.mil/cwms-data/swagger-docs", "status": "FACT"},
+        {"claim": "Requests without Accept: application/json;version=2 return HTTP 406.", "url": "https://cwms-data.usace.army.mil/cwms-data/offices", "status": "FACT"},
+        {"claim": "Production URLs: https://cwms-data.usace.army.mil/cwms-data/ (primary) and https://cwms.sec.usace.army.mil/cwms-data/; production hosts 'all public data marked public in T7 databases'.", "url": "https://www.hec.usace.army.mil/confluence/cwmsdocs/ccm/cloud-data-api-available-urls-183108401.html", "status": "FACT"},
+        {"claim": "CDA code is MIT licensed; formerly known as RADAR.", "url": "https://github.com/USACE/cwms-data-api", "status": "FACT"},
+        {"claim": "Rate limits and formal data-use terms: not found on any fetched page.", "url": "https://cwms-data-api.readthedocs.io/latest/", "status": "OPEN_QUESTION"}
+      ],
+      "relevance_to_cascade_oracle": "Primary machine source for Green (HAH/HAHW), White (MMD/MMDW), Lake Washington (LWSC/LWKW) and Skagit Section-7 reservoirs (ROS/DIA/GOR/UBK/SHA) at hourly resolution with 30+ years of history for some series; use office=NWDP."
+    },
+    {
+      "name": "USACE Water Data (A2W) reporting API - water.usace.army.mil/cda/reporting/providers/nws",
+      "authority": "U.S. Army Corps of Engineers (Access to Water / water.usace.army.mil; data from Seattle District NWS)",
+      "data_kind": "mixed",
+      "access": {
+        "mechanism": "REST/JSON and CSV, no Accept header needed. GET /cda/reporting/providers (office list); GET /cda/reporting/providers/nws/locations (227 locations with latest values, level constants and NIDID aliases); GET /cda/reporting/providers/nws/locations/{slug} (hah, mmd, lwsc, ros, ubk, sha, mor, dia, god, tap, ltdw...); GET /cda/reporting/providers/nws/timeseries?name=<tsid>&begin=<ISO>&end=<ISO>[&format=csv]. Location JSON includes 'levels' such as HAH Top of Flood 1206 ft / 104,266 ac-ft, MMD Top of Flood 1215 ft / 106,000 ac-ft, Ross Top of Flood 1602.5 ft, Upper Baker Top of Flood 727.77 ft.",
+        "base_urls": [
+          "https://water.usace.army.mil/cda/reporting/providers/nws/locations",
+          "https://water.usace.army.mil/cda/reporting/providers/nws/locations/hah",
+          "https://water.usace.army.mil/cda/reporting/providers/nws/timeseries?name=HAH.Elev-Forebay.Ave.1Hour.1Hour.IRIDIUM-REV&begin=2026-08-20T00:00:00Z&end=2026-08-22T00:00:00Z&format=csv",
+          "https://water.usace.army.mil/overview/nws/locations/hah (web UI)",
+          "https://water.usace.army.mil/office/nws (web UI; named successor of the legacy NWD site)"
+        ],
+        "auth": "None observed.",
+        "rate_limits": "Not documented (OPEN_QUESTION).",
+        "formats": ["JSON (default)", "CSV (format=csv, with ##key/##parameter/##unit/##vertical_datum header lines)"]
+      },
+      "cadence": "Hourly for project series (latest_time 2026-08-22T08:00Z on 2026-08-22); 15-minute for USGS-fed gauge sites.",
+      "latency": "Roughly 30-60 minutes for hourly project data.",
+      "spatial_resolution": "Point; 227 NWS locations incl. projects (HAH, MMD, LWSC, ROS, UBK, SHA=Lower Baker, GOD=Gorge, WYN) and sites (DIA, MOR=Chester Morse, TAP=Lake Tapps, LTDW=Lake Tapps Diversion, Nooksack/Skagit/Puyallup/White/Snoqualmie/Tolt gauges).",
+      "temporal_resolution": "1Hour, 15Minutes, ~1Day depending on TSID.",
+      "historical_depth": "Not stated; backed by the same CWMS database as CDA (decades for older REV series). Begin/end windows accepted.",
+      "missing_data_semantics": "JSON 'values' are [ISO time, value] pairs; missing rows are omitted. HAH inflow showed negative computed values (-95.6 cfs) - computed inflow can go negative at low flows.",
+      "quality_flags": "Only the TSID version (RAW/REV/COMPUTED) - no per-value flags in the CSV/JSON examined.",
+      "units": "EN units (ft, cfs, ac-ft, in, F); vertical_datum reported per series (NGVD29 for HAH/MMD).",
+      "licensing": "U.S. federal data; no terms page located (OPEN_QUESTION).",
+      "limitations": [
+        "Endpoint is used by the water.usace.army.mil SPA and is not formally documented on any fetched page - subject to change without notice.",
+        "/locations/{slug}/timeseries returned [] and /timeseries without a name returned 400 - series must be requested by exact TSID.",
+        "Section 7 utility series are '-RAW' feeds from SCL/PSE (e.g., ROS.Elev-Forebay.Ave.1Hour.1Hour.SCL-RAW, UBK.Elev-Forebay.Inst.1Hour.0.PSE-RAW)."
+      ],
+      "evidence": [
+        {"claim": "Location 'hah' (HOWARD A HANSON DAM, NIDID WA00298) lists TSIDs HAH.Flow-In.Inst.1Hour.0.NWSRADIO-COMPUTED-REV, HAH.Stor.Inst.1Hour.0.NWSRADIO-REV, HAHW.Flow.Inst.1Hour.0.IRIDIUM-REV (outflow), HAH.Elev-Forebay.Ave.1Hour.1Hour.IRIDIUM-REV and levels (Top of Flood 1206 ft / 104,266 ac-ft; Top of Normal 1073 ft; Top of Dam 1228 ft).", "url": "https://water.usace.army.mil/cda/reporting/providers/nws/locations/hah", "status": "FACT"},
+        {"claim": "Location 'mmd' (Mud Mountain Dam nr Buckley WA, NIDID WA00300) lists MMD.Stor.Inst.1Hour.0.IRIDIUM-REV, MMD.Flow-In / MMD.Flow-Out .Inst.1Hour.0.NWSRADIO-COMPUTED-RAW, MMD.Elev-Forebay.Inst.1Hour.0.IRIDIUM-REV; levels Bottom of Flood 895 ft, Top of Flood 1215 ft / 106,000 ac-ft.", "url": "https://water.usace.army.mil/cda/reporting/providers/nws/locations/mmd", "status": "FACT"},
+        {"claim": "Timeseries CSV export works (HAH elevation, vertical_datum NGVD29, hourly values e.g., 1156.50 ft at 2026-08-22T00:00Z); JSON works for MMD.Flow-Out.", "url": "https://water.usace.army.mil/cda/reporting/providers/nws/timeseries?name=HAH.Elev-Forebay.Ave.1Hour.1Hour.IRIDIUM-REV&begin=2026-08-20T00:00:00Z&end=2026-08-22T00:00:00Z&format=csv", "status": "FACT"},
+        {"claim": "NWS locations list (227) includes ROS (Ross Reservoir, WA00169; SCL-RAW elev/in/out), UBK (Upper Baker, WA00173; PSE-RAW elev/in/out + USGS-REV storage), SHA (Lower Baker Dam; PSE-RAW elev/in/out), MOR (Chester Morse; SCL-RAW in/out, GOES-REV elev), DIA, GOD, LWSC (WA00301), TAP (Lake Tapps), LTDW (Lake Tapps Diversion), WYN.", "url": "https://water.usace.army.mil/cda/reporting/providers/nws/locations", "status": "FACT"},
+        {"claim": "Ross levels: Top of Flood/Normal 1602.5 ft, Top of Conservation 1592.1 ft, Bottom of Flood Control 1603 ft; Upper Baker: Top of Flood 727.77 ft, Top of Conservation 711.56 ft.", "url": "https://water.usace.army.mil/cda/reporting/providers/nws/locations/ros", "status": "FACT"},
+        {"claim": "Legacy NWD Seattle water-management site points users to https://water.usace.army.mil/office/nws and says the decommissioning date 'will be announced later'.", "url": "https://www.nwd-wc.usace.army.mil/nws/hh/www/", "status": "FACT"}
+      ],
+      "relevance_to_cascade_oracle": "Simplest single endpoint for latest values + operating levels for all Seattle District and Section 7 reservoirs; use CDA for bulk history."
+    },
+    {
+      "name": "USACE Northwestern Division Dataquery 2.0 web service (legacy)",
+      "authority": "USACE Northwestern Division, Columbia Basin Water Management Division (NWD-RWCDS)",
+      "data_kind": "observational",
+      "access": {
+        "mechanism": "HTTP GET. JSON: /dd/common/web_service/webexec/getjson?query=[\"<tsid or keyword>\"]&backward=7d (also forward, startdate, enddate, midnight, timezone). CSV: /dd/common/web_service/webexec/ecsv?id=<tsid>:units=ft|<tsid2>:units=ft&headers=true&lookback=2d (HTML variant: webexec/html). Keyword queries (e.g., 'LWSC', 'lake washington') return location catalogs with available TSIDs and period-of-record notes. Site TLS chain fails strict verification (needed curl -k).",
+        "base_urls": [
+          "https://www.nwd-wc.usace.army.mil/dd/common/dataquery/www/ (UI; ?k=lake%20washington)",
+          "https://www.nwd-wc.usace.army.mil/dd/common/web_service/webexec/getjson",
+          "https://www.nwd-wc.usace.army.mil/dd/common/web_service/webexec/ecsv",
+          "https://www.nwd-wc.usace.army.mil/dd/common/projects/www/lwsc.html",
+          "https://www.nwd-wc.usace.army.mil/dd/common/projects/www/mmd.html",
+          "https://www.nwd-wc.usace.army.mil/nws/hh/www/hydrograph.html?loc=lkw"
+        ],
+        "auth": "None.",
+        "rate_limits": "Not documented.",
+        "formats": ["JSON", "CSV", "HTML"]
+      },
+      "cadence": "15-minute/hourly; LWSC.Elev-Lake.Inst.15Minutes.0.IRIDIUM-REV showed values through the current day.",
+      "latency": "Roughly 1-2 hours observed for LWSC 15-min series.",
+      "spatial_resolution": "Point; all NWD districts incl. Seattle (responsibility 'NWS').",
+      "temporal_resolution": "15-minute, hourly, daily.",
+      "historical_depth": "Per-TSID 'notes' give period of record (e.g., LLLW lock temp '(1992-2025)'; HAH IRIDIUM-REV '(2024-2026)').",
+      "missing_data_semantics": "JSON values are [timestamp, value, quality]; CSV leaves empty cells for missing values (observed empty NWSRADIO-REV column).",
+      "quality_flags": "Integer quality per value in JSON; TSID RAW/REV suffix.",
+      "units": "Requested via ':units=' in ecsv; JSON reports 'units'. LWSC elevation is Corps datum (6.82 ft below NGVD29).",
+      "licensing": "Provisional data warning on project pages; U.S. federal data.",
+      "limitations": [
+        "Officially legacy: successor is water.usace.army.mil; decommission date not yet announced.",
+        "Certificate chain not trusted by default clients.",
+        "Query syntax only discoverable from main.js, not documented."
+      ],
+      "evidence": [
+        {"claim": "main.js defines webServicePath '../../web_service/webexec/getjson', csvServicePath '../../web_service/webexec/ecsv', htmlServicePath '.../html'; CSV payload keys id (pipe-joined tsid:units=), headers, lookback/lookforward/startdate/enddate/midnight/timezone.", "url": "https://www.nwd-wc.usace.army.mil/dd/common/dataquery/www/js/main.js", "status": "FACT"},
+        {"claim": "getjson?query=[\"HAH.Elev-Forebay.Ave.1Hour.1Hour.IRIDIUM-REV\"]&backward=1d returned location HAH (responsibility NWS, datum NGVD29) with hourly values in ft.", "url": "https://www.nwd-wc.usace.army.mil/dd/common/web_service/webexec/getjson?query=%5B%22HAH.Elev-Forebay.Ave.1Hour.1Hour.IRIDIUM-REV%22%5D&backward=1d", "status": "FACT"},
+        {"claim": "Keyword 'LWSC' returns location 'Lake Washington Ship Canal' with LWSC.Elev-Lake.Inst.15Minutes.0.IRIDIUM-REV, LWSC.Elev-Lake.Ave.1Hour.1Hour.IRIDIUM-REV, LWSC.Elev-Lake.Inst.1Hour.0.NWSRADIO-REV etc.; keyword 'lake washington' also returns LWKW (Kenmore Lake Washington) elevation series.", "url": "https://www.nwd-wc.usace.army.mil/dd/common/web_service/webexec/getjson?query=%5B%22LWSC%22%5D", "status": "FACT"},
+        {"claim": "ecsv export returned 15-minute LWSC lake elevation (20.48 ft on 21-Aug-2026).", "url": "https://www.nwd-wc.usace.army.mil/dd/common/web_service/webexec/ecsv?id=LWSC.Elev-Lake.Inst.15Minutes.0.IRIDIUM-REV:units=ft&headers=true&lookback=1d", "status": "FACT"},
+        {"claim": "LWSC project page: Owner Corps of Engineers Seattle District; Authorized purpose Navigation; 'Corps datum is 6.82 feet below NGVD29'; 'Provisional Data Warning'.", "url": "https://www.nwd-wc.usace.army.mil/dd/common/projects/www/lwsc.html", "status": "FACT"},
+        {"claim": "Lake Washington hydrograph page: canal 'should be maintained within a 2-foot range between 20.0 feet and 22.0 feet (Corps of Engineers Datum)'; data collected at midnight each day for the summary hydrograph.", "url": "https://www.nwd-wc.usace.army.mil/nws/hh/www/hydrograph.html?loc=lkw", "status": "FACT"},
+        {"claim": "MMD project page: Stream White River; Type Storage; Purpose Flood Control; Max pool (SDF) 1,246.0 ft; Full pool 1,215.0 ft; Minimum pool (normally empty) 895.0 ft; Usable storage 106,000 AF (NGVD29); max unregulated discharge at Puyallup 57,000 cfs (1933).", "url": "https://www.nwd-wc.usace.army.mil/dd/common/projects/www/mmd.html", "status": "FACT"}
+      ],
+      "relevance_to_cascade_oracle": "Useful fallback and the only place the King County open-data Lake Washington series is derived from; plan to migrate off before decommissioning."
+    },
+    {
+      "name": "NOAA NWRFC station XML (xml.cgi) and NWPS API - USACE/utility reservoir parameters",
+      "authority": "NOAA National Weather Service, Northwest River Forecast Center (NWRFC) and National Water Prediction Service (NWPS)",
+      "data_kind": "mixed",
+      "access": {
+        "mechanism": "NWRFC: GET https://www.nwrfc.noaa.gov/xml/xml.cgi?id=<LID>&pe=<PE>&dtype=b&numdays=<N> returns HydroMetData XML with observed and forecast values. Station PE codes verified: HHDW1 HF (forebay elevation), LS (pool storage), QI (inflow) + HAHW1 QR (outflow); MMRW1 HF/LS/QI/QR (Mud Mountain; MMDW1 is the gauge below the dam, HG/QR); RODW1 HF/HL/LS/QI/QR (Ross); UBDW1 HF/HP/LS/QI/QR (Upper Baker); DIAW1 HF/LS/QI (Diablo); GORW1 HG/TW (Skagit at Newhalem); MORW1 HP/QI (Chester Morse); TLRW1 HP/QI/QR (SF Tolt). Text tables: /station/flowplot/textPlot.cgi?id=&pe=. NWPS API: https://api.water.noaa.gov/nwps/v1/gauges/{lid} and /gauges/{lid}/stageflow (observed + forecast; pedts e.g., QIIRZ).",
+        "base_urls": [
+          "https://www.nwrfc.noaa.gov/xml/xml.cgi?id=HHDW1&pe=HF&dtype=b&numdays=10",
+          "https://www.nwrfc.noaa.gov/river/station/flowplot/flowplot.cgi?HHDW1=",
+          "https://api.water.noaa.gov/nwps/v1/gauges/hhdw1",
+          "https://api.water.noaa.gov/nwps/v1/gauges/hhdw1/stageflow",
+          "https://api.water.noaa.gov/nwps/v1/gauges?bbox.xmin=-122.6&bbox.ymin=46.9&bbox.xmax=-120.8&bbox.ymax=49.0&srid=EPSG_4326"
+        ],
+        "auth": "None.",
+        "rate_limits": "Not documented on fetched pages.",
+        "formats": ["XML (NWRFC)", "JSON (NWPS)", "HTML text tables"]
+      },
+      "cadence": "Hourly observations; forecasts issued daily (~08:05-08:15 PDT) with 6-hourly steps.",
+      "latency": "Observed values current to within ~1-2 hours.",
+      "spatial_resolution": "Point stations (NWS location IDs).",
+      "temporal_resolution": "Hourly observed; 6-hour forecast steps; NWPS stageflow ~30 days observed.",
+      "historical_depth": "NWRFC xml.cgi 'numdays' lookback (tested 3-10 days); NWPS stageflow returned 718 hourly points (~30 days). Not an archive.",
+      "missing_data_semantics": "NWPS uses -999/-9999 sentinels and floodCategory 'obs_not_current' (MORW1, TLRW1 observed were not current at fetch time); NWRFC omits missing values.",
+      "quality_flags": "SHEF type-source codes (RZ observed, RR, FZ forecast) in XML; no explicit QC flags.",
+      "units": "feet (forebay_elevation), cfs (NWRFC discharge), kaf (LS storage, e.g., 37.2), kcfs (NWPS).",
+      "licensing": "U.S. federal public-domain data.",
+      "limitations": [
+        "Lower Baker/Lake Shannon has no NWRFC/NWPS reservoir station found (LBDW1/LSHW1 'not Defined'); SHAW1 is Baker River at Concrete stage only.",
+        "NWPS flood categories are undefined (-9999) for reservoir stations; MMRW1 outflow has action/minor/moderate/major flows 4,500/9,000/12,000/14,000 cfs.",
+        "Short lookback; use CDA/USGS for history."
+      ],
+      "evidence": [
+        {"claim": "xml.cgi for HHDW1 pe=HF returns HydroMetData XML with hourly forebay_elevation (feet), e.g., 1157.28 at 2026-08-19T09:00Z; RODW1 HF 1597.98 ft; UBDW1 HF forecast 726.26 ft.", "url": "https://www.nwrfc.noaa.gov/xml/xml.cgi?id=HHDW1&pe=HF&dtype=b&numdays=3", "status": "FACT"},
+        {"claim": "HHDW1 station page links xml.cgi for HHDW1 HF, LS, QI and HAHW1 QR; RODW1 page links HL, LS, QI, QR; UBDW1 HP, LS, QI, QR; MMRW1 HF, LS, QI, QR; DIAW1 HF, LS, QI; MORW1 HP, QI (+CDRW1 QR); TLRW1 HP, QI, QR.", "url": "https://www.nwrfc.noaa.gov/river/station/flowplot/flowplot.cgi?RODW1=", "status": "FACT"},
+        {"claim": "NWPS gauge HHDW1 (usgsId 12105800, NWRFC/SEW) observed pedts QIIRZ (inflow, kcfs); MMRW1 'White River at Mud Mtn. Dam - Outflow' flood flows action 4,500 / minor 9,000 / moderate 12,000 / major 14,000 cfs with Dec 2025 crest 10,300 cfs on 2025-12-14.", "url": "https://api.water.noaa.gov/nwps/v1/gauges/mmrw1", "status": "FACT"},
+        {"claim": "NWPS bbox search returned RODW1 'Skagit River Ross Reservoir' (usgsId 12175000), UBDW1 'Baker River Baker Lk' (12191600), MORW1 (12115900), TLRW1 (12147900), HAHW1, HHDW1, MMDW1, MMRW1, SHAW1.", "url": "https://api.water.noaa.gov/nwps/v1/gauges?bbox.xmin=-122.6&bbox.ymin=46.9&bbox.xmax=-120.8&bbox.ymax=49.0&srid=EPSG_4326", "status": "FACT"},
+        {"claim": "NWPS stageflow for HHDW1 returned 718 observed hourly inflow points (2026-07-23 to 2026-08-22) and 0 forecast points at fetch time.", "url": "https://api.water.noaa.gov/nwps/v1/gauges/hhdw1/stageflow", "status": "FACT"}
+      ],
+      "relevance_to_cascade_oracle": "Only source combining observed and RFC-forecast pool elevation/inflow/outflow for HHD, MMD, Ross, Upper Baker, Diablo - key for forecast-informed reservoir state."
+    },
+    {
+      "name": "USGS NWIS - reservoir, lake, diversion and overflow gauges (Western WA)",
+      "authority": "U.S. Geological Survey, Washington Water Science Center (cooperators: USACE, SCL, PSE, SPU, Cascade Water Alliance, Whatcom County)",
+      "data_kind": "observational",
+      "access": {
+        "mechanism": "NWIS Instantaneous Values service: https://waterservices.usgs.gov/nwis/iv/?format=json&sites=<list>&parameterCd=<codes>; site metadata: /nwis/site/?format=rdb&sites=...&siteOutput=expanded. Verified active IV sites and parameters: 12105800 Howard A Hanson Reservoir (00054 storage ac-ft, 62614 elev NGVD29); 12105900 Green R below HHD (00060/00065); 12098000 Mud Mountain Lake (00054, 62614); 12098500 White R nr Buckley (00065 only; 00060 ended 2003); 12098920 White River Flume at Buckley (diversion flow 00060); 12099200 White R above Boise Cr at Buckley (00060/00065, bypass reach); 12101000 Lake Tapps nr Sumner (00054, 00065, 62614); 12101100 Lake Tapps Diversion at Dieringer (return flow 00060 + WQ); 12175000 Ross Reservoir (00065 gage height = pool elev ft); 12176500 Diablo Reservoir (00065); 12177700 Gorge Reservoir (00065, 00045); 12178000 Skagit R at Newhalem (00060/00065/00010); 12191600 Baker Lake at Upper Baker Dam (62615 NAVD88, 00045); 12193000 Lake Shannon at Concrete (62615); 12193400 Baker R at Henry Thompson Br (00060/00065); 12115900 Chester Morse Lake (00065 elev ft + met); 12116400 Cedar R at Powerplant (00060); 12116500 Cedar R at Cedar Falls (00060); 12117600 Cedar R below Diversion nr Landsburg (00060); 12119000 Cedar R at Renton (00060); 12147900 SF Tolt Reservoir (62614 + met); 12148300 SF Tolt below Regulating Basin (00060); 12122000 Sammamish Lake (62614); 12211190 / 12211195 Nooksack R Overflow at Emerson Rd / Hwy 544 at Everson (00065; 63160 NAVD88); 12214500 Sumas River near Sumas (00060/00065); 12194000 Skagit nr Concrete; 12200500 Skagit nr Mount Vernon.",
+        "base_urls": [
+          "https://waterservices.usgs.gov/nwis/iv/?format=json&sites=12105800,12098000,12175000,12176500,12177700,12191600,12193000,12115900,12147900,12101000,12101100,12098920&siteStatus=all",
+          "https://waterservices.usgs.gov/nwis/site/?format=rdb&stateCd=WA&siteType=LK,ST&hasDataTypeCd=iv&siteStatus=active",
+          "https://waterdata.usgs.gov/monitoring-location/USGS-12115900/"
+        ],
+        "auth": "None.",
+        "rate_limits": "Not re-verified here (standard USGS waterservices limits apply).",
+        "formats": ["JSON (WaterML-derived)", "RDB tab-delimited", "WaterML"]
+      },
+      "cadence": "15-minute to hourly; reservoir elevations mostly hourly (e.g., 12175000 hourly, 12098000 hourly, 12101000 30-min).",
+      "latency": "~1-2 hours (values dated 2026-08-22T00:00-01:15 PDT when fetched early 2026-08-22).",
+      "spatial_resolution": "Point.",
+      "temporal_resolution": "15-min/30-min/hourly instantaneous; daily values via /nwis/dv.",
+      "historical_depth": "Decades for most (12193500 Baker R at Concrete IV ended 2009; 12098500 discharge ended 2003; 12100496 discharge ended 2009 - stage only).",
+      "missing_data_semantics": "-999999 sentinel for missing/ice-affected values (observed on 12214500 Sumas River 00060/00065 on 2026-08-22); seasonal overflow gauges 12211190/12211195 last reported March-April 2026 (operated in flood season only).",
+      "quality_flags": "Qualifiers 'P' (provisional) and 'A' (approved) per value; 'Ice', 'Eqp' qualifiers possible.",
+      "units": "ft (gage height / elevation), ac-ft (00054), ft3/s. Datums vary: 62614 = NGVD29, 62615 = NAVD88, 00065 at reservoirs is local/project datum (Ross 00065 ~1598 ft in SCL datum; Chester Morse 00065 ~1550 ft with +11.39 ft to NAVD88 per site alt_va).",
+      "licensing": "Public domain (USGS).",
+      "limitations": [
+        "Lake Washington has no USGS gauge (USACE LWSC only).",
+        "Reservoir storage (00054) available only for 12105800, 12098000, 12101000 among sites checked.",
+        "Nooksack overflow gauges are seasonal; Sumas gauge currently reporting missing values.",
+        "Ross/Diablo/Gorge report 00065 'gage height' that is actually pool elevation in project datum; confirm datum before mixing with NAVD88 series."
+      ],
+      "evidence": [
+        {"claim": "IV JSON on 2026-08-22 returned: 12105800 storage 37,180 ac-ft and elevation 1156.38 ft (62614); 12098000 24.82 ac-ft / 920.91 ft; 12175000 00065 1597.94 ft; 12176500 1203.29 ft; 12177700 873.28 ft; 12191600 62615 726.09 ft; 12193000 62615 411.65 ft; 12115900 00065 1550.21 ft; 12147900 62614 1739.06 ft; 12101000 541.36 ft gage / 540.86 ft NGVD29 / 42,570 ac-ft; 12101100 24.2 cfs; 12098920 234 cfs; 12099200 549 cfs.", "url": "https://waterservices.usgs.gov/nwis/iv/?format=json&sites=12105800,12105900,12098000,12098500,12098920,12099200,12101000,12101100,12101102,12193000,12122000,12116400,12116500,12117600,12119000,12148300,12211190,12211195,12214500,12200500,12194000,12113000,12100496&siteStatus=all", "status": "FACT"},
+        {"claim": "12214500 Sumas River near Sumas returned -999999 for 00060 and 00065 (2026-08-06/2026-08-22); 12211190/12211195 Nooksack overflow last values 2026-03-21 / 2026-04-01.", "url": "https://waterservices.usgs.gov/nwis/iv/?format=json&sites=12211190,12211195,12214500&siteStatus=all", "status": "FACT"},
+        {"claim": "Site service (expanded) lists 12115900 alt_va 11.39 (L), 12147900 alt_va 3.46, 12101000 alt_va 2.91, 12098000 alt_va 3.62; 12175000 and 12105800 have no alt_va.", "url": "https://waterservices.usgs.gov/nwis/site/?format=rdb&sites=12175000,12176500,12177700,12115900,12147900,12191600,12193000,12101000,12105800,12098000&siteOutput=expanded", "status": "FACT"},
+        {"claim": "Active WA lake/stream IV sites include 12098920 WHITE RIVER FLUME AT BUCKLEY, 12101100 LAKE TAPPS DIVERSION AT DIERINGER, 12101000 LAKE TAPPS NEAR SUMNER, 12193000 LAKE SHANNON AT CONCRETE, 12191600 BAKER LAKE AT UPPER BAKER DAM, 12122000 SAMMAMISH LAKE NEAR REDMOND.", "url": "https://waterservices.usgs.gov/nwis/site/?format=rdb&stateCd=WA&siteType=LK,ST&hasDataTypeCd=iv&siteStatus=active&parameterCd=00062,00065,00060,62614,62615,00054", "status": "FACT"},
+        {"claim": "Site number mapping: 12175500 is Thunder Creek near Newhalem (not Ross); Ross Reservoir is 12175000; Diablo 12176500; Gorge 12177700; Skagit at Newhalem 12178000.", "url": "https://waterservices.usgs.gov/nwis/site/?format=rdb&stateCd=WA&siteType=LK,ST&hasDataTypeCd=iv&siteStatus=active&parameterCd=00062,00065,00060,62614,62615,00054", "status": "FACT"}
+      ],
+      "relevance_to_cascade_oracle": "Independent, long-record, QA'd pool elevation/storage for every major reservoir in scope plus the Lake Tapps diversion/return and the Nooksack-Sumas overflow path."
+    },
+    {
+      "name": "USACE National Inventory of Dams (NID) - API, national CSV, ArcGIS FeatureServer",
+      "authority": "U.S. Army Corps of Engineers (NID program, NID@usace.army.mil)",
+      "data_kind": "static",
+      "access": {
+        "mechanism": "REST/JSON OpenAPI v1.1.0 at https://nid.sec.usace.army.mil/api (spec at /api/developer/json; Swagger UI at /api/developer). Endpoints: GET /dams/{federalId}/inventory, /dams/{federalId}/outlet-gates, /modifications, /associated-structures, /data-source, /external-risk-inventory, /attachments; GET /suggestions?text=; GET /query?sy=&out=&addProps=; GET /metadata; GET /domains/{domainName}. Bulk: GET /api/nation/csv (67.3 MB, 92,783 lines, first line 'Data Last Updated:,2026-8-18'). GIS: https://geospatial.sec.usace.army.mil/dls/rest/services/NID/National_Inventory_of_Dams_Public_Service/FeatureServer/0/query (81 fields; filter STATE='Washington' - full state name; NIDID IN (...)). NID IDs in scope: WA00298 Howard A. Hanson, WA00300 Mud Mountain, WA00169 Ross, WA00170 Diablo, WA00168 Gorge, WA00173 Upper Baker, WA00172 Lower Baker, WA00255 Masonry Dam, WA00256 Morse Lake Overflow Dike, WA00177 Tolt River - South Fork, WA00301 Lake Washington Ship Canal, WA00418-WA00429 Lake Tapps Dikes, WA00302 Wynoochee.",
+        "base_urls": [
+          "https://nid.sec.usace.army.mil/api/developer/json",
+          "https://nid.sec.usace.army.mil/api/dams/WA00298/inventory",
+          "https://nid.sec.usace.army.mil/api/nation/csv",
+          "https://geospatial.sec.usace.army.mil/dls/rest/services/NID/National_Inventory_of_Dams_Public_Service/FeatureServer/0"
+        ],
+        "auth": "None for public endpoints (security: none in spec). Full website/downloads page shows an account-verification flow for some features.",
+        "rate_limits": "Not documented.",
+        "formats": ["JSON", "CSV", "ArcGIS JSON/geoJSON/PBF (FeatureServer supports export sqlite, filegdb, shapefile, csv, geojson)"]
+      },
+      "cadence": "Irregular; national CSV stamped 2026-8-18; FeatureServer DATA_UPDATED per record (e.g., Mud Mountain 2026-07, Howard Hanson/Gorge 2026-07, Lower Baker 2026-04).",
+      "latency": "Days to months (inventory, not real time).",
+      "spatial_resolution": "Point per dam; 835 WA records in FeatureServer.",
+      "temporal_resolution": "N/A (attributes incl. last inspection date, condition assessment date).",
+      "historical_depth": "Current snapshot only (no version history via API).",
+      "missing_data_semantics": "null / empty strings; 'Not Available' for condition of federal dams (HHD, MMD).",
+      "quality_flags": "Source Agency, State/Federal regulatory fields; HAZARD_POTENTIAL; CONDITION_ASSESSMENT (Lower Baker 'Poor', Upper Baker/Tolt/Gorge 'Fair', Ross/Diablo/Masonry 'Satisfactory').",
+      "units": "feet (heights), acre-feet (NID_STORAGE/MAX/NORMAL), cfs (MAX_DISCHARGE), sq mi (DRAINAGE_AREA).",
+      "licensing": "U.S. federal; NID site disclaimer applies (not fetched - DNS for nid.sec.usace.army.mil failed in the WebFetch sandbox but worked via curl).",
+      "limitations": [
+        "/metadata reports dateRefreshed 'Feb 13, 2020' (version 4.40.0) - inconsistent with the CSV stamp; treat per-record DATA_UPDATED as authoritative.",
+        "/query?sy=WA00300&out=json returned [] - query grammar undocumented in spec descriptions.",
+        "FeatureServer STATE filter requires full names ('Washington'), and name searches are case-sensitive LIKE.",
+        "No per-state CSV route (/api/state/WA/csv 404)."
+      ],
+      "evidence": [
+        {"claim": "OpenAPI 'National Inventory of Dams API' v1.1.0 lists /dams/{federalId}/inventory, /suggestions, /query (params sy, out, addProps), /metadata, /domains/{domainName}, etc.; description says it is a RESTful public API and to email NID@usace.army.mil.", "url": "https://nid.sec.usace.army.mil/api/developer/json", "status": "FACT"},
+        {"claim": "/api/dams/WA00298/inventory returns Howard A. Hanson Dam: nidStorage 136,700, normalStorage 26,000, maxDischarge 129,000, nidHeight 235, inspectionDate 2025-11-19, eapLastRevDate 2024-11-22.", "url": "https://nid.sec.usace.army.mil/api/dams/WA00298/inventory", "status": "FACT"},
+        {"claim": "/api/nation/csv returned 67,326,556 bytes; header 'Data Last Updated:,2026-8-18'; rows include Masonry Dam WA00255 (Seattle City Light), Ross WA00169, Diablo WA00170, Gorge WA00168, Upper Baker WA00173, Lower Baker WA00172, Tolt River - South Fork WA00177, Mud Mountain Dam WA00300, Tapps Lake Dike No 1-13 (Cascade Water Alliance).", "url": "https://nid.sec.usace.army.mil/api/nation/csv", "status": "FACT"},
+        {"claim": "FeatureServer layer 0 has 81 fields (NIDID, NAME, RIVER_OR_STREAM, NID_STORAGE, HAZARD_POTENTIAL, CONDITION_ASSESSMENT, DATA_UPDATED ...), maxRecordCount 2000; STATE='Washington' count 835; NIDID IN query returned Lower Baker condition 'Poor', Mud Mountain NID_STORAGE 106,000, Ross 1,452,750, Diablo 89,200, Gorge 9,758, Masonry 175,000, Tolt 68,400.", "url": "https://geospatial.sec.usace.army.mil/dls/rest/services/NID/National_Inventory_of_Dams_Public_Service/FeatureServer/0/query", "status": "FACT"},
+        {"claim": "/api/metadata returns {dateRefreshed: 'Feb 13, 2020 14:30:21', version: '4.40.0'}.", "url": "https://nid.sec.usace.army.mil/api/metadata", "status": "FACT"}
+      ],
+      "relevance_to_cascade_oracle": "Authoritative static attributes (storage, height, hazard, condition, EAP status, regulator) for every dam in scope; join key NIDID also appears in the USACE A2W location aliases."
+    },
+    {
+      "name": "USACE National Levee Database (NLD) - ArcGIS services, OGC WFS/WMS, JSON API",
+      "authority": "U.S. Army Corps of Engineers, National Levee Safety Program (NLD@usace.army.mil)",
+      "data_kind": "static",
+      "access": {
+        "mechanism": "ArcGIS REST: https://geospatial.sec.usace.army.mil/dls/rest/services/NLD/Public/FeatureServer (18 layers: 0 Boreholes, 1 Crossings, 2 Levee Stations, 3 Piezometers, 4 Pump Stations, 5 Relief Wells, 6 Pipe Gates, 7 Alignment Lines, 8 Pipes, 9 Cross Sections, 10 Closure Structures, 11 Embankments, 12 Floodwalls, 13 FRM Lines, 14 Toe Drains, 15 System Routes, 16 Leveed Areas, 17 Berms) and .../NLD/Public/MapServer; filter STATES LIKE '%Washington%'. OGC WMS/WFS single endpoint: https://levees.sec.usace.army.mil/mapserver/public/ows (WFS layers ms:embankments, ms:floodwalls, ms:system_alignment_lines, ms:leveed_area, ms:cross_sections, ms:pump_stations, ms:dams ...). Site JSON API root /api-local/ (e.g., /api-local/leveed-areas, /api-local/leveed-areas/{id}) - route list undocumented.",
+        "base_urls": [
+          "https://levees.sec.usace.army.mil/data-services/services/",
+          "https://geospatial.sec.usace.army.mil/dls/rest/services/NLD/Public/FeatureServer",
+          "https://geospatial.sec.usace.army.mil/dls/rest/services/NLD/Public/MapServer",
+          "https://levees.sec.usace.army.mil/mapserver/public/ows?service=WFS&request=GetCapabilities",
+          "https://levees.sec.usace.army.mil/api-local/leveed-areas"
+        ],
+        "auth": "None for public layers; accounts (request via NLD@usace.army.mil) for non-public data.",
+        "rate_limits": "maxRecordCount 2000 per FeatureServer query (exceededTransferLimit paging).",
+        "formats": ["ArcGIS JSON", "WFS GML / WMS", "JSON (api-local)", "Shapefile downloads via site (per changelog)"]
+      },
+      "cadence": "Irregular; site changelog shows releases (v4.32.0 on 12/3/2025).",
+      "latency": "N/A (inventory).",
+      "spatial_resolution": "Levee centerlines (System Routes), leveed-area polygons, cross sections, structures; 339 WA levee systems.",
+      "temporal_resolution": "N/A.",
+      "historical_depth": "Current snapshot.",
+      "missing_data_semantics": "null attributes; SYSTEM_IS_USACE null for non-federal systems.",
+      "quality_flags": "FEMA_ACCREDITATION_RATING, REHAB_PROGRAM_STATUS (PL 84-99 'Active'/'Inactive'), OVERTOPPING_ACE, LEVEED_AREA_METHOD / TERRAIN_SOURCE_YEAR.",
+      "units": "feet (MIN/MAX/AVERAGE_HEIGHT), square miles (LEVEED_AREA_SQ_MI), Web Mercator lengths.",
+      "licensing": "Public use stated: 'The spatial data stored in the National Levee Database are available for public use.'",
+      "limitations": [
+        "STATES field stores full state names; 'WA' abbreviations return zero rows.",
+        "api-local/leveed-areas ignores state/paging query params (always first 100 records); other api-local routes (systems, search) returned 404 - not discoverable without the app.",
+        "Levee geometry attributes (crest elevations per station, cross sections) exist as layers but per-segment profile data may require the site UI."
+      ],
+      "evidence": [
+        {"claim": "Data Services page: Feature Service, Map Service, OGC OWS endpoint ('ows_' single endpoint for WMS and WFS) and a JSON API; links to geospatial.sec.usace.army.mil NLD/Public FeatureServer and MapServer and https://levees.sec.usace.army.mil/mapserver/public/ows.", "url": "https://levees.sec.usace.army.mil/data-services/services/", "status": "FACT"},
+        {"claim": "NLD/Public FeatureServer lists 18 layers incl. 15 System Routes (fields SYSTEM_ID, SYSTEM_NAME, STATES, COUNTIES, SPONSORS, SYSTEM_IS_USACE, FEMA_ACCREDITATION_RATING, FLOOD_SOURCES, MIN/MAX/AVERAGE_HEIGHT, REHAB_PROGRAM_STATUS) and 16 Leveed Areas; maxRecordCount 2000.", "url": "https://geospatial.sec.usace.army.mil/dls/rest/services/NLD/Public/FeatureServer", "status": "FACT"},
+        {"claim": "STATES LIKE '%Washington%' count = 339; query by flood source returned e.g. Skagit County Dike District No. 3 / No. 17 / No. 22 / No. 9-1-12 (Skagit River), Cockreham Island, Tukwila Authorized (Green, USACE Yes), Puyallup Authorized RB/LB (USACE-Seattle District), Reddington/Galli's/Dykstra (Green, Accredited), many King County Cedar River systems, Whatcom County Nooksack systems (Everson, Lynden/River Road, Ferndale/WTP, Hovander Park), Marshland Flood Control District and Ebey Slough diking districts (Snohomish).", "url": "https://geospatial.sec.usace.army.mil/dls/rest/services/NLD/Public/FeatureServer/15/query", "status": "FACT"},
+        {"claim": "WFS GetCapabilities lists feature types ms:embankments, ms:floodwalls, ms:frm_lines, ms:system_alignment_lines, ms:leveed_area, ms:closure_structures, ms:cross_sections, ms:pump_stations, ms:dams, ms:federally_owned_dams, ms:national_dams.", "url": "https://levees.sec.usace.army.mil/mapserver/public/ows?service=WFS&request=GetCapabilities", "status": "FACT"},
+        {"claim": "Site runtime config sets PUBLIC_API_URL '/api-local/'; /api-local/leveed-areas returns 100 records with fields id, systemId, systemName, areaSquareMiles, people, buildings, propertyValue, femaAccreditationRating, floodSources, rpStatus; state filters are ignored.", "url": "https://levees.sec.usace.army.mil/api-local/leveed-areas?state=WA", "status": "FACT"},
+        {"claim": "NLD website changelog: v4.32.0 (12/3/2025) fixed full shapefile downloads; v4.29.0 (9/26/2025) added public Leaflet advanced map viewer.", "url": "https://levees.sec.usace.army.mil/changes", "status": "FACT"}
+      ],
+      "relevance_to_cascade_oracle": "Gives levee alignments, heights, accreditation and leveed-area consequence attributes for Skagit dike districts, Green/Duwamish (Tukwila Authorized), Puyallup Authorized levees, Cedar, Snoqualmie, Nooksack and Snohomish systems - the downstream constraint set for any reservoir-release reasoning."
+    },
+    {
+      "name": "USACE Seattle District flood-control projects: Howard A. Hanson Dam (Green) and Mud Mountain Dam (White) - regulation rules and water control manuals",
+      "authority": "USACE Seattle District Reservoir Control Center",
+      "data_kind": "static",
+      "access": {
+        "mechanism": "Redacted water control manuals hosted as PDFs on water.usace.army.mil (document IDs wc/2664 HHD, wc/2666 MMD); operational data via the CDA/A2W/Dataquery/NWRFC providers above.",
+        "base_urls": [
+          "https://water.usace.army.mil/cda/documents/wc/2664/Complete_HHD_Rdct.pdf",
+          "https://water.usace.army.mil/cda/documents/wc/2666/Complete_MMD_Rdct.pdf",
+          "https://www.nws.usace.army.mil/Missions/Civil-Works/Locks-and-Dams/Howard-Hanson-Dam/ (403 to scripted fetch)"
+        ],
+        "auth": "None.",
+        "rate_limits": "N/A.",
+        "formats": ["PDF (8.9 MB HHD, 189 pp; 7.8 MB MMD, 194 pp)"]
+      },
+      "cadence": "Manuals dated September 2011 (HHD) and September 2004 (MMD); revised irregularly.",
+      "latency": "N/A.",
+      "spatial_resolution": "Project.",
+      "temporal_resolution": "N/A.",
+      "historical_depth": "HHD manual flood tables 1933-2009; MMD manual through FY1999 damages.",
+      "missing_data_semantics": "N/A.",
+      "quality_flags": "Redacted copies.",
+      "units": "Manuals give metric and U.S. customary; elevations NGVD29.",
+      "licensing": "U.S. federal documents.",
+      "limitations": [
+        "nws.usace.army.mil mission pages return HTTP 403 to non-browser clients (Akamai).",
+        "HHD Additional Water Storage Project Phase II (1,177 ft) not implemented as of the 2011 manual; December 2025 operations reached record pool 1,189.3 ft (per USACE article) - current operating plan may differ from the 2011 manual.",
+        "Manual parameters are static; the real-time 'levels' in A2W (Top of Flood 1206 ft / 104,266 ac-ft) match the manual."
+      ],
+      "evidence": [
+        {"claim": "HHD Table 7-1: Full pool 1,206 ft; maximum conservation pool 1,141 ft (AWSP Phase I storage to 1,167 ft); normal minimum pool ~1,075 ft; max flood-control outlet 10,000 cfs; flood control near Auburn: authorized control flow 12,000 cfs, max regulated target rising hydrograph 10,000 cfs, falling 12,000 cfs; stage rate-of-fall 1 ft/hr. Section 7.03: regulate to 10,000 cfs objective at Auburn on rising limb, up to 12,000 cfs control flow on recession.", "url": "https://water.usace.army.mil/cda/documents/wc/2664/Complete_HHD_Rdct.pdf", "status": "FACT"},
+        {"claim": "HHD pertinent data: conservation pool 1,141 ft = 24,178 ac-ft; with Phase I AWSP 1,167 ft = 49,257 ac-ft; project design flood pool 1,206 ft = 104,266 ac-ft; spillway design flood pool 1,223.9 ft = 138,391 ac-ft; all elevations NGVD29; manual dated September 2011.", "url": "https://water.usace.army.mil/cda/documents/wc/2664/Complete_HHD_Rdct.pdf", "status": "FACT"},
+        {"claim": "MMD manual (September 2004) 7.04: during winter flood season 1 October-31 March the reservoir is empty with MMD on free flow providing ~106,000 ac-ft; primary objective damage prevention on lower Puyallup (channel capacity 50,000 cfs, control/target flow 45,000 cfs at Puyallup gage, ~6 hr travel time); secondary objective limit dam discharge to 12,000 cfs when feasible; planned max discharge 17,600 cfs no longer passable without damage due to aggradation.", "url": "https://water.usace.army.mil/cda/documents/wc/2666/Complete_MMD_Rdct.pdf", "status": "FACT"},
+        {"claim": "MMD pool data: empty pool 895 ft; top of flood control (spillway crest) 1,215 ft = 106,275 ac-ft; SDF pool 1,252.2 ft; top of dam 1,257 ft; outlet capacity 26,500 cfs at 1,215 ft.", "url": "https://water.usace.army.mil/cda/documents/wc/2666/Complete_MMD_Rdct.pdf", "status": "FACT"},
+        {"claim": "December 2025: HHD reached a record pool elevation of 1,189.3 ft storing 77,700 ac-ft (~75% of flood storage); Seattle District also regulated Ross (SCL), Upper Baker (PSE) and Wynoochee (Tacoma) as 'Section 7 reservoirs' under established agreements; preliminary damages prevented $7.8B (HHD), $215M (MMD), $746M (Skagit/Wynoochee).", "url": "https://www.dvidshub.net/news/printable/570366", "status": "FACT"},
+        {"claim": "Dec 2025: Corps targeted 10,000 cfs at the Auburn gage; the Desimone levee in Tukwila breached on Dec 15 prompting flow reductions.", "url": "https://www.auburn-reporter.com/2025/12/17/army-corps-adjust-hanson-dam-flows-to-combat-green-river-flooding/", "status": "FACT"}
+      ],
+      "relevance_to_cascade_oracle": "Defines the rule curves and downstream control points (Auburn 10,000/12,000 cfs; Puyallup 45,000 cfs; White River 12,000 cfs) that a Green/White-Puyallup oracle must encode."
+    },
+    {
+      "name": "Seattle City Light Skagit River Hydroelectric Project (Ross, Diablo, Gorge) - flood-control rules and public data",
+      "authority": "Seattle City Light (FERC Project No. 553); USACE Seattle District directs flood operations under Section 7 agreements",
+      "data_kind": "mixed",
+      "access": {
+        "mechanism": "No SCL-native public API. Real-time data exist via USGS (12175000 Ross, 12176500 Diablo, 12177700 Gorge, 12178000 Newhalem), NWRFC (RODW1 HF/HL/LS/QI/QR; DIAW1 HF/LS/QI; GORW1 HG/TW), USACE A2W/CDA (ROS/DIA/GOR/GORW series, several tagged SCL-RAW). Rules are in USACE's 2013 Skagit hydrology report and SCL relicensing documents.",
+        "base_urls": [
+          "https://www.seattle.gov/city-light/energy/power-supply-and-delivery/hydroelectric-resources/skagit-river-hydroelectric-project",
+          "https://www.skagitcounty.net/PublicWorksSalmonRestoration/Documents/Skagit%20River%20Hydrology%20Technical%20Doc_Final_August2013.pdf",
+          "https://www.seattle.gov/documents/Departments/CityLight/CurrentProjects/SkagitSettlement_FactSheet-FloodMgmt.pdf",
+          "https://water.usace.army.mil/cda/reporting/providers/nws/locations/ros"
+        ],
+        "auth": "None.",
+        "rate_limits": "N/A.",
+        "formats": ["PDF", "via USGS/NWRFC/USACE JSON"]
+      },
+      "cadence": "Hourly pool/inflow/outflow via USACE/NWRFC/USGS; rules change only with license/agreements.",
+      "latency": "~1-2 hours (via USACE/USGS feeds).",
+      "spatial_resolution": "Three dams on the upper Skagit; Ross ~40 mi / 8-10 hr travel time above Concrete.",
+      "temporal_resolution": "Hourly.",
+      "historical_depth": "Ross daily pool/outflow since dam completion; derived inflow record from 1919 (per USACE 2013 report).",
+      "missing_data_semantics": "N/A.",
+      "quality_flags": "SCL-RAW feeds in USACE systems are unrevised.",
+      "units": "Ross elevations in SCL datum (1.79 ft above NGVD29); acre-feet.",
+      "licensing": "Public documents; data public via federal feeds.",
+      "limitations": [
+        "Current FERC license expired April 30, 2025; project operates under annual licenses while the May 2026 settlement is reviewed (new license expected ~2030).",
+        "New settlement flood-storage figures (140,000 ac-ft by Nov 1; 165,000 ac-ft operational buffer) confirmed only on secondary pages (Skagitonians, Salish Current); SCL's fact sheet confirms the 90,000 cfs Corps-control trigger but not the new volumes.",
+        "No flood storage is required at Diablo or Gorge."
+      ],
+      "evidence": [
+        {"claim": "USACE 2013 Table 15 Ross flood control storage: Oct 1 1,602.50 ft / 0 ac-ft; Oct 15 1,600.80 / 20,000; Nov 1 1,598.84 / 43,000; Nov 15 1,597.37 / 60,000; Dec 1 1,592.11 / 120,000; Mar 15 1,592.11 / 120,000 (SCL datum 1.79 ft above NGVD29). When Skagit at Concrete is predicted to hit 90,000 cfs, Ross outflows can be reduced to 0.", "url": "https://www.skagitcounty.net/PublicWorksSalmonRestoration/Documents/Skagit%20River%20Hydrology%20Technical%20Doc_Final_August2013.pdf", "status": "FACT"},
+        {"claim": "'No flood control storage is currently required in Diablo, Gorge, or Lower Baker Reservoirs'; Ross flood regulation coordinated with Upper Baker; 120,000 ac-ft at Ross established 1953; major damage stage at Concrete 90,000 cfs.", "url": "https://www.skagitcounty.net/PublicWorksSalmonRestoration/Documents/Skagit%20River%20Hydrology%20Technical%20Doc_Final_August2013.pdf", "status": "FACT"},
+        {"claim": "SCL fact sheet (March 2026): flood risk management is the project's highest operational priority; 'When river flows at Concrete are expected to top 90,000 cubic feet per second, the Corps temporarily takes control of Ross Dam'.", "url": "https://www.seattle.gov/documents/Departments/CityLight/CurrentProjects/SkagitSettlement_FactSheet-FloodMgmt.pdf", "status": "FACT"},
+        {"claim": "Federal license expired April 30, 2025; City Light operating under annual licenses.", "url": "https://www.seattle.gov/city-light/energy/power-supply-and-delivery/hydroelectric-resources/skagit-river-hydroelectric-project", "status": "FACT"},
+        {"claim": "Proposed settlement: Ross flood storage 140,000 ac-ft with drawdown deadline moved to November 1 and an operational buffer of 165,000 ac-ft (vs 120,000 ac-ft by Dec 1 under current license); Ross held ~170,000 ac-ft in Nov 2021.", "url": "https://www.skagitonians.org/blog/floodcontrol-mg86c", "status": "FACT"},
+        {"claim": "Dec 15, 2025: Corps took over Ross and Upper Baker dams again 'as forecasters predicted river flows at the town of Concrete would rise past 90,000 cubic feet per second'.", "url": "https://www.kuow.org/stories/army-takeover-of-skagit-dams-lowers-flood-waters", "status": "FACT"},
+        {"claim": "Settlement agreement filed with FERC May 20, 2026 (comments due July 2, 2026); relicensing completion expected 2030.", "url": "https://www.federalregister.gov/documents/2026/06/05/2026-11338/seattle-city-light-notice-of-settlement-agreement-and-soliciting-comments", "status": "INFERENCE"}
+      ],
+      "relevance_to_cascade_oracle": "Ross is the dominant controllable storage on the Skagit; the drawdown schedule, 90,000 cfs Concrete trigger, and Corps-control state are first-order inputs for Skagit flood reasoning."
+    },
+    {
+      "name": "Puget Sound Energy Baker River Project (Upper Baker / Baker Lake, Lower Baker / Lake Shannon) - flood storage and data",
+      "authority": "Puget Sound Energy (FERC No. 2150, 50-year license issued Oct 17, 2008); USACE Seattle District directs Upper Baker flood storage",
+      "data_kind": "mixed",
+      "access": {
+        "mechanism": "No PSE public data feed. Hourly data via USACE A2W/CDA (UBK.Elev-Forebay.Inst.1Hour.0.PSE-RAW, UBK.Flow-In/Flow-Out PSE-RAW, UBK.Stor.Inst.1Hour.0.USGS-REV; SHA.Elev-Forebay/Flow-In/Flow-Out PSE-RAW for Lower Baker), USGS (12191600 Baker Lake NAVD88, 12193000 Lake Shannon NAVD88, 12193400 Baker R at Concrete), NWRFC UBDW1 (HF/HP/LS/QI/QR).",
+        "base_urls": [
+          "https://water.usace.army.mil/cda/reporting/providers/nws/locations/ubk",
+          "https://water.usace.army.mil/cda/reporting/providers/nws/locations/sha",
+          "https://www.pse.com/en/pages/hydro-licensing/baker-license-and-amendments",
+          "https://www.pse.com/en/pages/facilities/baker-river-hydro-project"
+        ],
+        "auth": "None.",
+        "rate_limits": "N/A.",
+        "formats": ["JSON/CSV via USACE", "PDF license documents"]
+      },
+      "cadence": "Hourly via USACE/USGS/NWRFC.",
+      "latency": "~1-2 hours.",
+      "spatial_resolution": "Two dams; Upper Baker 9.3 mi / 1-3 hr travel time above Concrete.",
+      "temporal_resolution": "Hourly.",
+      "historical_depth": "Baker River at Concrete gage 1943-present (backwater-affected at high Skagit stages); Upper Baker storing since 1959, 74,000 ac-ft flood storage since 1977.",
+      "missing_data_semantics": "N/A.",
+      "quality_flags": "PSE-RAW feeds unrevised.",
+      "units": "Elevations NAVD88 (USGS 62615; USACE Table 10 uses NAVD88: full pool 727.77 ft); acre-feet.",
+      "licensing": "Public documents.",
+      "limitations": [
+        "Lower Baker has no authorized flood storage; the Wikipedia figure '29,426 acre-feet reserved for flood control' is unsourced - treat as unverified (OPEN_QUESTION).",
+        "The 2004 settlement commits PSE only to pursue federal authorization for up to 29,000 ac-ft additional winter storage at Upper Baker; status of that authorization not confirmed (OPEN_QUESTION).",
+        "No NWRFC station for Lake Shannon."
+      ],
+      "evidence": [
+        {"claim": "USACE 2013 Table 10 Upper Baker flood control storage (NAVD88): Oct 1 727.77 ft / 0; Oct 15 724.53 / 16,000 ac-ft; Nov 1 724.53 / 16,000; Nov 15 711.70 / 74,000; Mar 1 711.70 / 74,000; Apr 1 727.77 / 0. 'There currently is no authorized flood control storage behind Lower Baker Dam'; Lower Baker cannot draw down while Upper Baker is storing for flood risk management.", "url": "https://www.skagitcounty.net/PublicWorksSalmonRestoration/Documents/Skagit%20River%20Hydrology%20Technical%20Doc_Final_August2013.pdf", "status": "FACT"},
+        {"claim": "Settlement: PSE to pursue federal authorization for an increase in winter flood-storage capacity by up to 29,000 acre-feet above the existing 74,000 acre-feet.", "url": "https://www.renewableenergyworld.com/hydro-power/settlement-reached-on-conditions-for-new-pse-baker-river-hydropower-license/", "status": "FACT"},
+        {"claim": "PSE license page lists FERC Order issuing new license (Oct 17, 2008) and the Nov 30, 2004 Comprehensive Settlement Agreement PDFs.", "url": "https://www.pse.com/en/pages/hydro-licensing/baker-license-and-amendments", "status": "FACT"},
+        {"claim": "Upper Baker 312-ft concrete gravity dam (107 MW); Lower Baker 285-ft concrete arch dam (111 MW); 50-year license received October 2008.", "url": "https://www.pse.com/en/pages/facilities/baker-river-hydro-project", "status": "FACT"},
+        {"claim": "A2W location 'sha' = Lower Baker Dam (NIDID WA83004) with SHA.Elev-Forebay/Flow-In/Flow-Out .Inst.1Hour.0.PSE-RAW; 'ubk' = Baker Lake at Upper Baker Dam (WA00173) with UBK PSE-RAW elev/in/out and USGS-REV storage.", "url": "https://water.usace.army.mil/cda/reporting/providers/nws/locations", "status": "FACT"},
+        {"claim": "Skagit County 2004 PDEA comments: 'flood control storage is not legally mandated in the Lower Baker Project'; county requested 40,000 ac-ft at Lower Baker and 100,000 ac-ft at Upper Baker.", "url": "https://www.skagitcounty.net/PublicWorksSurfaceWaterManagement/Documents/pdea/PDEA.pdf", "status": "FACT"},
+        {"claim": "Lower Baker '29,426 acre-feet reserved for flood control' appears on Wikipedia without a cited source.", "url": "https://en.wikipedia.org/wiki/Lower_Baker_Dam", "status": "OPEN_QUESTION"}
+      ],
+      "relevance_to_cascade_oracle": "Upper Baker's 74,000 ac-ft (Nov 15-Mar 1) is the second Skagit flood-storage lever; Lake Shannon state matters for local inflow routing but has no mandated storage."
+    },
+    {
+      "name": "Seattle Public Utilities / Seattle City Light - Cedar River (Masonry Dam, Chester Morse Lake) and South Fork Tolt Reservoir",
+      "authority": "Seattle Public Utilities (owner/operator; Masonry Dam regulated by Ecology; Tolt Dam regulated by FERC, SCL South Fork Tolt Hydroelectric Project No. 2959)",
+      "data_kind": "mixed",
+      "access": {
+        "mechanism": "USGS cooperative gauges (12115900 Chester Morse Lake elevation + met; 12116400 Cedar R at Powerplant; 12116500 Cedar R at Cedar Falls; 12117600 below Landsburg diversion; 12119000 Renton; 12147900 SF Tolt Reservoir elevation NGVD29; 12148300 SF Tolt below Regulating Basin; 12148000 SF Tolt nr Carnation); USACE A2W 'mor' (MOR.Elev-Forebay.Inst.1Hour.0.GOES-REV, MOR.Flow-Out-Total / Flow-In-Local SCL-RAW); NWRFC MORW1 (HP, QI) and TLRW1 (HP, QI, QR); SPU weekly 'Water System Synopsis' PDF (precip, snowpack, combined reservoir storage in billions of gallons, consumption).",
+        "base_urls": [
+          "https://www.seattle.gov/documents/Departments/SPU/Services/Water/Current-Water-Supply-Graphs.pdf",
+          "https://www.seattle.gov/utilities/your-services/water/water-supply-conditions",
+          "https://www.seattle.gov/utilities/your-services/water/water-system/dam-safety/tolt-dam",
+          "https://waterdata.usgs.gov/monitoring-location/USGS-12115900/",
+          "https://waterdata.usgs.gov/monitoring-location/USGS-12147900/"
+        ],
+        "auth": "None.",
+        "rate_limits": "N/A.",
+        "formats": ["USGS JSON/RDB", "USACE JSON/CSV", "PDF (weekly synopsis, 2 pages)"]
+      },
+      "cadence": "USGS hourly (12115900 elevation hourly; 12147900 hourly); SPU synopsis weekly (as of August 17, 2026; Last-Modified 2026-08-17).",
+      "latency": "~1-2 hours (USGS); days (SPU PDF).",
+      "spatial_resolution": "Two reservoirs + downstream gauges.",
+      "temporal_resolution": "Hourly / weekly.",
+      "historical_depth": "USGS decades; SPU PDF shows current WY vs 1990-2019 average only.",
+      "missing_data_semantics": "USGS -999999 sentinel; SPU PDF none.",
+      "quality_flags": "USGS P/A qualifiers; MOR SCL-RAW unrevised.",
+      "units": "Chester Morse 00065 in ft (add 11.39 ft for NAVD88 per USGS site metadata); SF Tolt 62614 ft NGVD29; storage in acre-feet (NID: Masonry 175,000 max / 90,660 normal; Tolt 68,400 max / 57,500 normal) or billions of gallons (SPU).",
+      "licensing": "Public.",
+      "limitations": [
+        "Cedar flood reduction is 'incidental' (King County); no published rule curve or release schedule for flood operations found - OPEN_QUESTION (SPU/SCL operate jointly).",
+        "SPU synopsis is a PDF of charts with narrative, not tabular data; no SPU API.",
+        "Tolt Dam morning-glory spillway is uncontrolled; no published flood storage allocation found."
+      ],
+      "evidence": [
+        {"claim": "King County: 'The City of Seattle operates the Masonry Dam in the upper watershed to provide drinking water supply and generate power. Any flood risk reduction provided by the dam is incidental.'", "url": "https://kingcounty.gov/en/dept/dnrp/nature-recreation/environment-ecology-conservation/flood-services/flooding-in-king-county-watersheds/cedar-river-watershed", "status": "FACT"},
+        {"claim": "SPU Tolt page: 200-ft earthfill dam completed 1962 with morning glory spillway; stores up to 57,900 acre-feet; 30-40% of SPU supply; SCL operates the South Fork Tolt Hydroelectric Project (FERC No. 2959); Tolt Dam regulated by FERC for dam safety; monitored 24/7; sirens reconnected as of November 2025.", "url": "https://www.seattle.gov/utilities/your-services/water/water-system/dam-safety/tolt-dam", "status": "FACT"},
+        {"claim": "SPU 'Water System Synopsis as of August 17, 2026' (2-page PDF) reports combined storage of Chester Morse Lake, Masonry Pool, Lake Youngs and SF Tolt Reservoir below long-term average and 7-day consumption ~172 mgd; served with Last-Modified Mon, 17 Aug 2026.", "url": "https://www.seattle.gov/documents/Departments/SPU/Services/Water/Current-Water-Supply-Graphs.pdf", "status": "FACT"},
+        {"claim": "USGS 12115900 Chester Morse Lake at Cedar Falls reports 00065 gage height hourly (1550.21 ft on 2026-08-22) and site alt_va 11.39 ft; 12147900 SF Tolt Reservoir reports 62614 (1739.06 ft NGVD29).", "url": "https://waterservices.usgs.gov/nwis/iv/?format=json&sites=12115900,12147900&siteStatus=all", "status": "FACT"},
+        {"claim": "NID: Masonry Dam WA00255 (owner Seattle City Light, state regulated by Ecology, 175,000 ac-ft max, Satisfactory); Morse Lake Overflow Dike WA00256; Tolt River - South Fork WA00177 (FERC regulated, 68,400 ac-ft max, Fair).", "url": "https://geospatial.sec.usace.army.mil/dls/rest/services/NID/National_Inventory_of_Dams_Public_Service/FeatureServer/0/query", "status": "FACT"},
+        {"claim": "A2W 'mor' location provides MOR.Flow-Out-Total.Ave.1Hour.1Hour.SCL-RAW, MOR.Flow-In-Local.Ave.1Hour.1Hour.SCL-RAW and MOR.Elev-Forebay.Inst.1Hour.0.GOES-REV.", "url": "https://water.usace.army.mil/cda/reporting/providers/nws/locations/mor", "status": "FACT"}
+      ],
+      "relevance_to_cascade_oracle": "Chester Morse/Masonry Pool state and Cedar Falls outflow determine Cedar River flows at Renton; SF Tolt Reservoir modulates Tolt inflow to the Snoqualmie."
+    },
+    {
+      "name": "Lake Washington / Hiram M. Chittenden Locks water level (USACE LWSC) and King County open-data mirror",
+      "authority": "USACE Seattle District (Lake Washington Ship Canal project, NIDID WA00301); King County (derived dataset)",
+      "data_kind": "observational",
+      "access": {
+        "mechanism": "USACE series LWSC.Elev-Lake.* (15-min and hourly) and LWKW (Kenmore) via CDA (office NWDP), A2W (/providers/nws/locations/lwsc) and Dataquery getjson/ecsv. King County Socrata dataset 3pai-uhdy (daily mean, derived from Dataquery) at https://data.kingcounty.gov/resource/3pai-uhdy.json.",
+        "base_urls": [
+          "https://water.usace.army.mil/cda/reporting/providers/nws/locations/lwsc",
+          "https://www.nwd-wc.usace.army.mil/dd/common/web_service/webexec/getjson?query=%5B%22LWSC%22%5D",
+          "https://data.kingcounty.gov/api/views/3pai-uhdy.json",
+          "https://data.kingcounty.gov/resource/3pai-uhdy.json"
+        ],
+        "auth": "None.",
+        "rate_limits": "Socrata default throttling without app token.",
+        "formats": ["JSON/CSV (USACE)", "Socrata JSON/CSV/OData"]
+      },
+      "cadence": "USACE 15-minute/hourly (current); King County dataset last updated 2025-10-20 with rows through 2025-10-09 (appears stale).",
+      "latency": "USACE ~1-2 hours; King County mirror lagging ~10 months at fetch time.",
+      "spatial_resolution": "Lake Washington at the locks (LWSC) and Kenmore (LWKW).",
+      "temporal_resolution": "15-min/hourly (USACE); daily mean (King County).",
+      "historical_depth": "Summary hydrographs cover period of record; King County rows from 2024 creation; CDA extents for LWSC series not returned (catalog query returned 0 with include-extents for the NWSRADIO-REV id) - OPEN_QUESTION.",
+      "missing_data_semantics": "Empty CSV cells / omitted rows.",
+      "quality_flags": "RAW vs REV TSIDs.",
+      "units": "feet, Corps of Engineers datum (6.82 ft below NGVD29); operating range 20.0-22.0 ft.",
+      "licensing": "King County dataset license field null; USACE public.",
+      "limitations": [
+        "No USGS gauge; nws.usace.army.mil Chittenden Locks page and the 'Understanding Datums' PDF returned 403 to scripted fetches.",
+        "King County open-data mirror is not continuously updated."
+      ],
+      "evidence": [
+        {"claim": "Dataset 'Lake Washington water surface elevation': 'Daily mean elevation derived from hourly average data obtained from Army Corps of Engineers dataquery 2.0'; columns Year, Month, Day, wsel_ft, Date; rowsUpdatedAt 2025-10-20; latest row 2025-10-09 wsel_ft 20.142.", "url": "https://data.kingcounty.gov/api/views/3pai-uhdy.json", "status": "FACT"},
+        {"claim": "A2W 'lwsc' location (NIDID WA00301) exposes LWSC.Elev-Lake.Ave.1Hour.1Hour.IRIDIUM-REV plus computed daily inflow/outflow series.", "url": "https://water.usace.army.mil/cda/reporting/providers/nws/locations/lwsc", "status": "FACT"},
+        {"claim": "Lake Washington should be maintained between 20.0 and 22.0 ft (Corps datum); Corps datum is 6.82 ft below NGVD29.", "url": "https://www.nwd-wc.usace.army.mil/dd/common/projects/www/lwsc.html", "status": "FACT"}
+      ],
+      "relevance_to_cascade_oracle": "Lake Washington level is the downstream boundary for the Cedar and Sammamish systems and a drought indicator; pull LWSC 15-minute series from USACE rather than the stale county mirror."
+    },
+    {
+      "name": "Cascade Water Alliance - Lake Tapps Reservoir and White River diversion at Buckley (Puyallup/White basin)",
+      "authority": "Cascade Water Alliance (owner since Dec 18, 2009; former PSE White River-Lake Tapps project); USGS cooperative gauges",
+      "data_kind": "mixed",
+      "access": {
+        "mechanism": "USGS IV: 12098920 White River Flume at Buckley (diversion flow into the flume), 12099200 White River above Boise Creek at Buckley (bypass reach flow), 12101000 Lake Tapps near Sumner (elevation + storage), 12101100 Lake Tapps Diversion at Dieringer (return to White River + WQ), 12101102 White River at 24th St E at Dieringer; USACE A2W 'tap' (TAP.Elev-Forebay.Inst.15Minutes.0.GOES-RAW) and 'ltdw'. CWA posts lake-level updates (web text) and links to USGS.",
+        "base_urls": [
+          "https://cascadewater.org/lake-tapps/lake-levels/",
+          "https://cascadewater.org/lake-tapps/water-rights/",
+          "https://waterdata.usgs.gov/nwis/uv?site_no=12101000",
+          "https://waterservices.usgs.gov/nwis/iv/?format=json&sites=12098920,12099200,12101000,12101100"
+        ],
+        "auth": "None.",
+        "rate_limits": "N/A.",
+        "formats": ["USGS JSON/RDB", "HTML (CWA updates)", "PDF (water right permit, EIS)"]
+      },
+      "cadence": "USGS 15-60 minutes; CWA updates periodic (July 7/14/31, 2026 during drought).",
+      "latency": "~1-2 hours (USGS).",
+      "spatial_resolution": "Diversion at RM ~24.3 near Buckley, Lake Tapps, return at Dieringer.",
+      "temporal_resolution": "15-min to hourly.",
+      "historical_depth": "12101000 and 12098920 multi-decade (not verified here).",
+      "missing_data_semantics": "USGS sentinels.",
+      "quality_flags": "USGS P/A.",
+      "units": "ft (gage height; 62614 NGVD29 ~0.5 ft lower than gage height), ac-ft, cfs.",
+      "licensing": "Public.",
+      "limitations": [
+        "Water-right diversion limits and minimum instream flows (cfs by season) are in the 54-page scanned Water Right Permit PDF (no extractable text) - numbers not verified (OPEN_QUESTION; secondary snippets cite ~75 cfs average, 1,000 cfs max instantaneous with seasonal caps).",
+        "NID lists 13 Lake Tapps dikes (WA00418-WA00429) and a backflow structure (WA00703) owned by CWA - relevant as embankment risk, not flood storage.",
+        "Lake Tapps provides no formal flood control on the White River."
+      ],
+      "evidence": [
+        {"claim": "CWA: summer recreation level April 15-September 30 'between elevation 541.5' and 543.0' (gage height)', typically 542.5-542.8 ft; fall/winter drawdown to ~539 ft from November 1 (533-535 ft for major projects); most recent posted level 541.28 ft as of July 31, 2026; links USGS 12101000 and 12099200.", "url": "https://cascadewater.org/lake-tapps/lake-levels/", "status": "FACT"},
+        {"claim": "USGS on 2026-08-22: 12101000 gage height 541.36 ft, 62614 540.86 ft, storage 42,570 ac-ft; 12098920 flume 234 cfs; 12099200 549 cfs; 12101100 return 24.2 cfs.", "url": "https://waterservices.usgs.gov/nwis/iv/?format=json&sites=12098920,12099200,12101000,12101100&siteStatus=all", "status": "FACT"},
+        {"claim": "Cascade purchased PSE's White River-Lake Tapps Reservoir project on Dec. 18, 2009 as future municipal supply; water rights issued in four parts (diversion, storage, withdrawal, change to 1895 hydro claim).", "url": "https://cascadewater.org/lake-tapps/water-rights/", "status": "FACT"},
+        {"claim": "Water-right permit PDF (2026/02 upload, 54 pages) has no extractable text.", "url": "https://cascadewater.org/wp-content/uploads/2026/02/Water-Right-Permit.pdf", "status": "OPEN_QUESTION"}
+      ],
+      "relevance_to_cascade_oracle": "The Buckley diversion removes up to several hundred cfs from the White River between Mud Mountain Dam and Auburn; flume and bypass gauges let the oracle close the water balance below MMD."
+    },
+    {
+      "name": "Nooksack River - unregulated basin, Whatcom County flood gauges, and Nooksack-Sumas transboundary flooding",
+      "authority": "NOAA Fisheries (2025 EA statement); Whatcom County River & Flood Division; Washington Ecology / Province of BC Transboundary Flood Initiative; USGS",
+      "data_kind": "mixed",
+      "access": {
+        "mechanism": "No reservoir data (no major dams). Flood monitoring via USGS (12205000 NF below Cascade Cr, 12208000 MF nr Deming, 12210000 SF at Saxon Bridge, 12210700 North Cedarville, 12211200 Everson, 12211500 Lynden, 12213100 Ferndale, 12211190/12211195 overflow gauges at Everson with USGS HIVIS cameras, 12214500 Sumas River nr Sumas) and NWPS gauges NRKW1 (North Cedarville), NKSW1 (Ferndale), NSSW1 (Saxon Bridge). Whatcom County pages are link hubs (no county API).",
+        "base_urls": [
+          "https://www.whatcomcounty.us/666/Forecasts-Current-River-Conditions",
+          "https://www.whatcomcounty.us/594/Early-Flood-Warning",
+          "https://ecology.wa.gov/ecologys-work-near-you/river-basins-groundwater/nooksack-transboundary-flood-initiative",
+          "https://apps.usgs.gov/hivis/camera/12211195_WA_NooksackR_Overflow",
+          "https://water.noaa.gov/gauges/nrkw1"
+        ],
+        "auth": "None.",
+        "rate_limits": "N/A.",
+        "formats": ["USGS JSON/RDB", "NWPS JSON", "HTML"]
+      },
+      "cadence": "USGS 15-minute; overflow gauges seasonal.",
+      "latency": "~1-2 hours.",
+      "spatial_resolution": "Mainstem and forks; overflow corridor Everson to Sumas/Fraser.",
+      "temporal_resolution": "15-minute.",
+      "historical_depth": "Ferndale gauge long record; overflow gauges recent.",
+      "missing_data_semantics": "USGS -999999; overflow gauges idle outside flood season.",
+      "quality_flags": "USGS P/A; freezing weather may affect gauges (county note).",
+      "units": "ft stage (NAVD88 elevation 63160 at Hwy 544 overflow), cfs.",
+      "licensing": "Public.",
+      "limitations": [
+        "Flood-stage thresholds for North Cedarville (action 144.8 / minor 146.5 / moderate 148.0 / major 150.0 ft) and Ferndale (15.0/18.0/20.5/23.0 ft) came from a search snippet, not a fetched page - INFERENCE; verify via NWPS gauge JSON.",
+        "Cross-border: Canadian Sumas River/Fraser data are outside US feeds; TFI shares models but no public joint data API found."
+      ],
+      "evidence": [
+        {"claim": "'No major dams occur on the Nooksack River.' (p.14) and 'Flows within the entire river basin are unregulated...' (p.23).", "url": "https://www.fisheries.noaa.gov/s3/2025-03/FONSI-EA-Nooksack-Hatchery.pdf", "status": "FACT"},
+        {"claim": "Nooksack and Sumas Transboundary Flood Initiative: framework signed October 2023 by 9 partners (Sumas, Leq'a:mel, Matsqui First Nations; Nooksack Tribe; Lummi Nation; City of Abbotsford; Whatcom County; BC; Washington); aligned US/Canadian hydraulic models; real-time gauges and cameras; SR 544 culvert-to-bridge; Dec 2025 atmospheric river tested systems.", "url": "https://ecology.wa.gov/ecologys-work-near-you/river-basins-groundwater/nooksack-transboundary-flood-initiative", "status": "FACT"},
+        {"claim": "Whatcom County river-conditions page links NWPS gauges nksw1, nrkw1, nssw1, USGS sites 12205000, 12208000, 12210000, 12210700, 12211200, 12211500, 12213100, and USGS HIVIS overflow cameras for 12211190 and 12211195; notes freezing weather may limit real-time data.", "url": "https://www.whatcomcounty.us/666/Forecasts-Current-River-Conditions", "status": "FACT"},
+        {"claim": "USGS 12211190 and 12211195 Nooksack R Overflow gauges (Everson) reported stage through March/April 2026; 12214500 Sumas River returning -999999 on 2026-08-22.", "url": "https://waterservices.usgs.gov/nwis/iv/?format=json&sites=12211190,12211195,12214500&siteStatus=all", "status": "FACT"},
+        {"claim": "Whatcom County flood strategy is levee setback/widening rather than storage; Middle Fork Nooksack diversion dam removed in 2020.", "url": "https://www.fisheries.noaa.gov/feature-story/dam-removal-brings-hope-salmon-washingtons-middle-fork-nooksack-river", "status": "INFERENCE"}
+      ],
+      "relevance_to_cascade_oracle": "Confirms the Nooksack needs no reservoir-operations layer; the Everson overflow gauges/cameras and Sumas gauge are the key cross-border indicators."
+    },
+    {
+      "name": "Washington Department of Ecology Dam Safety Office - state dam inventory",
+      "authority": "Washington State Department of Ecology, Dam Safety Office (regulates ~1,100 dams storing >=10 acre-feet; hydroelectric/federal dams regulated by FERC, USACE, USBR)",
+      "data_kind": "static",
+      "access": {
+        "mechanism": "Publication 94-016 'Inventory of Dams in the State of Washington' (PDF 203 pp + Excel supplement), last revised January 2026; 2017 'Washington State Dams' file geodatabase available only by contacting the distributor (metadata page); Ecology's dam pages are web-only. Scripted fetches of apps.ecology.wa.gov documents and some ecology.wa.gov pages return 403 (Azure Application Gateway WAF).",
+        "base_urls": [
+          "https://apps.ecology.wa.gov/publications/SummaryPages/94016.html",
+          "https://apps.ecology.wa.gov/publications/documents/94016.pdf",
+          "https://apps.ecology.wa.gov/publications/othersupplements/94016other.xlsx",
+          "https://fortress.wa.gov/ecy/gispublic/DataDownload/WR_WAT_Dams.htm",
+          "https://ecology.wa.gov/water-shorelines/water-supply/dams",
+          "https://ecology.wa.gov/water-shorelines/water-supply/dams/info-for-the-public/dams-we-regulate"
+        ],
+        "auth": "None (browser access).",
+        "rate_limits": "WAF blocks non-browser user agents (HTTP 403 observed).",
+        "formats": ["PDF", "XLSX", "File geodatabase (by request)"]
+      },
+      "cadence": "Inventory report revised irregularly (latest January 2026); GIS layer last published 2017 (maintenance frequency 'Irregular').",
+      "latency": "Months to years.",
+      "spatial_resolution": "Point per dam (1,195 existing dams in 2017 layer; 1,242 regulated dams cited for 2023 in secondary source).",
+      "temporal_resolution": "N/A.",
+      "historical_depth": "Snapshot.",
+      "missing_data_semantics": "N/A.",
+      "quality_flags": "Hazard class (37% of regulated dams high or significant hazard).",
+      "units": "acre-feet, feet.",
+      "licensing": "Ecology copyright/use page referenced; data provided 'AS IS' without warranty.",
+      "limitations": [
+        "No public ArcGIS REST service for the dams layer found (gis.ecology.wa.gov and fortress.wa.gov REST roots did not return JSON to scripted requests); geo.wa.gov search for 'dams' returns no Ecology dams dataset.",
+        "Hydroelectric dams in scope (Ross, Diablo, Gorge, Baker, Tolt) are FERC-regulated and HHD/MMD are USACE - Ecology's inventory covers Masonry Dam, Morse Lake Overflow Dike, Lake Tapps dikes, and smaller structures.",
+        "No machine-readable dam-safety inspection or condition feed."
+      ],
+      "evidence": [
+        {"claim": "Publication 94-016 'Inventory of Dams in the State of Washington', published January 1994, last revised January 2026; PDF 203 pages (4,342 KB) and an Excel spreadsheet supplement (208 KB) provided because the PDF table is not accessible.", "url": "https://apps.ecology.wa.gov/publications/SummaryPages/94016.html", "status": "FACT"},
+        {"claim": "'The Dam Safety Office (DSO) regulates nearly 1,100 dams in Washington.'", "url": "https://ecology.wa.gov/water-shorelines/water-supply/dams", "status": "FACT"},
+        {"claim": "Jurisdiction: dams that store at least 10 acre-feet; 37% of regulated dams are high or significant hazard; 145 dams regulated instead by FERC, USBR, or USACE; 'We generally do not regulate hydroelectric project dams.'", "url": "https://ecology.wa.gov/water-shorelines/water-supply/dams/info-for-the-public/dams-we-regulate", "status": "FACT"},
+        {"claim": "2017 'Washington State Dams' geodatabase metadata: 1,195 existing dams; maintenance frequency irregular; distribution 'To get the Dams layer, please contact the Distributor' (Amy.Pearson@ecy.wa.gov); data provided AS IS.", "url": "https://fortress.wa.gov/ecy/gispublic/DataDownload/WR_WAT_Dams.htm", "status": "FACT"},
+        {"claim": "Direct downloads of 94016.pdf and 94016other.xlsx returned HTTP 403 to curl (Microsoft-Azure-Application-Gateway).", "url": "https://apps.ecology.wa.gov/publications/othersupplements/94016other.xlsx", "status": "FACT"}
+      ],
+      "relevance_to_cascade_oracle": "Use NID (machine-readable, includes the same dams with Ecology listed as state regulator) as the primary inventory; Ecology's report/Excel is a periodic cross-check for small dams and hazard class."
+    },
+    {
+      "name": "King County Flood Warning Center / Flood Warning System (Snoqualmie, SF Skykomish, Tolt, Cedar, Green, White, Issaquah Creek)",
+      "authority": "King County DNRP Water and Land Resources Division (Flood Warning Center, 206-296-8200), funded by King County Flood Control District",
+      "data_kind": "derived",
+      "access": {
+        "mechanism": "Web app https://flood.kingcounty.gov/ (Next.js) with per-gauge pages (e.g., /gauge/2/ Mud Mountain Dam discharge) that call https://api.kingcounty.gov/floodwarning/v1/river/gauge/ and /floodwarning/v1/rivers via Azure API Management with an 'Ocp-Apim-Subscription-Key' header embedded in the app (unauthenticated calls return HTTP 401 'missing subscription key'). Phases derived every ~10 minutes from USGS, NWS and NWRFC data. Flood alerts signup https://green2.kingcounty.gov/floodalertsystem/. King County Hydrologic Information Center (green2.kingcounty.gov/hydrology/) offers county rain/stream gauge downloads (DataDownload.aspx, MultiSiteDataDownload.aspx, GaugeMap.aspx) - form-driven. Lake Washington and other datasets on data.kingcounty.gov (Socrata).",
+        "base_urls": [
+          "https://flood.kingcounty.gov/",
+          "https://flood.kingcounty.gov/faq/",
+          "https://api.kingcounty.gov/floodwarning/v1/river/gauge/ (key required)",
+          "https://kingcounty.gov/en/dept/dnrp/nature-recreation/environment-ecology-conservation/flood-services/warning-system",
+          "https://green2.kingcounty.gov/hydrology/DataDownload.aspx"
+        ],
+        "auth": "Subscription key (Azure APIM) for the flood API; none for web pages.",
+        "rate_limits": "Unknown (APIM policy).",
+        "formats": ["JSON (API)", "HTML", "ASPX form downloads (HIC)"]
+      },
+      "cadence": "Source data downloaded ~every 10 minutes.",
+      "latency": "~10 minutes plus source latency.",
+      "spatial_resolution": "Gauge-based phases on 7 waterways.",
+      "temporal_resolution": "10-minute refresh.",
+      "historical_depth": "App shows current conditions; HIC provides 15-minute historical county gauge data.",
+      "missing_data_semantics": "Unknown (API not accessible).",
+      "quality_flags": "N/A.",
+      "units": "cfs thresholds for rivers, ft for Issaquah Creek.",
+      "licensing": "King County terms of use; API key terms unknown (OPEN_QUESTION).",
+      "limitations": [
+        "Exact per-river phase thresholds (cfs) are not published on any fetched page - they live behind the keyed API/app (OPEN_QUESTION); a secondary snippet cites Snoqualmie Phase 1 6,000 cfs and Phase 2 12,000 cfs (INFERENCE).",
+        "Phase numbering: King County Phase 1-4 (higher = worse), whereas Skagit County uses Phase 3 (low) to Phase 1 (catastrophic) - do not conflate.",
+        "King County flood.kingcounty.gov API 404s for guessed routes; only /river/gauge/ and /rivers observed in bundle."
+      ],
+      "evidence": [
+        {"claim": "King County uses four phases per river; the Flood Alert System covers Cedar, Green, Issaquah Creek, SF Skykomish, Tolt and White (plus Snoqualmie); app downloads USGS, NWS and NWRFC data 'about every 10 minutes'; Flood Warning Center 206-296-8200 / 800-945-9263.", "url": "https://kingcounty.gov/en/dept/dnrp/nature-recreation/environment-ecology-conservation/flood-services/warning-system", "status": "FACT"},
+        {"claim": "FAQ: data from USGS stream gauges, NWRFC and NOAA forecasts; 'Gauge data is generally updated every 10 minutes'; links green2.kingcounty.gov/floodalertsystem/ and USGS WaterAlert.", "url": "https://flood.kingcounty.gov/faq/", "status": "FACT"},
+        {"claim": "Gauge page 2 = 'Mud Mountain Dam discharge'; app JS references https://api.kingcounty.gov/floodwarning/v1/river/gauge/ and floodwarning/v1/rivers with an Ocp-Apim-Subscription-Key header; unauthenticated GET returns 401 'Access denied due to missing subscription key'.", "url": "https://api.kingcounty.gov/floodwarning/v1/river/gauge/", "status": "FACT"},
+        {"claim": "Hydrologic Information Center offers daily rainfall, average daily discharge, 15-minute rainfall/streamflow and discrete water-quality data via Data Download, Multi-site Download, Gauge Map/Search pages.", "url": "https://green2.kingcounty.gov/hydrology/Data.aspx", "status": "FACT"},
+        {"claim": "Phase definitions: Phase 0 normal; 1 monitoring; 2 low-lying areas may flood; 3 floodwaters may affect homes, roads, infrastructure; 4 significant flooding threatening life/property; thresholds 'based on historical flood conditions unique to each river basin' (no numbers).", "url": "https://kingcountyfloodcontrol.org/%E2%9A%A0%EF%B8%8F-flood-phases-what-do-they-mean-%E2%9A%A0%EF%B8%8F/", "status": "FACT"}
+      ],
+      "relevance_to_cascade_oracle": "King County phases are the local impact language for Snoqualmie/Cedar/Green/White; reproduce them from USGS/NWRFC inputs once thresholds are obtained from the county."
+    },
+    {
+      "name": "Skagit County flood program - river levels, flood phases, dike districts GIS",
+      "authority": "Skagit County Public Works / Emergency Management; Skagit County GIS; Skagit County Dike Districts (Title 85 RCW)",
+      "data_kind": "mixed",
+      "access": {
+        "mechanism": "Web pages linking USGS 12194000 (Concrete), 12200500 (Mount Vernon), 12201500 (Samish) and NWS/NWRFC forecasts; River Level Hotline (360) 416-1404. Dike district assessment areas as ArcGIS REST: https://geo.skagitcountywa.gov/server/rest/services/Districts/SkagitCountyDikeDistrictAssessmentAreas/MapServer (layer 8 Dike_District_Assessment_Parcels; JSON/geoJSON/PBF). Levee geometry for Dike Districts 1/3/9/12/17/22 is in the NLD.",
+        "base_urls": [
+          "https://www.skagitcounty.net/Departments/EmergencyInformation/levels.htm",
+          "https://www.skagitcounty.net/Departments/Flood/Main.htm",
+          "https://geo.skagitcountywa.gov/server/rest/services/Districts/SkagitCountyDikeDistrictAssessmentAreas/MapServer",
+          "https://skagitcounty.net/GIS/Documents/Drainage/dike.pdf"
+        ],
+        "auth": "None.",
+        "rate_limits": "N/A.",
+        "formats": ["HTML", "ArcGIS JSON/geoJSON/PBF", "PDF"]
+      },
+      "cadence": "Gauge links real-time (USGS/NWS); dike map updated October 2022.",
+      "latency": "N/A (links).",
+      "spatial_resolution": "County; two mainstem gauges (flood stage 28 ft at both Concrete and Mount Vernon).",
+      "temporal_resolution": "N/A.",
+      "historical_depth": "N/A.",
+      "missing_data_semantics": "N/A.",
+      "quality_flags": "N/A.",
+      "units": "ft stage.",
+      "licensing": "Skagit County GIS copyright.",
+      "limitations": [
+        "County does not operate its own gauge API; the 'Skagit River Flood Monitor' (skagit-river.netlify.app) is a third-party app.",
+        "Dike district boundaries are assessment rolls, not hydraulic levee alignments (use NLD for geometry).",
+        "Skagit phase numbering is inverted relative to King/Snohomish counties (Phase 3 low-level, Phase 1 catastrophic, e.g., Nov 2021 38.93 ft)."
+      ],
+      "evidence": [
+        {"claim": "River levels page: Concrete (USGS 12194000), Mount Vernon (12200500), Samish (12201500); 'Flood Stage for the Skagit River at both the Mount Vernon and Concrete Gauges is 28 feet'; NWS AHPS link for mvew1; hotline (360) 416-1404.", "url": "https://www.skagitcounty.net/Departments/EmergencyInformation/levels.htm", "status": "FACT"},
+        {"claim": "Flood main page: Phase 3 low-level inundation every few years; Phase 2 wider flooding (2015-2018); Phase 1 catastrophic (Nov 2021, 38.93 ft); Dike Districts contact (360) 416-1400; dike district map PDF.", "url": "https://www.skagitcounty.net/Departments/Flood/Main.htm", "status": "FACT"},
+        {"claim": "Dike district MapServer has layer 8 Dike_District_Assessment_Parcels; districts 'are defined by the assessment roll' per Title 85 RCW; supports JSON, geoJSON, PBF.", "url": "https://geo.skagitcountywa.gov/server/rest/services/Districts/SkagitCountyDikeDistrictAssessmentAreas/MapServer?f=pjson", "status": "FACT"},
+        {"claim": "NLD lists Skagit County Dike District No. 3 (Main/Hill Ditch/Fisher RB), No. 17, No. 22, No. 9/1/12 and Cockreham Island systems on the Skagit River, all Non-Accredited and PL 84-99 'Active'.", "url": "https://geospatial.sec.usace.army.mil/dls/rest/services/NLD/Public/FeatureServer/15/query", "status": "FACT"}
+      ],
+      "relevance_to_cascade_oracle": "Provides the local flood-stage and phase semantics for the Skagit delta and the sponsor map for levee systems protecting Mount Vernon, Burlington and Fir Island."
+    },
+    {
+      "name": "Snohomish County flood warning (Snohomish/Skykomish/Snoqualmie/Stillaguamish) - OneRain Contrail portal",
+      "authority": "Snohomish County Surface Water Management (Flood.Watch@snoco.org)",
+      "data_kind": "observational",
+      "access": {
+        "mechanism": "County pages list gauges by basin with links to NWPS (snaw1 Snohomish at Snohomish, mrow1 near Monroe, glbw1 Skykomish at Gold Bar, wchw1 Sauk) and to the county's OneRain Contrail portal (snohomish.onerain.com) for county-owned Stillaguamish gauges; the portal root and site pages redirected to a login page when fetched (HTTP 302 to /login/).",
+        "base_urls": [
+          "https://snohomishcountywa.gov/925/All-Real-Time-Gauges-by-Basin",
+          "https://snohomishcountywa.gov/894/River-Levels-Flood-Stages",
+          "https://snohomish.onerain.com/"
+        ],
+        "auth": "OneRain portal appears login-gated as of 2026-08-22 (OPEN_QUESTION whether public access exists at another path).",
+        "rate_limits": "N/A.",
+        "formats": ["HTML", "NWPS JSON for NOAA gauges"]
+      },
+      "cadence": "Real-time (NWPS) / unknown (OneRain).",
+      "latency": "N/A.",
+      "spatial_resolution": "16 county river gauges (per county text).",
+      "temporal_resolution": "N/A.",
+      "historical_depth": "N/A.",
+      "missing_data_semantics": "N/A.",
+      "quality_flags": "N/A.",
+      "units": "ft stage (e.g., Monroe 15.0 ft = Phase 2 per news report).",
+      "licensing": "N/A.",
+      "limitations": [
+        "Phase thresholds per gauge not on fetched pages (sidebar pages not crawled).",
+        "OneRain export endpoints not reachable without login."
+      ],
+      "evidence": [
+        {"claim": "Snohomish County phases: Phase 0 normal; 1 rare flooding/monitoring; 2 minor flooding, some road closures; 3 moderate to severe flooding, some levee overtopping, EOC opens; 4 major flooding and widespread damage; gauge sites listed for Sauk, Stillaguamish (NF/SF), Snohomish at Snohomish / near Monroe, Skykomish, Snoqualmie.", "url": "https://snohomishcountywa.gov/894/River-Levels-Flood-Stages", "status": "FACT"},
+        {"claim": "Gauge links include water.noaa.gov/gauges/snaw1, mrow1, glbw1, wchw1 and snohomish.onerain.com site pages (site_id=31 Stillaguamish at Pioneer Hwy, site_id=28 at I-5).", "url": "https://snohomishcountywa.gov/925/All-Real-Time-Gauges-by-Basin", "status": "FACT"},
+        {"claim": "https://snohomish.onerain.com/ and a site page both returned HTTP 302 to /login/ on 2026-08-22.", "url": "https://snohomish.onerain.com/", "status": "FACT"}
+      ],
+      "relevance_to_cascade_oracle": "Covers the lower Snoqualmie/Snohomish reach downstream of King County's phases; NOAA gauges are machine-readable, county-owned ones may not be."
+    }
+  ],
+  "open_questions": [
+    "CDA/A2W rate limits and formal data-use terms: no statement found on cwms-data.usace.army.mil, readthedocs, or water.usace.army.mil.",
+    "Is the water.usace.army.mil/cda/reporting API officially supported for third parties, or an internal app API subject to change? No documentation page located.",
+    "Decommission date for the NWD Dataquery 2.0 / nwd-wc.usace.army.mil legacy service ('to be announced').",
+    "Period of record for LWSC.Elev-Lake series in CDA (include-extents query for LWSC NWSRADIO-REV returned 0 entries; try other LWSC TSIDs).",
+    "Exact text of the 2026 Skagit settlement flood-control article (140,000 ac-ft by Nov 1; 165,000 ac-ft buffer) - only secondary sources fetched; federalregister.gov blocked scripted access; FERC eLibrary accession not retrieved.",
+    "Status of federal authorization for the additional 29,000 ac-ft Upper Baker flood storage committed in the 2004 Baker settlement; any interim Lower Baker flood-storage arrangement (Wikipedia's 29,426 ac-ft is unsourced; USACE 2013 says none authorized).",
+    "King County per-river flood-phase thresholds (cfs) and whether King County issues API subscription keys for api.kingcounty.gov/floodwarning.",
+    "Whether snohomish.onerain.com has a public (no-login) path or export endpoint for county gauges.",
+    "Lake Tapps water-right diversion limits and bypass-reach minimum instream flows (cfs by season) - permit PDF is scanned; secondary values (avg 75 cfs; max 1,000 cfs; 400 cfs summer-fall; 150 cfs late fall-Feb) unverified.",
+    "SPU/SCL Cedar River (Masonry Dam) flood-season operating guidance and any Renton flow targets - no public document found.",
+    "Ecology dam inventory: whether a current ArcGIS REST dams layer exists (2017 geodatabase is by request; WAF blocks scripted PDF/XLSX downloads).",
+    "USACE HHD current operating plan post-December 2025 (record pool 1,189.3 ft) vs the 2011 manual's AWSP Phase I limits.",
+    "NWRFC xml.cgi maximum 'numdays' lookback and any usage policy."
+  ]
+}

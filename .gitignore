@@ -1,0 +1,37 @@
+# Cascade Oracle V2 root ignores (v1/ keeps its own .gitignore)
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+credentials.json
+node_modules/
+dist/
+build/
+.venv/
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+coverage/
+.coverage
+*.egg-info/
+.DS_Store
+.idea/
+.vscode/
+# scientific data caches (never commit raw products)
+data/raw/
+data/cache/
+*.grib2
+*.grb2
+*.nc
+*.tif
+*.tiff
+*.laz
+*.las
+
+# local spike data (sqlite db + raw archive)
+data/
+.wrangler/

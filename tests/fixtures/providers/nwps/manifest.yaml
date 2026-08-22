@@ -1,0 +1,128 @@
+provider: nwps-v1
+captured:
+- file: gauge_RNTW1.json
+  url: https://api.water.noaa.gov/nwps/v1/gauges/RNTW1
+  captured_at: '2026-08-22T13:16:41.083833+00:00'
+  http_status: 200
+  content_type: application/json
+  bytes: 31647
+  sha256: 743d3aab1558bff8d2345b248d71ffb4b87703a66839726ccc3138bdd6f345ba
+  notes: Gauge metadata + flood categories + datums for RNTW1.
+- file: stageflow_RNTW1.json
+  url: https://api.water.noaa.gov/nwps/v1/gauges/RNTW1/stageflow
+  captured_at: '2026-08-22T13:16:41.670561+00:00'
+  http_status: 200
+  content_type: application/json
+  bytes: 475299
+  sha256: 76ebf5fb49aeea120197fdb662aafc6bbf9875ce9c4bceb1558dfd1873d13190
+  notes: Observed + official forecast series for RNTW1.
+- file: gauge_CRNW1.json
+  url: https://api.water.noaa.gov/nwps/v1/gauges/CRNW1
+  captured_at: '2026-08-22T13:16:41.753391+00:00'
+  http_status: 200
+  content_type: application/json
+  bytes: 87590
+  sha256: 3a7434dd5bf79b1743c5509ddfe29e54885a2031dfd84e2261541c9fb19fcd4f
+  notes: Gauge metadata + flood categories + datums for CRNW1.
+- file: stageflow_CRNW1.json
+  url: https://api.water.noaa.gov/nwps/v1/gauges/CRNW1/stageflow
+  captured_at: '2026-08-22T13:16:42.222485+00:00'
+  http_status: 200
+  content_type: application/json
+  bytes: 470819
+  sha256: 4250f5f25e3f4eee7bae8c49a4ae95bde3160211bb0170702be9b3fd9349c186
+  notes: Observed + official forecast series for CRNW1.
+- file: gauge_MVEW1.json
+  url: https://api.water.noaa.gov/nwps/v1/gauges/MVEW1
+  captured_at: '2026-08-22T13:16:42.311002+00:00'
+  http_status: 200
+  content_type: application/json
+  bytes: 42659
+  sha256: ee04e023cfd83ea4a68c743ebd299e23b553482f61b911ab63c4b6114ea5fd44
+  notes: Gauge metadata + flood categories + datums for MVEW1.
+- file: stageflow_MVEW1.json
+  url: https://api.water.noaa.gov/nwps/v1/gauges/MVEW1/stageflow
+  captured_at: '2026-08-22T13:16:42.762655+00:00'
+  http_status: 200
+  content_type: application/json
+  bytes: 484133
+  sha256: 99981bfc3866ccea3b65b12fe480fd09729b577e8eb9501c0ec49756f4e0275e
+  notes: Observed + official forecast series for MVEW1.
+- file: gauge_NKSW1.json
+  url: https://api.water.noaa.gov/nwps/v1/gauges/NKSW1
+  captured_at: '2026-08-22T13:16:42.842683+00:00'
+  http_status: 200
+  content_type: application/json
+  bytes: 52045
+  sha256: 6baa2d8c700987e0d6c1cf5d83737602991937cc83615dc831a03af3a4027af1
+  notes: Gauge metadata + flood categories + datums for NKSW1.
+- file: stageflow_NKSW1.json
+  url: https://api.water.noaa.gov/nwps/v1/gauges/NKSW1/stageflow
+  captured_at: '2026-08-22T13:16:43.246813+00:00'
+  http_status: 200
+  content_type: application/json
+  bytes: 480839
+  sha256: 34cf50bc34788232d41387d55ffb38517308059f68d325e04b67bb86d156a53a
+  notes: Observed + official forecast series for NKSW1.
+- file: gauge_AUBW1.json
+  url: https://api.water.noaa.gov/nwps/v1/gauges/AUBW1
+  captured_at: '2026-08-22T13:16:43.340743+00:00'
+  http_status: 200
+  content_type: application/json
+  bytes: 37666
+  sha256: 5c40d6c48b8d5a84df2193b7d9d3c703632e8be07b8aac5e61763f2166efc1fa
+  notes: Gauge metadata + flood categories + datums for AUBW1.
+- file: stageflow_AUBW1.json
+  url: https://api.water.noaa.gov/nwps/v1/gauges/AUBW1/stageflow
+  captured_at: '2026-08-22T13:16:43.683380+00:00'
+  http_status: 200
+  content_type: application/json
+  bytes: 483739
+  sha256: 09863f1cff25ac8f9c5a329c8adb8cc04ceace563fad137ac7c315f652b84d82
+  notes: Observed + official forecast series for AUBW1.
+- file: gauge_WRAW1.json
+  url: https://api.water.noaa.gov/nwps/v1/gauges/WRAW1
+  captured_at: '2026-08-22T13:16:43.955419+00:00'
+  http_status: 200
+  content_type: application/json
+  bytes: 23369
+  sha256: 644ad468c6a99f21111690321e7fd1ef3750c3dcf717468cf6c54ad86feaed23
+  notes: Gauge metadata + flood categories + datums for WRAW1.
+- file: stageflow_WRAW1.json
+  url: https://api.water.noaa.gov/nwps/v1/gauges/WRAW1/stageflow
+  captured_at: '2026-08-22T13:16:44.300953+00:00'
+  http_status: 200
+  content_type: application/json
+  bytes: 470866
+  sha256: 8e91f152af3327f3f6cd2feab1650369fa74fd7e42b927980c6b0cb7e50417f5
+  notes: Observed + official forecast series for WRAW1.
+derived:
+- file: gauge_missing_category.json
+  derived_from: gauge_MVEW1.json
+  sha256: cbfe5575d3720ff73b58e0bf3616e712c7702b329d7912664ec12bcd929a498a
+  notes: flood.categories.minor removed -> ParseError.
+- file: gauge_all_sentinel.json
+  derived_from: gauge_MVEW1.json
+  sha256: ae2bb20af5346caa0d88254b4f9f3bf11c4121f9be3b08124eaa297468050dc9
+  notes: All category stage AND flow = -9999 -> no thresholds (UNKNOWN downstream).
+- file: gauge_string_number.json
+  derived_from: gauge_MVEW1.json
+  sha256: abba937b9b6974897c4304181bf3c2d0d1ab3415043576efbe1d74fe727907d0
+  notes: major.stage is the string '32' -> ParseError (never coerced).
+- file: malformed.json
+  derived_from: gauge_MVEW1.json
+  sha256: 59ef134be63947a917aa5189399376ac69aa14d93998c70ecc6596fb257d0b66
+  notes: Truncated JSON -> ParseError.
+- file: stageflow_no_forecast.json
+  derived_from: stageflow_MVEW1.json
+  sha256: 8b375b103b74e9a3a3bf659bb7adab1a3dc7ab807c9838a3061115b7ffcdaeb9
+  notes: forecast block with empty data -> no ForecastRun; observed retained (4 points).
+- file: stageflow_sentinel.json
+  derived_from: stageflow_MVEW1.json
+  sha256: df45f02d39200c1e7fb1e85fff5004ad084be83bc6d52c391a813d2a63cfdff4
+  notes: forecast data[2].primary and data[3].secondary = -9999 -> None.
+- file: stageflow_MVEW1_later.json
+  derived_from: stageflow_MVEW1.json
+  sha256: 573599d91005d8c71fcc38109ef57495c602bf3bfb9ad94d7fd4154672e21aa2
+  notes: Same forecast re-issued 12 h later (issuedTime 2026-08-22T03:05Z) with stage
+    +0.5 ft -> supersedes the earlier run.

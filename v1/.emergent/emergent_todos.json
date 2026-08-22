@@ -1,0 +1,42 @@
+[
+  {
+    "content": "Phase 2A: Verified NRCS AWDB REST API + identified primary SNOTEL station per basin",
+    "status": "completed"
+  },
+  {
+    "content": "Phase 2A: Backend - lib/snotel_stations.py config (per-basin SNOTEL mapping with confidence + notes)",
+    "status": "completed"
+  },
+  {
+    "content": "Phase 2A: Backend - lib/snotel.py adapter (batch SWE fetch, trend, plain-English interpretation, stale detection)",
+    "status": "completed"
+  },
+  {
+    "content": "Phase 2A: Backend - lib/precursors.py rewrite to attach real SNOTEL data; lib/types.py extend if needed",
+    "status": "completed"
+  },
+  {
+    "content": "Phase 2A: Backend - cache layer (1h TTL for SNOTEL); orchestrator wiring; new /api/system/precursors-status endpoint",
+    "status": "completed"
+  },
+  {
+    "content": "Phase 2A: Frontend - PrecursorPanel component (SNOTEL signal + confidence + trust copy)",
+    "status": "completed"
+  },
+  {
+    "content": "Phase 2A: Frontend - update StationDetailDialog to render real precursor + 'Why' panel awareness",
+    "status": "completed"
+  },
+  {
+    "content": "Phase 2A: Frontend - HeroStatusPanel 'Precursor Layer: Snowpack active' indicator + new SNOTEL source badge variant",
+    "status": "completed"
+  },
+  {
+    "content": "Phase 2A: End-to-end testing (success, failure, stale, no-mapping, modal with/without precursor) - 100% pass",
+    "status": "completed"
+  },
+  {
+    "content": "Phase 2A: Update plan.md + finish summary with mapped stations, live fields, uncertain mappings, what remains for Phase 2B",
+    "status": "completed"
+  }
+]

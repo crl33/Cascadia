@@ -1,0 +1,183 @@
+{
+  "$defs": {
+    "Freshness": {
+      "additionalProperties": false,
+      "properties": {
+        "age_seconds": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Age Seconds"
+        },
+        "expected_cadence_seconds": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Expected Cadence Seconds"
+        },
+        "state": {
+          "$ref": "#/$defs/FreshnessState"
+        }
+      },
+      "required": [
+        "state"
+      ],
+      "title": "Freshness",
+      "type": "object"
+    },
+    "FreshnessState": {
+      "enum": [
+        "current",
+        "stale",
+        "degraded",
+        "missing",
+        "partial",
+        "unknown"
+      ],
+      "title": "FreshnessState",
+      "type": "string"
+    },
+    "SourceKind": {
+      "description": "docs/DATA_DOCTRINE.md \u00a72 \u2014 closed, ordered taxonomy.",
+      "enum": [
+        "OBSERVED",
+        "OFFICIAL_FORECAST",
+        "MODELED",
+        "DERIVED",
+        "EXPERIMENTAL",
+        "CONFIGURED",
+        "UNKNOWN"
+      ],
+      "title": "SourceKind",
+      "type": "string"
+    }
+  },
+  "$id": "https://cascade-oracle.dev/schema/ProvenanceRef.json",
+  "additionalProperties": false,
+  "description": "docs/VISUALIZATION_CONTRACTS.md \u00a71. Every scientific value points at one of these.",
+  "properties": {
+    "freshness": {
+      "$ref": "#/$defs/Freshness"
+    },
+    "issued_at": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Issued At"
+    },
+    "label": {
+      "description": "Human label supplied by the backend, e.g. 'NWRFC official forecast'",
+      "title": "Label",
+      "type": "string"
+    },
+    "method_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "method:<name>@<semver> for DERIVED/EXPERIMENTAL",
+      "title": "Method Id"
+    },
+    "product_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "SourceProduct id, e.g. product:nwps-stageflow",
+      "title": "Product Id"
+    },
+    "quality": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Quality",
+      "type": "array"
+    },
+    "raw_artifact_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Raw Artifact Id"
+    },
+    "retrieved_at": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Retrieved At"
+    },
+    "source_id": {
+      "description": "DataSource id, e.g. src:nwps-v1",
+      "title": "Source Id",
+      "type": "string"
+    },
+    "source_kind": {
+      "$ref": "#/$defs/SourceKind"
+    },
+    "valid_time": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Valid Time"
+    }
+  },
+  "required": [
+    "source_id",
+    "source_kind",
+    "freshness",
+    "label"
+  ],
+  "title": "ProvenanceRef",
+  "type": "object"
+}

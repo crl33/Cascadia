@@ -1,0 +1,164 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    :root {
+        /* ---------- Cascade Oracle cinematic dark base ---------- */
+        --co-bg-canvas: 222 52% 6%;
+        --co-bg-canvas-2: 223 46% 8%;
+        --co-bg-glass: 222 40% 10%;
+        --co-bg-glass-strong: 222 42% 12%;
+
+        --co-text-primary: 210 40% 98%;
+        --co-text-secondary: 215 18% 78%;
+        --co-text-muted: 215 14% 62%;
+        --co-text-disabled: 215 10% 48%;
+
+        --co-stroke: 215 22% 22%;
+
+        --co-cyan: 191 92% 55%;
+        --co-glacier: 205 88% 58%;
+        --co-amber-watch: 38 92% 58%;
+        --co-amber-elevated: 32 96% 56%;
+        --co-flood-red: 6 86% 56%;
+        --co-neutral: 215 10% 58%;
+        --co-focus: 191 92% 55%;
+
+        --co-shadow-glass: 0 18px 50px rgba(0, 0, 0, 0.55);
+
+        --font-display: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
+        --font-body: 'Inter', ui-sans-serif, system-ui, sans-serif;
+        --font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+        /* shadcn token mapping (dark cinematic) */
+        --background: var(--co-bg-canvas);
+        --foreground: var(--co-text-primary);
+        --card: var(--co-bg-glass);
+        --card-foreground: var(--co-text-primary);
+        --popover: var(--co-bg-glass-strong);
+        --popover-foreground: var(--co-text-primary);
+        --primary: var(--co-cyan);
+        --primary-foreground: 222 52% 6%;
+        --secondary: 222 42% 12%;
+        --secondary-foreground: var(--co-text-primary);
+        --muted: 222 30% 14%;
+        --muted-foreground: var(--co-text-muted);
+        --accent: 222 30% 14%;
+        --accent-foreground: var(--co-text-primary);
+        --destructive: var(--co-flood-red);
+        --destructive-foreground: 210 40% 98%;
+        --border: var(--co-stroke);
+        --input: 222 30% 14%;
+        --ring: var(--co-focus);
+        --chart-1: var(--co-cyan);
+        --chart-2: var(--co-glacier);
+        --chart-3: var(--co-amber-watch);
+        --chart-4: var(--co-amber-elevated);
+        --chart-5: var(--co-flood-red);
+        --radius: 1rem;
+    }
+}
+
+@layer base {
+    * {
+        border-color: hsl(var(--border));
+    }
+    html, body {
+        background-color: hsl(var(--co-bg-canvas));
+        color: hsl(var(--co-text-primary));
+    }
+    body {
+        margin: 0;
+        font-family: var(--font-body);
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+    }
+    code, .font-mono {
+        font-family: var(--font-mono);
+    }
+    .font-display {
+        font-family: var(--font-display);
+        letter-spacing: -0.01em;
+    }
+}
+
+@layer base {
+    [data-debug-wrapper='true'] {
+        display: contents !important;
+    }
+    [data-debug-wrapper='true'] > * {
+        margin-left: inherit;
+        margin-right: inherit;
+        margin-top: inherit;
+        margin-bottom: inherit;
+        padding-left: inherit;
+        padding-right: inherit;
+        padding-top: inherit;
+        padding-bottom: inherit;
+        column-gap: inherit;
+        row-gap: inherit;
+        gap: inherit;
+    }
+}
+
+/* ---------- Ambient utilities ---------- */
+@layer utilities {
+    .co-glass {
+        background-color: hsl(var(--co-bg-glass) / 0.55);
+        backdrop-filter: blur(18px);
+        -webkit-backdrop-filter: blur(18px);
+        border: 1px solid hsl(var(--co-stroke) / 0.65);
+        box-shadow: var(--co-shadow-glass);
+    }
+    .co-glass-strong {
+        background-color: hsl(var(--co-bg-glass-strong) / 0.78);
+        backdrop-filter: blur(22px);
+        -webkit-backdrop-filter: blur(22px);
+        border: 1px solid hsl(var(--co-stroke) / 0.7);
+    }
+    .co-hairline {
+        border: 1px solid hsl(var(--co-stroke) / 0.7);
+    }
+    .co-text-mono {
+        font-family: var(--font-mono);
+    }
+}
+
+/* Keyframes used by Framer Motion-less subtle ambient flicker (CSS fallback) */
+@keyframes co-shimmer {
+    0%, 100% { opacity: 0.85; }
+    50% { opacity: 1; }
+}
+@keyframes co-pulse-soft {
+    0%, 100% { opacity: 0.75; }
+    50% { opacity: 1; }
+}
+.co-anim-shimmer { animation: co-shimmer 2.4s ease-in-out infinite; }
+.co-anim-pulse-watch { animation: co-pulse-soft 1.8s ease-in-out infinite; }
+.co-anim-pulse-elev { animation: co-pulse-soft 1.2s ease-in-out infinite; }
+.co-anim-pulse-flood { animation: co-pulse-soft 1.0s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+    .co-anim-shimmer,
+    .co-anim-pulse-watch,
+    .co-anim-pulse-elev,
+    .co-anim-pulse-flood {
+        animation: none !important;
+    }
+}
+
+/* Recharts dark surface tweaks */
+.recharts-cartesian-axis-tick-value {
+    fill: hsl(var(--co-text-muted)) !important;
+    font-family: var(--font-mono);
+    font-size: 11px;
+}
+.recharts-default-tooltip {
+    background: hsl(var(--co-bg-glass-strong) / 0.92) !important;
+    border: 1px solid hsl(var(--co-stroke) / 0.8) !important;
+    border-radius: 12px !important;
+    box-shadow: var(--co-shadow-glass) !important;
+}

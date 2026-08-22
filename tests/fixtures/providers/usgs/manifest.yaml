@@ -1,0 +1,39 @@
+provider: usgs-nwis-iv
+captured:
+- file: valid.json
+  url: https://waterservices.usgs.gov/nwis/iv/?format=json&sites=12119000%2C12149000%2C12200500%2C12213100%2C12113000%2C12100490&parameterCd=00065%2C00060&period=PT12H&siteStatus=all
+  captured_at: '2026-08-22T13:16:40.750203+00:00'
+  http_status: 200
+  content_type: application/json
+  bytes: 60485
+  sha256: 8237900f8214ff9d9590c780f28973fc13abcde11e571c1e5eb738025b122c38
+  notes: All six seed sites, stage (00065) + discharge (00060), 12 h window. Provisional
+    (P) qualifiers expected.
+derived:
+- file: missing_field.json
+  derived_from: valid.json
+  sha256: 4f3a0d770cfddf0ef94705c54fceb7cb131b5ee4d41f6fd74e3661c72acbc3fa
+  notes: Site 12200500 only, last 6 values; variable.unit removed from the first series
+    -> ParseError.
+- file: malformed.json
+  derived_from: valid.json
+  sha256: f8f3dcf8967f98882c1984a1eaa661fe17c93b620ad2c992633d8a30fefbed7d
+  notes: Truncated JSON -> ParseError.
+- file: sentinel.json
+  derived_from: valid.json
+  sha256: cdafbdead55cd3d01b3336165b59567a970a4a31f382e57f3b6708ef2877aa48
+  notes: Value[1] = declared noDataValue -999999, value[2] = 'n/a', value[3] qualifiers
+    P+Ice.
+- file: empty_timeseries.json
+  derived_from: valid.json
+  sha256: 0c4bd72c9b06dd90a624a2f8529e4d70d0fef5de13fcb12a7ce36933d8cdf8eb
+  notes: value.timeSeries = [] -> zero series, zero rows, no error.
+- file: schema_evolution.json
+  derived_from: valid.json
+  sha256: 4016eeac8516a15bc755bb2ed62569812e9c17abdb49b132a16d1703dc41ab9e
+  notes: Extra keys at document, series, variable and value level -> ignored.
+- file: dst_offsets.json
+  derived_from: valid.json
+  sha256: 5811b336402ea66fd7346532539b8569c1e7a6be74570f8d1cc9ee7c42b93e3e
+  notes: Four stage values around the 2026-11-01 PDT->PST fall-back, listed out of
+    UTC order; string order != instant order.

@@ -1,0 +1,120 @@
+<analysis>**original_problem_statement:** 
+Create Cascade Oracle, a real-time flood foresight platform for Washington State rivers. The interface must feel like a cinematic, predictive, futuristic command center watching nature in real time (dark navy, cyan/amber/red escalating states), rather than a generic dashboard. It must prioritize transparency and trust by using real data (USGS, NOAA NWPS) and explicitly labeling confidence levels and threshold sources. Do not use AI magic or make false predictions. The project uses a React + FastAPI + MongoDB stack and is being built in phases: Phase 1 (River Data MVP), Phase 1.5 (Hardening/Trust Layers), and Phase 2A (Snowpack Precursor Intelligence).
+
+**User's preferred language:** English (INSTRUCT next agent to respond in English only)
+
+**what currently exists?** 
+A fully functional, deeply tested application completing Phase 1, Phase 1.5, and Phase 2A. It features a stunning, cinematic React UI (Tailwind, Framer Motion) querying a FastAPI backend. The backend successfully orchestrates real-time live data from USGS (river gage/streamflow), NOAA NWPS (flood categories), and NRCS AWDB (SNOTEL snowpack) for 6 specific Washington State river basins. MongoDB handles station configuration and caching. Data trustworthiness (doctrine) is strictly enforced (e.g., unknown risk states for missing flood thresholds).
+
+**Last working item:**
+- Last item agent was working: Phase 2A (Snowpack Precursor Intelligence) - Adding NRCS AWDB / SNOTEL integrations, updating UI precursor layers, maintaining trust/risk rules.
+- Status: COMPLETED 
+- Agent Testing Done: Y
+- Which testing method agent to use? NA (Testing is already done and passed 100%)
+- User Testing Done: N
+
+**All Pending/In progress Issue list:**
+None. (Agent successfully completed all current tasks with 100% pass rates in ).
+
+**In progress Task List:**
+None. All assigned phases (1, 1.5, 2A) were finished.
+
+**Upcoming and Future Tasks:**
+Upcoming Tasks:
+- P0: Phase 2B — Precipitation Accumulation Precursor Layer (Integrate NWS QPE or MRMS data as the next intelligence precursor).
+- P1: Provide/validate configured thresholds for Green River and White River using local/county emergency ops data (currently they accurately fall back to 'unknown').
+
+Future Tasks:
+- Phase 2: Soil saturation / moisture proxy, Basin tension score, historical event comparison.
+- Phase 3: Forecasting Engine v1 (Simple forecast bands, rate-of-rise forecasting, threshold-crossing estimates).
+- Phase 4: Forecasting Engine v2 (TimesFM or equivalent time-series model, ensemble logic).
+- Phase 5: Cinematic Event Mode (3D terrain map via Cesium/Mapbox, glowing river paths, alert theater mode).
+
+**Completed work in this session:**
+- : Proved core data workflow (USGS + NOAA APIs) in isolation (DONE).
+- Base full-stack environment setup with Tailwind, Framer Motion, and MongoDB (DONE).
+- Phase 1 MVP: Dashboard, River Gauge Cards, Hydrograph Chart, backend API endpoints, risk/trust logic (DONE).
+- Phase 1.5 Hardening: 4-explicit-source threshold taxonomy, validation flags, basin filtering, UI detail modals (DONE).
+- Phase 2A Snowpack Precursors: NRCS AWDB / SNOTEL integration, PrecursorPanel UI, station DB schema extension (DONE).
+
+**Earlier issues found/mentioned but not fixed:**
+- Issue 1: Missing official thresholds for Green River and White River.
+  - Debug checklist: Currently, NOAA NWPS lacks mapped flood categories for these (AUBW1 and WRAW1). Backend correctly marks them  and . 
+  - Why to solve this issue and what will be achieved with this?: Real flood risk evaluation for these basins. 
+  - Should Test frontend/backend/both after fix: both
+  - Is recurring issue? N (Working as intended based on strict data trust doctrine, requires manual intervention/county data from user to progress).
+
+**Known issue recurrence from previous fork:**
+- Issue recurrence in previous fork: None (First fork).
+- Recurrence count: 0
+- Status: NOT STARTED
+
+**Code Architecture:**
+
+
+**Key Technical Concepts:**
+React (Hooks, Context), FastAPI, MongoDB (Motor Async), Data aggregation and normalization (Orchestrator pattern), TailwindCSS, Framer Motion (Cinematic UI animations), Recharts (Hydrographs), strict Data Trust/Provenance rules (System Doctrine).
+
+**key DB schema:**
+- : Uses dynamically cached dicts mapped by backend orchestrator. Does not have strict DB schema defined manually in Mongo shell, instead configured programmatically via dictionaries in  and , utilizing Pydantic models in .
+
+**changes in tech stack:**
+- Added  to backend for async HTTP requests.
+- Added  to frontend for UI animations.
+
+**All files of reference:**
+1.  - Core schemas ensuring strict trust rules and risk states.
+2.  - Manages caching logic and API parallel fetching.
+3.  &  - Latest additions for Phase 2A Snowpack integrations.
+4.  - Generated UI rules to maintain the exact cinematic/dark navy esthetics.
+5.  - Core execution roadmap used extensively by the agent.
+
+**Areas that need refactoring:**
+- None at this time. Architecture is extremely modular, cleanly divided into adapters (, , ) and UI components ().
+
+**key api endpoints:**
+-  - Returns aggregated station snapshots (USGS + NWPS), overall system health, and caching status.
+-  - Bypasses cache timeout to force a hard refresh of all data sources.
+
+**Critical Info for New Agent:**
+- **Product Doctrine is absolute:** Do not guess data. If a station lacks a flood threshold, it must be labeled  or . SNOTEL snowpack data is precursor intelligence only and must *never* alter the  of the river (which relies purely on observed USGS levels vs official thresholds).
+- The visual language must remain dark futuristic observatory / cinematic. Avoid over-cluttering or adding generic bright colors. Use the definitions in .
+- E2E testing using  was vital to the previous agent's success. Always run it after completing a phase.
+
+**documents and test reports created in this job:**
+- 
+- 
+- 
+- 
+- 
+
+**Last 10 User Messages and any pending HUMAN messages:**
+1. (Latest) User outlined requirements for Phase 2A (Snowpack Precursor Intelligence) using NRCS AWDB / SNOTEL data (Completed).
+2. User outlined requirements for Phase 1.5 (Hardening pass, threshold logic, basin grouping) (Completed).
+3. User clarified constraints for Phase 1 (React+FastAPI+Mongo stack OK, exact 6 station lists provided, NOAA NWPS approach defined, disclaimer specs provided) (Completed).
+4. User initiated the prompt sequence to start the task (Completed).
+*(No pending Human messages)*
+
+**Project Health Check:**
+Healthy. All APIs and UIs are completely wired, fully functional, and tested. No broken or mocked endpoints.
+
+**3rd Party Integrations:**
+- USGS Water Services REST API (Public, No Key)
+- NOAA NWPS REST API (Public, No Key)
+- NRCS AWDB API / SNOTEL (Public, No Key)
+*(No Emergent LLM key or User provided keys required for current integrations)*
+
+**Testing status:**
+- Testing agent used after significant changes: YES (Used 3 times for Phase 1, 1.5, and 2A).
+- Troubleshoot agent used after agent stuck in loop: NO
+- Test files created: , , 
+- Known regressions: None
+
+**Credentials to test flow:**
+None required.
+
+**What agent forgot to execute:**
+The agent executed every phase correctly according to the provided instructions. No tasks from the conversation were overlooked.
+
+**Debugging checklist for current issue:**
+(No current active issues)</analysis>

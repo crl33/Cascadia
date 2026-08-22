@@ -1,0 +1,88 @@
+{
+  "_note": "Subset of docs/research/nwps-usgs-awdb-samples-2026-08-22.json (live captures 2026-08-22) used by the dev stub API only. Real provider values; NOT a full run (4 of 31 forecast points) and NOT a full series.",
+  "mvew1_stageflow": {
+    "issued": "2026-08-21T15:05:00Z",
+    "pedts": "HGIFZ",
+    "primary": "Stage",
+    "units": "ft",
+    "secondary": "Flow",
+    "data": [
+      {
+        "validTime": "2026-08-21T18:00:00Z",
+        "generatedTime": "2026-08-21T15:26:36Z",
+        "primary": 10.53,
+        "secondary": 6.55
+      },
+      {
+        "validTime": "2026-08-22T00:00:00Z",
+        "generatedTime": "2026-08-21T15:26:36Z",
+        "primary": 10.53,
+        "secondary": 6.55
+      },
+      {
+        "validTime": "2026-08-22T06:00:00Z",
+        "generatedTime": "2026-08-21T15:26:36Z",
+        "primary": 10.6,
+        "secondary": 6.67
+      },
+      {
+        "validTime": "2026-08-22T12:00:00Z",
+        "generatedTime": "2026-08-21T15:26:36Z",
+        "primary": 10.64,
+        "secondary": 6.74
+      }
+    ],
+    "obs_last": [
+      {
+        "validTime": "2026-08-22T07:00:00Z",
+        "generatedTime": "2026-08-22T07:41:33Z",
+        "primary": 10.6,
+        "secondary": 6.67
+      },
+      {
+        "validTime": "2026-08-22T07:15:00Z",
+        "generatedTime": "2026-08-22T07:41:33Z",
+        "primary": 10.6,
+        "secondary": 6.67
+      }
+    ]
+  },
+  "usgs_latest": [
+    {
+      "time_series_id": "8b12f3ae4f634c56874c1541ab9aa15f",
+      "monitoring_location_id": "USGS-12200500",
+      "parameter_code": "00065",
+      "statistic_id": "00011",
+      "time": "2026-08-22T08:15:00+00:00",
+      "value": "10.59",
+      "unit_of_measure": "ft",
+      "approval_status": "Provisional",
+      "qualifier": null,
+      "last_modified": "2026-08-22T08:24:13.713680+00:00"
+    },
+    {
+      "time_series_id": "f0a8e43bb8914b258d22ee65409bdab4",
+      "monitoring_location_id": "USGS-12200500",
+      "parameter_code": "63680",
+      "statistic_id": "00011",
+      "time": "2017-10-03T16:00:00+00:00",
+      "value": "3.4",
+      "unit_of_measure": "_FNU",
+      "approval_status": "Approved",
+      "qualifier": null,
+      "last_modified": "2025-12-11T23:05:13.177234+00:00"
+    },
+    {
+      "time_series_id": "9f2fb2ec2de44399a2312b103e8f204b",
+      "monitoring_location_id": "USGS-12200500",
+      "parameter_code": "00060",
+      "statistic_id": "00011",
+      "time": "2026-08-22T08:15:00+00:00",
+      "value": "6660",
+      "unit_of_measure": "ft^3/s",
+      "approval_status": "Provisional",
+      "qualifier": null,
+      "last_modified": "2026-08-22T08:25:13.392038+00:00"
+    }
+  ]
+}

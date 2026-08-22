@@ -1,0 +1,107 @@
+{
+  "category": "backend-stack-and-scientific-tooling",
+  "verified_on": "2026-08-22",
+  "verdicts": [
+    {
+      "claim": "Latest stable PostgreSQL is 18.6 (2026-08-13); PostgreSQL 19 Beta 3 released 2026-08-13",
+      "url": "https://www.postgresql.org/",
+      "result": "CONFIRMED",
+      "note": "Homepage news item dated August 13, 2026: 'PostgreSQL 18.6, 17.11, 16.15, 15.19, 14.24 and 19 Beta 3 Released!' (28 security fixes)."
+    },
+    {
+      "claim": "PostGIS 3.6.1 released 2025-11-12 supports 'PostgreSQL 12 - 18'; 3.7.0beta2 (2026-08-10) supports 'PostgreSQL 14 - 19beta2'; 3.6.0 released 2025-09-02",
+      "url": "https://postgis.net/news/",
+      "result": "CONFIRMED",
+      "note": "All three dates and support strings are on the news page verbatim (3.6.0 says 'PostgreSQL 12 - 18beta3'). HOWEVER the research summary's framing that 3.6.1 is 'current stable' is wrong: postgis.net/source lists postgis-3.6.4.tar.gz as current; GitHub tags show 3.6.2 (2026-02-09), 3.6.3 (2026-04-14), 3.6.4 (2026-06-08) and 3.5.7 (2026-06-10). The news page hides these under generic 'PostGIS Patch Releases' titles (Feb 9 and Apr 14, 2026). 3.6.2/3.6.3 NEWS entries still say 'requires PostgreSQL 12-18'."
+    },
+    {
+      "claim": "PG 18 released 2025-09-25 with async I/O (io_method worker/io_uring/sync), skip scan, uuidv7(), virtual generated columns, OLD/NEW in RETURNING, statistics preserved by pg_upgrade, checksums default on, OAuth auth, md5 deprecated, protocol 3.2",
+      "url": "https://www.postgresql.org/about/news/postgresql-18-released-3142/",
+      "result": "CONFIRMED",
+      "note": "Release date September 25, 2025; every listed feature appears in the announcement, including 'io_method ... worker and io_uring ... sync', 'skip scan', uuidv7(), virtual generated columns, OLD/NEW in RETURNING, planner statistics kept through major upgrade, checksums on by default in initdb, oauth authentication, md5 deprecation, wire protocol 3.2."
+    },
+    {
+      "claim": "Supported majors and EOL: 18 -> 2030-11-14; 17 -> 2029-11-08; 16 -> 2028-11-09; 15 -> 2027-11-11; 14 -> 2026-11-12",
+      "url": "https://www.postgresql.org/support/versioning/",
+      "result": "CONFIRMED",
+      "note": "Table matches exactly: 18 (18.6) final release November 14, 2030; 17 (17.11) November 8, 2029; 16 (16.15) November 9, 2028; 15 (15.19) November 11, 2027; 14 (14.24) November 12, 2026. 13 went EOL November 13, 2025."
+    },
+    {
+      "claim": "Planner handles 'up to a few thousand partitions fairly well' with pruning; more remaining partitions after pruning -> longer planning and higher memory; 'Never just assume that more partitions are better than fewer partitions, nor vice-versa'",
+      "url": "https://www.postgresql.org/docs/current/ddl-partitioning.html",
+      "result": "CONFIRMED",
+      "note": "PostgreSQL 18.6 docs, section 5.12.6 'Best Practices for Declarative Partitioning': all three sentences present verbatim, including the 'provided that typical queries allow the query planner to prune all but a small number of partitions' qualifier."
+    },
+    {
+      "claim": "Edition feature split: hypertables/create_hypertable/show_chunks/drop_chunks in both; columnstore/hypercore, continuous aggregates, retention policies, add_job/alter_job, reorder/move/split chunk are Community (TSL) only; 'You cannot sell TimescaleDB Community Edition as a service'",
+      "url": "https://www.tigerdata.com/docs/about/latest/timescaledb-editions",
+      "result": "CONFIRMED",
+      "note": "Feature table: create_hypertable/show_chunks/drop_chunks in both editions; reorder_chunk/move_chunk/split_chunk, all columnstore/hypercore functions, all continuous-aggregate functions, add_retention_policy, add_job/alter_job/delete_job/run_job are Community-only. Quote present: 'You cannot sell TimescaleDB Community Edition as a service, even if you are the main contributor.' The page names the license TSL."
+    },
+    {
+      "claim": "TimescaleDB 2.29.2 released 2026-08-18; supports PostgreSQL 16, 17, 18; 'PostgreSQL 15 Support Removed' in 2.29.0",
+      "url": "https://github.com/timescale/timescaledb/releases",
+      "result": "CONFIRMED",
+      "note": "Releases: 2.29.2 (Aug 18, 2026), 2.29.1 (Aug 4), 2.29.0 (Jul 28). The 2.29.0 notes say 'Important: PostgreSQL 15 Support Removed ... This release supports PostgreSQL 16, 17, and 18.' The 2.29.2 notes themselves do not restate the PG range; cite 2.29.0 for it."
+    },
+    {
+      "claim": "pg_partman: time- and number-based partition sets, 'PostgreSQL >= 14', 'only built-in, declarative partitioning is supported', includes 'A background worker (BGW) process ... to automatically run partition maintenance without the need of an external scheduler', retention via dropping old partitions",
+      "url": "https://github.com/pgpartman/pg_partman",
+      "result": "CONFIRMED",
+      "note": "README: 'PostgreSQL >= 14'; 'As of version 5.0.1, only built-in, declarative partitioning is supported and the older trigger-based methods have been deprecated'; BGW 'to automatically run partition maintenance without the need of an external scheduler (cron, etc) in most cases'; 'both time-based and number-based table partition sets'; 'dropping old ones based on a retention policy'."
+    },
+    {
+      "claim": "pg_partman latest tag v5.5.0 published 2026-07-22T14:46:50Z; BGW role default changed to partman_maintainer; CVE fixes for SQL injection/privilege escalation; detach-before-drop support; RLS maintenance_role",
+      "url": "https://api.github.com/repos/pgpartman/pg_partman/releases/latest",
+      "result": "CONFIRMED",
+      "note": "tag_name v5.5.0, published_at 2026-07-22T14:46:50Z. Body: pg_partman_bgw.role now defaults to partman_maintainer (breaking); CVE-2026-61781/61817/61818 (SQL injection + privilege escalation in time encoder/decoder), CVE-2026-61819 (pg_jobmon), CVE-2026-61820 (template-table privilege escalation), CVE-2026-61821 (ownership takeover), CVE-2026-61822; new detach_before_drop flag; maintenance_role column for RLS on config tables."
+    },
+    {
+      "claim": "FastAPI 0.141.1 released 2026-07-29, Python >=3.10, Pydantic is a core dependency",
+      "url": "https://pypi.org/project/fastapi/",
+      "result": "CONFIRMED",
+      "note": "PyPI shows fastapi 0.141.1 released Jul 29, 2026; 'Requires: Python >=3.10'; Pydantic listed as a core requirement ('Starlette for the web parts. Pydantic for the data parts')."
+    },
+    {
+      "claim": "FastAPI 0.119.0 added pydantic.v1 partial support; 0.126.0 dropped Pydantic v1; 0.128.0 dropped pydantic.v1 - 'the latest versions of FastAPI require Pydantic v2'; Pydantic v1/pydantic.v1 unsupported on Python 3.14+",
+      "url": "https://fastapi.tiangolo.com/how-to/migrate-from-pydantic-v1-to-pydantic-v2/",
+      "result": "CONFIRMED",
+      "note": "Verbatim: '0.119.0 introduced partial support for Pydantic v1 from inside of Pydantic v2 (as pydantic.v1)'; '0.126.0 dropped support for Pydantic v1, while still supporting pydantic.v1 for a little while'; '0.128.0 dropped support for pydantic.v1 as well, so the latest versions of FastAPI require Pydantic v2'; 'This includes pydantic.v1, which is no longer supported in Python 3.14 and above.'"
+    },
+    {
+      "claim": "Pydantic 2.13.4 released 2026-05-06; 'Pydantic V1 is not compatible with Python 3.14 and greater'",
+      "url": "https://pypi.org/project/pydantic/",
+      "result": "CONFIRMED",
+      "note": "PyPI: pydantic 2.13.4 released May 6, 2026; project description says 'Note that Pydantic V1 is not compatible with Python 3.14 and greater.' Package itself is Python 3.9+."
+    },
+    {
+      "claim": "No V3 date; 'critical bug fixes and security vulnerabilities will be fixed in V1 until the release of Pydantic V3'",
+      "url": "https://pydantic.dev/docs/validation/latest/get-started/version-policy/",
+      "result": "CONFIRMED",
+      "note": "Verbatim: 'Active development of V1 has already stopped, however critical bug fixes and security vulnerabilities will be fixed in V1 until the release of Pydantic V3.' No V3 date is given on the page."
+    },
+    {
+      "claim": "SQLAlchemy 2.0.52 released 2026-08-11; extras include asyncio and postgresql-asyncpg",
+      "url": "https://pypi.org/project/sqlalchemy/",
+      "result": "CONFIRMED",
+      "note": "PyPI: SQLAlchemy 2.0.52 released Aug 11, 2026; Provides-Extra includes asyncio, postgresql-asyncpg, postgresql-psycopg, postgresql-psycopgbinary, postgresql-pg8000, postgresql-psycopg2binary, aiosqlite, mypy. (Requires Python >=3.7 is the package floor; irrelevant to the Python 3.12 project floor.)"
+    }
+  ],
+  "corrections": [
+    "PostGIS: replace every 'PostGIS 3.6.1 is current stable' statement. Current stable is PostGIS 3.6.4 (2026-06-08); 3.6.2 (2026-02-09) and 3.6.3 (2026-04-14) also shipped, and 3.5.7 (2026-06-10) is the latest 3.5.x. Source: https://postgis.net/source/ (lists postgis-3.6.4.tar.gz) and https://github.com/postgis/postgis/tags. The 3.6.x line still requires PostgreSQL 12-18 (3.6.2/3.6.3 NEWS). The /news/ page hides patch releases under generic 'PostGIS Patch Releases' titles, so cite /source/ or the tags page for 'latest'.",
+    "Open question closed (PostGIS Docker tags): postgis/postgis:18-3.6 and postgis/postgis:18-3.6-alpine exist on Docker Hub (pushed within the last ~2 weeks, linux/amd64) and are listed in the docker-postgis README; 19beta1-3.6 and 19beta1-3.6-alpine also exist; there is no 18-3.7 tag yet. Operational gotcha from the README: for PostgreSQL 18+ images the default VOLUME path changed to /var/lib/postgresql (earlier images used /var/lib/postgresql/data) - fix compose volume mounts and any testcontainers fixture that binds the data directory.",
+    "Open question closed (Garage S3 feature gaps): the S3 compatibility page (https://garagehq.deuxfleurs.fr/documentation/reference-manual/s3-compatibility/, last updated 2022-05-25) still says 'Garage does not (yet) support object versioning', all Bucket/Object Tagging endpoints are 'Missing', all Object Lock / legal hold / retention endpoints are 'Missing', and lifecycle supports only AbortIncompleteMultipartUpload and Expiration. The v2.3.0 release notes (2026-04-16, https://git.deuxfleurs.fr/Deuxfleurs/garage/releases/tag/v2.3.0) add none of these (only a LifecycleWorker bug fix), so the no-versioning/no-tagging gap stands; cite both pages and note the compat page's age. Also update the dev-ergonomics comparison: Garage v2.3.0 added 'garage server --single-node' plus env-var auto-creation of an access key and bucket, which is comparable to SeaweedFS 'weed mini'.",
+    "Open question closed (managed TimescaleDB): Azure Database for PostgreSQL Flexible Server ships only the Apache-2 edition - Microsoft moderator (2023-10-11): 'We only support free version of timescale under apache license. Community version is under proprietary TSL ... We have no plans to support proprietary licensed extensions' (https://learn.microsoft.com/en-us/answers/questions/1380687/). Amazon RDS for PostgreSQL does not list timescaledb at all in its supported-extensions table (https://docs.aws.amazon.com/AmazonRDS/latest/PostgreSQLReleaseNotes/postgresql-extensions.html), while it does ship pg_partman and PostGIS for PG 18. Conclusion for the ADR: on the major managed hosts the TSL features (columnstore, continuous aggregates, retention policies, jobs) are unavailable, so the native-partitioning + pg_partman decision is effectively locked in unless self-hosting or using Tiger Cloud.",
+    "pg_partman version drift on managed hosts: RDS PostgreSQL 18.4 ships pg_partman 5.4.3 (not 5.5.0) and PostGIS 3.6.3. Do not make the ADR depend on 5.5.0-only features (detach_before_drop, maintenance_role RLS) if RDS is a target; state the minimum pg_partman version explicitly.",
+    "pg_partman 5.5.0 breaking change must be reflected in the bootstrap: pg_partman_bgw.role now defaults to partman_maintainer, so the role must be created with the right privileges (or the GUC set) or the BGW will not run maintenance; retention target schemas must be owned by the same role as the child tables. Add both to the operational notes.",
+    "Open question partly closed (PgBouncer interplay, from https://www.pgbouncer.org/features.html): in transaction pooling mode LISTEN is 'Never' supported, SET/RESET 'Never', PREPARE/DEALLOCATE 'Never'; protocol-level prepared statements work only with max_prepared_statements set non-zero. Consequence: Procrastinate/PgQueuer workers (LISTEN/NOTIFY) need a direct connection or a session-mode pool; asyncpg/psycopg 3 behind a transaction-mode PgBouncer need max_prepared_statements > 0 or client-side statement caching disabled (asyncpg statement_cache_size=0, psycopg prepare_threshold=None).",
+    "TimescaleDB citation precision: the 'supports PostgreSQL 16, 17, and 18' sentence appears in the 2.29.0 release notes, not in the 2.29.2 notes; cite 2.29.0 for the PG range and 2.29.2 only for the date.",
+    "PostGIS 3.6.0 citation precision: the 3.6.0 announcement says 'PostgreSQL 12 - 18beta3'; PG 18 GA support in the 3.6 line is first stated at 3.6.1. Do not cite 3.6.0 as evidence of PG 18 GA support."
+  ],
+  "open_questions_closed": [
+    "PostGIS Docker image tags for PostgreSQL 18 / PostGIS 3.6",
+    "Garage v2.3.0 versioning/tagging feature gaps",
+    "Whether managed PostgreSQL hosts offer the TimescaleDB Community (TSL) extension"
+  ],
+  "overall_confidence": "high - all 14 claims literally supported by their cited pages; one substantive staleness error found (PostGIS 3.6.1 is not current stable; 3.6.4 is). The RDS 'timescaledb absent' finding rests on a single fetch of a very long AWS page and should be re-checked if RDS becomes a concrete target."
+}

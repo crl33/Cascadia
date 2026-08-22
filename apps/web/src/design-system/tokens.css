@@ -1,0 +1,34 @@
+/* Design tokens (v1/design_guidelines.md, adopted unchanged). The only place a colour literal
+   may appear in CSS. Layers read the same HSL values from tokens.ts. */
+:root {
+  --canvas: hsl(222 52% 6%);
+  --canvas-2: hsl(223 46% 8%);
+  --glass: hsl(222 40% 10% / 0.86);
+  --glass-solid: hsl(222 40% 10%);
+  --text-primary: hsl(210 40% 98%);
+  --text-secondary: hsl(215 18% 78%);
+  --text-muted: hsl(215 14% 62%);
+  --stroke: hsl(215 22% 22%);
+  --cyan: hsl(191 92% 55%);
+  --glacier: hsl(205 88% 58%);
+  --amber-watch: hsl(38 92% 58%);
+  --amber-elevated: hsl(32 96% 56%);
+  --flood-red: hsl(6 86% 56%);
+  --neutral-unknown: hsl(215 10% 58%);
+
+  --ease-standard: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-calm: cubic-bezier(0.16, 1, 0.3, 1);
+  --dur-micro: 140ms;
+  --dur-ui: 220ms;
+  --dur-panel: 320ms;
+  --dur-state: 520ms;
+
+  --font-ui: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  --radius: 10px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root { --dur-micro: 0ms; --dur-ui: 0ms; --dur-panel: 0ms; --dur-state: 0ms; }
+}
+[data-motion="reduced"] { --dur-micro: 0ms; --dur-ui: 0ms; --dur-panel: 0ms; --dur-state: 0ms; }

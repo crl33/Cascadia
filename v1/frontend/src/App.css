@@ -1,0 +1,5 @@
+/* Cleared default CRA styles for Cascade Oracle. */
+.App {
+    min-height: 100vh;
+    color: hsl(var(--co-text-primary));
+}

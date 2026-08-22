@@ -1,0 +1,467 @@
+{
+  "category": "Snowpack and soil moisture state products (snow-and-soil-state)",
+  "summary": "Researched 2026-08-22 with live fetches. Observational core: NRCS AWDB REST API (SNOTEL, 78 WA SNTL stations; 36 of them fall in the Puget Sound HUC8s Cascade Oracle cares about) — no key, no documented rate limit, English units only, hourly data ~1 h behind real time, DAILY values default to periodRef=END (the value dated D is the 00:00 PST reading at the end of day D). Harts Pass (515:WA:SNTL) is listed by NRCS in HUC12 171100050501 'Upper Canyon Creek' (HUC8 17110005 Upper Skagit), so the V1 Skagit mapping is consistent with NRCS; but NRCS's associatedHucs for the site are all Methow/Pasayten HUC12s and the site is on the crest, so it should be weighted as an east-slope/upper-Skagit-headwater proxy rather than a maritime Skagit index. Modeled/assimilated grids: SNODAS (NOHRSC, 1 km, 06 UTC daily, 16-bit big-endian flat binary via NSIDC HTTPS, day's tar posted same day; documented unbounded-SWE failure mode at high elevations with no observations), NWM v3 analysis_assim land files on AWS (hourly, 1 km, SOIL_M/SNEQV/SNOWH/FSNO/SOILSAT_TOP confirmed in file header; bucket currently holds back to 2025-01-01), NLDAS-2 (0.125 deg, NetCDF still updating with ~4.4 day latency; GRIB discontinued 2024-08-01), SMAP L4 SPL4SMGP v8 (9 km, 3-hourly, ~2.7 day latency). Satellite retrievals: SMAP L3 SPL3SMP_E v6 (9 km daily, ~1.2 day latency; most Cascade cells will carry mountainous/forest/snow/frozen flags), MODIS MOD10A1/MOD10A1F v61 (500 m, cloud code 250, CGF product fills gaps) and VIIRS VNP10A1/VJ110A1/VNP10A1F v2 (375 m) with LANCE NRT at 60-125 min; Suomi NPP data delivery ends 2026-11-01 so plan on NOAA-20/21. A SMAP geolocation defect affected 14 May-28 Jul 2026 (standard products being reprocessed; NRT not). WA Ecology operates no soil-moisture network; in-situ soil moisture in the target basins comes only from SNOTEL SMS (10 of the 36 Puget-basin sites) plus WSU AgWeatherNet (login, API undocumented here).",
+  "open_questions": [
+    "NRCS AWDB flag dictionary: qcFlag/qaFlag letter definitions were only obtained via a search snippet of the NRCS Report Generator Help Guide (PDF timed out twice at nrcs.usda.gov). Confirm from https://www.nrcs.usda.gov/sites/default/files/2024-02/Report%20Generator%20Help%20Guide.pdf before encoding flag logic.",
+    "NRCS AWDB: no rate-limit guidance exists in the OpenAPI spec or response headers; an acceptable polling policy (e.g., one hourly pull of all WA SNTL per hour) is unverified with NWCC. Also unverified whether the 30-year 'median' returned by centralTendencyType uses the 1991-2020 normal period.",
+    "Harts Pass representativeness: NRCS HUC12 says Upper Canyon Creek (Skagit), but associatedHucs are Methow/Pasayten. Decide whether Cascade Oracle's Skagit index should down-weight Harts Pass relative to Marten Ridge, Thunder Basin, Beaver Pass, Brown Top, Rainy Pass, Swamp Creek and Decline Creek (Sauk).",
+    "NWM land output soil layer depths (0-10, 10-40, 40-100, 100-200 cm) were not read from the file header (only 'soil_layers_stag' dimension seen); confirm from a full ncdump before computing root-zone totals.",
+    "NWM AWS retention: the AWS registry page says 'four-week rollover' for short-range, but the bucket listing shows daily prefixes back to nwm.20250101. Confirm whether analysis_assim is retained equally far back or pruned.",
+    "SNODAS NSIDC service level was 'downgraded to Basic due to funding constraints' (NSIDC page); monitor for posting delays or archive end. Also confirm whether NOHRSC offers any direct NetCDF/GeoTIFF SNODAS download (only vector GIS datasets and the ArcGIS MapServer were found).",
+    "SMAP L4 v8 exact file variable names/units were confirmed via the Google Earth Engine catalog mirror, not the NSIDC user guide (PDF text was font-encoded). Verify 'sm_surface', 'sm_rootzone', 'sm_profile' and their m3/m3 units in an actual SPL4SMGP granule.",
+    "WSU AgWeatherNet: soil moisture depths (2 in / 8 in) and login requirement came from search snippets; API endpoint, licensing and whether western-WA stations carry soil moisture are unverified.",
+    "USGS in-situ soil moisture in Washington: no network was found in searches; treat as absent unless the WA Water Science Center confirms landslide/soil-moisture monitoring sites with public NWIS parameter codes.",
+    "Crop-CASMA: OGC WPS endpoint (https://nassgeo.csiss.gmu.edu/smap_service) and a MapServer WMS path were found in the app bundle, but the SMAP WMS map file names, GetCapabilities URLs and any usage limits are undocumented; the legacy hostname cropcasma.nrcs.usda.gov no longer resolves.",
+    "Terra/MODIS end-of-mission timing and MOD10A1 continuity beyond 2026 were not verified; VIIRS (NOAA-20/NOAA-21) should be the primary snow-cover source going forward."
+  ],
+  "providers": [
+    {
+      "name": "NRCS AWDB REST API (SNOTEL / SNOLITE / SCAN in Washington)",
+      "authority": "USDA Natural Resources Conservation Service, National Water and Climate Center (Air and Water Database)",
+      "data_kind": "observational",
+      "access": {
+        "mechanism": "Unauthenticated HTTPS REST (JSON). Endpoints: GET /services/v1/stations (metadata; params stationTriplets with '*' wildcards e.g. '*:WA:SNTL', hucs, elements, durations, returnStationElements, activeOnly, returnForecastPointMetadata, returnReservoirMetadata), GET /services/v1/data (params stationTriplets*, elements* in 'CODE:heightDepth:ordinal' form e.g. 'SMS:-8', 'SMS:*', duration, beginDate/endDate absolute 'yyyy-MM-dd HH:mm' or relative '-n'/'0', insertOrUpdateBeginDate, periodRef START|END, centralTendencyType AVERAGE|MEDIAN|ALL, returnFlags, returnOriginalValues, returnSuspectData), GET /services/v1/reference-data (elements, durations, networks, units, states, dcos, ...), GET /services/v1/forecasts. OpenAPI spec at /awdbRestApi/v3/api-docs; Swagger UI at /awdbRestApi/swagger-ui/index.html.",
+        "base_urls": [
+          "https://wcc.sc.egov.usda.gov/awdbRestApi/services/v1/",
+          "https://wcc.sc.egov.usda.gov/awdbRestApi/v3/api-docs",
+          "https://wcc.sc.egov.usda.gov/awdbRestApi/swagger-ui/index.html"
+        ],
+        "auth": "None (no API key, no login).",
+        "rate_limits": "None documented. OpenAPI spec contains no rate-limit text; responses carry no RateLimit/Retry-After headers (server Apache/2.4.65, cache-control private). A single stations call for '*:WA:SNTL' with returnStationElements=true returned 1.9 MB / 78 stations without error.",
+        "formats": ["JSON"]
+      },
+      "cadence": "HOURLY series are transmitted and appear in the API roughly hourly; DAILY, SEMIMONTHLY, MONTHLY, WATER_YEAR, CALENDAR_YEAR durations are available. Reference durations also list 15-min/5-min codes but station elements for WA SNOTEL expose HOURLY and DAILY.",
+      "latency": "Observed 2026-08-22 08:33 UTC: latest HOURLY TOBS/SMS value for Harts Pass was stamped 2026-08-22 00:00 (station time zone is PST, dataTimeZone -8, i.e. 08:00 UTC) — about 30-60 minutes behind real time. DAILY value for 2026-08-21 was already present (it is the 00:00 PST reading of 2026-08-22 under the default periodRef=END).",
+      "spatial_resolution": "Point stations. Washington SNOTEL: 78 stations (all with huc, elevation ft, lat/lon, countyName, shefId, dataTimeZone, associatedHucs). Puget Sound-basin subset by NRCS HUC12 (station id, name, HUC12, elev ft): Nooksack HUC8 17110004 — 909 Wells Creek 171100040103 4040; 1011 MF Nooksack 171100040303 4940 (SMS/STO); 910 Elbow Lake 171100040401 3050. Upper Skagit 17110005 — 515 Harts Pass 171100050501 6490 (SMS/STO); 711 Rainy Pass 171100050503 4880 (SMS/STO); 975 Swamp Creek 171100050503 3930; 1080 Brown Top 171100050601 5850 (SMS/STO); 991 Hozomeen Camp 171100050602 1680 (SNWD/PREC/temps only, no WTEQ); 990 Beaver Pass 171100050605 3630 (SMS/STO); 817 Thunder Basin 171100050702 4310; 999 Marten Ridge 171100051004 3520 (SMS/STO). Sauk 17110006 — 1319 Decline Creek 171100060403 4480. Stillaguamish 17110008 — 1345 Deer Pass 171100080103 3360 (associatedHucs include Lower Skagit 171100070101). Skykomish 17110009 — 791 Stevens Pass 171100090102 3940. Snoqualmie 17110010 — 672 Olallie Meadows 171100100301 4010; 908 Alpine Meadows 171100100501 3500; 912 Skookum Creek 171100100503 3320. Lake Washington/Cedar 17110012 — 897 Meadows Pass 171100120101 3230 (SMS/STO); 899 Tinkham Creek 171100120101 3000; 911 Rex River 171100120102 3810; 898 Mount Gardner 171100120103 2930. Duwamish/Green 17110013 — 788 Stampede Pass 171100130103 3850; 1068 Sawmill Ridge 171100130104 4640; 420 Cougar Mountain 171100130202 3210; 1069 Lynn Lake 171100130203 3900. Puyallup/White 17110014 — 942 Burnt Mountain 171100140103 4160 (SMS/STO); 941 Mowich 171100140105 3170; 1085 Cayuse Pass 171100140301 5260 (SMS/STO); 418 Corral Pass 171100140307 5810; 928 Huckleberry Creek 171100140307 2250. Nisqually 17110015 — 679 Paradise 171100150104 5150 (SMS/STO). Note 998 Easy Pass is HUC 171100010101 (Indian Creek-Chilliwack River, HUC8 17110001) — drains to the Fraser, not the Skagit. WA SCAN: only 2021 Lind #1 and 2198 Cook Farm Field D (eastern WA, SMS at -2,-4,-8,-20,-40 in); WA SNOLITE: 1341 Buck Mountain (Okanogan, since 2025-09-19).",
+      "temporal_resolution": "Hourly instantaneous readings; DAILY values are the midnight (00:00 PST) reading. IMPORTANT: with no periodRef (and with periodRef=END) the DAILY value dated D equals the HOURLY 00:00 reading of D+1 (verified: daily TOBS 2026-08-21 = 66.7 = hourly 2026-08-22 00:00; with periodRef=START the same reading is dated 2026-08-22).",
+      "historical_depth": "Harts Pass WTEQ hourly from 1979-10-01, daily from 1980-09-27; SNWD from 2000-04-27; SMS/STO at -2 in from 2001-08-01, -4/-8 in from 2002-11-25, -20 in from 2003-08-14. Other WA sites begin 1978-2020 (see beginDate per station). Hourly period of record is served in full.",
+      "missing_data_semantics": "Missing timestamps are simply absent from the values array (no null placeholders); suspect values are filtered out unless returnSuspectData=true; returnOriginalValues=true adds origValue/origQcFlag; stations with endDate 2100-01-01 are active. Hozomeen Camp has no WTEQ element at all.",
+      "quality_flags": "Each value carries qcFlag and qaFlag when returnFlags=true (observed qcFlag V and E; qaFlag P and R). Definitions per NRCS Report Generator Help Guide (search snippet, not fetched): qcFlag V Valid, E Edit (minor sensor-noise adjustment), K Estimate, C Correction, B Back Estimate, X External Estimate, S Suspect, N No Profile; qaFlag U Unknown, R Raw (no human review), P Provisional (preliminary human review), A Approved (final review). Only midnight values are quality-controlled.",
+      "units": "Stored/English units only: WTEQ in, SNWD in, PREC (water-year accumulated) in, PRCP (increment) in, TOBS/TMAX/TMIN/TAVG degF, SMS pct (volumetric), STO degF, SNDN pct, SNRR unitless. The data endpoint has no units parameter in the OpenAPI spec, so metric conversion is client-side. centralTendencyType returns 'median'/'average' (30-year) per value, plus timingCentralTendencies (medianPeak, medianOnset, medianMeltout) for WTEQ — percent-of-median must be computed client-side as value/median.",
+      "licensing": "US federal government work; no terms of use or license text found on the API. Treat as public domain (17 U.S.C. 105) — INFERENCE (USDA policies page returned 403).",
+      "limitations": [
+        "No documented rate limits or SLAs; service is a single Apache/mod_jk host and occasionally slow — design polling with backoff.",
+        "Default periodRef=END shifts daily timestamps by one day relative to the instantaneous midnight reading; choose periodRef explicitly.",
+        "English units only; heightDepth for soil sensors is in inches (negative = depth).",
+        "Point data: WA SNOTEL sites are 1,680-6,490 ft; few sites above 5,000 ft in the maritime west-slope basins (Paradise, Corral Pass, Cayuse Pass, Brown Top, Harts Pass).",
+        "Soil moisture (SMS) is available at only 10 of the 36 Puget-basin SNOTEL sites; SCAN in WA is limited to two eastern-WA farm sites.",
+        "Snow pillow artifacts (bridging, rain-on-snow, mid-winter melt in maritime snowpack) appear as suspect/estimated flags; midnight-only QC."
+      ],
+      "evidence": [
+        {"claim": "Endpoints, parameters (stationTriplets wildcards, elements CODE:heightDepth:ordinal, duration, periodRef, centralTendencyType ALL|MEDIAN|AVERAGE, returnFlags, returnOriginalValues, returnSuspectData, insertOrUpdateBeginDate, relative dates) and DataValueDTO fields (qcFlag, qaFlag, origValue, average, median) as documented in the OpenAPI spec", "url": "https://wcc.sc.egov.usda.gov/awdbRestApi/v3/api-docs", "status": "FACT"},
+        {"claim": "Harts Pass 515:WA:SNTL metadata: huc 171100050501, elevation 6490 ft, lat 48.72047 lon -120.6586, dataTimeZone -8, county Okanogan, shefId HRPW1, SMS/STO at -2,-4,-8,-20 in hourly+daily; associatedHucs = 170200070101, 170200070102, 170200080103, 170200080201, 170200080202, 170200080205", "url": "https://wcc.sc.egov.usda.gov/awdbRestApi/services/v1/stations?stationTriplets=515:WA:SNTL&returnStationElements=true", "status": "FACT"},
+        {"claim": "78 Washington SNOTEL stations with huc, elevation, lat/lon, beginDate, element lists (station list above)", "url": "https://wcc.sc.egov.usda.gov/awdbRestApi/services/v1/stations?stationTriplets=*:WA:SNTL&returnStationElements=true", "status": "FACT"},
+        {"claim": "HUC12 171100050501 is named 'Upper Canyon Creek' (toHUC 171100050502 Lower Canyon Creek) and HUC8 17110005 is 'Upper Skagit'; Harts Pass associatedHucs are Middle/West Fork Pasayten (17020007) and West Fork Methow, Robinson Creek, Rattlesnake Creek-Methow, Eureka Creek (17020008 Methow); HUC8 17110001 = 'Sumas River'", "url": "https://hydro.nationalmap.gov/arcgis/rest/services/wbd/MapServer/6/query?where=huc12%3D%27171100050501%27&outFields=huc12,name,tohuc&f=json", "status": "FACT"},
+        {"claim": "Element reference data: WTEQ in/mm, SNWD in/cm, PREC 'Water Year Accumulated Precipitation', PRCP increment, SMS 'Percent Volumetric Soil Moisture' pct, STO degF; networks SNTL, SNTLT (SNOLITE), SCAN, CSCAN, SNOW, USGS, BOR, COOP", "url": "https://wcc.sc.egov.usda.gov/awdbRestApi/services/v1/reference-data?referenceLists=elements,durations,networks,units", "status": "FACT"},
+        {"claim": "Data call returns qcFlag/qaFlag, median (with centralTendencyType=MEDIAN) and timingCentralTendencies {medianPeak 4/27 47.9 in, medianOnset 10/23, medianMeltout 6/24} for Harts Pass WTEQ", "url": "https://wcc.sc.egov.usda.gov/awdbRestApi/services/v1/data?stationTriplets=515:WA:SNTL&elements=WTEQ,SNWD,PREC,TOBS,SMS,STO&duration=DAILY&beginDate=2026-04-01&endDate=2026-04-03&centralTendencyType=MEDIAN&returnFlags=true", "status": "FACT"},
+        {"claim": "Hourly latency ~1 h (latest hourly stamp 2026-08-22 00:00 PST at 08:33 UTC) and DAILY default periodRef=END semantics (daily D = hourly 00:00 of D+1)", "url": "https://wcc.sc.egov.usda.gov/awdbRestApi/services/v1/data?stationTriplets=515:WA:SNTL&elements=SMS:-8,TOBS,PREC&duration=DAILY&beginDate=2026-08-19&endDate=2026-08-22&periodRef=START", "status": "FACT"},
+        {"claim": "SNOTEL hourly measurements are recorded in Pacific Standard Time; REST API concatenates qcFlag and qaFlag", "url": "https://opencdss.state.co.us/tstool/latest/doc-user/datastore-ref/NRCS-AWDB/NRCS-AWDB/", "status": "FACT"},
+        {"claim": "qaFlag U/R/P/A and qcFlag V/N/E/K/C/B/X/S definitions; only midnight data are quality controlled", "url": "https://www.nrcs.usda.gov/sites/default/files/2024-02/Report%20Generator%20Help%20Guide.pdf", "status": "INFERENCE"},
+        {"claim": "No rate-limit headers returned by the API", "url": "https://wcc.sc.egov.usda.gov/awdbRestApi/services/v1/reference-data?referenceLists=states", "status": "FACT"},
+        {"claim": "WA SCAN stations limited to Lind #1 (2021) and Cook Farm Field D (2198); SNOLITE Buck Mountain (1341)", "url": "https://wcc.sc.egov.usda.gov/awdbRestApi/services/v1/stations?stationTriplets=*:WA:SCAN,*:WA:SNTLT,*:WA:CSCAN&returnStationElements=true", "status": "FACT"},
+        {"claim": "Harts Pass is hydrologically an Upper Skagit headwater (Canyon Creek -> Ruby Creek -> Ross Lake) but climatologically an east-crest site better matched to Methow/Pasayten; NRCS's own associatedHucs reflect that", "url": "https://wcc.sc.egov.usda.gov/awdbRestApi/services/v1/stations?stationTriplets=515:WA:SNTL", "status": "INFERENCE"}
+      ],
+      "relevance_to_cascade_oracle": "Primary ground-truth for SWE, snow depth, precipitation, temperature and (at 10 Puget-basin sites) soil moisture/temperature. Use the station list above to build per-basin indices; the V1 Harts Pass -> Skagit mapping matches NRCS's HUC assignment (Upper Skagit, Upper Canyon Creek) but the site should be treated as an upper-Skagit/east-crest headwater proxy, with Marten Ridge, Thunder Basin, Beaver Pass, Brown Top, Rainy Pass, Swamp Creek and Decline Creek carrying the maritime Skagit/Sauk signal. Always pass periodRef explicitly and request returnFlags=true."
+    },
+    {
+      "name": "SNODAS — NOHRSC Snow Data Assimilation System daily grids (NSIDC G02158)",
+      "authority": "NOAA/NWS National Operational Hydrologic Remote Sensing Center (producer); NOAA@NSIDC (archive/distribution)",
+      "data_kind": "modeled",
+      "access": {
+        "mechanism": "Anonymous HTTPS directory tree: /NOAA/G02158/{masked|unmasked}/YYYY/MM_Mon/SNODAS_YYYYMMDD.tar (masked) containing 16 gzipped files (8 .dat + 8 .txt headers); ancillary SNODAS_Zero_Repair_Mask.tif; G02158_missing_files.txt. NSIDC scripts poll NOHRSC several times a day and post new files automatically. GDAL can read the flat binary with an ENVI-style header (NSIDC tutorial).",
+        "base_urls": [
+          "https://noaadata.apps.nsidc.org/NOAA/G02158/",
+          "https://noaadata.apps.nsidc.org/NOAA/G02158/masked/2026/08_Aug/",
+          "https://nsidc.org/data/g02158/versions/1",
+          "https://nsidc.org/sites/default/files/g02158-v001-userguide_2_1.pdf"
+        ],
+        "auth": "None (no Earthdata Login required for the NOAA@NSIDC HTTPS file system).",
+        "rate_limits": "None documented.",
+        "formats": ["tar of gzipped flat binary 16-bit signed big-endian .dat + .txt header", "GeoTIFF/NetCDF via GDAL conversion (user tutorial)", "SNODAS_Zero_Repair_Mask.tif"]
+      },
+      "cadence": "Daily; SWE and snow depth are snapshots at 06:00 UTC; melt, sublimation, blowing-snow sublimation and precipitation are 24-h totals 06:00-06:00 UTC.",
+      "latency": "Same day: SNODAS_20260821.tar (valid 06 UTC 2026-08-21) was listed with timestamp 21-Aug-2026 13:00 on the NSIDC server; the 2026-08-22 file was not yet present at 08:40 UTC 2026-08-22.",
+      "spatial_resolution": "1 km (30 arc-second) lat/lon grid, WGS 84. Masked CONUS grid 6,935 columns x 3,351 rows (24.95-52.88 N, -124.73 to -66.94 W) — covers all of Washington; unmasked grid 8,192 x 4,096 extends into Canada (useful for the Nooksack/Skagit headwaters north of the border). A small grid-center shift occurred 2013-10-01.",
+      "temporal_resolution": "Daily.",
+      "historical_depth": "2003-09-30 to present; NOHRSC discourages use before October 2004 (assimilation not routine before WY2005). Snowpack average temperature absent before 2004-02-21. Known missing days listed in G02158_missing_files.txt.",
+      "missing_data_semantics": "No-data value -9999 (after dividing by scale factor, -9.999 etc.). 126,950 unmasked-grid cells carried erroneous 0.0 SWE/depth 2014-10-09 through 2019-10-10 (use SNODAS_Zero_Repair_Mask.tif to null them); prior to 2014-10-09 those cells were -9999. Entire days can be missing.",
+      "quality_flags": "None in files. NSIDC 'has not assessed the quality of these data'. NSIDC page states the product is 'not recommended for use for quantitative water budget analysis' and that it is model output, not observations.",
+      "units": "Integers divided by scale factor: SWE (1034) metres x1000; snow depth (1036) metres x1000; melt runoff at base (1044) metres x100000; snowpack sublimation (1050) metres x100000; blowing-snow sublimation (1039) metres x100000; solid precip (1025, v-code IL01) and liquid precip (1025, IL00) kg/m2 x10; snowpack average temperature (1038) kelvin x1. Sign convention: positive sublimation = water added to pack. SWE saturates at 32.767 m because of int16 storage.",
+      "licensing": "NOAA data distributed by NSIDC without restriction; NSIDC requests citation (NOHRSC 2004, DOI 10.7265/N5TB14TC).",
+      "limitations": [
+        "Model/assimilation product — SNOTEL is assimilated, so it is not independent validation; 'The SNODAS product is model output and should not be confused with actual observations'.",
+        "Documented failure mode: in high-elevation areas with no observations and no melt, snow removal mechanisms are insufficient and SWE 'grow[s] without limit' (user guide 1.9.1) — directly relevant to Mt. Baker, Glacier Peak, Mt. Rainier and North Cascades cells in the Skagit, Nooksack, Puyallup and White headwaters.",
+        "Published evaluations: Colorado Rockies (USGS, Clow et al.) — good in forest (72-77% variance explained) but poor in alpine terrain (16-30%); western Canada (Lv et al. 2019 WRR) — underestimates high-elevation SWE where elevation range is large because of over-reliance on lower-elevation pillows; a western-US model intercomparison reports the largest low biases in the Cascades/Sierra (INFERENCE from search snippets).",
+        "Forcing is RAP/HRRR-downscaled (HRRR where available since Nov 2018) — maritime rain/snow partitioning errors propagate.",
+        "NSIDC service level recently reduced to 'Basic' (funding) — risk to timeliness/support.",
+        "Masked vs unmasked spatial bounds differ and shifted on 2013-10-01; header coordinates have minor precision issues (use NSIDC's documented corner coordinates when converting)."
+      ],
+      "evidence": [
+        {"claim": "1 km, CONUS 24.95-52.88 N / -124.73 to -66.94 W, start 2003-09-30, daily, binary, HTTPS at noaadata.apps.nsidc.org/NOAA/G02158/, NSIDC scripts post new files several times a day, 'Basic' level of service, not recommended for quantitative water budgets", "url": "https://nsidc.org/data/g02158/versions/1", "status": "FACT"},
+        {"claim": "Product codes/units/scale factors (1034 SWE m x1000; 1036 depth m x1000; 1044 melt m x100000; 1050 and 1039 sublimation m x100000; 1025 precip kg/m2 x10 with IL00 liquid / IL01 solid; 1038 temperature K x1), 06:00 UTC snapshots and 06-06 UTC totals, 16-bit signed big-endian, masked 6,935x3,351 / unmasked 8,192x4,096, 30 arc-sec WGS84, file naming us_ssmv11034tS__T0001TTNATS..., -9999 no-data, zero-repair mask 2014-10-09..2019-10-10, no routine assimilation before Oct 2004, HRRR/RAP forcing, 'grow without limit' high-elevation SWE issue, 2013-10-01 grid shift", "url": "https://nsidc.org/sites/default/files/g02158-v001-userguide_2_1.pdf", "status": "FACT"},
+        {"claim": "SNODAS_20260821.tar present with server timestamp 21-Aug-2026 13:00 (2.8 MB); no 2026-08-22 file at 08:40 UTC 2026-08-22; ancillary dir holds SNODAS_Zero_Repair_Mask.tif", "url": "https://noaadata.apps.nsidc.org/NOAA/G02158/masked/2026/08_Aug/", "status": "FACT"},
+        {"claim": "SNODAS description (NWP downscaling, energy-and-mass-balance snow model, assimilation of satellite/airborne/ground SWE and SCA, analysts decide daily whether to assimilate), archive begins 1 Oct 2003, archived at NSIDC", "url": "https://www.nohrsc.noaa.gov/archived_data/", "status": "FACT"},
+        {"claim": "SNODAS performs well in forested areas but poorly in alpine areas of the Colorado Rockies", "url": "https://pubs.usgs.gov/publication/70009700", "status": "INFERENCE"},
+        {"claim": "SNODAS underestimates SWE at higher elevations where elevation range is large (western Canada evaluation)", "url": "https://agupubs.onlinelibrary.wiley.com/doi/full/10.1029/2019WR025333", "status": "INFERENCE"}
+      ],
+      "relevance_to_cascade_oracle": "Best available daily 1 km gridded SWE/depth/melt for basin-wide snow-state and melt-volume estimates across all WA basins, including cross-border Nooksack/Skagit headwaters (use unmasked grid). Treat as a modeled field: mask the unbounded-SWE volcano/high-alpine cells, cross-check basin SWE against the SNOTEL indices, and never use as independent validation."
+    },
+    {
+      "name": "NOHRSC National Snow Analyses, Interactive Snow Information and Snow Analysis MapServer",
+      "authority": "NOAA/NWS Office of Water Prediction — National Operational Hydrologic Remote Sensing Center",
+      "data_kind": "mixed",
+      "access": {
+        "mechanism": "Web pages (maps, animations, text discussions), the Interactive Snow Information map with URL parameters (min_x, min_y, max_x, max_y, dy, dm, dd, dh) for region/date/hour, a SHEF text archive of station observations, a 3D KML interface, vector GIS shapefiles/KMZ (basins, RFCs, rivers), and an ArcGIS REST MapServer (layers 0 'Snow Depth' and 4 'Snow Water Equivalent'; capabilities Query, Map, Data). No documented JSON data API for the grids; gridded archive is delegated to NSIDC G02158.",
+        "base_urls": [
+          "https://www.nohrsc.noaa.gov/nsa/",
+          "https://www.nohrsc.noaa.gov/interactive/html/map.html",
+          "https://www.nohrsc.noaa.gov/archived_data/",
+          "https://www.nohrsc.noaa.gov/gisdatasets/",
+          "https://mapservices.weather.noaa.gov/raster/rest/services/snow/NOHRSC_Snow_Analysis/MapServer",
+          "https://www.nohrsc.noaa.gov/earth/"
+        ],
+        "auth": "None.",
+        "rate_limits": "None documented.",
+        "formats": ["PNG/animations", "ArcGIS MapServer (image/export, query)", "SHEF text", "KML/KMZ", "shapefile tar.gz"]
+      },
+      "cadence": "Daily model analysis; MapServer 'updates daily 20 minutes past the hour at 1:00Z, 5:00Z, 11:00Z, and 17:00Z'. Interactive map offers hourly (00-23 UTC) date selection for observed-station layers.",
+      "latency": "Same day (automated model discussion dated 2026-08-21 on 2026-08-22).",
+      "spatial_resolution": "1 km SNODAS grid; 22 regional views (Northwest region covers WA); station points.",
+      "temporal_resolution": "Daily for modeled products (SWE, depth, pack temperature, 24-h snow precip, 24-h melt, blowing-snow and surface sublimation, non-snow precip, 24-h SWE change); hourly/daily station observations.",
+      "historical_depth": "Interactive map date picker spans 2002 to present; gridded archive is at NSIDC from 2003-09-30.",
+      "missing_data_semantics": "Not documented for the web products.",
+      "quality_flags": "None exposed.",
+      "units": "Maps in inches (SWE, depth) and degrees F by default; MapServer layers are styled rasters, not value grids.",
+      "licensing": "US Government work (NOAA); no restrictions stated.",
+      "limitations": [
+        "No programmatic value API for the grids; the MapServer serves styled imagery (identify/query is possible but not a substitute for the NSIDC binary archive).",
+        "Vector GIS page offers only shapefiles/KMZ (no NetCDF/GeoTIFF rasters found).",
+        "Same model limitations as SNODAS (see above)."
+      ],
+      "evidence": [
+        {"claim": "Product list (SWE, depth, pack temperature, snow precip, melt, sublimation, non-snow precip), 22 regions, animations, links to /interactive/html/map.html, /reports.html, /archived_data/, /earth/ KML; discussion dated 2026-08-21", "url": "https://www.nohrsc.noaa.gov/nsa/", "status": "FACT"},
+        {"claim": "MapServer with Snow Depth and Snow Water Equivalent layers, update at 1:00Z/5:00Z/11:00Z/17:00Z +20 min, capabilities Query/Map/Data, data download delegated to /archived_data/", "url": "https://mapservices.weather.noaa.gov/raster/rest/services/snow/NOHRSC_Snow_Analysis/MapServer?f=pjson", "status": "FACT"},
+        {"claim": "Interactive map layers (modeled SWE/depth/temperature/density/melt, observed stations 2002-present, satellite binary snow cover, airborne), URL parameters min_x/min_y/max_x/max_y/dy/dm/dd/dh, SHEF archive, vector/raster GIS dataset links", "url": "https://www.nohrsc.noaa.gov/interactive/html/map.html", "status": "FACT"},
+        {"claim": "GIS datasets page provides only vector shapefiles/KMZ (RFC basins, states, counties, rivers)", "url": "https://www.nohrsc.noaa.gov/gisdatasets/", "status": "FACT"},
+        {"claim": "NOHRSC runs an energy-and-mass-balance multi-layer snow model at 1 km hourly, assimilating ground, airborne gamma and satellite snow observations; daily NSA with nine snowpack characteristics", "url": "https://www.nohrsc.noaa.gov/technology/", "status": "FACT"}
+      ],
+      "relevance_to_cascade_oracle": "Useful for operator-facing context (regional snow model discussions, basin imagery via the MapServer) and for quick visual QA of SNODAS fields; not a data feed. Ingest grids from NSIDC instead."
+    },
+    {
+      "name": "NASA SMAP Enhanced L3 Radiometer 9 km Soil Moisture (SPL3SMP_E v6) and NRT L2",
+      "authority": "NASA SMAP mission; NSIDC DAAC (distribution); LANCE for NRT",
+      "data_kind": "observational",
+      "access": {
+        "mechanism": "NASA Earthdata: HTTPS file system (CMR virtual directory), Earthdata Search, NSIDC Data Access Tool, earthaccess Python, AWS S3 in-region (us-west-2) direct access with temporary credentials, AppEEARS point/area extraction, Harmony subsetting. NRT SPL2SMP_NRT via LANCE.",
+        "base_urls": [
+          "https://nsidc.org/data/spl3smp_e/versions/6",
+          "https://cmr.earthdata.nasa.gov/virtual-directory/collections/C2938664763-NSIDC_CPRD",
+          "https://search.earthdata.nasa.gov/search/granules?p=C2938664763-NSIDC_CPRD",
+          "https://nsidc.org/sites/default/files/documents/user-guide/spl3smp_e-v006-userguide.pdf",
+          "https://appeears.earthdatacloud.nasa.gov/"
+        ],
+        "auth": "Free NASA Earthdata Login (required for downloads; S3 access needs Earthdata-issued temporary AWS credentials).",
+        "rate_limits": "Not documented on the dataset page.",
+        "formats": ["HDF5 (groups Soil_Moisture_Retrieval_Data_AM / _PM, global EASE-Grid 2.0 EPSG:6933 and polar EPSG:6931)"]
+      },
+      "cadence": "Daily composite of descending (AM, ~6:00 local solar time) and ascending (PM) half-orbits; any given 9 km cell is revisited every 2-3 days.",
+      "latency": "NSIDC latency table: SPL3SMP_E required 2 d 2 h, actual mean 1 d 5.6 h; SPL2SMP_E ~12.95 h; SPL2SMP_NRT 3 h (LANCE).",
+      "spatial_resolution": "9 km EASE-Grid 2.0 posting (enhanced/Backus-Gilbert interpolation of the ~36-40 km radiometer footprint).",
+      "temporal_resolution": "Daily AM and PM fields.",
+      "historical_depth": "2015-03-31 to present (v6).",
+      "missing_data_semantics": "Fill -9999.0 for float fields; soil_moisture valid range 0.02 m3/m3 to soil porosity; surface_flag fill 65534 (uint16).",
+      "quality_flags": "retrieval_qual_flag: value 0 or 8 = recommended quality (bit0 uncertain, bit1 retrieval skipped; 8 = failed freeze/thaw only). surface_flag bits: 0-1 open water fraction, 3 urban, 4 precipitation (GPM/forecast), 5 snow (NOAA IMS snow fraction), 7 frozen ground (SMAP freeze/thaw), 8 frozen ground (GMAO modeled effective soil temperature), 9 mountainous area (DEM slope standard deviation thresholds), others for dense vegetation/permanent ice. Three algorithm options carried: soil_moisture_dca (default), _scah, _scav.",
+      "units": "m3/m3 volumetric water content (0-5 cm sensing depth); brightness temperature K; vegetation water content kg/m2.",
+      "licensing": "NASA Earth science data are free and open with no restrictions on use, reproduction or redistribution; citation requested (DOI 10.5067/M20OXIZHY3RJ).",
+      "limitations": [
+        "Geolocation defect 14 May-28 Jul 2026: standard products being reprocessed and replaced; NRT products for that window will not be replaced.",
+        "Cascade/Olympic cells are routinely flagged mountainous (bit 9), snow (bit 5), frozen (bits 7-8) and dense vegetation; expect few 'recommended' retrievals west of the crest in winter-spring — L3 is most useful for Puget lowland and eastern-WA soils.",
+        "Surface (0-5 cm) only; no root-zone information without L4.",
+        "Daily composites leave 1-2 day gaps per cell; AM retrievals preferred."
+      ],
+      "evidence": [
+        {"claim": "Version 6, 9 km, daily, 2015-03-31 to present, HDF5, Earthdata Login required, access tools (Data Access Tool, Earthdata Search, CMR HTTPS, S3 us-west-2, earthaccess, AppEEARS, Harmony), geolocation issue 14 May-28 Jul 2026 with reprocessing, DOI 10.5067/M20OXIZHY3RJ", "url": "https://nsidc.org/data/spl3smp_e/versions/6", "status": "FACT"},
+        {"claim": "Latencies: SPL1BTB ~5 h; SPL2SMP ~12.2 h; SPL2SMP_E ~12.95 h; SPL3SMP/SPL3SMP_E actual mean 1 d 5.6 h (required 2 d 2 h); SPL4SMGP/SPL4SMAU ~2.66 d (required 7 d); SPL2SMP_NRT and SPL1BTB_NRT 3 h", "url": "https://nsidc.org/data/user-resources/help-center/what-are-latencies-smap-radiometer-data-sets", "status": "FACT"},
+        {"claim": "retrieval_qual_flag 0 or 8 = high quality; surface_flag bits 0-1 water, 3 urban, 4 precipitation, 5 snow (IMS), 7-8 frozen ground, 9 mountainous (slope SD thresholds); soil_moisture valid 0.02 to porosity, fill -9999; AM = descending 6:00 LST; DCA/SCA-H/SCA-V variables", "url": "https://nsidc.org/sites/default/files/documents/user-guide/spl3smp_e-v006-userguide.pdf", "status": "FACT"},
+        {"claim": "retrieval_qual_flag is a 2-bit flag (bit0 uncertain, bit1 skipped); surface_flag has 11 bits", "url": "https://nsidc.org/data/user-resources/help-center/how-do-i-interpret-surface-and-quality-flag-information-level-2-and-3-passive-soil-moisture-products", "status": "FACT"},
+        {"claim": "NASA Earth science data are free and open with no restrictions on use, reproduction or redistribution; citation encouraged", "url": "https://www.earthdata.nasa.gov/engage/open-data-services-software-policies", "status": "FACT"}
+      ],
+      "relevance_to_cascade_oracle": "Observational surface-wetness signal for lowland and rain-shadow soils (Puget lowland, Yakima/Columbia basins) and antecedent-moisture context for rain-on-snow events; apply the retrieval_qual_flag==0|8 filter and expect sparse valid data in the mountainous western basins."
+    },
+    {
+      "name": "NASA SMAP L4 Surface and Root-Zone Soil Moisture (SPL4SMGP v8)",
+      "authority": "NASA GMAO (L4_SM algorithm, Catchment land surface model + GEOS forcing with SMAP Tb assimilation); NSIDC DAAC distribution",
+      "data_kind": "modeled",
+      "access": {
+        "mechanism": "Same Earthdata pathways as L3 (NSIDC Data Access Tool, Earthdata Search, CMR HTTPS virtual directory, AWS S3 us-west-2 with Earthdata credentials, earthaccess, AppEEARS). Also mirrored in Google Earth Engine as NASA/SMAP/SPL4SMGP/008.",
+        "base_urls": [
+          "https://nsidc.org/data/spl4smgp/versions/8",
+          "https://cmr.earthdata.nasa.gov/virtual-directory/collections/C3480440870-NSIDC_CPRD",
+          "https://nsidc.org/data/data-access-tool/SPL4SMGP/versions/8/",
+          "https://nsidc.org/sites/default/files/documents/user-guide/multi_spl4smau-v008-userguide.pdf",
+          "https://developers.google.com/earth-engine/datasets/catalog/NASA_SMAP_SPL4SMGP_008"
+        ],
+        "auth": "Free NASA Earthdata Login.",
+        "rate_limits": "Not documented.",
+        "formats": ["HDF5 (EASE-Grid 2.0 global 9 km, EPSG:6933)"]
+      },
+      "cadence": "3-hourly time-average fields (8 files/day).",
+      "latency": "Required 7 d; actual mean ~2.66 d (NSIDC latency table).",
+      "spatial_resolution": "9 km EASE-Grid 2.0 (GEE serves it at 11 km nominal pixel size).",
+      "temporal_resolution": "3-hourly.",
+      "historical_depth": "2015-03-31 to present.",
+      "missing_data_semantics": "Fill -9999 (HDF5 attributes) — INFERENCE from L3 conventions; user guide text could not be parsed.",
+      "quality_flags": "No per-cell retrieval flags; companion SPL4SMAU provides analysis increments/observation-minus-forecast diagnostics. Product is gap-free because it is model output.",
+      "units": "sm_surface (0-5 cm), sm_rootzone (0-100 cm), sm_profile (0 to model bedrock) in m3/m3; *_wetness dimensionless 0-1; surface_temp and soil_temp_layer1-6 K; snow_mass (kg/m2), snow_depth, land_evapotranspiration_flux, precipitation_total_surface_flux (kg m-2 s-1).",
+      "licensing": "NASA open data, no restrictions; citation requested (DOI 10.5067/T5RUATAQREF8).",
+      "limitations": [
+        "Model-assimilated, not observed; in mountainous WA the assimilated Tb carry little information (flagged terrain/snow), so values there are essentially Catchment-model climatology driven by GEOS/IMERG forcing — INFERENCE.",
+        "Geolocation defect 14 May-28 Jul 2026 in the input Tb; v8 standard products are being reprocessed.",
+        "2.7-day latency rules it out for nowcasting; suitable for antecedent-condition baselines.",
+        "9 km cells straddle valley/ridge terrain in the Cascades."
+      ],
+      "evidence": [
+        {"claim": "Version 8, DOI 10.5067/T5RUATAQREF8, 9 km EASE-Grid 2.0 EPSG:6933, 3-hourly, 2015-03-31 to present, HDF5, Earthdata Login required, access tools incl. S3 and AppEEARS, geolocation issue 14 May-28 Jul 2026, Catchment model with IMERG V07 and MODIS snow albedo updates, parameters ROOT ZONE / SURFACE SOIL MOISTURE", "url": "https://nsidc.org/data/spl4smgp/versions/8", "status": "FACT"},
+        {"claim": "Actual mean latency ~2.66 days for SPL4SMGP", "url": "https://nsidc.org/data/user-resources/help-center/what-are-latencies-smap-radiometer-data-sets", "status": "FACT"},
+        {"claim": "Band names and depths: sm_surface 0-5 cm, sm_rootzone 0-100 cm, sm_profile to bedrock (volume fraction); wetness bands; surface_temp, soil_temp_layer1-6 (K); snow_mass, snow_depth, ET flux, precipitation flux; 3-hour cadence; 11 km pixel in GEE; availability to 2026-08-19", "url": "https://developers.google.com/earth-engine/datasets/catalog/NASA_SMAP_SPL4SMGP_008", "status": "FACT"},
+        {"claim": "SPL4SMGP surface = 0-5 cm average, root zone = 0-100 cm average; Tb from both half-orbits assimilated into the land model", "url": "https://nsidc.org/data/spl4smgp/versions/8", "status": "FACT"}
+      ],
+      "relevance_to_cascade_oracle": "Only gap-free, root-zone (0-100 cm) soil-moisture product with global/WA coverage at 3-hourly cadence; good for antecedent-wetness indices feeding rain-on-snow and flood-risk reasoning, with the caveat that it is a model in the mountains. Use SNOTEL SMS to bias-check it at the 10 Puget-basin soil sites."
+    },
+    {
+      "name": "NOAA National Water Model v3 — analysis_assim land output (AWS NODD noaa-nwm-pds)",
+      "authority": "NOAA/NWS Office of Water Prediction (model); NOAA Open Data Dissemination on AWS (distribution); also NOMADS",
+      "data_kind": "modeled",
+      "access": {
+        "mechanism": "Anonymous S3 (us-east-1) bucket noaa-nwm-pds with daily prefixes nwm.YYYYMMDD/ and configuration sub-prefixes (analysis_assim, analysis_assim_extend, analysis_assim_no_da, analysis_assim_long, forcing_analysis_assim, short_range, medium_range, long_range, plus Alaska/Hawaii/Puerto Rico/coastal variants). Land files: nwm.tHHz.analysis_assim.land.tm00|tm01|tm02.conus.nc (~120 MB each). Kerchunk/zarr reference files in noaa-nodd-kerchunk-pds. NOMADS mirror at nomads.ncep.noaa.gov/pub/data/nccf/com/nwm.",
+        "base_urls": [
+          "https://noaa-nwm-pds.s3.amazonaws.com/",
+          "https://noaa-nwm-pds.s3.amazonaws.com/?list-type=2&prefix=nwm.20260821/analysis_assim/",
+          "https://registry.opendata.aws/noaa-nwm-pds/",
+          "https://github.com/awslabs/open-data-docs/tree/main/docs/noaa/noaa-nwm-pds",
+          "https://nomads.ncep.noaa.gov/pub/data/nccf/com/nwm",
+          "https://water.noaa.gov/about/nwm"
+        ],
+        "auth": "None (public bucket; no AWS account needed for HTTPS GET/ListObjectsV2).",
+        "rate_limits": "None documented (standard S3 request throughput).",
+        "formats": ["NetCDF-4 (HDF5), Lambert Conformal Conic on a 6,370,000 m sphere, 1,000 m cells"]
+      },
+      "cadence": "Analysis and Assimilation runs hourly with a 3-hour look-back (tm00, tm01, tm02); Extended AnA once daily (28-hour look-back); forecasts: short range hourly (18 h), medium range 4x/day (10 d/8.5 d ensemble), long range 4x/day (30 d).",
+      "latency": "Hourly cycles; nwm.20260822 prefix already present on 2026-08-22 ~08:40 UTC — roughly 1-2 h behind valid time (INFERENCE for exact lag).",
+      "spatial_resolution": "1 km land grid (Noah-MP); 250 m terrain-routing grid; CONUS domain covers all of Washington (Canadian headwaters of the Nooksack/Skagit/Similkameen are outside the CONUS land grid — INFERENCE).",
+      "temporal_resolution": "Hourly.",
+      "historical_depth": "Bucket currently lists daily prefixes from nwm.20250101 onward (~20 months online as of 2026-08-22); long-term retrospective runs (v3.0 retrospective 1979-2023) exist separately on AWS — INFERENCE.",
+      "missing_data_semantics": "Variables carry missing_value, scale_factor and valid_range attributes (packed integers); water cells are masked.",
+      "quality_flags": "None per cell; the analysis assimilates USGS/USACE streamflow, not snow or soil moisture, so land states are open-loop with respect to snow/soil observations — INFERENCE.",
+      "units": "Confirmed in the land-file header: SOIL_M 'volumetric soil moisture' m3 m-3 (dimension soil_layers_stag), SOIL_T K, SOILICE fraction, SOILSAT_TOP 'fraction of soil saturation, top 2 layers', SNEQV 'Snow water equivalent' kg m-2, SNOWH 'Snow depth' m, FSNO 'Snow-cover fraction on the ground', SNOWT_AVG, ISNOW, SNLIQ, QSNOW, QRAIN, ACCET, EDIR ('Direct from soil evaporation rate', kg m-2 s-1), ACSNOM; global attributes model_configuration='analysis_and_assimilation', NWM_version_number 'v3...'.",
+      "licensing": "NODD: NOAA data are open to the public and can be used as desired; attribution requested for unaltered data; modified data must not be presented as original NOAA data.",
+      "limitations": [
+        "Modeled (Noah-MP) snow and soil states with no snow/soil assimilation; Cascade snowpack in NWM is known to be biased by precipitation forcing (MRMS/Stage IV/HRRR) — INFERENCE.",
+        "Soil layer depths not read from header (expected 0-10/10-40/40-100/100-200 cm) — verify.",
+        "Large files (~120 MB per hourly land file); subsetting requires downloading or using kerchunk references.",
+        "AWS registry text ('four-week rollover') conflicts with the observed 2025-01-01 retention — retention policy undocumented."
+      ],
+      "evidence": [
+        {"claim": "Bucket names noaa-nwm-pds and noaa-nodd-kerchunk-pds, us-east-1, NODD open license text, docs link", "url": "https://registry.opendata.aws/noaa-nwm-pds/", "status": "FACT"},
+        {"claim": "Listing of nwm.20260821/analysis_assim/ shows nwm.tHHz.analysis_assim.{channel_rt,land,reservoir,terrain_rt}.tm00|tm01|tm02.conus.nc; land files ~120-124 MB; daily prefix list includes analysis_assim_extend, analysis_assim_no_da, analysis_assim_long, forcing_* and regional variants; earliest prefix nwm.20250101; nwm.20260822 exists", "url": "https://noaa-nwm-pds.s3.amazonaws.com/?list-type=2&prefix=nwm.20260821/analysis_assim/&max-keys=40", "status": "FACT"},
+        {"claim": "Land NetCDF header contains SOIL_M (m3 m-3, 'volumetric soil moisture'), SOIL_T, SOILICE, SOILSAT_TOP ('fraction of soil saturation, top 2 layers'), SNEQV (kg m-2), SNOWH (m), FSNO, SNOWT_AVG, ISNOW, SNLIQ, QSNOW, QRAIN, ACCET, EDIR, ACSNOM, soil_layers_stag, model_configuration analysis_and_assimilation, Lambert Conformal Conic sphere 6370000 m with 1000 m cells, NWM_version_number", "url": "https://noaa-nwm-pds.s3.amazonaws.com/nwm.20260821/analysis_assim/nwm.t00z.analysis_assim.land.tm00.conus.nc", "status": "FACT"},
+        {"claim": "Short-range land files documented to contain ACCET, FSNO, SNEQV, SNOWH, SNOWT_AVG, SOILSAT_TOP (top 40 cm); 1 km land, 250 m terrain; file naming nwm.tHHz.<config>.<type>.fNNN.conus.nc", "url": "https://raw.githubusercontent.com/awslabs/open-data-docs/main/docs/noaa/noaa-nwm-pds/README.md", "status": "FACT"},
+        {"claim": "NWM v3.0 configurations (AnA hourly 3-h look-back, extended AnA daily 28-h, SR 18 h hourly, MR 10 d/8.5 d 6-member 4x/day, LR 30 d 4-member 4x/day), Noah-MP LSM, 1 km land / 250 m routing, USGS/USACE streamflow assimilation, forcing from MRMS/Stage IV/HRRR/RAP/GFS/CFS, NOMADS path", "url": "https://water.noaa.gov/about/nwm", "status": "FACT"}
+      ],
+      "relevance_to_cascade_oracle": "Hourly 1 km modeled SWE, snow depth, snow-cover fraction and layered soil moisture that are dynamically consistent with the NWM streamflow the platform already tracks; ideal for hourly antecedent-wetness and melt-state fields between SNODAS daily snapshots. Treat as model state: calibrate against SNOTEL WTEQ/SMS and SNODAS before exposing absolute values."
+    },
+    {
+      "name": "NASA NLDAS-2 land-surface model output (Noah/Mosaic/VIC/SAC) and NLDAS-3 (in development)",
+      "authority": "NASA GSFC Hydrological Sciences Lab (LDAS); NASA GES DISC distribution",
+      "data_kind": "modeled",
+      "access": {
+        "mechanism": "GES DISC HTTPS (Earthdata Login), OPeNDAP, GDS, subsetter, Giovanni; hourly NetCDF-4 files NLDAS_NOAH0125_H.AYYYYMMDD.HH00.020.nc under /data/NLDAS/NLDAS_NOAH0125_H.2.0/YYYY/DDD/. GRIB-1 (version 002) files stopped updating at 23Z 2024-08-01; NetCDF (2.0) continues.",
+        "base_urls": [
+          "https://disc.gsfc.nasa.gov/datasets/NLDAS_NOAH0125_H_2.0/summary",
+          "https://hydro1.gesdisc.eosdis.nasa.gov/data/NLDAS/NLDAS_NOAH0125_H.2.0/",
+          "https://ldas.gsfc.nasa.gov/nldas/v2/models",
+          "https://ldas.gsfc.nasa.gov/nldas/v3"
+        ],
+        "auth": "Free NASA Earthdata Login (directory listings are public; file GETs require login).",
+        "rate_limits": "Not documented.",
+        "formats": ["NetCDF-4 (v2.0)", "GRIB-1 (legacy, discontinued 2024-08-01)"]
+      },
+      "cadence": "Hourly files produced daily in near-real time; monthly aggregates.",
+      "latency": "~4.4 days: latest NLDAS_NOAH0125_H.2.0 file was 2026-08-17 23:00 and latest forcing (FORA) day folder was day 230 (2026-08-18) when checked 2026-08-22 ~08:40 UTC.",
+      "spatial_resolution": "0.125 degree (~12 km) over 25-53 N, 125-67 W (covers WA; excludes most of British Columbia headwaters north of 53 N only — the Nooksack/Skagit Canadian headwaters at ~49 N are inside the domain).",
+      "temporal_resolution": "Hourly.",
+      "historical_depth": "1979-01-02 to present (reprocessed 2022-08-01 to 2024-03-01 for all collections).",
+      "missing_data_semantics": "NetCDF _FillValue per variable (not read) — INFERENCE.",
+      "quality_flags": "None.",
+      "units": "Soil moisture kg/m2 per layer: SoilM_0_10cm, SoilM_10_40cm, SoilM_40_100cm, SoilM_100_200cm, plus SoilM_0_100cm and SoilM_0_200cm; SWE kg/m2; SnowDepth m.",
+      "licensing": "NASA open data, no restrictions; citation requested.",
+      "limitations": [
+        "Coarse 1/8-degree grid smears Cascade terrain; precipitation forcing (gauge-based) underestimates orographic totals in the Cascades (published model intercomparisons show up to ~1000 mm low bias in peak SWE in the Cascades) — INFERENCE from search snippet.",
+        "4-5 day latency; no NRT.",
+        "NLDAS-3 (1 km, Noah-MP, North/Central America) is 'currently in development' — only forcing is public; no operational cut-over date found."
+      ],
+      "evidence": [
+        {"claim": "NLDAS_NOAH0125_H_2.0: 0.125 deg, 25-53 N / 125-67 W, hourly, 1979-01-02 to present, NetCDF-4, Earthdata Login/HTTPS/OPeNDAP/GDS/subsetter, variables SoilM_0_10cm…SoilM_100_200cm, SoilM_0_100cm, SoilM_0_200cm, SWE, SnowDepth (kg/m2)", "url": "https://disc.gsfc.nasa.gov/datasets/NLDAS_NOAH0125_H_2.0/summary", "status": "FACT"},
+        {"claim": "Latest NetCDF hourly file 2026-08-17 23:00 (day folder 229) on 2026-08-22; FORA forcing reached day 230", "url": "https://hydro1.gesdisc.eosdis.nasa.gov/data/NLDAS/NLDAS_NOAH0125_H.2.0/2026/", "status": "FACT"},
+        {"claim": "Four LSMs (Mosaic, Noah-2.8, SAC, VIC-4.0.3); GRIB-1 files no longer updated as of 1 August 2024; NLDAS-3 exists", "url": "https://ldas.gsfc.nasa.gov/nldas/v2/models", "status": "FACT"},
+        {"claim": "NLDAS-3: 1 km, North and Central America, Noah-MP + HyMAP, hourly/daily/monthly collections, 'currently in development', forcing publicly available at GES DISC; NLDAS-2 reprocessed 2022-08-01..2024-03-01", "url": "https://ldas.gsfc.nasa.gov/nldas/v3", "status": "FACT"}
+      ],
+      "relevance_to_cascade_oracle": "Long (1979-present) consistent soil-moisture/SWE climatology for computing anomalies and percentiles at basin scale; too coarse and too late for nowcasting. Plan to migrate anomaly baselines to NLDAS-3 when it becomes operational."
+    },
+    {
+      "name": "Crop-CASMA (Crop Condition and Soil Moisture Analytics)",
+      "authority": "USDA NASS with George Mason University CSISS (funded by NASA and USDA-NASS)",
+      "data_kind": "derived",
+      "access": {
+        "mechanism": "Web GIS application (React app 'CropSmart' bundle) backed by OGC services: WPS at https://nassgeo.csiss.gmu.edu/smap_service (service=WPS&version=1.0.0, e.g. identifier=GetCategoryByFips) and MapServer WMS via https://nassgeo.csiss.gmu.edu/cgi-bin/mapserv?map=/DATA/SMAP_DATA/WMS/... (observed for a PRISM layer; SMAP map-file names not observed). Product layer keys in the bundle: SMAP9kmWeekly, SMAP9kmAnomalyWeekly, SMAP9kmCategoricalWeekly, SMAP1kmWeekly, SMAP1kmAnomalyWeekly, SMAP1kmCategoricalWeekly; download/profile/PDF WPS operations (DRI_DOWNLOAD_SMAP, DRI_PROFILE_SMAP, DRI_PDFMAP_SMAP). The legacy hostname cropcasma.nrcs.usda.gov does not resolve.",
+        "base_urls": [
+          "https://cloud.csiss.gmu.edu/Crop-CASMA/",
+          "https://nassgeo.csiss.gmu.edu/smap_service?service=WPS&version=1.0.0",
+          "https://nassgeo.csiss.gmu.edu/Crop-CASMA-User/user/data/",
+          "https://www.nass.usda.gov/Research_and_Science/Cropland/metadata/metadata_cropcasma.htm"
+        ],
+        "auth": "None for the web app; WPS/WMS appear anonymous (unverified for bulk use).",
+        "rate_limits": "Not documented.",
+        "formats": ["WMS imagery", "WPS (statistics, time-series profiles, PDF maps, GeoTIFF download operations)"]
+      },
+      "cadence": "Daily, 3-day and weekly composites; SMAP 9 km source is 3-hourly (L4).",
+      "latency": "Not documented (inherits SMAP L4 ~2.7 d plus processing) — INFERENCE.",
+      "spatial_resolution": "9 km (SMAP L4 surface/root zone, anomaly, categorical) and 1 km downscaled surface soil moisture (derived from SMAP, MODIS land-surface temperature and soil texture); CONUS bounds -130.23 to -63.67 E, 21.74 to 52.85 N.",
+      "temporal_resolution": "Daily / 3-day / weekly.",
+      "historical_depth": "2015-03-31 to present (soil moisture); NDVI/VCI/MVCI weekly from 2000.",
+      "missing_data_semantics": "Not documented.",
+      "quality_flags": "None documented; categorical products are percentile classes.",
+      "units": "Not stated in the metadata page; 9 km products are SMAP L4 m3/m3 and anomalies relative to period-of-record — INFERENCE.",
+      "licensing": "'provided to the public as is ... free to redistribute'; no warranty (USDA NASS metadata).",
+      "limitations": [
+        "Agricultural focus (cropland); 1 km downscaling relies on MODIS LST, which is cloud-limited and poorly constrained over forested mountains.",
+        "Service endpoints are undocumented for third-party use; app bundle may change without notice.",
+        "Derived from modeled SMAP L4 — carries its limitations."
+      ],
+      "evidence": [
+        {"claim": "Products (SMAP surface/rootzone 9 km daily/3-hourly/weekly, anomaly, categorical, 1 km surface SM daily/3-day/weekly, NDVI/VCI/MVCI), 9 km and 1 km, daily/three-day/weekly, 2015-03-31 to present, CONUS bounds, use constraints 'as is ... free to redistribute', app URL", "url": "https://www.nass.usda.gov/Research_and_Science/Cropland/metadata/metadata_cropcasma.htm", "status": "FACT"},
+        {"claim": "1 km product 'Derived from SMAP, MODIS Land Surface Temperature and Soil Texture Data'; product list with daily/weekly variants", "url": "https://nassgeo.csiss.gmu.edu/Crop-CASMA-User/user/data/", "status": "FACT"},
+        {"claim": "WPS endpoint https://nassgeo.csiss.gmu.edu/smap_service?service=WPS&version=1.0.0 and MapServer WMS path /cgi-bin/mapserv?map=/DATA/SMAP_DATA/WMS/...; layer keys SMAP9kmWeekly, SMAP1kmWeekly, anomaly/categorical variants; WPS operations DRI_DOWNLOAD_SMAP/DRI_PROFILE_SMAP", "url": "https://cloud.csiss.gmu.edu/CropSmart/static/js/main.fc3900e7.js", "status": "FACT"},
+        {"claim": "Data disseminated via OGC WMS/WCS and WPS geoprocessing (statistics, time-series profiles, PDF maps)", "url": "https://www.sciencedirect.com/science/article/pii/S1569843222001042", "status": "INFERENCE"},
+        {"claim": "cropcasma.nrcs.usda.gov fails DNS resolution", "url": "https://cropcasma.nrcs.usda.gov/", "status": "FACT"}
+      ],
+      "relevance_to_cascade_oracle": "Low priority: a convenient visual of SMAP anomalies for eastern-WA agricultural basins (Yakima, Walla Walla) once the platform expands; not a robust feed for the Puget Sound mountain basins."
+    },
+    {
+      "name": "MODIS/Terra snow cover MOD10A1 and cloud-gap-filled MOD10A1F (Collection 6.1)",
+      "authority": "NASA (MODIS Snow Project, GSFC); NSIDC DAAC distribution; LANCE for NRT",
+      "data_kind": "observational",
+      "access": {
+        "mechanism": "Earthdata pathways (NSIDC Data Access Tool, Earthdata Search, HTTPS, earthaccess, AWS S3 us-west-2 with Earthdata credentials, AppEEARS, Worldview/GIBS imagery). NRT swath products via LANCE (nrt3/nrt4.modaps.eosdis.nasa.gov).",
+        "base_urls": [
+          "https://nsidc.org/data/mod10a1/versions/61",
+          "https://nsidc.org/data/mod10a1f/versions/61",
+          "https://nsidc.org/sites/default/files/mod10a1-v061-userguide_1.pdf",
+          "https://nrt3.modaps.eosdis.nasa.gov/",
+          "https://www.earthdata.nasa.gov/learn/find-data/near-real-time"
+        ],
+        "auth": "Free NASA Earthdata Login.",
+        "rate_limits": "Not documented.",
+        "formats": ["HDF-EOS2, 500 m sinusoidal 10x10 degree tiles (Washington spans h09v04 / h10v04 — INFERENCE)"]
+      },
+      "cadence": "Daily (Terra ~10:30 local).",
+      "latency": "Standard products 'a few days' (extended after satellite maneuvers); LANCE NRT MODIS products 60-125 minutes after observation.",
+      "spatial_resolution": "500 m.",
+      "temporal_resolution": "Daily.",
+      "historical_depth": "2000-02-24 to present.",
+      "missing_data_semantics": "NDSI_Snow_Cover 8-bit codes: 0-100 NDSI snow cover, 200 missing data, 201 no decision, 211 night, 237 inland water, 239 ocean, 250 cloud, 254 detector saturated, 255 fill. MOD10A1F replaces cloud (250) pixels with the most recent clear observation and records Cloud_Persistence (days since last clear view).",
+      "quality_flags": "NDSI_Snow_Cover_Basic_QA: 0 best, 1 good, 2 ok, 3 poor (unused), 211 night, 239 ocean, 255 unusable; NDSI_Snow_Cover_Algorithm_Flags_QA bit flags (screens for low visible reflectance, low NDSI, temperature/height, shortwave IR, probably-cloudy/clear); v61 lowered low-visible-reflectance threshold 0.10->0.07 and refined cloud-mask flags.",
+      "units": "NDSI snow cover index 0-100 (fractional snow cover must be derived by the user via an NDSI-FSC relation); snow albedo percent.",
+      "licensing": "NASA open data, no restrictions; citation required as a condition of use (Hall & Riggs, DOI 10.5067/MODIS/MOD10A1.061).",
+      "limitations": [
+        "Cloud cover is 'the biggest limitation' — western WA winter cloudiness leaves many days with no clear view; CGF product cannot see snowfall-then-melt between clear views.",
+        "Terrain shadow, dense conifer canopy and thin/ephemeral snow reduce detection; night (211) at high latitude/winter is not an issue for WA but low sun angles are.",
+        "Terra is aging and drifting; continuity plan should be VIIRS."
+      ],
+      "evidence": [
+        {"claim": "500 m, daily, 2000-02-24 to present, HDF-EOS2, Earthdata Login, access tools incl. S3 and AppEEARS, latency 'only a few days', cloud cover biggest limitation, thin/ephemeral snow, v61 threshold/cloud-mask changes, DOI", "url": "https://nsidc.org/data/mod10a1/versions/61", "status": "FACT"},
+        {"claim": "NDSI_Snow_Cover codes 0-100/200/201/211/237/239/250/254/255 and Basic_QA codes", "url": "https://nsidc.org/sites/default/files/mod10a1-v061-userguide_1.pdf", "status": "FACT"},
+        {"claim": "MOD10A1F fills cloud pixels with prior clear-sky views, variables CGF_NDSI_Snow_Cover, Cloud_Persistence, Basic_QA, Algorithm_Flags_QA, MOD10A1_NDSI_Snow_Cover; 2000-02-24 to present; cannot detect snowfall-then-melt between clear observations", "url": "https://nsidc.org/data/mod10a1f/versions/61", "status": "FACT"},
+        {"claim": "LANCE NRT products generally available within 3 h; MODIS 60-125 min, VIIRS Land 60-125 min, SMAP 90-120 min; MODAPS NRT roots nrt3/nrt4.modaps.eosdis.nasa.gov; snow cover is in the MODIS/VIIRS NRT suites", "url": "https://www.earthdata.nasa.gov/learn/find-data/near-real-time", "status": "FACT"}
+      ],
+      "relevance_to_cascade_oracle": "Spatial snow-covered-area constraint for snow-line elevation and melt-out tracking per basin (use MOD10A1F to bridge cloudy spells and Cloud_Persistence as a confidence weight). Use as a check on SNODAS/NWM snow extent, not as SWE."
+    },
+    {
+      "name": "VIIRS snow cover VNP10A1 / VJ110A1 (daily 375 m), VNP10A1F / VJ110A1F (cloud-gap-filled) and VNP10_NRT",
+      "authority": "NASA VIIRS Land SIPS / NSIDC DAAC; LANCE for NRT",
+      "data_kind": "observational",
+      "access": {
+        "mechanism": "Same Earthdata pathways as MODIS (Data Access Tool, Earthdata Search, HTTPS, earthaccess, S3 us-west-2, AppEEARS); NRT swath VNP10_NRT v2 via LANCE.",
+        "base_urls": [
+          "https://nsidc.org/data/vnp10a1/versions/2",
+          "https://nsidc.org/data/vj110a1/versions/2",
+          "https://nsidc.org/data/vnp10a1f/versions/2",
+          "https://www.earthdata.nasa.gov/data/catalog/lancemodis-vnp10-nrt-2",
+          "https://nsidc.org/sites/default/files/documents/user-guide/multi_vnp10a1-v002-userguide.pdf"
+        ],
+        "auth": "Free NASA Earthdata Login.",
+        "rate_limits": "Not documented.",
+        "formats": ["HDF-EOS5 sinusoidal tiles (standard)", "NetCDF (VNP10_NRT swath)"]
+      },
+      "cadence": "Daily per satellite (S-NPP ~13:30 local, NOAA-20 offset ~50 min) — combining VNP10A1 and VJ110A1 gives two looks per day.",
+      "latency": "Standard 'a few days'; LANCE VIIRS Land NRT 60-125 minutes.",
+      "spatial_resolution": "375 m.",
+      "temporal_resolution": "Daily.",
+      "historical_depth": "VNP10A1 v2: 2012-01-19 to present; VJ110A1 v2: 2018-01-05 to present (v1 forward processing ceased 2024-06-17); VNP10A1F v2: 2012-01-19 to present; VNP10_NRT v2: 2023-10-10 to present.",
+      "missing_data_semantics": "Same NDSI snow-cover coding scheme as MODIS C6.1 (cloud/night/water/fill codes) per the joint VIIRS C2 user guide — INFERENCE (codes not read from page).",
+      "quality_flags": "Basic QA and algorithm-flag QA layers analogous to MOD10A1; VNP10A1F adds Cloud_Persistence.",
+      "units": "NDSI snow cover 0-100.",
+      "licensing": "NASA open data; VNP10_NRT 'openly shared without restrictions per EOSDIS guidelines'; DOIs 10.5067/45VDCKJBXWEE (VNP10A1), 10.5067/VIIRS/VNP10_NRT.002.",
+      "limitations": [
+        "S-NPP spacecraft anomaly: all S-NPP science products disabled 2026-07-11 01:30 UTC, recovered to nominal by 2026-07-21 (gap in VNP products).",
+        "Suomi NPP data delivery ends 2026-11-01 — users must transition to NOAA-20 (VJ1*) and NOAA-21 (VJ2*) products.",
+        "Same cloud/forest/terrain limitations as MODIS; 375 m still coarser than SNODAS-relevant ridgelines."
+      ],
+      "evidence": [
+        {"claim": "VNP10A1 v2: 375 m, daily, 2012-01-19 to present, HDF-EOS5, Earthdata Login, S3 us-west-2, AppEEARS; S-NPP products disabled 2026-07-11 and recovered 2026-07-21; DOI 10.5067/45VDCKJBXWEE", "url": "https://nsidc.org/data/vnp10a1/versions/2", "status": "FACT"},
+        {"claim": "VJ110A1 v2: 2018-01-05 to present, 375 m, HDF-EOS5, v1 forward processing ceased 2024-06-17", "url": "https://nsidc.org/data/vj110a1/versions/2", "status": "FACT"},
+        {"claim": "VNP10A1F v2 cloud-gap-filled, 2012-01-19 to present, latency a few days, JPSS-1 counterpart VJ110A1F referenced", "url": "https://nsidc.org/data/vnp10a1f/versions/2", "status": "FACT"},
+        {"claim": "VNP10_NRT v2: 375 m L2 swath, NetCDF, 2023-10-10 to present, open without restrictions; 'Suomi NPP data delivery ends November 1, 2026' — transition to NOAA-21/NOAA-20", "url": "https://www.earthdata.nasa.gov/data/catalog/lancemodis-vnp10-nrt-2", "status": "FACT"},
+        {"claim": "VIIRS Land NRT latency 60-125 minutes via LANCE", "url": "https://www.earthdata.nasa.gov/learn/find-data/near-real-time", "status": "FACT"}
+      ],
+      "relevance_to_cascade_oracle": "Preferred long-term snow-covered-area source (finer than MODIS, two satellites, NRT within ~2 h via LANCE). Build the pipeline on VJ1/VJ2 (NOAA-20/21) products given the 2026-11-01 S-NPP cutoff."
+    },
+    {
+      "name": "Other in-situ soil moisture in Washington (WA Ecology, WSU AgWeatherNet, USGS, NCSMMN)",
+      "authority": "Washington Department of Ecology; Washington State University AgWeatherNet; USGS Washington Water Science Center; NIDIS/NCSMMN",
+      "data_kind": "observational",
+      "access": {
+        "mechanism": "WA Ecology: no soil-moisture network; its statewide water-supply conditions page relies on NRCS SNOTEL, WA State Climate Office precipitation, NWRFC forecasts, US Drought Monitor, USGS dashboard and USBR Yakima storage; Ecology's EIM database and NGWMN groundwater wells exist but not soil moisture. AgWeatherNet: >160 stations (mostly irrigated eastern WA, expanding west), soil water at 2 in and 8 in depths reported for some stations; data via weather.wsu.edu after registration/login (web tools; API undocumented in fetched sources). USGS: no WA soil-moisture network found. NCSMMN: coordination initiative (~2,000 US stations), data access by contacting soil.moisture@noaa.gov; no WA portal found.",
+        "base_urls": [
+          "https://ecology.wa.gov/water-shorelines/water-supply/water-availability/statewide-conditions",
+          "https://weather.wsu.edu/",
+          "https://www.drought.gov/drought-in-action/national-coordinated-soil-moisture-monitoring-network"
+        ],
+        "auth": "AgWeatherNet requires a (free) registered login; others N/A.",
+        "rate_limits": "Unknown.",
+        "formats": ["AgWeatherNet web tables/graphs (CSV export INFERENCE)"]
+      },
+      "cadence": "AgWeatherNet 15-minute/hourly/daily (INFERENCE).",
+      "latency": "Unknown.",
+      "spatial_resolution": "Point stations; AgWeatherNet density is highest in the Yakima/Columbia Basin, sparse in the Puget Sound mountain basins.",
+      "temporal_resolution": "Sub-hourly to daily (INFERENCE).",
+      "historical_depth": "AgWeatherNet network since early 1990s (INFERENCE).",
+      "missing_data_semantics": "Unknown.",
+      "quality_flags": "Unknown.",
+      "units": "AgWeatherNet soil water in kPa (matric potential) per search snippet, not volumetric — INFERENCE.",
+      "licensing": "AgWeatherNet terms of use not retrieved; Ecology data are public records.",
+      "limitations": [
+        "No state-run soil-moisture network in WA; SNOTEL SMS remains the only consistent mountain soil-moisture observation set for the target basins.",
+        "AgWeatherNet soil sensors are agricultural (lowland, irrigated) and report matric potential, not VWC — not directly comparable to SMAP/NWM.",
+        "All details beyond Ecology's page are unverified (see open questions)."
+      ],
+      "evidence": [
+        {"claim": "Ecology's statewide conditions page tracks snowpack (NRCS SNOTEL), precipitation (WA State Climate Office), streamflow (NWRFC), drought monitor, reservoirs (USBR); soil moisture is not an explicitly tracked category and Ecology operates no soil-moisture stations", "url": "https://ecology.wa.gov/water-shorelines/water-supply/water-availability/statewide-conditions", "status": "FACT"},
+        {"claim": "AgWeatherNet has >160 stations mostly in irrigated eastern WA with expansion westward; some stations report soil water (kPa) at 2 in and 8 in; registered users access the full dataset via web tools", "url": "https://treefruit.wsu.edu/tools-resources/wsu-agweathernet/", "status": "INFERENCE"},
+        {"claim": "NCSMMN coordinates ~2,000 US soil-moisture stations; data access by contacting soil.moisture@noaa.gov", "url": "https://www.drought.gov/drought-in-action/national-coordinated-soil-moisture-monitoring-network", "status": "INFERENCE"},
+        {"claim": "USGS WA Water Science Center operates 380+ real-time sites (surface water, groundwater, quality, met) — no soil-moisture network identified", "url": "https://wa.water.usgs.gov/data/", "status": "INFERENCE"}
+      ],
+      "relevance_to_cascade_oracle": "Confirms there is no additional public in-situ soil-moisture network for the Puget Sound basins; rely on SNOTEL SMS (10 sites) for ground truth and on SMAP L4 / NWM for spatial fields. AgWeatherNet becomes relevant only for eastern-WA agricultural basins and needs its own API investigation."
+    }
+  ]
+}

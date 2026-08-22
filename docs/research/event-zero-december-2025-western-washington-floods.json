@@ -1,0 +1,364 @@
+{
+  "category": "EVENT ZERO — December 2025 Western Washington floods (AR sequence Dec 3–22, 2025; main flood Dec 8–12; second AR Dec 14–17; third Dec 18–21). All local times PST = UTC-8.",
+  "summary": "Event Zero is well documented and reconstructable to the hour from primary sources. A three-AR sequence (Dec 3–5, Dec 7, Dec 8–11) culminated in a CW3E AR-4 (coastal WA) / AR-3 (Cascade foothills) atmospheric river with ~96 h of AR conditions, a second moisture pulse late Dec 9, snow levels near 9,000 ft during that pulse, and >10 in (locally 13–17 in; >24 in two-week totals) over the Olympics and Cascades onto soils saturated by the Dec 3–7 rains, with near-record-low snowpack so snowmelt was negligible. NWS Seattle issued a Hydrologic Outlook at 12:56 PM PST Thu Dec 4, the first Flood Watch at 4:10 PM PST Fri Dec 5 (effective 4 AM Mon Dec 8 through 4 PM Fri Dec 12, 14 counties), the first river Flood Warnings the afternoon/evening of Mon Dec 8 (Cowlitz, Puyallup/Orting, Skykomish, Snoqualmie, Snohomish, Concrete all at MAJOR), the Skagit-at-Mount-Vernon warning at 9:01 AM Tue Dec 9 (36.9 ft), and by 5:24 PM Dec 9 forecast crests above the 1990 record (41.5 ft MV; 47.4 ft Concrete), peaking at 42.3 ft on the 3:14 PM Wed Dec 10 statement, before being revised down (39.1 ft by 2:04 AM Dec 11; 38.26 ft later Dec 11) to an observed 37.73 ft at 12:15 AM PST Fri Dec 12 — a new record by 0.36 ft over Nov 25, 1990 (37.37 ft) despite a lower flow (~133,000 vs 152,000 cfs). A Flash Flood Watch for potential Skagit levee/dike failure was issued 7:13 PM Dec 10. Records (USGS/NWPS preliminary): Skagit nr Mount Vernon 37.73 ft; Snohomish at Snohomish 34.15 ft NWS (USGS IV 34.45 ft, 5:35 PM Dec 11) vs 33.5 ft 1990; Cedar at Renton 18.25 ft / 12,400 cfs at 3 PM Dec 11 vs 17.13 ft/10,600 cfs 1990; White River at R St 12,000–12,400 cfs / 117.07 ft Dec 15 (dam-release driven) vs 8,230 cfs 2022. Near-records: Skagit nr Concrete 41.0 ft/151,000 cfs (record 42.21 ft 2003); Snohomish nr Monroe 24.64 ft/115,000 cfs (record 25.3 ft 1990); Snoqualmie nr Carnation 60.76 ft/89,700 cfs (record stage 62.21 ft 2009, but highest flow in the top-5 list); Skykomish nr Gold Bar 24.01 ft/115,000 cfs (record 24.51 ft 2006); Nooksack at N. Cedarville 150.44–150.49 ft/67,300 cfs (called a record at the time over 149.6 ft, but NWPS now lists Nov 15, 2021 at 150.76 ft as official record — unresolved); Stillaguamish at Arlington ~20.2–20.9 ft (record 21.34 ft 2023). Puyallup at Puyallup peaked 44,400 cfs/28.67 ft (minor category) because Mud Mountain Dam stored ~70% of its flood pool (peak pool ~1,185 ft, 74,600 af, 8 PM Dec 12); Howard Hanson set a record pool (1,189.3 ft, 77,700 af, ~75%, 9 AM Dec 12) holding Green nr Auburn to 12,100 cfs (moderate); USACE took Section 7 control of Ross and Upper Baker on Dec 8 (Ross inflow ~50,000 cfs Dec 11 vs 450 cfs outflow; peak pool 1,594.53 ft 4 AM Dec 12) and again at 8:30 AM Dec 15, with a preliminary estimate of 4–5 ft of Skagit stage reduction. Levee events: Skagit floodwall held (seepage/boils; Cockerham Island breach; Sterling overflow; Gages Slough/Burlington flooded Dec 12 AM); Whatcom levees damaged at Mount Baker Rim, Twin View, Hovander Park, Glacier-Gallup; Ebey Island/Tualco overtopping Dec 10; Orting overtopping Dec 11; Desimone levee (Green River, Tukwila) breach ~11:30 AM Mon Dec 15 with a Flash Flood Warning at 11:51 AM; White River HESCO levee failure in Pacific ~1:20–1:39 AM Tue Dec 16. Evacuations: ~75,000–78,000 in Skagit County's 100-yr floodplain (Level 3 Mount Vernon 5:00 PM Dec 10; county-wide by ~8:19 PM); Sumas/Everson/Nooksack/Marietta/parts of Ferndale Dec 10; up to ~100,000 statewide at various times. Declarations: state Proclamation 25-07 on Dec 10 (2:14 PM), amended 25-07.1 Dec 16; FEMA EM-3629 Dec 12, 2025; FEMA DR-4906 April 7, 2026 (incident period Dec 5–19, 2025). One WA death (Dec 16, Snohomish). Post-event: CW3E event summary (Dec 23), UW OWSC analyses (Jan 13 & Feb 7, 2026), King County FCD flood-event report (Feb 2026), USACE damages-prevented analysis (Jul 20, 2026); no NWS service assessment or formal USGS peak-flow report was found. Best machine-readable sources for a hindcast: IEM AFOS archive of NWS Seattle products (exact issuance times and forecast crests), NWPS gauge API (flood categories + preliminary crest table), and USGS IV service (15-min provisional stage/flow).",
+  "providers": [
+    {
+      "name": "USGS Instantaneous Values (waterservices.usgs.gov/nwis/iv) — observed peaks for Event Zero gauges",
+      "authority": "U.S. Geological Survey, Washington Water Science Center",
+      "data_kind": "observational",
+      "access": {
+        "mechanism": "REST query; JSON/WaterML; per-site provisional 15-min stage (00065) and discharge (00060). Queried Dec 8–31, 2025 by this research (results saved to usgs_iv_peaks_dec2025.json and usgs_iv_peaks_late_dec2025.json in the scratchpad).",
+        "base_urls": [
+          "https://waterservices.usgs.gov/nwis/iv/?format=json&sites=12200500&parameterCd=00060,00065&startDT=2025-12-08T00:00-0800&endDT=2025-12-14T00:00-0800"
+        ],
+        "auth": "none",
+        "rate_limits": "not documented on fetched pages; legacy service (USGS is migrating to api.waterdata.usgs.gov — OPEN_QUESTION for decommission date)",
+        "formats": ["json", "waterml", "rdb"]
+      },
+      "cadence": "15-min (5-min at some Skagit sites)",
+      "latency": "near-real-time during event; provisional",
+      "spatial_resolution": "point gauges",
+      "temporal_resolution": "15 min",
+      "historical_depth": "IV back to 2007+ at most sites; approved WY2026 peak-flow file not yet published as of Aug 2026",
+      "missing_data_semantics": "-999999 sentinel; 12167400 (Stillaguamish at Arlington) returned no time series for Dec 2025 (gauge data likely served by NWS/county, not USGS IV)",
+      "quality_flags": "provisional ('P') in IV; subject to revision",
+      "units": "ft (stage, local gauge datum); cfs",
+      "licensing": "US public domain",
+      "limitations": [
+        "Provisional values; small differences vs NWPS preliminary crests (e.g., Snohomish at Snohomish 34.45 ft USGS vs 34.15 ft NWS).",
+        "Stage datums differ from NWS flood-category datums at a few sites (White River near Auburn 12100496 vs R Street 12100490)."
+      ],
+      "evidence": [
+        {"claim": "Skagit River nr Mount Vernon (12200500): peak stage 37.73 ft at 00:15 PST Dec 12, 2025; peak flow 133,000 cfs at 01:00 PST Dec 12 (provisional).", "url": "https://waterservices.usgs.gov/nwis/iv/?format=json&sites=12200500&parameterCd=00060,00065&startDT=2025-12-08T00:00-0800&endDT=2025-12-14T00:00-0800", "status": "FACT"},
+        {"claim": "Skagit River nr Concrete (12194000): 40.99 ft / 151,000 cfs at 07:50 PST Dec 11 (below 2003 record 42.21 ft). Marblemount (12181000, below Ross/Gorge): 53,400 cfs at 02:25 PST Dec 11. Sedro-Woolley (12199000): 44.11 ft at 23:30 PST Dec 11.", "url": "https://waterservices.usgs.gov/nwis/iv/?format=json&sites=12194000&parameterCd=00060,00065&startDT=2025-12-08T00:00-0800&endDT=2025-12-14T00:00-0800", "status": "FACT"},
+        {"claim": "Sauk River nr Sauk (12189500): 84,800 cfs / 16.97 ft at 04:30 PST Dec 11; Sauk ab White Chuck (12186000): 23,800 cfs at 20:45 PST Dec 10.", "url": "https://waterservices.usgs.gov/nwis/iv/?format=json&sites=12189500&parameterCd=00060,00065&startDT=2025-12-08T00:00-0800&endDT=2025-12-14T00:00-0800", "status": "FACT"},
+        {"claim": "Snohomish River at Snohomish (12155500, stage only): 34.45 ft at 17:35 PST Dec 11. Snohomish nr Monroe (12150800): 24.64 ft at 16:52 PST and 115,000 cfs at 17:00 PST Dec 11.", "url": "https://waterservices.usgs.gov/nwis/iv/?format=json&sites=12155500,12150800&parameterCd=00060,00065&startDT=2025-12-08T00:00-0800&endDT=2025-12-14T00:00-0800", "status": "FACT"},
+        {"claim": "Snoqualmie nr Carnation (12149000): 60.76 ft / 89,700 cfs at 04:00 PST Dec 11. Snoqualmie nr Snoqualmie/Falls (12144500): 19.95 ft / 70,000 cfs at 17:45 PST Dec 10. Snoqualmie at Duvall (12150400): 45.23 ft at 18:30 PST Dec 11. Tolt nr Carnation (12148500): 6,540 cfs / 10.16 ft at 12:30 PST Dec 10 (minor category; NWS had forecast ~9,867 cfs major).", "url": "https://waterservices.usgs.gov/nwis/iv/?format=json&sites=12149000,12144500,12150400,12148500&parameterCd=00060,00065&startDT=2025-12-08T00:00-0800&endDT=2025-12-14T00:00-0800", "status": "FACT"},
+        {"claim": "Skykomish nr Gold Bar (12134500): 24.01 ft / 115,000 cfs at 16:15 PST Dec 10. Pilchuck nr Snohomish (12155300): 17.67 ft / 6,410 cfs at 07:15 PST Dec 11. NF Stillaguamish nr Arlington (12167000): 15.01 ft / 30,700 cfs at 04:45 PST Dec 11. SF Stillaguamish nr Granite Falls (12161000): 14.53 ft at 22:45 PST Dec 8.", "url": "https://waterservices.usgs.gov/nwis/iv/?format=json&sites=12134500,12155300,12167000,12161000&parameterCd=00060,00065&startDT=2025-12-08T00:00-0800&endDT=2025-12-14T00:00-0800", "status": "FACT"},
+        {"claim": "Nooksack at North Cedarville (12210700): 150.44 ft / 67,300 cfs at 03:00 PST Dec 11. Nooksack at Ferndale (12213100): 22.42 ft / 44,300 cfs at 22:15 PST Dec 11.", "url": "https://waterservices.usgs.gov/nwis/iv/?format=json&sites=12210700,12213100&parameterCd=00060,00065&startDT=2025-12-08T00:00-0800&endDT=2025-12-14T00:00-0800", "status": "FACT"},
+        {"claim": "Cedar at Renton (12119000): 18.25 ft / 12,400 cfs at 15:00 PST Dec 11. Cedar nr Landsburg (12117500): 10.17 ft / 9,920 cfs at 12:30 PST Dec 11.", "url": "https://waterservices.usgs.gov/nwis/iv/?format=json&sites=12119000,12117500&parameterCd=00060,00065&startDT=2025-12-08T00:00-0800&endDT=2025-12-14T00:00-0800", "status": "FACT"},
+        {"claim": "Green nr Auburn (12113000): 12,100 cfs at 09:00 PST Dec 13 (68.67 ft at 07:15 PST Dec 13); second peak 11,500 cfs 08:45 PST Dec 14. Green at Purification Plant nr Palmer (12106700, Howard Hanson outflow reach): 12,500 cfs at 12:15 PST Dec 9 (pre-storage release).", "url": "https://waterservices.usgs.gov/nwis/iv/?format=json&sites=12113000,12106700&parameterCd=00060,00065&startDT=2025-12-08T00:00-0800&endDT=2025-12-14T00:00-0800", "status": "FACT"},
+        {"claim": "White River at R Street nr Auburn (12100490): 10,500 cfs at 00:15 PST Dec 14, then 12,000 cfs / 117.07 ft at 09:15 PST Dec 15 (Mud Mountain drawdown period). Puyallup at Puyallup (12101500): 28.67 ft at 17:00 PST and 44,400 cfs at 17:30 PST Dec 11. Puyallup nr Orting (12093500): 20,800 cfs / 12.35 ft at 07:15 PST Dec 10.", "url": "https://waterservices.usgs.gov/nwis/iv/?format=json&sites=12100490,12101500,12093500&parameterCd=00060,00065&startDT=2025-12-08T00:00-0800&endDT=2025-12-21T00:00-0800", "status": "FACT"},
+        {"claim": "Second AR (Dec 14–20) peaks: Skagit MV 30.92 ft / 81,500 cfs 20:15 PST Dec 17; Concrete 31.39 ft / 80,800 cfs 01:15 PST Dec 16; Snohomish at Snohomish 27.77 ft 17:00 Dec 17; Monroe 16.0 ft / 62,100 cfs 13:30 Dec 17; Carnation 56.72 ft 18:30 Dec 17; Gold Bar 17.98 ft / 53,600 cfs 05:45 Dec 17; Cedar Renton 14.94 ft / 6,860 cfs 02:00 Dec 14; Ferndale 17.07 ft Dec 17; Puyallup 21,500 cfs 03:45 Dec 19. Third pulse Dec 21 reached only action/minor (Skagit MV 24.05 ft 01:15 PST Dec 21).", "url": "https://waterservices.usgs.gov/nwis/iv/?format=json&sites=12200500&parameterCd=00060,00065&startDT=2025-12-14T00:00-0800&endDT=2026-01-01T00:00-0800", "status": "FACT"},
+        {"claim": "Stillaguamish at Arlington (12167400) returned no IV time series for Dec 2025; exact observed crest not obtained (HeraldNet: 20.17 ft at 7:05 AM Dec 11; NWS forecast 20.9 ft; 18.8 ft by 10:40 AM) — likely 20.2–20.9 ft, below the 21.34 ft record of Dec 5, 2023.", "url": "https://waterservices.usgs.gov/nwis/iv/?format=json&sites=12167400&startDT=2025-12-08T00:00-0800&endDT=2025-12-14T00:00-0800", "status": "OPEN_QUESTION"}
+      ],
+      "relevance_to_cascade_oracle": "Ground-truth observed hydrographs for hindcast scoring of every Cascade Oracle target basin during Event Zero; provides exact peak timing to align with forecast issuance times."
+    },
+    {
+      "name": "NOAA NWPS gauge API (api.water.noaa.gov/nwps/v1/gauges/{LID}) — flood categories and preliminary crest table",
+      "authority": "NOAA National Weather Service / Office of Water Prediction (NWPS)",
+      "data_kind": "mixed (observational crest records + static thresholds)",
+      "access": {
+        "mechanism": "REST GET per LID; JSON includes floodCategories (stage or flow), recordCrest, historicCrestsTop5 with preliminary flag (P/O/R), datums, status (observed/forecast).",
+        "base_urls": [
+          "https://api.water.noaa.gov/nwps/v1/gauges/MVEW1",
+          "https://api.water.noaa.gov/nwps/v1/gauges/SNAW1",
+          "https://api.water.noaa.gov/nwps/v1/gauges/CONW1"
+        ],
+        "auth": "none",
+        "rate_limits": "not stated on fetched responses",
+        "formats": ["json"]
+      },
+      "cadence": "crest table updated when NWS enters preliminary/official crests; observed stage feed real-time",
+      "latency": "preliminary crest entries appeared within days of the event",
+      "spatial_resolution": "point (NWS LID)",
+      "temporal_resolution": "event crests; observed stage hourly/15-min",
+      "historical_depth": "historic crests back to 1800s at some sites",
+      "missing_data_semantics": "-9999 for undefined category stage/flow; -1 for unknown flow; unknown LIDs return 404 (NCDW1, DEMW1, SAUW1 not valid)",
+      "quality_flags": "preliminary 'P', official 'O', revised 'R'; crest timestamps inconsistently labeled (some 'Z' values appear to be local time)",
+      "units": "ft, cfs",
+      "licensing": "US public domain",
+      "limitations": [
+        "Crest timestamps: NRKW1 11:00Z = 03:00 PST matches USGS, MROW1 01:00Z Dec 12 = 17:00 PST matches USGS, but SNAW1 '2025-12-11T17:30:00Z' conflicts with USGS peak at 17:35 PST and WRAW1 '09:15Z' equals the USGS 09:15 PST time — treat time zone of crest timestamps as unreliable.",
+        "RNTW1 (Cedar at Renton) and ARLW1 top-5 lists had not been updated with the Dec 2025 crest when fetched (Aug 2026)."
+      ],
+      "evidence": [
+        {"claim": "MVEW1 Skagit nr Mt Vernon (USGS 12200500): categories action 23.5 / minor 28 / moderate 30 / major 32 ft (NGVD29). Top crests: Dec 12, 2025 37.73 ft 132,717 cfs (P); Nov 25, 1990 37.37 ft 152,000 cfs (R); Nov 30, 1995 37.34 ft; Nov 16, 2021 37.32 ft; Nov 11, 1906 37.0 ft 180,000 cfs.", "url": "https://api.water.noaa.gov/nwps/v1/gauges/MVEW1", "status": "FACT"},
+        {"claim": "CONW1 Skagit nr Concrete (12194000): major 32.5 ft. Top crests: 1815 paleoflood 69.3 ft/510,000 cfs; Oct 21, 2003 42.21 ft 166,000 cfs (R); Nov 29, 1995 41.57 ft; Dec 11, 2025 41.03 ft 151,196 cfs (P); Nov 27, 1949 40.8 ft. Dec 2025 was NOT a record at Concrete despite some media/blog claims.", "url": "https://api.water.noaa.gov/nwps/v1/gauges/CONW1", "status": "FACT"},
+        {"claim": "SNAW1 Snohomish at Snohomish (12155500): major 29 ft. recordCrest allTimeHigh 34.15 ft dated 2025-12-11T17:30:00Z (R flag); prior: Nov 25, 1990 33.5 ft; Nov 8, 2006 33.49 ft 111,688 cfs; Jan 8, 2009 33.47 ft; Dec 4, 1975 33.16 ft.", "url": "https://api.water.noaa.gov/nwps/v1/gauges/SNAW1", "status": "FACT"},
+        {"claim": "MROW1 Snohomish nr Monroe (12150800): major 17 ft. Record Nov 25, 1990 25.3 ft 150,000 cfs; Dec 12, 2025 01:00Z 24.55 ft 106,222 cfs (P) is 2nd; Jan 8, 2009 24.12 ft 132,000 cfs; Nov 30, 1995 24.1 ft.", "url": "https://api.water.noaa.gov/nwps/v1/gauges/MROW1", "status": "FACT"},
+        {"claim": "CRNW1 Snoqualmie nr Carnation (12149000): major 58 ft. Record Jan 8, 2009 62.21 ft 82,900 cfs; Dec 11, 2025 60.76 ft 89,686 cfs (P) 2nd by stage but highest flow in the top-5; Nov 24, 1990 60.7 ft 65,200 cfs.", "url": "https://api.water.noaa.gov/nwps/v1/gauges/CRNW1", "status": "FACT"},
+        {"claim": "SQUW1 Snoqualmie at Snoqualmie Falls (12144500): major 41,000 cfs. Record Nov 24, 1990 21.55 ft 78,800 cfs; Dec 10, 2025 19.95 ft 70,000 cfs (P) is 4th.", "url": "https://api.water.noaa.gov/nwps/v1/gauges/SQUW1", "status": "FACT"},
+        {"claim": "GLBW1 Skykomish nr Gold Bar (12134500): major 19 ft. Record Nov 6, 2006 24.51 ft 129,000 cfs; Dec 11 (UTC), 2025 24.03 ft 114,215 cfs (P) is 2nd; Nov 24, 1990 22.49 ft.", "url": "https://api.water.noaa.gov/nwps/v1/gauges/GLBW1", "status": "FACT"},
+        {"claim": "ARLW1 Stillaguamish at Arlington (12167400): major 19 ft. Record Dec 5, 2023 21.34 ft 82,700 cfs (P); next 21.29 ft (2010), 21.06 (2006), 20.82 (2009), 20.75 (2003). No Dec 2025 entry in top 5 (so Dec 2025 crest < 20.75 ft or not yet entered).", "url": "https://api.water.noaa.gov/nwps/v1/gauges/ARLW1", "status": "FACT"},
+        {"claim": "NRKW1 Nooksack at North Cedarville (12210700): action 144.8 / minor 146.5 / moderate 148 / major 150 ft. Record listed as Nov 15, 2021 150.76 ft 70,900 cfs (O); Dec 11, 2025 11:00Z 150.49 ft 67,159 cfs (P) is 2nd; 149.61 ft (2006, 2003). Contemporaneous NWS statements and media treated 149.6 ft as the record and called Dec 2025 a record.", "url": "https://api.water.noaa.gov/nwps/v1/gauges/NRKW1", "status": "FACT"},
+        {"claim": "NKSW1 Nooksack at Ferndale (12213100): minor 18 / moderate 20.5 / major 23 ft; record 31.23 ft (Feb 10, 1951). Dec 2025 crest 22.42 ft = high moderate.", "url": "https://api.water.noaa.gov/nwps/v1/gauges/NKSW1", "status": "FACT"},
+        {"claim": "RNTW1 Cedar at Renton (12119000): minor 13 / moderate 14.5 / major 16 ft; listed record Nov 24, 1990 17.13 ft 10,600 cfs (R); Jan 8, 2009 16.27 ft. Dec 11, 2025 18.25 ft / 12,400 cfs (USGS) exceeds both stage and flow records; not yet in the NWPS table when fetched.", "url": "https://api.water.noaa.gov/nwps/v1/gauges/RNTW1", "status": "FACT"},
+        {"claim": "AUBW1 Green nr Auburn (12113000): categories in flow — action 6,000 / minor 9,000 / moderate 12,000 / major 14,000 cfs. Record Nov 23, 1959 69.75 ft 28,100 cfs (pre-dam); Dec 13, 2025 68.67 ft 12,100 cfs (P) is 2nd-highest stage.", "url": "https://api.water.noaa.gov/nwps/v1/gauges/AUBW1", "status": "FACT"},
+        {"claim": "WRAW1 White River at R St Auburn (12100490): action 5,500 / minor 7,500 / moderate 10,000 / major 12,000 cfs. New record Dec 15, 2025 117.07 ft 12,400 cfs (P) over Feb 28, 2022 115.47 ft 8,230 cfs; Feb 6, 2020 8,080 cfs; Dec 9, 2015 8,150 cfs.", "url": "https://api.water.noaa.gov/nwps/v1/gauges/WRAW1", "status": "FACT"},
+        {"claim": "PUYW1 Puyallup at Puyallup (12101500): action 24 / minor 26.2 / moderate 30 / major 31 ft; record Dec 18, 1917 34.15 ft 40,500 cfs. Dec 2025 28.67 ft (minor) with 44,400 cfs. ORTW1 Puyallup nr Orting (12093500): major 16,000 cfs; record Nov 6, 2006 21,500 cfs; Dec 10, 2025 20,800 cfs (P) 3rd; also Dec 9 16,800 and Dec 11 16,600 cfs entries.", "url": "https://api.water.noaa.gov/nwps/v1/gauges/PUYW1", "status": "FACT"},
+        {"claim": "MMRW1 White River at Mud Mtn Dam outflow: minor 9,000 / moderate 12,000 / major 14,000 cfs; record outflow 15,200 cfs (Nov 24, 1986). TOLW1 Tolt nr Carnation (12148500): minor 5,000 / moderate 7,000 / major 8,500 cfs; record 17,400 cfs (1959); no Dec 2025 entry.", "url": "https://api.water.noaa.gov/nwps/v1/gauges/MMRW1", "status": "FACT"},
+        {"claim": "RAWW1 Cowlitz at Randle (USGS 14231000): major 22 ft; record Nov 7, 2006 25.24 ft; Dec 11, 2025 24.17 ft 36,656 cfs (P) is 3rd. PACW1 Cowlitz at Packwood: major 12 ft; record 14.59 ft (2006); no Dec 2025 top-5 entry. CGMW1 Chehalis nr Grand Mound: major 144 ft; record 147.26 ft (Dec 4, 2007); Dec 11, 2025 143.27 ft 32,114 cfs (P, moderate).", "url": "https://api.water.noaa.gov/nwps/v1/gauges/RAWW1", "status": "FACT"}
+      ],
+      "relevance_to_cascade_oracle": "Authoritative flood-category thresholds and the official preliminary record ledger for Event Zero; needed to label hindcast outcomes (minor/moderate/major/record) consistently with NWS."
+    },
+    {
+      "name": "NWS Seattle (KSEW) text products via IEM AFOS archive — Hydrologic Outlooks (ESF), Flood Watches (FFA), River Flood Warnings/Statements (FLW/FLS), Flash Flood Warnings (FFW), Public Information Statements (PNS), Area Forecast Discussions (AFD)",
+      "authority": "NOAA/NWS Seattle WFO; archived by Iowa Environmental Mesonet (Iowa State University)",
+      "data_kind": "forecast",
+      "access": {
+        "mechanism": "HTTP GET retrieve.py with pil, sdate, edate, limit; returns raw product text with WMO header and VTEC lines; companion JSON listing of VTEC events per WFO/year.",
+        "base_urls": [
+          "https://mesonet.agron.iastate.edu/cgi-bin/afos/retrieve.py?pil=FFASEW&sdate=2025-12-04T00:00Z&edate=2025-12-17T00:00Z&limit=40",
+          "https://mesonet.agron.iastate.edu/cgi-bin/afos/retrieve.py?pil=FLWSEW&sdate=2025-12-08T00:00Z&edate=2025-12-09T18:00Z&limit=40",
+          "https://mesonet.agron.iastate.edu/json/vtec_events.py?wfo=SEW&year=2025"
+        ],
+        "auth": "none",
+        "rate_limits": "not stated; be polite",
+        "formats": ["text", "json"]
+      },
+      "cadence": "per product issuance (watches ~2x/day; FLS every few hours per river during the event)",
+      "latency": "archived within minutes of issuance",
+      "spatial_resolution": "county zones and NWS forecast points (LIDs)",
+      "temporal_resolution": "issuance timestamps to the minute; crest forecasts to ~6-h bins",
+      "historical_depth": "AFOS archive back to ~2001",
+      "missing_data_semantics": "empty result if no products; IEM is a third-party mirror (gaps possible)",
+      "quality_flags": "none; COR products flag corrections",
+      "units": "ft / cfs as in product text; times in local (PST) and UTC (VTEC)",
+      "licensing": "NWS products public domain; IEM mirror free for use",
+      "limitations": [
+        "Summaries here were produced by an LLM extraction over long product dumps; verify exact wording against the raw text before using as labels.",
+        "IEM VTEC JSON 'issue' field for FL.W events appears to reflect event begin times, not product transmission times."
+      ],
+      "evidence": [
+        {"claim": "ESF Hydrologic Outlook 12:56 PM PST Thu Dec 4, 2025: 'THREAT OF RIVER FLOODING ACROSS WESTERN WASHINGTON EARLY NEXT WEEK'; series of ARs beginning Friday; snow levels ~5,000–6,000 ft. Updated 3:37 AM Dec 5 (snow levels 4,500–6,500 ft) and 3:46 PM Dec 5 ('THREAT OF RIVER FLOODING HAS INCREASED'). Later ESFs 5:27 PM Dec 12 and 6:26 AM Dec 13 flagged the second AR (snow 5,000 ft rising to 8,000–8,500 ft Mon Dec 15, dropping to 3,000–4,500 ft Tue).", "url": "https://mesonet.agron.iastate.edu/cgi-bin/afos/retrieve.py?pil=ESFSEW&sdate=2025-12-01T00:00Z&edate=2025-12-17T00:00Z&limit=20", "status": "FACT"},
+        {"claim": "First Flood Watch: FFA issued 4:10 PM PST Fri Dec 5, 2025 (WGUS66 KSEW 060010; /O.NEW.KSEW.FA.A.0012.251208T1200Z-251213T0000Z/) 'FLOOD WATCH IN EFFECT FROM LATE SUNDAY NIGHT THROUGH FRIDAY AFTERNOON' for Clallam, Grays Harbor, Island, Jefferson, King, Kitsap, Lewis, Mason, Pierce, San Juan, Skagit, Snohomish, Thurston, Whatcom. Continued ~2x daily Dec 6–11; cancelled 9:30 AM Dec 12 ('all rivers either under flood warnings or have receded').", "url": "https://mesonet.agron.iastate.edu/cgi-bin/afos/retrieve.py?pil=FFASEW&sdate=2025-12-04T00:00Z&edate=2025-12-17T00:00Z&limit=40", "status": "FACT"},
+        {"claim": "Flash Flood Watch for potential failure of Skagit River levees/dikes below Sedro-Woolley (western Skagit / NW Snohomish lowlands): /O.NEW.KSEW.FF.A.0002.251211T0313Z-251213T1200Z/ issued 7:13 PM PST Wed Dec 10; extended to 251213T1600Z at 9:30 AM Dec 12; cancelled 4:28 PM PST Fri Dec 12. No Flash Flood Emergency product was found in the archive.", "url": "https://mesonet.agron.iastate.edu/cgi-bin/afos/retrieve.py?pil=FFASEW&sdate=2025-12-04T00:00Z&edate=2025-12-17T00:00Z&limit=40", "status": "FACT"},
+        {"claim": "Second Flood Watch FA.A.0013 NEW 2:18 PM PST Sat Dec 13 (251215T1800Z–251219T0000Z; 12 counties; 'preliminary liquid totals of 2 to 8 inches'); continued through Dec 16 (2–6 in, then 'another 1 to 3 inches').", "url": "https://mesonet.agron.iastate.edu/cgi-bin/afos/retrieve.py?pil=FFASEW&sdate=2025-12-13T00:00Z&edate=2025-12-15T12:00Z&limit=10", "status": "FACT"},
+        {"claim": "AFD Sat Dec 6 1:37 AM PST: 'widespread river flooding event will commence late Monday and continue through much of the week', rivers forecast to reach Minor, Moderate and Major flood stage. AFD Mon Dec 8 1:33 AM: 'widespread significant river flooding'; 3–6 in lowlands south of Seattle, 6–10 in Olympics/Cascades, locally 12+ in central/southern Cascades; snow levels briefly 3,500–4,000 ft Tuesday. No 'record'/'historic' wording in AFDs through Dec 8 AM.", "url": "https://mesonet.agron.iastate.edu/cgi-bin/afos/retrieve.py?pil=AFDSEW&sdate=2025-12-03T00:00Z&edate=2025-12-08T12:00Z&limit=30", "status": "FACT"},
+        {"claim": "First river Flood Warnings (FLW, Mon Dec 8 PST): 12:29 PM Skokomish at Potlatch (moderate); 3:56 PM Newaukum nr Chehalis (moderate) & Chehalis ab Doty; 4:04 PM Cowlitz at Packwood (MAJOR, 13.9 ft near-record) & Randle (MAJOR 23.7 ft); 4:35 PM Nisqually nr National (MAJOR); 4:44 PM Puyallup nr Orting (MAJOR 18,824 cfs), Carbon nr Fairfax, South Prairie Cr; 5:18 PM Skykomish nr Gold Bar (MAJOR 19.9 ft) & SF Stillaguamish; 6:16 PM Snoqualmie nr Snoqualmie Falls (MAJOR 46,000 cfs) & Tolt (moderate 7,500 cfs); 7:56 PM Snoqualmie nr Carnation (MAJOR 58.8 ft), Snohomish nr Monroe (MAJOR 18.8 ft), Snohomish at Snohomish (MAJOR 31.9 ft); 8:10 PM Stillaguamish at Arlington (moderate 17.8 ft); 10:15 PM Skagit nr Concrete (MAJOR 37.6 ft early Thu); 11:54 PM Puyallup at Puyallup (minor 29 ft).", "url": "https://mesonet.agron.iastate.edu/cgi-bin/afos/retrieve.py?pil=FLWSEW&sdate=2025-12-08T00:00Z&edate=2025-12-09T18:00Z&limit=40", "status": "FACT"},
+        {"claim": "Skagit nr Mount Vernon Flood Warning NEW at 9:01 AM PST Tue Dec 9 (/O.NEW.KSEW.FL.W.0042.251210T0147Z-000000T0000Z/): stage 25.3 ft, MAJOR, crest 36.9 ft early Friday, 'severe near record flooding from Sedro Woolley downstream through Mount Vernon'. Same product extended Stillaguamish at Arlington to 18.8 ft. Green nr Auburn NEW 3:16 AM Dec 9 (minor 10,705 cfs) raised to moderate 12,829 cfs at 9:36 AM. Tolt ab Carnation raised to MAJOR 9,867 cfs at 2:07 AM Dec 9.", "url": "https://mesonet.agron.iastate.edu/cgi-bin/afos/retrieve.py?pil=FLWSEW&sdate=2025-12-08T00:00Z&edate=2025-12-09T18:00Z&limit=40", "status": "FACT"},
+        {"claim": "Forecast escalation to above-record Tue Dec 9 PM: 5:24 PM FLS Skagit MV crest 41.5 ft early Fri ('approaches the flood of record'), Concrete 47.4 ft early Thu; 5:24 PM Stillaguamish at Arlington MAJOR 20.6 ft 'near record'; 6:25 PM Snohomish at Snohomish 33.8 ft (record 33.5), Monroe 23.6 ft. 12:07 PM Dec 9 White River at R St NEW MAJOR 12,644 cfs Thu; 10:23 PM Nooksack at N. Cedarville NEW moderate 148.4 ft; 11:35 PM Cedar nr Landsburg NEW MAJOR 9.0 ft and Elwha 'approaches the flood of record'.", "url": "https://mesonet.agron.iastate.edu/cgi-bin/afos/retrieve.py?pil=FLSSEW&sdate=2025-12-09T12:00Z&edate=2025-12-10T12:00Z&limit=80", "status": "FACT"},
+        {"claim": "Wed Dec 10 PST: 1:24 AM MV 41.5 ft / Concrete 47.7 ft (prev 47.6 ft 12/13/1921 cited); 2:17 AM Snohomish 33.7 ft, Monroe 26.3 ft (above 25.3 record); 8:10 AM Cedar at Renton NEW MAJOR 16.3 ft; 9:42 AM Nooksack at Ferndale NEW moderate 21.4 ft; 10:26 AM areal Flood Warning 'Nooksack River overflow at Everson imminent or occurring'; 12:10 PM areal FW South Fork Skykomish ('6 and 10 inches have fallen', 3–5 more); 12:40 PM foothills areal FW (King/Skagit/Snohomish/Whatcom); 3:14 PM MV 42.3 ft Fri AM (peak forecast); 5:15 PM MV 42.1 ft, Concrete 46.1 ft; 5:29 PM areal FW 'Skagit River... high probability of overflowing at Sterling' (through 4:15 AM Sat); 5:32 PM Cedarville MAJOR 150 ft 'approaching record'; 7:47 PM Green nr Auburn moderate 12,184 cfs; 10:24 PM Snohomish 33.4 ft, Monroe 24.9 ft; 10:32 PM Ferndale 22.3 ft, Cedarville 149.3 ft; 10:50 PM Cedar at Renton 17.5 ft 'approaches the flood of record'; 8:50 PM Puyallup at Puyallup minor 27.9 ft.", "url": "https://mesonet.agron.iastate.edu/cgi-bin/afos/retrieve.py?pil=FLSSEW&sdate=2025-12-10T12:00Z&edate=2025-12-11T12:00Z&limit=80", "status": "FACT"},
+        {"claim": "Thu Dec 11 PST: 2:04 AM MV revised down to 39.1 ft late Fri AM; Concrete 'cresting now' 41.1 ft; 2:07 AM Stillaguamish 20.9 ft late morning, Snohomish 33.6 ft; 2:23 AM Cedarville MAJOR 150.3 ft (prior crest 149.6 ft 10/17/2003 cited); 5:15 AM & 10:17 AM MV 39.1 ft; 8:29 AM Snohomish at Snohomish 33.8 ft at 8:00 AM (above 33.5 ft 1990); 10:40 AM Stillaguamish 18.8 ft falling; 4:50 PM Snohomish 34.0 ft at 4:00 PM. Fri Dec 12 ~12:50 AM FLS: MV 37.7 ft at 12:15 AM, forecast 38.1 ft; Concrete crested 40.8 ft; Snohomish crested 34.2 ft; Monroe 24.6 ft; Ferndale 22.4 ft; Cedar Renton 18.2 ft; Carnation 60.8 ft.", "url": "https://mesonet.agron.iastate.edu/cgi-bin/afos/retrieve.py?pil=FLSSEW&sdate=2025-12-11T08:00Z&edate=2025-12-12T18:00Z&limit=80", "status": "FACT"},
+        {"claim": "Flash Flood Warnings: FF.W.0001 issued 11:51 AM PST Mon Dec 15 (251215T1951Z–251216T0500Z) 'Failure of Green River Levee', West Central King County (Kent/Renton/Tukwila), corrected 12:11 PM; FF.W.0002 issued 1:39 AM PST Tue Dec 16 (251216T0939Z–251216T1545Z) 'Levee Failure on the White River', City of Pacific, SW King County, to 7:45 AM.", "url": "https://mesonet.agron.iastate.edu/cgi-bin/afos/retrieve.py?pil=FFWSEW&sdate=2025-12-08T00:00Z&edate=2025-12-18T00:00Z&limit=40", "status": "FACT"},
+        {"claim": "VTEC FL.W event list Dec 8–16 with NWSLIs (SRPW1, NEWW1, ORTW1, GLBW1, SSFW1, PACW1, FFXW1, DOTW1, SPEW1, SQUW1, ARLW1, NISW1, BOGW1, TOLW1, RAWW1, CONW1, DSRW1, PUYW1, CRNW1, BCDW1, MROW1, SATW1, SNAW1, AUBW1, CGMW1, WRAW1, CRPW1, CENW1, ELWW1, LNDW1, MKNW1, RNTW1, SMRW1, NSSW1, NRKW1, MVEW1, ARGW1, ISSW1, NKSW1, PILW1, MMRW1, MAYW1; second-AR warnings Dec 15–16 for SRPW1, CONW1, GLBW1, MMRW1). Areal FA.W events: Everson overflow (Dec 10 18:26Z), SF Skykomish, foothills, Skagit overflow at Sterling (Dec 11 01:29Z), King/Pierce (Dec 16).", "url": "https://mesonet.agron.iastate.edu/json/vtec_events.py?wfo=SEW&year=2025", "status": "FACT"},
+        {"claim": "PNS 5-day precipitation totals issued 6:34 AM PST Dec 11: Olympic NP Bishop Quinault 16.58 in; Owl Mountain 14.44; Ohanapecosh 14.15; Humptulips 6E Neilton 13.92; 1.2E Skykomish 13.40; 2ENE Cedar Falls 13.38; Johnson Ridge 13.08; Paradise SNOTEL 11.70; Centralia 10.89 in.", "url": "https://mesonet.agron.iastate.edu/cgi-bin/afos/retrieve.py?pil=PNSSEW&sdate=2025-12-08T00:00Z&edate=2025-12-13T12:00Z&limit=30", "status": "FACT"}
+      ],
+      "relevance_to_cascade_oracle": "The single best source for 'what was known when': exact issuance times, forecast crests, and category wording for every target gauge, enabling forecast-evolution curves (e.g., Mount Vernon 36.9 → 41.5 → 42.3 → 39.1 → 38.26 → obs 37.73 ft) and lead-time scoring."
+    },
+    {
+      "name": "CW3E (Scripps/UCSD) AR Outlooks and Event Summary — AR scale, IVT, snow levels",
+      "authority": "Center for Western Weather and Water Extremes, UC San Diego",
+      "data_kind": "mixed (forecast outlooks; post-event observational summary)",
+      "access": {
+        "mechanism": "Public web pages/PDFs",
+        "base_urls": [
+          "https://cw3e.ucsd.edu/cw3e-event-summary-8-12-december-2025/",
+          "https://cw3e.ucsd.edu/cw3e-ar-update-8-december-2025-outlook/",
+          "https://cw3e.ucsd.edu/cw3e-ar-update-3-december-2025-outlook/"
+        ],
+        "auth": "none",
+        "rate_limits": "n/a",
+        "formats": ["html", "pdf", "png"]
+      },
+      "cadence": "outlooks every 2–3 days during active periods; event summaries ~2 weeks after",
+      "latency": "event summary published Dec 23, 2025",
+      "spatial_resolution": "regional (coastal WA/OR, Cascade foothills)",
+      "temporal_resolution": "daily/event",
+      "historical_depth": "outlook archive back to ~2016",
+      "missing_data_semantics": "n/a",
+      "quality_flags": "n/a",
+      "units": "AR scale 1–5; IVT kg m-1 s-1; inches; feet",
+      "licensing": "public research outreach; cite CW3E",
+      "limitations": [
+        "Dec 5 outlook page not located (URL pattern guess returned 404); AR-5 probability wording for Dec 5 only available second-hand.",
+        "No CW3E event summary found for the Dec 14–18 AR."
+      ],
+      "evidence": [
+        {"claim": "Dec 3 outlook: three ARs to make landfall Wed Dec 3–Wed Dec 10 — AR1 night of Dec 3 with second pulse early Fri Dec 5 (2–4 in Cascades); AR2 early Sun Dec 7 (<24 h, 0.5–1 in); AR3 Mon Dec 8–Wed Dec 10 with IVT ≥1000 kg m-1 s-1 and 5+ in over WA Cascades; ≥72 h continuous AR conditions possible; NWRFC indicated larger stream rises/flooding with ARs 1 and 3.", "url": "https://cw3e.ucsd.edu/cw3e-ar-update-3-december-2025-outlook/", "status": "FACT"},
+        {"claim": "Dec 8 outlook: >90% probability of AR4+ on the WA coast and central OR coast, >50% probability of AR5 over much of coastal WA; AR3/AR4 in western Cascade foothills; AR continues through Thu Dec 11 with second pulse late Tue Dec 9/early Wed Dec 10; >10 in total precipitation forecast in WA Cascades, >5 in lowlands; >2 ft snow above 5,000 ft; 10 stream gauges forecast to reach major flood stage.", "url": "https://cw3e.ucsd.edu/cw3e-ar-update-8-december-2025-outlook/", "status": "FACT"},
+        {"claim": "Event Summary 8–12 Dec 2025 (published Dec 23): AR ranked AR4 (coastal WA/OR) and AR3 (western Cascade foothills, central WA/OR); initial landfall early Dec 8, second moisture pulse late Dec 9, AR conditions ~96 h in some locations, persisting through Dec 11; snow levels near 9,000 ft during the second pulse (CW3E micro rain radar in the Green-Duwamish watershed); >10 in over Olympics/Cascades; five stream gauges record flooding, 16 more above major; saturated soils contributed; 49-mile stretch of US 2 closed for months; four CW3E IOPs flew/sampled the AR.", "url": "https://cw3e.ucsd.edu/cw3e-event-summary-8-12-december-2025/", "status": "FACT"},
+        {"claim": "Dec 12 outlook: next AR onshore Sun Dec 14, peak AR conditions Mon Dec 15–Tue Dec 16 with IVT >750 kg m-1 s-1; AR3/AR4 coastal WA/OR; freezing levels start high then lower; NWS 72-h QPF 3–6 in WA Coast Ranges/Cascades; stream rises in western WA from Mon Dec 15 for multiple days.", "url": "https://cw3e.ucsd.edu/cw3e-ar-update-12-december-2025-outlook/", "status": "FACT"},
+        {"claim": "Dec 15 outlook: AR made landfall Dec 14; second pulse Tue Dec 16; another AR late Wed Dec 17; 5–10+ in PNW totals, 4–6 in Olympics/Cascades for 72 h ending 4 AM PT Dec 18; >24 in snow above 5,000 ft; WPC slight-risk Excessive Rainfall Outlooks. Dec 17 outlook: AR early Thu Dec 18, AR3/AR4 coastal WA/OR, IVT >900; second AR Sat Dec 20 mainly N. California.", "url": "https://cw3e.ucsd.edu/cw3e-ar-update-15-december-2025-outlook/", "status": "FACT"},
+        {"claim": "Wikipedia states CW3E forecast a category-5 AR as early as Dec 5; a Dec 6 Watchers article (not fetchable, 403) reportedly cited ~70–80% of ensemble members ≥AR4 and ~20–30% AR5 for southern coastal WA.", "url": "https://en.wikipedia.org/wiki/2025_Pacific_Northwest_floods", "status": "INFERENCE"},
+        {"claim": "WPC 7-day QPF issued 1022 UTC Dec 4, 2025 (valid 12Z Dec 4–12Z Dec 11) showed totals approaching 15 in over WA/OR Coastal and Cascade ranges; offshore IVT near 1000 kg m-1 s-1, >700 inland over the Cascades (ESSIC/CIRA write-up, Dec 19).", "url": "https://essic.umd.edu/pacific-northwest-atmospheric-rivers-catastrophic-flooding/", "status": "FACT"},
+        {"claim": "NOAA National Water Center statement the morning of Wed Dec 10: 'Locally catastrophic flooding impacts are possible along Skagit and Snohomish Rivers... Major and/or record flooding is expected' (as quoted by Emerald City Weather and MyNorthwest).", "url": "https://emeraldcityweather.com/atmospheric-river-flooding-washington-cascades-skagit-snohomish-river/", "status": "FACT"}
+      ],
+      "relevance_to_cascade_oracle": "Defines the meteorological forcing (AR scale, duration, IVT, snow level) and the forecast lead time (Dec 3 identification of the Dec 8–10 AR) for Event Zero; the 9,000-ft snow level and saturated-soil notes explain why modest snowpack did not matter."
+    },
+    {
+      "name": "USACE Seattle District / DVIDS releases — reservoir operations (Ross, Upper Baker, Howard Hanson, Mud Mountain) and Section 7 regulation",
+      "authority": "U.S. Army Corps of Engineers, Seattle District (news via DVIDS and army.mil)",
+      "data_kind": "observational (operations reporting)",
+      "access": {
+        "mechanism": "Public news releases (army.mil and nws.usace.army.mil returned 403 to automated fetch; DVIDS mirrors fetched fine)",
+        "base_urls": [
+          "https://www.dvidshub.net/news/555482/army-corps-regulates-peak-flow-mitigate-extensive-flooding-skagit-county",
+          "https://www.dvidshub.net/news/555484/army-corps-releases-water-howard-hanson-dam-and-mud-mountain-dam-reservoirs-prepares-predicted-rain-events",
+          "https://www.dvidshub.net/news/570366/usace-dams-reduced-flood-risk-during-december-2025-storms-helped-prevent-billions-potential-damages"
+        ],
+        "auth": "none",
+        "rate_limits": "n/a",
+        "formats": ["html"]
+      },
+      "cadence": "event releases (Dec 13, 2025; Jul 20, 2026)",
+      "latency": "days to months",
+      "spatial_resolution": "project",
+      "temporal_resolution": "hourly pool readings quoted",
+      "historical_depth": "n/a",
+      "missing_data_semantics": "n/a",
+      "quality_flags": "preliminary estimates",
+      "units": "ft (pool elevation), acre-feet, cfs, USD",
+      "licensing": "US public domain",
+      "limitations": [
+        "No quantitative Upper Baker (PSE) pool/outflow figures found.",
+        "Auburn Reporter's '44,400 acre-feet' for Howard Hanson conflicts with USACE's 77,000–77,700 af; treat USACE figure as authoritative.",
+        "Hourly reservoir time series (CWMS/DataQuery) not retrieved here."
+      ],
+      "evidence": [
+        {"claim": "USACE Reservoir Control Center assumed Section 7 control of Ross Dam (Seattle City Light) and Upper Baker Dam (PSE) on Dec 8; Ross inflows peaked ~50,000 cfs Dec 11 while outflow was cut to a minimum of 450 cfs; Ross peak pool 1,594.53 ft at 4 AM Dec 12; USACE reassumed control 8:30 AM Dec 15 because natural flows were forecast to exceed 90,000 cfs at Concrete within eight hours; Concrete ~56,000 cfs on Dec 17; Mount Vernon 'record flood stage of over 37.7 feet'. (Release dated Dec 13, 2025.)", "url": "https://www.dvidshub.net/news/555482/army-corps-regulates-peak-flow-mitigate-extensive-flooding-skagit-county", "status": "FACT"},
+        {"claim": "Howard A. Hanson Dam pool 1,189 ft (77,000 af, 74% of flood storage) at 9 AM Dec 12; Mud Mountain Dam peak pool ~1,185 ft (74,600 af, 70%) at 8 PM Dec 12; normal Green River flood-ops target 12,000 cfs at Auburn; White River ops release as fast as possible while keeping Puyallup at Puyallup below 50,000 cfs (release dated Dec 13, 2025).", "url": "https://www.dvidshub.net/news/555484/army-corps-releases-water-howard-hanson-dam-and-mud-mountain-dam-reservoirs-prepares-predicted-rain-events", "status": "FACT"},
+        {"claim": "July 20, 2026 preliminary analysis: Howard Hanson record pool 1,189.3 ft storing 77,700 af (~75% of flood storage), reduced Green River peak flow ~58% and stage >5 ft, ~$7.8B damages prevented; Mud Mountain used ~70% of storage, ~2 ft stage reduction through Puyallup, ~$215M; Section 7 reservoirs (Ross, Upper Baker, Wynoochee) ~$746M; total ~$8.7B; 'six atmospheric river pulses over nearly two weeks'.", "url": "https://www.dvidshub.net/news/570366/usace-dams-reduced-flood-risk-during-december-2025-storms-helped-prevent-billions-potential-damages", "status": "FACT"},
+        {"claim": "KUOW (Dec 15) and OPB (Dec 16): USACE preliminary estimate that Skagit dam operations shaved 4–5 ft off the ~37-ft peak; Ross held back ~99% of inflow. Skagitonians (Feb 9, 2026) asserts 7–8 ft held back and ~45 ft without dams — unverified.", "url": "https://www.kuow.org/environment/2025-12-15/army-takeover-of-skagit-dams-lowers-flood-waters", "status": "FACT"},
+        {"claim": "After the Dec 15 Desimone breach USACE cut Howard Hanson releases by 1,000 cfs (target had been 10,000 cfs at Auburn) and restored the 10,000-cfs target from noon Dec 16; reservoir down 26 ft from peak by Dec 16 (Auburn Reporter, Dec 17 1:45 PM). King County FCD report: after the Pacific HESCO breach USACE delayed Mud Mountain release increases and then stepped up by 500 cfs increments.", "url": "https://www.auburn-reporter.com/2025/12/17/army-corps-adjust-hanson-dam-flows-to-combat-green-river-flooding/", "status": "FACT"},
+        {"claim": "Snohomish PUD: Spada Lake rose 15 ft in two days and reached the Culmback Dam spillway by 6:50 PM Wed Dec 10; Jackson Hydroelectric Project run at full capacity to minimize spill; Sultan River rising from spillway discharge Dec 11.", "url": "https://www.heraldnet.com/2025/12/10/updates-snohomish-pud-plans-to-open-spada-lake-spillway/", "status": "FACT"},
+        {"claim": "Tolt Dam and Chester Morse/Masonry Dam (Seattle Public Utilities) flood operations: no quantitative releases found; Carnation reported SPU said Tolt Dam 'operating well within normal ranges'; SPU Dec 18 notice concerned Cedar River turbidity. Upper Baker (PSE) pool/outflow numbers not found.", "url": "https://www.carnationwa.gov/2025-flood-event-resources/", "status": "OPEN_QUESTION"}
+      ],
+      "relevance_to_cascade_oracle": "Regulation dominated the Green, White/Puyallup and Skagit outcomes; a hindcast must represent Section 7 takeover (Dec 8 and Dec 15), near-zero Ross outflow, and record Howard Hanson/Mud Mountain storage to reproduce observed downstream stages."
+    },
+    {
+      "name": "State and federal declarations — Governor's Office, WA Military Department/EMD, FEMA (EM-3629, DR-4906), Federal Register",
+      "authority": "Office of Governor Bob Ferguson; WA EMD; FEMA; Federal Register (govinfo)",
+      "data_kind": "static",
+      "access": {
+        "mechanism": "Web pages/PDFs (fema.gov and federalregister.gov blocked automated fetch; govinfo mirror worked; governor PDFs exceed 10 MB)",
+        "base_urls": [
+          "https://governor.wa.gov/news/2025/governor-ferguson-declares-statewide-emergency-responding-major-flooding",
+          "https://mil.wa.gov/december-2025-atmospheric-river-flooding",
+          "https://www.govinfo.gov/content/pkg/FR-2026-04-16/html/2026-07430.htm"
+        ],
+        "auth": "none",
+        "rate_limits": "n/a",
+        "formats": ["html", "pdf"]
+      },
+      "cadence": "event",
+      "latency": "days (state), same week (FEMA EM), ~4 months (FEMA DR)",
+      "spatial_resolution": "county",
+      "temporal_resolution": "daily",
+      "historical_depth": "n/a",
+      "missing_data_semantics": "n/a",
+      "quality_flags": "n/a",
+      "units": "USD; counts",
+      "licensing": "public domain",
+      "limitations": [
+        "FEMA press-release pages returned 403; EM-3629 details rely on search snippets, Wikipedia and the governor's PDF title.",
+        "Governor's IA (Jan 21, 2026) request letter (gov_ia_request.pdf in scratchpad) not text-extracted; the PA letter (Feb 17, 2026) was extracted with a crude stdlib parser (gov_pa_request.txt) — figures/enclosures (county flood table, hydrographs) not recovered."
+      ],
+      "evidence": [
+        {"claim": "Proclamation 25-07 (Atmospheric River): statewide emergency declared Dec 10, 2025; National Guard activated; governor to request an expedited federal emergency declaration the same day.", "url": "https://governor.wa.gov/news/2025/governor-ferguson-declares-statewide-emergency-responding-major-flooding", "status": "FACT"},
+        {"claim": "Proclamation issued at 2:14 PM PST Dec 10 ('This situation is extremely serious. The next few days are critical.'); State EOC at Camp Murray raised to Level 1 (highest) the afternoon of Dec 10 (HeraldNet: 3:30 PM activation; four swift-water teams ordered).", "url": "https://www.cascadiadaily.com/2025/dec/10/skagit-county-asking-residents-in-flood-plain-to-get-set-for-evacuation/", "status": "FACT"},
+        {"claim": "Amended Proclamation 25-07.1 on Dec 16, 2025: 14 impacted counties, $3.5M directed to relief, state cash/benefits assistance and Disaster Case Management activated; 'more than 1,200 rescues and evacuations across more than 10 counties'; ~250 Guard soldiers deployed; 13 state highway closures as of Dec 16 AM; SR 2 closed with extensive damage; US 12 washed out.", "url": "https://governor.wa.gov/news/2025/governor-ferguson-amends-emergency-proclamation-directs-35m-support-flood-impacted-washingtonians", "status": "FACT"},
+        {"claim": "FEMA emergency declaration EM-3629 approved Dec 12, 2025 (severe storms, straight-line winds, flooding, landslides, mudslides).", "url": "https://www.fema.gov/press-release/20251212/president-donald-j-trump-approves-emergency-declaration-state-washington", "status": "INFERENCE"},
+        {"claim": "FEMA-4906-DR declared April 7, 2026; incident period Dec 5–19, 2025; incident type 'Severe Storms, Straight-Line winds, Flooding, Landslides, and Mudslides'; primary counties Chelan, Grays Harbor, King, Lewis, Pacific, Pierce, Skagit, Snohomish, Thurston, Whatcom plus 16 tribes (SBA notice in Federal Register).", "url": "https://www.govinfo.gov/content/pkg/FR-2026-04-16/html/2026-07430.htm", "status": "FACT"},
+        {"claim": "WA EMD page cites FEMA disaster #4906; state-assistance incident window Dec 5–22, 2025 (DUA window Dec 5–19); counties King, Lewis, Pierce, Snohomish, Skagit, Whatcom for state programs. KUOW (Apr 13, 2026): governor estimated $182M infrastructure damage, FEMA could cover up to $173M; additional $21M IA requested.", "url": "https://mil.wa.gov/december-2025-atmospheric-river-flooding", "status": "FACT"},
+        {"claim": "Snohomish County executive declared a countywide emergency the evening of Tue Dec 9; Lewis County commissioners declared Dec 9 AM (chronline, not fetchable).", "url": "https://komonews.com/news/local/skykomish-river-nears-record-as-flooding-intensifies-across-snohomish-county-when-will-the-skykomish-river-crest-state-of-emergency", "status": "FACT"},
+        {"claim": "Governor's Major Disaster request letter (Feb 17, 2026): requests incident period Dec 5–22, 2025; preliminary damage >$182.3M; 'three of the largest rivers (Skagit, Snohomish, and Cedar) reached their highest levels in recorded history'; 33 rivers exceeded flood stage, 18 exceeded major; 19 counties with flooding impacts; levees/dikes breached (Green River at Tukwila Dec 15; White River at Pacific early Dec 16); one fatality, 383 emergency rescues, ~1,000 assisted evacuations, >75,000 under evacuation recommendations, 382,410 utility customers without power, 15 shelters at peak; Proclamation 25-07 issued Dec 10; State EOC raised from Level 3 to Level 1; 87.5% of SNOTEL sites with ≥20 years of data recorded their highest 14-day precipitation on record for Dec 6–19 (remaining 12.5% second-highest); RFC QPE showed widespread 20–30 in totals; Dec 5–7 first AR produced 3–6 in over the Cascades/Olympics raising base flows; the Mount Vernon hydrograph Dec 5–21 shows at least six AR surges; AR activity focused on central/southern Cascades Dec 8 (Skykomish, Carbon, Puyallup, Naselle, Grays to major) then spread north Dec 9–10 (Nooksack, Skagit, Stillaguamish, Snohomish to major Dec 9–12); dam-regulated rivers flooded later as reservoirs filled and releases became necessary; high pressure over northern California directed moisture through Dec 15, then a Gulf of Alaska low brought high winds Dec 16–19.", "url": "https://governor.wa.gov/sites/default/files/2026-03/WA_PA%20Major%20Disaster%20Declaration-December%202025%20Winter%20Storms%20with%20Enclosures.pdf", "status": "FACT"},
+        {"claim": "AP (Dec 16): first WA death — 33-year-old driver found ~1:30 AM Tue Dec 16 in a submerged car in a flooded ditch near Snohomish after passing road-closure signs (E. Lowell-Larimer Rd / Marsh Rd area); 629 rescues and 572 assisted evacuations statewide; 'as many as 100,000 people' under evacuation orders at various times. Wikipedia lists one additional death in Chilliwack, BC (Dec 15, falling tree).", "url": "https://www.ksat.com/news/national/2025/12/16/a-driver-is-found-dead-in-a-submerged-car-near-seattle-after-a-week-of-heavy-rain-and-flooding/", "status": "FACT"}
+      ],
+      "relevance_to_cascade_oracle": "Provides the official incident period (Dec 5–19) and declaration timestamps to bound Event Zero and to benchmark decision-support value (e.g., 2:14 PM Dec 10 state emergency came ~29 h after the first above-record Skagit forecast)."
+    },
+    {
+      "name": "County/city emergency communications and local reporting — Skagit County, Whatcom County, King County Flood Control District, Snohomish County (HeraldNet/Lynnwood Times), Renton/Auburn/Kent Reporter, Cascadia Daily News",
+      "authority": "Skagit County DEM; Whatcom County; King County FCD; local newspapers",
+      "data_kind": "observational (event reporting)",
+      "access": {
+        "mechanism": "Web pages; King County FCD report is a ~11.8 MB PDF (downloaded to scratchpad as kc_fcd_dec2025.pdf; partial text extraction in kc_fcd_dec2025.txt)",
+        "base_urls": [
+          "https://www.skagitcounty.net/Departments/Home/press/120925-3.htm",
+          "https://www.skagitcounty.net/Departments/Home/press/121025b.htm",
+          "https://kingcountyfloodcontrol.org/wp-content/uploads/2026/02/FINAL-Dec-8-30-Flood-Event-Report.pdf",
+          "https://www.cascadiadaily.com/2025/dec/12/friday-updates-skagit-river-receding-burlington-issues-evacuation-order-as-slough-floods/"
+        ],
+        "auth": "none",
+        "rate_limits": "n/a",
+        "formats": ["html", "pdf"]
+      },
+      "cadence": "event",
+      "latency": "hours (live blogs) to months (FCD report Feb 2026)",
+      "spatial_resolution": "city/levee reach",
+      "temporal_resolution": "timestamped entries",
+      "historical_depth": "n/a",
+      "missing_data_semantics": "n/a",
+      "quality_flags": "journalistic; some crest values differ by ~0.1 ft from USGS/NWS",
+      "units": "ft, people, homes",
+      "licensing": "copyrighted news; county releases public",
+      "limitations": [
+        "King County FCD PDF text extraction was garbled (font encoding) — gauge-by-gauge crest/phase tables not recovered; Wikipedia's 'Dec 14 noon' Desimone date is wrong (breach was Mon Dec 15).",
+        "Whatcom County 'Flooding in Whatcom County' newsletter PDF is a pre-event annual newsletter, not an event report."
+      ],
+      "evidence": [
+        {"claim": "Skagit County press release Dec 9: NWS forecast Concrete 40.65 ft ~10 AM Dec 11 and Mount Vernon 36.91 ft at 4 AM Dec 12; flood warning 'until further notice'; residents told to prepare to evacuate (Level 2). Dec 10 release: Level 3 GO for the entire 100-year floodplain; forecast Concrete 46.13 ft, Mount Vernon 42.13 ft; shelters at Concrete HS, Family Promise (Central UMC), Bethany Covenant; livestock at Sedro-Woolley rodeo grounds.", "url": "https://www.skagitcounty.net/Departments/Home/press/121025b.htm", "status": "FACT"},
+        {"claim": "Cascadia Daily (Dec 10): Mount Vernon Level 3 issued 5:00 PM Dec 10; south Sedro-Woolley 8:12 PM; ~75,000 people in the FEMA 100-yr floodplain under orders by 8:19 PM; NWS forecasts then 48 ft Concrete ~4 AM Thu and 42 ft Mount Vernon ~4 AM Fri; Nooksack N. Cedarville forecast 150 ft at 10 PM Wed, Ferndale 22 ft ~4 PM Thu. Dec 10 10:31 PM article: NWS Concrete 42.88 ft 4 AM / 46.13 ft 10 AM Thu; MV 37.85 ft 10 PM Thu / 42.13 ft 10 AM Fri; MV at 28.81 ft at 9:15 PM Wed.", "url": "https://www.cascadiadaily.com/2025/dec/10/skagit-river-near-mount-vernon-expected-to-reach-record-levels-thursday-night/", "status": "FACT"},
+        {"claim": "Cascadia Daily (Dec 11): forecasts revised to Concrete 41.13 ft ~10 AM Thu (down from 43) and MV 38.26 ft 4 AM Fri; Level 3 orders for Nooksack, Sumas, Everson, parts of Marietta/Ferndale, downtown Mount Vernon (noon Thu), Fir Island and Conway; levee overtopping in multiple Whatcom locations, possible Twin View dike damage; all Sumas access roads closed; MV at 37.43 ft at 9:15 PM Thu.", "url": "https://www.cascadiadaily.com/2025/dec/11/thursday-update-skagit-county-under-evacuation-nooksack-river-at-cedarville-crests/", "status": "FACT"},
+        {"claim": "Cascadia Daily / goskagit (Dec 12): Mount Vernon crest 37.73 ft at 12:15–12:30 AM Fri Dec 12 (record over 37.37 ft of Nov 25, 1990); Concrete 41.13 ft at 7:15 AM Thu (~1 ft below 42.2 ft record); Nooksack N. Cedarville 150.49 ft at 3:30 AM Thu; Ferndale ~22 ft ~11 PM Thu; Gages Slough in Burlington flooded Friday morning prompting an immediate Burlington evacuation (partially lifted later); ~78,000 under Level 3; Bellingham flood watch expired 4 PM Fri; 20 water rescues Wed night and 40+ rescue calls Thu night in Whatcom; Everson/Nooksack WWTP shut down.", "url": "https://www.goskagit.com/news/local_news/skagit-river-reaches-record-height-in-mount-vernon/article_ebaf24a5-8456-4865-a8ac-38011889cc0e.html", "status": "FACT"},
+        {"claim": "Skagit levee performance: Mount Vernon flood wall (2019) held with seepage/boils observed near levees and up to 500 ft into fields; a breach at Cockerham Island; Skagit overflow at Sterling (NWS areal warning); Nookachamps backwater (Francis Rd under 8 ft); 55–60 homes flooded in Burlington (Gages Slough); Hamilton raised homes affected.", "url": "https://www.skagitonians.org/blog/when-the-river-kept-rising-flooding-on-the-skagit-december-2025", "status": "FACT"},
+        {"claim": "Whatcom County Dec 11 alert: NWS upgraded Nooksack forecast from moderate to major overnight Dec 10–11; Sumas, Nooksack, Everson, Marietta and parts of Ferndale evacuated Wed Dec 10; levee overtopping; Sumas border crossing closed (water on Badger Rd at Van Buren); Silver Lake Rd mudslide; Kendall landslide damaged a home. Cascadia Daily (Dec 16–19): levees damaged at Mount Baker Rim (Glacier), Twin View (Everson), Hovander Park (Ferndale) and Glacier Creek; households affected — Sumas 412, Everson ~230, Nooksack ~150, Ferndale 9; Everson facilities $2–3M.", "url": "https://www.whatcomcounty.us/CivicAlerts.aspx?AID=5266", "status": "FACT"},
+        {"claim": "Whatcom News (Ferndale): Nooksack at Ferndale crested ~22.42 ft ~10 PM Thu Dec 11, just below major; flooding at VanderYacht Park and Griffintown (search snippet; page returned 403).", "url": "https://whatcom-news.com/city-of-ferndale-releases-initial-flooding-details_233378/", "status": "INFERENCE"},
+        {"claim": "Snohomish County: Ebey Island evacuation underway Dec 10 (dikes overtopped midday per search snippet); evacuation orders 7:41 AM Dec 11 for Three Rivers MHP (SR 522), Ebey Island, Tualco (SR 203); downtown Sultan voluntary; 26 rescues by 2 PM Dec 11 (mostly Tualco Valley), 40 people/15 pets in one operational period; Lincoln Ave homes in Snohomish evacuated by kayak 4:38 AM Dec 11; Lynnwood Times 5 AM Dec 11 readings: Snohomish 33.29 ft, Monroe 22.01 ft, Gold Bar 22.64 ft, Arlington 19.79 ft, Pilchuck 17.21 ft.", "url": "https://lynnwoodtimes.com/2025/12/11/flood/", "status": "FACT"},
+        {"claim": "Desimone levee (Green River, Tukwila) breached ~11:30 AM Mon Dec 15; King County 'GO NOW' at 11:51 AM for Orillia-area portions of Tukwila, Renton, Kent (~1,100 people contacted, >500 evacuated; NWS warning initially covered ~47,000, reduced to ~7,000); flooding confined to industrial areas; temporary repair completed Monday evening; USACE supplied super-sacks and cut Howard Hanson releases.", "url": "https://www.rentonreporter.com/2025/12/15/green-river-levee-breach-impacts-small-areas-of-kent-renton-and-tukwila/", "status": "FACT"},
+        {"claim": "White River HESCO levee failure in Pacific (near Pacific City Park, 3rd Ave SE / Spencer Ct / Pacific Ave S) early Tue Dec 16; NWS emergency alerts 1:35–1:39 AM; ~220 homes evacuated, ~100 people rescued from apartments ~1:20 AM; NWS estimated 2,159 people affected; NWS reported minor-to-moderate flooding at the R Street bridge with another rise expected late Wed.", "url": "https://www.auburn-reporter.com/2025/12/16/pacific-residents-evacuate-amid-white-river-levee-breach/", "status": "FACT"},
+        {"claim": "Cedar River at Renton: 18.25 ft at 3 PM Thu Dec 11 (USGS), beating 17.13 ft of Nov 24, 1990; Maplewood, Riviera Apartments (SR-169) and SE Jones Rd homes flooded; King County Flood Phase 3/4; below 16 ft by evening Dec 12, below 14.5 ft by morning Dec 14.", "url": "https://www.rentonreporter.com/2025/12/10/moderate-flooding-expected-for-cedar-river/", "status": "FACT"},
+        {"claim": "Puyallup/Orting: record flows on Puyallup and Carbon overtopped levee sections at the downstream end of Orting (~150 homes under evacuation; 'dozens' per mayor Dec 11); Crossroads at Meridian apartments in Puyallup evacuated Thu Dec 11 afternoon (Level 3). KOMO Dec 9: Puyallup nr Orting 17,600 cfs / 11.5 ft ~4 AM Tue Dec 9 (major = 16,000 cfs).", "url": "https://mynorthwest.com/local/puyallup-river-flooding-forces-evacuations-in-orting-puyallup/4172094", "status": "FACT"},
+        {"claim": "King County FCD 'Historic December 8–30, 2025 Flooding' report (Feb 2026): one of the largest floods in decades, no loss of life in King County, ~$3M emergency mitigation during the event, ~$7.3M post-flood repairs; text fragments confirm Snoqualmie and Cedar at Flood Phase 4, Desimone breach Monday with warning impacting >45,000 people, HESCO breach Tuesday, Mud Mountain releases stepped by 500 cfs, Tabor-Crowall scallop and CRT 3/5 repair sites.", "url": "https://kingcountyfloodcontrol.org/flood-event-report-historic-december-8-30-2025-flooding-in-king-county/", "status": "FACT"},
+        {"claim": "Snoqualmie Valley Record (Dec 19): Carnation 60.76 ft / ~90,000 cfs at 4 AM Dec 11 vs Jan 2009 62.21 ft / 82,900 cfs; Duvall farmers called it their worst flood since the 1930s, attributing higher local levels to king tides; NE 124th St closed.", "url": "https://www.valleyrecord.com/2025/12/19/flooding-sets-records-in-some-parts-of-the-snoqualmie-valley/", "status": "FACT"},
+        {"claim": "KIRO7 snapshot 6:58 PM PST Tue Dec 9 of NWS forecasts: Concrete 47.36 ft Thu 10 AM (record 42.2); Mount Vernon 41.54 ft Fri 4 AM (record 37.4); Monroe 26.77 ft Thu PM (record 25.3); Snohomish 33.83 ft (record 33.5); Carnation ~60 ft Thu 10 AM (observed 58.4 ft at 4 PM); Snoqualmie Falls 59,400 cfs Wed 10 PM (45,000 cfs at 7 AM Dec 9); Gold Bar observed 20.32 ft at 11 PM Mon, forecast 22.46 ft (record 24.5); Cedar at Renton near record Thu 10 AM; Orting major Wed 10 AM.", "url": "https://www.kiro7.com/news/local/see-which-rivers-are-major-flood-stage-when-well-see-some-relief/M27KZHAINZHXLKMCMTZQMN5FEY/", "status": "FACT"}
+      ],
+      "relevance_to_cascade_oracle": "Impact ground truth (levee breaches, overtopping, evacuations) and the public-facing forecast numbers residents actually saw, for evaluating impact-based and evacuation-trigger products."
+    },
+    {
+      "name": "Antecedent conditions and post-event analyses — UW Office of the WA State Climatologist, WA Ecology, drought.gov, Snoqualmie Valley Record 'flood science', NASA GPM/SVS, USA Today/USGS record analysis",
+      "authority": "UW OWSC (J. Genuise, G. Mauger); WA Dept of Ecology; NIDIS; NASA; USA TODAY with USGS WA WSC input",
+      "data_kind": "derived",
+      "access": {
+        "mechanism": "Web pages",
+        "base_urls": [
+          "https://climate.uw.edu/2025/12/06/november-2025-drought-and-snowpack-update",
+          "https://climate.uw.edu/2026/01/13/december-8-11-2025-heavy-rainfall-and-flooding-historical-context-and-a-note-on-snow-drought/",
+          "https://climate.uw.edu/2026/02/07/just-how-big-were-the-december-2025-floods/",
+          "https://usatoday.github.io/202512_washington-floods/methods.html"
+        ],
+        "auth": "none",
+        "rate_limits": "n/a",
+        "formats": ["html"]
+      },
+      "cadence": "monthly/ad hoc",
+      "latency": "weeks to months",
+      "spatial_resolution": "statewide/basin",
+      "temporal_resolution": "daily to monthly",
+      "historical_depth": "SNOTEL-era comparisons (1981+)",
+      "missing_data_semantics": "n/a",
+      "quality_flags": "preliminary return-period calculations (not USGS protocol)",
+      "units": "% of median SWE; inches; return period (years)",
+      "licensing": "public/academic",
+      "limitations": [
+        "No formal NWS service assessment or USGS peak-flow/flood-frequency report for Dec 2025 was found as of Aug 22, 2026.",
+        "Exact statewide SWE % for Dec 1 and Dec 8 not quantified on fetched pages (only 'near record-low' and basin ranges from late Nov)."
+      ],
+      "evidence": [
+        {"claim": "End of November 2025: statewide SWE lower than ~90% of years on record; basin SWE % of median — Olympics 12%, western Cascades 22–36%, northern Cascades ~61%; multiple Cascade stations at record-low November SWE; Olympics/SW Cascades November precipitation 60–80% of normal in warm rain-dominant storms; drought (D3) remained only in far SE Washington as of Dec 2 (published Dec 6, 2025).", "url": "https://climate.uw.edu/2025/12/06/november-2025-drought-and-snowpack-update", "status": "FACT"},
+        {"claim": "December began with near record-low statewide SWE; warm Dec 8–11 AR drove statewide snowpack to the lowest on record by Dec 14–16; Jan 1 basin values 43–80% of median (published Jan 12, 2026).", "url": "https://climate.uw.edu/2026/01/12/december-2025-snowpack-and-drought-summary/", "status": "FACT"},
+        {"claim": "UW OWSC (Jan 13, 2026): main event Dec 8–11; early-December rains saturated soils ahead of it; snow levels 6,000–9,000 ft; wettest day of the event on par with all but one of the 10 largest regional rain events since 1981; record river levels in the Skagit floodplain; >100,000 on evacuation notice; US-2 closed for weeks.", "url": "https://climate.uw.edu/2026/01/13/december-8-11-2025-heavy-rainfall-and-flooding-historical-context-and-a-note-on-snow-drought/", "status": "FACT"},
+        {"claim": "UW OWSC (Feb 7, 2026, G. Mauger): Sauk nr Sauk ~85,000 cfs 15-min peak Dec 11 ≈ 17-yr (to 30-yr) event; flooding most remarkable at longer durations — e.g., Cedar River below Bear Creek 7-day flow ≈ 161-yr event, NF Stillaguamish and Chehalis ≈ 3-yr; multiple mountain stations (Wells Creek, Mud Mountain Dam) set 1–5-day precipitation records.", "url": "https://climate.uw.edu/2026/02/07/just-how-big-were-the-december-2025-floods/", "status": "FACT"},
+        {"claim": "Valley Record 'flood science' (Jan 5, 2026): rain/snow line above 9,000 ft; Paradise RS and Stampede Pass 15+ in in 72 h (top-10 3-day totals in 108- and 80-year records); soils above normal from the previous weekend's rain; streamflow 2–4.5x larger on wet vs dry soils; snowmelt 'negligible' given meager snowpack; CW3E AR-4.", "url": "https://www.valleyrecord.com/northwest/flood-science-how-decembers-atmospheric-river-soaked-wa/", "status": "FACT"},
+        {"claim": "Ecology (Jan 6, 2026): drought declaration had covered much of western/central WA in summer 2025; Yakima reservoirs 39% of capacity on Dec 11 rising to 63% by Jan 5; statewide snowpack 63% of normal on Jan 5 (Olympics 50%, N. Cascades 101%). drought.gov (Jan 8): most December precipitation fell as rain due to record warmth; 9 WA SNOTEL sites at lowest/2nd-lowest SWE as of Jan 4; 81% of WA stations in snow drought.", "url": "https://ecology.wa.gov/blog/january-2026/did-record-rainfall-end-washington-drought", "status": "FACT"},
+        {"claim": "Weather.com (Dec 12): five all-time record crests — Skagit at Mt Vernon (Dec 12; prev Nov 25, 1990; records since 1906), Snohomish near Snohomish (Dec 11; prev Nov 25, 1990; since 1942), Cedar at Renton (Dec 11; prev Nov 24, 1990; since 1906), Nooksack at N. Cedarville (Dec 11; prev Nov 16, 2021; since 2003), Grays River near Rosburg (Dec 9; prev Dec 3, 2007); Quinault ~17 in Dec 8–11.", "url": "https://weather.com/forecast/regional/news/2025-12-07-atmospheric-river-pacific-northwest-rain-snow", "status": "FACT"},
+        {"claim": "USA TODAY analysis with USGS: 13 sites on 10 streams potentially broke stage records Dec 1–15, 2025 (by up to 19.9 in), with USGS WA WSC noting ~6 more candidate sites lacking NOAA crest data; methodology uses USGS dataRetrieval + NWPS API crests.", "url": "https://usatoday.github.io/202512_washington-floods/methods.html", "status": "FACT"},
+        {"claim": "NASA GPM (Dec 18): two-week IMERG totals >15 in Olympics and >24 in at a Cascades gauge (Dec 1–15); USGS measured record river heights at two locations near Seattle Dec 11–12.", "url": "https://gpm.nasa.gov/applications/weather/news/nasa-tracks-tropical-moisture-flooding-washington", "status": "FACT"},
+        {"claim": "Wikipedia: Olympia Regional Airport 3.03 in on Dec 8 (daily record); Yakima record high 72°F Dec 10; Yakima River at Easton record; snow levels above 7,000 ft.", "url": "https://en.wikipedia.org/wiki/2025_Pacific_Northwest_floods", "status": "INFERENCE"},
+        {"claim": "No NWS Service Assessment for the December 2025 Pacific Northwest floods and no USGS formal peak-stage/streamflow data release were found (searches of weather.gov, usgs.gov); USGS WY2026 approved peaks not yet published.", "url": "https://www.weather.gov/media/publications/assessments/pac_nw08.pdf", "status": "OPEN_QUESTION"}
+      ],
+      "relevance_to_cascade_oracle": "Quantifies the antecedent state (record-low SWE, saturated soils, summer drought) and event magnitude/return periods needed to parameterize and validate Event Zero hindcasts, and identifies which 'record' claims are robust."
+    }
+  ],
+  "open_questions": [
+    "Exact observed crest of the Stillaguamish River at Arlington (ARLW1) on Dec 11 — between 20.17 ft (7:05 AM) and the 20.9 ft NWS forecast; USGS IV returned no data for 12167400.",
+    "Nooksack at North Cedarville record status: NWPS now lists Nov 15, 2021 at 150.76 ft (official) above Dec 11, 2025 at 150.49 ft, but NWS statements at the time compared to 149.6 ft and media/Weather.com called Dec 2025 a record — which value did NWS Seattle use operationally, and was the 2021 crest revised?",
+    "Snohomish at Snohomish crest: NWPS 34.15 ft with timestamp '2025-12-11T17:30:00Z' vs USGS 12155500 34.45 ft at 17:35 PST — different sensor/datum or timezone mislabel?",
+    "Upper Baker (PSE) and Baker Lake pool/outflow time series during Dec 8–17; Tolt Dam and Chester Morse/Masonry Dam flood operations (SPU) — no quantitative data found.",
+    "CW3E Dec 5 AR outlook (AR5 probabilities) — page not located; only second-hand summaries.",
+    "Governor's IA (Jan 21, 2026) and PA (Feb 17, 2026) disaster-request letters with hydrologic enclosures and the King County FCD report gauge tables — PDFs downloaded to scratchpad but not text-extracted (no poppler); contents may refine crest/phase timelines.",
+    "WPC Excessive Rainfall Outlook risk categories for Dec 8–11 (marginal/slight/moderate?) — only indirect references found.",
+    "Whether NWS/NCEI will publish a service assessment or Storm Data narrative for this event; USGS approved WY2026 peak flows pending."
+  ]
+}

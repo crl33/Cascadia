@@ -1,0 +1,105 @@
+{
+  "category": "rendering-stack-and-geodata-delivery",
+  "verified_on": "2026-08-22",
+  "verdicts": [
+    {
+      "claim": "npm latest cesium = 1.144.0, published 2026-08-04T03:34:37Z, license Apache-2.0, engines node >=22.0.0, type module, deps @cesium/engine ^26.2.0 and @cesium/widgets ^16.1.1",
+      "url": "https://registry.npmjs.org/cesium",
+      "result": "CONFIRMED",
+      "note": "Fetched registry.npmjs.org/cesium and /cesium/latest directly: dist-tags.latest=1.144.0; time['1.144.0']=2026-08-04T03:34:37.002Z; license Apache-2.0; engines {node: '>=22.0.0'}; type module; dependencies {'@cesium/engine': '^26.2.0', '@cesium/widgets': '^16.1.1', 'protobufjs': '^8.6.5'}. The claim omits the protobufjs ^8.6.5 dependency (incomplete, not wrong). 1.143.0 was published 2026-07-01T16:43:57Z and 1.142.0 on 2026-06-01T20:02:38Z."
+    },
+    {
+      "claim": "GitHub latest release tag 1.144 published 2026-08-04T03:26:57Z",
+      "url": "https://api.github.com/repos/CesiumGS/cesium/releases/latest",
+      "result": "CONFIRMED",
+      "note": "API response: tag_name '1.144', name 'CesiumJS 1.144', published_at 2026-08-04T03:26:57Z, created_at 2026-08-04T03:12:28Z."
+    },
+    {
+      "claim": "CHANGES.md headers: 1.145 - 2026-09-02 (pre-staged), 1.144 - 2026-08-01, 1.143 - 2026-07-01, 1.142 - 2026-06-01; 1.142 bumped minimum Node to 22.0.0",
+      "url": "https://raw.githubusercontent.com/CesiumGS/cesium/main/CHANGES.md",
+      "result": "REFUTED",
+      "note": "Headers are exact: '## 1.145 - 2026-09-02', '## 1.144 - 2026-08-01', '## 1.143 - 2026-07-01', '## 1.142 - 2026-06-01', '## 1.141 - 2026-05-01'. But the line 'Bumped minimum required Node version to `22.0.0`' sits under '## 1.141 - 2026-05-01' -> '### cesium' -> 'Breaking Changes', not under 1.142. The 1.142 section contains GeoJsonPrimitive and MVTDataProvider additions but no Node bump. Attribute the Node >=22 requirement to 1.141 (2026-05-01)."
+    },
+    {
+      "claim": "1.102 (2023-02-01): CesiumJS now defaults to a WebGL2 context; falls back to WebGL1; set requestWebgl1:true in ContextOptions to force WebGL1; requestWebgl2 deprecated in 1.101",
+      "url": "https://app.unpkg.com/cesium@1.103.0/files/CHANGES.md",
+      "result": "CONFIRMED",
+      "note": "Fetched the raw file at unpkg.com/cesium@1.103.0/CHANGES.md. Under '### 1.102 - 2023-02-01': 'CesiumJS now defaults to using a WebGL2 context for rendering.' / 'WebGL1 is supported. If WebGL2 is not available, CesiumJS will automatically fall back to WebGL1.' / 'to request a WebGL 1 context, set `requestWebgl1` to `true` when providing `ContextOptions`'. Under '### 1.101 - 2023-01-02': '`ContextOptions.requestWebgl2` was deprecated in CesiumJS 1.101 and will be removed in 1.102.' Caveat: the current CHANGES.md (1.134 section) says WebGL2 is 'enabled by default since 1.101' linking PR 10894; Cesium's own changelog is internally inconsistent, and the 1.102 release note is the primary statement of the default switch."
+    },
+    {
+      "claim": "Roadmap: 'Longer term, we'll explore using WebGPU as a generational advancement in Graphics API.'",
+      "url": "https://cesium.com/blog/2025/06/23/cesium-roadmap-for-bridging-the-built-and-natural-environment/",
+      "result": "CONFIRMED",
+      "note": "Verbatim sentence present in the CesiumJS portion of the June 23, 2025 roadmap post 'Cesium Roadmap for Bridging the Built and Natural Environment'. No other WebGPU commitment appears in the article; no WebGPU entry exists anywhere in CHANGES.md as of 1.145 pre-staging."
+    },
+    {
+      "claim": "Cesium staff 2023-04-12: 'We don't have any immediate plans, but WebGPU is definitely on our radar for CesiumJS'; no later commitment in thread",
+      "url": "https://community.cesium.com/t/is-there-a-plan-to-support-webgpu/23381",
+      "result": "CONFIRMED",
+      "note": "Post 2 by Gabby_Getz (Cesium), April 12, 2023: 'We don't have any immediate plans, but WebGPU is definitely on our radar'. Later posts (Aug/Sep 2023 community members; Gabby_Getz April 7, 2025 redirecting a Unity question) contain no commitment, roadmap, or timeline."
+    },
+    {
+      "claim": "Measured byte sizes of Build/Cesium/Cesium.js (5,974,765; gzip 1,729,722), Build/CesiumUnminified/Cesium.js (15,662,452), Widgets/widgets.css (30,710) for cesium@1.144.0 via unpkg",
+      "url": "https://unpkg.com/cesium@1.144.0/Build/Cesium/Cesium.js",
+      "result": "CONFIRMED",
+      "note": "Downloaded from unpkg (HTTP 200, header reads 'Version 1.144.0'): Build/Cesium/Cesium.js = 5,974,765 bytes; Build/CesiumUnminified/Cesium.js = 15,662,452 bytes; Build/Cesium/Widgets/widgets.css = 30,710 bytes -- all exact matches. gzip size is compressor-dependent: measured 1,730,610 bytes (gzip -9 -n and Python gzip level 9) and 1,735,156-1,735,163 bytes (level 6); the claimed 1,729,722 was not reproduced exactly (0.05% off) but '1.73 MB gzip' is accurate. Note the CSS path is Build/Cesium/Widgets/widgets.css, not a top-level Widgets/ directory."
+    },
+    {
+      "claim": "Quickstart: window.CESIUM_BASE_URL must be set before import; Workers, ThirdParty, Assets, Widgets dirs must be served; Ion.defaultAccessToken setup",
+      "url": "https://cesium.com/learn/cesiumjs-learn/cesiumjs-quickstart/",
+      "result": "CONFIRMED",
+      "note": "Page states 'The window.CESIUM_BASE_URL global variable must be set before CesiumJS is imported', lists the four directories node_modules/cesium/Build/Cesium/{Workers,ThirdParty,Assets,Widgets} to copy and serve as static files, and shows Ion.defaultAccessToken = 'your_access_token' with tokens at https://ion.cesium.com/tokens."
+    },
+    {
+      "claim": "Viewer defaults: baseLayer ImageryLayer.fromWorldImagery(), terrainProvider new EllipsoidTerrainProvider(), baseLayerPicker true, geocoder IonGeocodeProviderType.DEFAULT, contextOptions passed to Scene",
+      "url": "https://cesium.com/learn/cesiumjs/ref-doc/Viewer.html",
+      "result": "CONFIRMED",
+      "note": "ConstructorOptions table: baseLayer (ImageryLayer | false) default ImageryLayer.fromWorldImagery(), 'If set to false, no imagery provider will be added'; terrainProvider default new EllipsoidTerrainProvider(); baseLayerPicker default true; geocoder (boolean | IonGeocodeProviderType | Array.<GeocoderService>) default IonGeocodeProviderType.DEFAULT, 'If set to false, the Geocoder widget will not be created'; contextOptions: 'Context and WebGL creation properties passed to Scene'. No imageryProvider option exists in the current table (removed); use baseLayer."
+    },
+    {
+      "claim": "Offline guide: imagery (api.cesium.com, dev.virtualearth.net), geocoder (api.cesium.com) and BaseLayerPicker are the external dependencies; configure baseLayer from another provider, geocoder:false, baseLayerPicker:false",
+      "url": "https://raw.githubusercontent.com/CesiumGS/cesium/main/Documentation/OfflineGuide/README.md",
+      "result": "CONFIRMED",
+      "note": "Guide: default imagery is 'Cesium ion global imagery through Bing Maps' loading from api.cesium.com and dev.virtualearth.net 'as well as several other tile servers that are subdomains of virtualearth.net'; Geocoder 'uses the Cesium ion API at api.cesium.com' -> pass geocoder: false; BaseLayerPicker -> pass baseLayerPicker: false or configure imageryProviderViewModels/terrainProviderViewModels. Example passes baseLayer: ImageryLayer.fromProviderAsync(TileMapServiceImageryProvider.fromUrl(buildModuleUrl('Assets/Textures/NaturalEarthII'))), baseLayerPicker: false, geocoder: false."
+    },
+    {
+      "claim": "Voxel rendering requires a WebGL2 context (CHANGES)",
+      "url": "https://raw.githubusercontent.com/CesiumGS/cesium/main/CHANGES.md",
+      "result": "CONFIRMED",
+      "note": "Under '## 1.134 - 2025-10-01': 'Voxel rendering now requires a WebGL2 context, which is enabled by default since 1.101 (PR 10894). Make sure the `requestWebGl1` flag in `contextOptions` is NOT set to true.' (Cite 1.134 as the release that imposed the requirement.)"
+    },
+    {
+      "claim": "UrlTemplateImageryProvider placeholders and options (credit, subdomains, minimumLevel, maximumLevel, rectangle, tilingScheme default Web Mercator, customTags)",
+      "url": "https://cesium.com/learn/cesiumjs/ref-doc/UrlTemplateImageryProvider.html",
+      "result": "CONFIRMED",
+      "note": "Placeholders documented: {z} {x} {y} {s} {reverseX} {reverseY} {reverseZ} {westDegrees} {southDegrees} {eastDegrees} {northDegrees} {westProjected} {southProjected} {eastProjected} {northProjected} {width} {height}, plus pickFeatures {i} {j} {reverseI} {reverseJ} {longitudeDegrees} {latitudeDegrees} {longitudeProjected} {latitudeProjected} {format}. Options/defaults: subdomains 'abc', credit '', minimumLevel 0, maximumLevel optional, rectangle Rectangle.MAX_VALUE, tilingScheme 'new WebMercatorTilingScheme()', tileWidth/tileHeight 256, hasAlphaChannel true, customTags optional, urlSchemeZeroPadding optional."
+    },
+    {
+      "claim": "OpenStreetMapImageryProvider default url https://tile.openstreetmap.org/, default credit 'MapQuest, Open Street Map and contributors, CC-BY-SA'",
+      "url": "https://raw.githubusercontent.com/CesiumGS/cesium/main/packages/engine/Source/Scene/OpenStreetMapImageryProvider.js",
+      "result": "CONFIRMED",
+      "note": "Source: `options.url ?? \"https://tile.openstreetmap.org/\"` (line 63) and `const defaultCredit = new Credit(\"MapQuest, Open Street Map and contributors, CC-BY-SA\", ...)` (line 10-11); JSDoc links the OSM Tile Usage Policy. The default credit string is stale (OSM data is ODbL, and tile.openstreetmap.org is not MapQuest) -- pass an explicit credit."
+    },
+    {
+      "claim": "WMTS provider options clock ('Required when times is specified') and times (TimeIntervalCollection with data object of dimension values); NASA GIBS example uses {Time} and '2025-01-01/2025-09-01/P5D'",
+      "url": "https://cesium.com/learn/cesiumjs/ref-doc/WebMapTileServiceImageryProvider.html",
+      "result": "CONFIRMED",
+      "note": "clock: 'A Clock instance that is used when determining the value for the time dimension. Required when `times` is specified.' times: 'TimeIntervalCollection with its `data` property being an object containing time dynamic dimension and their values.' Example 3 uses TimeIntervalCollection.fromIso8601({ iso8601: '2025-01-01/2025-09-01/P5D', dataCallback ... { Time: JulianDate.toIso8601(interval.start, 0) } }) and url 'https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/AMSRU2_Snow_Water_Equivalent_5Day/default/{Time}/{TileMatrixSet}/{TileMatrix}/{TileRow}/{TileCol}.png'."
+    }
+  ],
+  "corrections": [
+    "Node version: the 'Bumped minimum required Node version to 22.0.0' entry is in CHANGES.md section '## 1.141 - 2026-05-01' (under '### cesium' / Breaking Changes), not 1.142. Change every reference of '1.142 bumped Node to 22' to 1.141 (2026-05-01). The npm engines field '>=22.0.0' on 1.144.0 is correct.",
+    "npm dependencies of cesium@1.144.0 are @cesium/engine ^26.2.0, @cesium/widgets ^16.1.1 AND protobufjs ^8.6.5; list all three.",
+    "MVTDataProvider 'experimental' status: CHANGES.md 1.142 does not use the word experimental for MVTDataProvider (it uses it for EXT_mesh_polygon / 3DTILES_content_gltf_vector). The experimental marking comes from the ref doc (https://cesium.com/learn/cesiumjs/ref-doc/MVTDataProvider.html): 'This feature is not final and is subject to change without Cesium's standard deprecation policy.' Cite the ref doc, and note the documented entry point is MVTDataProvider.fromUrl(urlTemplate with {z}/{x}/{y}, { minZoom: 0, maxZoom: 14, extent, featureIdProperty }); no PMTiles/archive input is documented, so PMTiles-backed hydrography needs a tile server (e.g. Martin) or a custom Resource in front of it.",
+    "Draping: '1.144 drapes clamped vector polygons/polylines on terrain' is confirmed ('Added support for draping clamped vector tile polygons and polylines onto terrain, with screen-space-constant line width and per-feature styling via Cesium3DTileStyle', #13577/#13627). The pre-staged 1.145 section already contains a fix ('draped vector polylines rendering at twice their specified width' + antialiasing toggle scene.vectorProvider.antialias), so hands-on testing should use 1.145 when it ships on 2026-09-02.",
+    "WebGL2 default wording: keep '1.102' as the release that switched the default (1.101 only announced the change and deprecated requestWebgl2), but note that the 1.134 CHANGES entry ('Voxel rendering now requires a WebGL2 context, which is enabled by default since 1.101') contradicts this; cite the 1.102 release note as primary. The voxel requirement itself dates from 1.134 (2025-10-01).",
+    "OSM credit: do not rely on OpenStreetMapImageryProvider's default credit 'MapQuest, Open Street Map and contributors, CC-BY-SA' -- it is stale (ODbL since 2012). Pass credit: '© OpenStreetMap contributors' (and link to openstreetmap.org/copyright) per OSM attribution guidelines.",
+    "Bundle size: report gzip as ~1.73 MB and state the compressor (1,730,610 bytes with gzip -9; 1,735,163 with default level 6). The raw sizes 5,974,765 / 15,662,452 / 30,710 bytes are exact, and widgets.css lives at Build/Cesium/Widgets/widgets.css.",
+    "Cesium ion Community plan (open question closed): pricing page literally says 'Free (individual)'; eligible uses 'Non-commercial personal projects, or Exploratory commercial or government development, e.g., evaluating if Cesium ion will meet your needs, or Unfunded educational activities'; a paid account is required 'if your company currently makes more than $50K in annual gross revenues or has raised funds in excess of $50K'; 5 GB storage, 15 GB / month streaming, 1,000 Global Imagery sessions / month, 1,000 Google Photorealistic 3D Tiles root tiles / month. The logo rule is in the Cesium ion Terms of Service §2.2.3: 'making the Cesium ion logo prominently viewable to users' and 'the Cesium ion logo must be prominently displayed on the main application window of Your Application' (splash/about page acceptable only for mobile/VR). ToS §2.2.2 also forbids copying/storing/redistributing Cesium Data Output for offline use (only general-purpose client/proxy caching allowed) -- add this to the ion section. Pricing page lists Global Imagery as 'Bing Maps, Google Maps; Azure Maps as Technology Preview'; the 2028-06-30 Bing cutoff date was not verified in this pass.",
+    "WA DNR lidar licensing (open question closed as far as published text allows): the Washington Geological Survey 'Disclaimers and Citation Guidelines' page (https://www.dnr.wa.gov/programs-and-services/geology/publications-and-data/disclaimers-and-citation-guidelines) states: 'All of the materials we produce (publications, digital content, posters, videos) are free for you to use in any way you choose, for both commercial and non-commercial purposes, including modifying or adapting anything, as long as you cite us.' and gives a lidar citation template ('Washington Geological Survey, 2023, Olympics Wali 2022 project [lidar data]: originally contracted by Washington Dept. of Natural Resources. [accessed ..., at https://lidarportal.dnr.wa.gov]') plus a no-warranty disclaimer. Neither the portal (lidarportal.dnr.wa.gov) nor its help.html carries any license text. Replace 'public domain (third-party blog)' with 'free for commercial and non-commercial use with citation, per WGS Disclaimers and Citation Guidelines' and keep an attribution line in the app. Lidar Manager contact for rehosting confirmation: Abigail (Abby) Gleason, abigail.gleason@dnr.wa.gov, 360.902.1560 (Lidar Specialist: Guy McWethy, guy.mcwethy@dnr.wa.gov). The 'public domain' sentence attributed to the 2023 WA State Lidar Plan PDF could not be extracted from the PDF text.",
+    "MapTiler terrain-rgb-v2 (open question closed): official schema page https://docs.maptiler.com/schema-raster/terrain-rgb/ states tileset id 'terrain-rgb-v2', format 'webp', 'Min zoom: 0', 'Max zoom: 14', '30 m globally, 5 m in specific areas', vertical resolution '6 m'. Use max zoom 14; the '12' came from a stale snippet. Tile pattern follows the generic Tiles API 'GET https://api.maptiler.com/tiles/{tilesId}/{z}/{x}/{y}' -> https://api.maptiler.com/tiles/terrain-rgb-v2/{z}/{x}/{y}.webp?key=..., and a live probe of https://api.maptiler.com/tiles/terrain-rgb-v2/0/0/0.webp returned 403 'Missing key - Get your FREE key at https://cloud.maptiler.com/account/keys/' (endpoint exists; key mandatory; TileJSON at /tiles/terrain-rgb-v2/tiles.json?key=). Decoding formula is published on MapTiler's 2019 post (https://www.maptiler.com/news/2019/03/rgb-encoded-elevation-data-in-maptiler-cloud/): 'height = -10000 + ((R * 256 * 256 + G * 256 + B) * 0.1)'.",
+    "Esri attribution (open question partially closed): the 'Esri and data attribution' page is client-rendered (static HTML has no attribution text), so exact logo/format rules remain unconfirmed. Literal evidence available: ArcGIS Maps SDK for JavaScript licensing page requires displaying 'Powered by Esri' text and 'all data source provider names' in any app using ArcGIS services; the Static Basemap Tiles REST doc states 'Applications that use this service must display both basemap and data attribution', base URL https://static-map-tiles-api.arcgis.com/arcgis/rest/services/static-basemap-tiles-service/v1, tile path /{style}/static/tile/{level}/{row}/{column} (i.e. z/y/x order -- a Cesium UrlTemplateImageryProvider template must be .../{z}/{y}/{x} with tileWidth/tileHeight 512), 512x512 PNG, zoom 0-22, '2 million free then $0.15 per 1,000 tiles', and data-attribution metadata is served from each style's /static endpoint.",
+    "Viewer options: the research should not mention an imageryProvider option -- the current Viewer ConstructorOptions table has only baseLayer (ImageryLayer | false). An ion-free viewer therefore needs baseLayer: <ImageryLayer from UrlTemplateImageryProvider> (or false), geocoder: false, baseLayerPicker: false, and a non-ion terrainProvider/terrain; this matches the Offline Guide example."
+  ],
+  "overall_confidence": "high"
+}

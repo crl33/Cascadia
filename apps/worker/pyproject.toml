@@ -1,0 +1,13 @@
+[project]
+name = "cascade-worker"
+version = "0.1.0"
+description = "Cascade Oracle — the only writing process: seed, scheduled provider jobs, job-run health."
+requires-python = ">=3.12"
+dependencies = ["cascade-core", "cascade-providers-usgs", "cascade-providers-nwps", "sqlalchemy>=2.0", "httpx>=0.27"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/cascade_worker"]

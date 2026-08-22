@@ -1,0 +1,104 @@
+{
+  "category": "weather-forecast-models-and-atmospheric-rivers",
+  "verdicts": [
+    {
+      "claim": "User-Agent required; rate limits 'reasonable' and undisclosed; retry typically within 5 seconds; formats GeoJSON/JSON-LD/DWML/CAP/OXML/ATOM; /points and /gridpoints endpoints; re-check /points periodically",
+      "url": "https://www.weather.gov/documentation/services-web-api",
+      "result": "CONFIRMED",
+      "note": "Page fetched 2026-08-22. Verbatim: 'A User Agent is required to identify your application'; 'The rate limit is not public information, but allows a generous amount for typical use'; 'may be retried after the limit clears (typically within 5 seconds)'; formats listed are GeoJSON, JSON-LD, DWML, OXML, CAP, ATOM; /points/{lat},{lon} -> grid endpoint; 'it is necessary to check back to the /points endpoint periodically'. Wording nit: the page says 'generous', not 'reasonable'. Nothing on the page says a contact e-mail in User-Agent raises the limit."
+    },
+    {
+      "claim": "Raw gridpoint properties include quantitativePrecipitation (wmoUnit:mm, PT6H), snowfallAmount (mm), iceAccumulation (mm), snowLevel (wmoUnit:m, PT3H), probabilityOfPrecipitation (percent), temperature/dewpoint (degC), validTimes P8DT1H",
+      "url": "https://api.weather.gov/gridpoints/SEW/124,67",
+      "result": "CONFIRMED",
+      "note": "Fetched live with curl (User-Agent set). validTimes '2026-08-22T00:00:00+00:00/P8DT1H'; quantitativePrecipitation uom wmoUnit:mm with PT6H intervals; snowfallAmount and iceAccumulation wmoUnit:mm; snowLevel wmoUnit:m with PT3H intervals (e.g. 3816.096 m); probabilityOfPrecipitation wmoUnit:percent; temperature/dewpoint wmoUnit:degC. Caveat: SEW/124,67 is NOT the Sedro-Woolley cell (elevation 0.9 m, a near-sea-level point); /points/48.50,-122.24 resolves to SEW/136,109."
+    },
+    {
+      "claim": "Sedro-Woolley 48.50,-122.24 maps to SEW grid 136,109; forecastZone WAZ311; county WAC057; fire zone WAZ656; radar KATX",
+      "url": "https://api.weather.gov/points/48.50,-122.24",
+      "result": "CONFIRMED",
+      "note": "Live response: gridId SEW, gridX 136, gridY 109, forecastGridData https://api.weather.gov/gridpoints/SEW/136,109, forecastZone .../zones/forecast/WAZ311, county .../zones/county/WAC057, fireWeatherZone .../zones/fire/WAZ656, radarStation KATX."
+    },
+    {
+      "claim": "OpenAPI: /gridpoints returns 'raw numerical forecast data for a 2.5km grid area'; /alerts/active params status, message_type, event, code, area, point, region, region_type, zone (forecast or county), urgency, severity, certainty; /alerts adds start, end, limit, cursor; /products params location, start, end, office, wmoid, type, limit",
+      "url": "https://api.weather.gov/openapi.json",
+      "result": "CONFIRMED",
+      "note": "openapi.json fetched live. /gridpoints/{wfo}/{x},{y} description is exactly 'Returns raw numerical forecast data for a 2.5km grid area'. /alerts/active parameter list matches exactly; /alerts has the same plus 'active', start, end, limit, cursor; /products params are location, start, end, office, wmoid, type, limit. AlertZone parameter description: 'Zone ID (forecast or county)'."
+    },
+    {
+      "claim": "Alert feature properties: event, severity, urgency, certainty, status, messageType, areaDesc, sent/effective/onset/expires/ends, headline, description, instruction, geocode.SAME/UGC, affectedZones, parameters.NWSheadline/VTEC",
+      "url": "https://api.weather.gov/alerts/active?area=WA",
+      "result": "CONFIRMED",
+      "note": "Live response (16 WA features). Feature property keys include event, severity, urgency, certainty, status, messageType, areaDesc, sent, effective, onset, expires, ends, headline, description, instruction, geocode (SAME, UGC), affectedZones, parameters (AWIPSidentifier, WMOidentifier, NWSheadline, BLOCKCHANNEL, VTEC, eventEndingTime). Note: the parameters sub-keys vary per alert; NWSheadline/VTEC are not guaranteed on every alert."
+    },
+    {
+      "claim": "?zone=WAC057 (Skagit County) filter works and titles 'Current watches, warnings, and advisories for Skagit County (WAC057) WA'; /alerts/active/zone/WAZ568 returns 200; Cache-Control max-age=5",
+      "url": "https://api.weather.gov/alerts/active?zone=WAC057",
+      "result": "CONFIRMED",
+      "note": "Live: HTTP 200, title exactly 'Current watches, warnings, and advisories for Skagit County (WAC057) WA' (1 active feature on 2026-08-22). /alerts/active/zone/WAZ568 returned HTTP 200 with title 'Current watches, warnings, and advisories for WAZ568' (0 features). Response header: 'cache-control: public, max-age=5, s-maxage=5'."
+    },
+    {
+      "claim": "Product codes: AFD, HWO, ESF=Flood Potential Outlook, FLW=Flood Warning, FLS=Flood Statement, FFA/FFW/FFS/FFG, RVF=River Forecast, RVA, RVS, RVD, HYD=Daily Hydrometeorological Products, ESP/ESG/ESS, QPF, HMD, AHD",
+      "url": "https://api.weather.gov/products/types",
+      "result": "CONFIRMED",
+      "note": "Live /products/types: AFD Area Forecast Discussion; HWO Hazardous Weather Outlook; ESF Flood Potential Outlook; FLW Flood Warning; FLS Flood Statement; FFA Flash Flood Watch; FFW Flash Flood Warning; FFS Flash Flood Statement; FFG Flash Flood Guidance; RVF River Forecast; RVA River Summary; RVS River Statement; RVD Daily River Forecasts; HYD Daily Hydrometeorological Products; ESP Extended Streamflow Prediction; ESG Extended Streamflow Guidance; ESS Water Supply Outlook; QPF Quantitative Precipitation Forecast; HMD National Hydromet Discussion; AHD Area Hydrologic Discussion."
+    },
+    {
+      "claim": "SEW recently issued AFD, QPS, PFM, ZFP, RR*, HML etc.; PTR (NWRFC) issued HYD, FTP, RR1-3, RRS; OTX issued AFD, FLS, FZL (Freezing Level Data/RADAT)",
+      "url": "https://api.weather.gov/products/locations/SEW/types",
+      "result": "CONFIRMED",
+      "note": "Live on 2026-08-22: SEW types = AFD, AVG, CF6, CGR, CLI, CWF, FWF, FWS, HML, MWW, PFM, QPS, REC, RER, RFW, RR2, RR3, RR5, RR8, RRA, RRM, RRS, SAF, SFT, STQ, VFT, ZFP. PTR types = FTP, HYD, RR1, RR2, RR3, RRS (exact). OTX types include AFD, FLS, FZL. /products/types lists FZL as 'Freezing Level Data (RADAT)'. Caveat: these lists reflect the rolling ~7-day window and change daily (e.g. no HWO for SEW was present on the verification date)."
+    },
+    {
+      "claim": "Oldest retained KSEW AFD on 2026-08-22 was issued 2026-08-15 (28 products); oldest FLW nationally 2026-08-15 -> ~7-day retention",
+      "url": "https://api.weather.gov/products?type=AFD&office=KSEW&limit=500",
+      "result": "CONFIRMED",
+      "note": "Live on 2026-08-22 ~08:50Z: KSEW AFD list had 28 products, oldest issuanceTime 2026-08-15T10:10:00+00:00, newest 2026-08-22T02:55Z. /products?type=FLW&limit=500 returned 277 products, oldest 2026-08-15T10:51Z. KSEW ZFP oldest also 2026-08-15T09:37Z. The '7-day' figure is an observation, not an api.weather.gov-documented policy; the separate WRH Text Product Viewer page states its database 'contains products that were issued in the past 168 hours (7 days)', which is consistent but is not an API statement."
+    },
+    {
+      "claim": "NWS may block IPs impacting service; align requests to data refresh cycles; contact sdm@noaa.gov",
+      "url": "https://www.weather.gov/abusive-user-block",
+      "result": "CONFIRMED",
+      "note": "Page says NWS 'may find it necessary to block IP addresses or query types'; 'If the forecast data is updated every 6 hours you should only make requests during those cycle output windows'; 'Users who find that their queries are blocked should send an email to sdm@noaa.gov'. Also gives guidance to retry at 1-minute intervals when services are unavailable and to poll 'once or twice a minute' at most for short-fused warnings. No numeric limit is stated."
+    },
+    {
+      "claim": "Buckets arn:aws:s3:::noaa-nbm-grib2-pds (GRIB2) and arn:aws:s3:::noaa-nbm-pds (COG), us-east-1; updated hourly; NODD license text; SNS notifications",
+      "url": "https://registry.opendata.aws/noaa-nbm/",
+      "result": "CONFIRMED",
+      "note": "Registry page lists arn:aws:s3:::noaa-nbm-grib2-pds (GRIB2) and arn:aws:s3:::noaa-nbm-pds (COG), region us-east-1, update frequency 'Once per hour', SNS topics arn:aws:sns:us-east-1:123901341784:NewNBMGRIBObject and :NewNBMCOGObject, and the NODD license text ('NOAA data disseminated through NODD are open to the public and can be used as desired', attribution requested, no endorsement claims, modified data not to be represented as original NOAA data). The page does not state the 2.5 km resolution."
+    },
+    {
+      "claim": "Bucket layout blend.YYYYMMDD/HH/{core,qmd,text}/, regions co/ak/hi/pr/gu/oc/global, earliest prefix blend.20200518, text files blend_nbetx/nbhtx/nbptx/nbstx/nbxtx.t12z",
+      "url": "https://noaa-nbm-grib2-pds.s3.amazonaws.com/?prefix=blend.20260821/12/&delimiter=/",
+      "result": "CONFIRMED",
+      "note": "S3 ListObjects fetched live: CommonPrefixes blend.20260821/12/core/, /qmd/, /text/. Top-level listing begins with blend.20200518/. Core file suffixes present: .ak, .co, .global, .gu, .hi, .oc, .pr (.grib2 and .grib2.idx). Text prefix contains blend_nbetx.t12z, blend_nbhtx.t12z, blend_nbptx.t12z, blend_nbstx.t12z, blend_nbxtx.t12z. SCN 26-24 confirms the core/qmd naming convention and that 'global' is core only."
+    },
+    {
+      "claim": "CONUS core 12Z cycle: f001-f264, 1-h to f048, 3-h to f192, 6-h to f264; qmd f001-f276 hourly files; LastModified f001 13:12:41Z, f264 13:18:28Z",
+      "url": "https://noaa-nbm-grib2-pds.s3.amazonaws.com/?prefix=blend.20260821/12/core/blend.t12z.core.f0",
+      "result": "CONFIRMED",
+      "note": "Full listing (three prefixes f0/f1/f2, 1,582 keys) shows 108 blend.t12z.core.fHHH.co.grib2 files: hourly f001-f048, 3-hourly f051-f192, 6-hourly f198-f264. LastModified f001 2026-08-21T13:12:41Z, f048 13:14:56Z, f192 13:16:13Z, f264 13:18:28Z. QMD: 276 blend.t12z.qmd.fHHH.co.grib2 files, hourly f001-f276, LastModified f001 19:16:29Z and f276 19:26:59Z (about 7 h 16 min after cycle time). Note the cited URL alone is truncated at 1000 keys and only reaches f159; the researcher must page or use multiple prefixes."
+    },
+    {
+      "claim": "Core f024 CONUS index contains APCP (1-h and 6-h acc, deterministic + prob >0.254), ASNOW (1-h/6-h deterministic, exceedance probs, 1-99% percentiles), FICEAC, SNOWLVL deterministic ('0 m above mean sea level') plus SNOWLVL percentiles 1-99%, SNOWLR, PTYPE probabilities, TMP/DPT/RH 2 m, TMIN, APTMP, WIND/GUST, PWAT, CAPE; 216 records; no HGT:0C isotherm record",
+      "url": "https://noaa-nbm-grib2-pds.s3.amazonaws.com/blend.20260821/12/core/blend.t12z.core.f024.co.grib2.idx",
+      "result": "CONFIRMED",
+      "note": "Index fetched live: 216 records. APCP: '23-24 hour acc' and '18-24 hour acc' deterministic plus 'prob >0.254' for 23-24 h, 18-24 h AND 12-24 h (the 12-h probability record is omitted in the claim). ASNOW: 1-h and 6-h deterministic, exceedance probabilities (>0.00254 ... >0.3048 m), and 15 percentile levels (1,5,10,20,25,30,40,50,60,70,75,80,90,95,99%). FICEAC present. 'SNOWLVL:0 m above mean sea level:24 hour fcst:' deterministic plus 15 SNOWLVL:surface percentile records. SNOWLR, PTYPE prob, TMP/DPT/RH 2 m, TMIN, APTMP, WIND, GUST, PWAT, CAPE present. No HGT record of any kind in the file. '1-99% percentiles' should be read as 15 discrete percentiles, not every integer."
+    }
+  ],
+  "corrections": [
+    "Gridpoint example URL mismatch: https://api.weather.gov/gridpoints/SEW/124,67 is not the Sedro-Woolley cell (its elevation is 0.9 m). /points/48.50,-122.24 resolves to forecastGridData https://api.weather.gov/gridpoints/SEW/136,109 — use 136,109 in all examples and code.",
+    "Rate-limit wording: the NWS API docs say the limit 'is not public information, but allows a generous amount for typical use', not 'reasonable'. Neither the docs page nor the api.weather.gov FAQ (weather-gov.github.io/api/general-faqs) documents any mechanism by which a registered User-Agent/contact raises the limit; state this as undocumented. The abusive-user page adds practical ceilings: retry no faster than 1-minute intervals when unavailable and poll at most 'once or twice a minute' even for short-fused warnings.",
+    "Product retention: api.weather.gov does not document a retention period. Observed on 2026-08-22: oldest KSEW AFD 2026-08-15T10:10Z, oldest KSEW ZFP 2026-08-15T09:37Z, oldest national FLW 2026-08-15T10:51Z (all ~7 days). The weather.gov/wrh/TextProduct page states its text-product database 'contains products that were issued in the past 168 hours (7 days)'; cite it as corroborating context, not as an API guarantee, and keep the 7-day figure labelled as observed.",
+    "NBM v5.0 implementation date: vlab.noaa.gov/web/mdl/nbm says 'The NBM has upgraded to version 5.0 as of May 5, 2026'. SCN 26-24 Updated (AAC, 28 Apr 2026) itself says 'On or about Thursday, April 30, 2026, beginning with the 1300 UTC model run', with a Critical-Weather-Day fallback of 1300 UTC Monday May 4, 2026. Attribute 'May 5, 2026' to the vlab page, not to SCN 26-24.",
+    "NBM CONUS 2.5 km can be de-INFERENCED: 'Cycles, Projections, and Domains in the NBM v5.0' (https://vlab.noaa.gov/documents/6609493/50324479/NBM_Cycles_and_Domains_v5_0.pdf, Table 1) gives CONUS 2.5 km (2345 x 1597), Alaska 3 km, Hawaii 2.5 km, Puerto Rico 1.25 km, Guam 2.5 km, Oceanic 10 km, Global 50 km. The same document states the Core Blend output cadence: hourly to 48 h, 3-hourly to 192 h, 6-hourly to 264 h (with 3-h/6-h projections shifted so valid times stay divisible by 3/6 for cycles not divisible by 6).",
+    "Why QMD goes to f276 while core stops at f264: per the same Cycles/Domains document, QMD '1-hour accumulated precipitation (CONUS only): Projections are available hourly out to 276 hours'; 6- and 12-h QPF 6-hourly to 276 h; 24/48/72-h QPF 12-hourly to 276 h; other QMD elements hourly to 60 h, 3-hourly to 204 h, 6-hourly to 276 h. QMD runs only for the 00/06/12/18Z cycles and 'starts 6 hours and 40 minutes after the named cycle ... and finishes within an hour' (the Blend_Precip_QMD_v5.0 doc says 'delayed by approximately 6.5 hours'). Observed: 12Z qmd f001 LastModified 19:16:29Z, f276 19:26:59Z — i.e. ~7.3 h latency, versus ~72-78 min for core. The research summary's latency statement must distinguish core from qmd.",
+    "NBM v5.0 timing table: NBM_v5.0_Timing_Differences.pdf (https://vlab.noaa.gov/documents/6609493/49238069/NBM_v5.0_Timing_Differences.pdf) lists only deltas relative to v4.3, not absolute times: NOMADS Core, all cycles, AK/CO/GU/HI/PR/OC: 20-30 min delay; NOMADS QMD CO: 06/18Z 5-10 min early, 00Z 10 min delay, 12Z 5-10 min delay; NOMADS text bulletins 00/12Z 20-40 min delay, 01/13Z 5-10 min early, 07/19Z 5-15 min delay. Absolute schedule comes from the Cycles/Domains doc: Core Blend starts 10 min before the hour (00Z cycle begins 23:50Z) and aims to finish within one hour; key cycles are 01/07/13/19Z. The observed 72-78 min remains the best CONUS-core number.",
+    "SNOWLVL definition is now sourced: Blend_Winter_v5_0_Configuration_and_Technical_Details.pdf states 'Definition of Snow Level: The altitude where the wet-bulb temperature first crosses above 0.5°' C, computed from vertical wet-bulb profiles, with a 9-point smoother applied, and 15 weighted percentiles (0.01, 0.05, 0.10, 0.20, 0.25, 0.30, 0.40, 0.50, 0.60, 0.70, 0.75, 0.80, 0.90, 0.95, 0.99). Rewrite 'percentiles 1-99' as 'fifteen percentiles from 1st to 99th'. The idx string '0 m above mean sea level' is the GRIB2 fixed-surface (MSL) descriptor, not the unit of the value.",
+    "Core f024 idx also carries an APCP 12-24 hour 'prob >0.254' record in addition to the 1-h and 6-h ones; list it. SCN 26-24 also states that NOMADS hosts both core and qmd master files at https://nomads.ncep.noaa.gov/pub/data/nccf/com/blend/prod/ with names core/blend.tCCz.core.fHHH.rg.grib2 and qmd/blend.tCCz.qmd.fHHH.rg.grib2, and that the global domain is core-only.",
+    "S3 listing pagination: the cited prefix listing (core ... .f0) is truncated at 1000 keys and only reaches f159 on its own (IsTruncated=true). Document that a full per-cycle inventory needs a continuation marker or multiple prefixes (f0/f1/f2).",
+    "HRRR/RRFS: SCN 26-48 Updated (aab, https://www.weather.gov/media/notification/pdf_2026/scn26-048_RRFS_and_REFS_Implementation.aab.pdf) confirms RRFS/REFS production implementation October 6, 2026 (12 UTC) with parallel NOMADS output from August 11, 2026; an earlier 'aaa' revision dated June 2, 2026 still said Aug 31, 2026 — cite the aab revision. SCN 26-47 (aaa) retires NAM, SREF, HREF, HiresW (except Guam) and NAM MOS on October 6, 2026; HRRR and RAP are not on the retirement list, and SCN 26-48 says 'For the Alaska and CONUS REFS domains, the HRRR provides two additional members (from current and 6 h old cycles)'. No HRRR retirement date exists in any SCN found; keep that as an open item.",
+    "Alerts: the 'parameters' sub-keys (NWSheadline, VTEC, AWIPSidentifier, WMOidentifier, BLOCKCHANNEL, eventEndingTime) vary by alert; code must treat them as optional. Per-location product-type lists (/products/locations/SEW/types) are a rolling ~7-day window and change daily (HWO was absent for KSEW on 2026-08-22), so do not hard-code them."
+  ],
+  "overall_confidence": "high"
+}

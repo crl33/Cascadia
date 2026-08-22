@@ -1,0 +1,574 @@
+{
+  "$defs": {
+    "FloodCategory": {
+      "enum": [
+        "none",
+        "action",
+        "minor",
+        "moderate",
+        "major",
+        "unknown"
+      ],
+      "title": "FloodCategory",
+      "type": "string"
+    },
+    "Headroom": {
+      "additionalProperties": false,
+      "properties": {
+        "basis": {
+          "pattern": "^(stage|flow)$",
+          "title": "Basis",
+          "type": "string"
+        },
+        "prov": {
+          "title": "Prov",
+          "type": "string"
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reason"
+        },
+        "time_to_threshold_h": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Time To Threshold H"
+        },
+        "to_category": {
+          "$ref": "#/$defs/FloodCategory"
+        },
+        "value": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Quantity"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "basis",
+        "to_category",
+        "prov"
+      ],
+      "title": "Headroom",
+      "type": "object"
+    },
+    "ObservedRiverState": {
+      "additionalProperties": false,
+      "properties": {
+        "flow": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Quantity"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "prov": {
+          "description": "key into ContractEnvelope.provenance_refs",
+          "title": "Prov",
+          "type": "string"
+        },
+        "stage": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Quantity"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "truth": {
+          "$ref": "#/$defs/TruthClass"
+        },
+        "valid_time": {
+          "format": "date-time",
+          "title": "Valid Time",
+          "type": "string"
+        }
+      },
+      "required": [
+        "prov",
+        "truth",
+        "valid_time"
+      ],
+      "title": "ObservedRiverState",
+      "type": "object"
+    },
+    "OfficialForecastSummary": {
+      "additionalProperties": false,
+      "properties": {
+        "category": {
+          "$ref": "#/$defs/FloodCategory"
+        },
+        "crest": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Quantity"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "crest_valid_time": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Crest Valid Time"
+        },
+        "issued_at": {
+          "format": "date-time",
+          "title": "Issued At",
+          "type": "string"
+        },
+        "issuer": {
+          "title": "Issuer",
+          "type": "string"
+        },
+        "points": {
+          "minimum": 0,
+          "title": "Points",
+          "type": "integer"
+        },
+        "prov": {
+          "description": "key into ContractEnvelope.provenance_refs",
+          "title": "Prov",
+          "type": "string"
+        },
+        "truth": {
+          "$ref": "#/$defs/TruthClass"
+        }
+      },
+      "required": [
+        "prov",
+        "truth",
+        "issued_at",
+        "issuer",
+        "category",
+        "points"
+      ],
+      "title": "OfficialForecastSummary",
+      "type": "object"
+    },
+    "Quantity": {
+      "additionalProperties": false,
+      "description": "A number with its unit; `datum` is required for stage-like quantities.",
+      "properties": {
+        "datum": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Datum"
+        },
+        "unit": {
+          "title": "Unit",
+          "type": "string"
+        },
+        "value": {
+          "title": "Value",
+          "type": "number"
+        }
+      },
+      "required": [
+        "value",
+        "unit"
+      ],
+      "title": "Quantity",
+      "type": "object"
+    },
+    "Regulation": {
+      "additionalProperties": false,
+      "properties": {
+        "class": {
+          "pattern": "^(natural|partially_regulated|regulated|regulated_upper|unknown)$",
+          "title": "Class",
+          "type": "string"
+        },
+        "regulated_by": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Regulated By",
+          "type": "array"
+        }
+      },
+      "required": [
+        "class"
+      ],
+      "title": "Regulation",
+      "type": "object"
+    },
+    "Thresholds": {
+      "additionalProperties": false,
+      "properties": {
+        "action": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Action"
+        },
+        "basis": {
+          "pattern": "^(stage|flow)$",
+          "title": "Basis",
+          "type": "string"
+        },
+        "datum": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Datum"
+        },
+        "major": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Major"
+        },
+        "minor": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Minor"
+        },
+        "moderate": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Moderate"
+        },
+        "prov": {
+          "title": "Prov",
+          "type": "string"
+        },
+        "unit": {
+          "title": "Unit",
+          "type": "string"
+        }
+      },
+      "required": [
+        "basis",
+        "unit",
+        "prov"
+      ],
+      "title": "Thresholds",
+      "type": "object"
+    },
+    "Topology": {
+      "additionalProperties": false,
+      "properties": {
+        "downstream": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Downstream",
+          "type": "array"
+        },
+        "upstream": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Upstream",
+          "type": "array"
+        }
+      },
+      "title": "Topology",
+      "type": "object"
+    },
+    "Trend": {
+      "additionalProperties": false,
+      "properties": {
+        "direction": {
+          "pattern": "^(rising|falling|steady|unknown)$",
+          "title": "Direction",
+          "type": "string"
+        },
+        "prov": {
+          "description": "key into ContractEnvelope.provenance_refs",
+          "title": "Prov",
+          "type": "string"
+        },
+        "rate": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Quantity"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "truth": {
+          "$ref": "#/$defs/TruthClass"
+        },
+        "window_h": {
+          "minimum": 1,
+          "title": "Window H",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "prov",
+        "truth",
+        "window_h",
+        "direction"
+      ],
+      "title": "Trend",
+      "type": "object"
+    },
+    "TruthClass": {
+      "description": "docs/VISUAL_TRUTH_DOCTRINE.md \u2014 what kind of thing a rendered element is.",
+      "enum": [
+        "observation",
+        "authoritative_model",
+        "cascade_derived",
+        "cartographic",
+        "cinematic"
+      ],
+      "title": "TruthClass",
+      "type": "string"
+    }
+  },
+  "$id": "https://cascade-oracle.dev/schema/RiverVisualizationState.json",
+  "additionalProperties": false,
+  "properties": {
+    "basin_id": {
+      "title": "Basin Id",
+      "type": "string"
+    },
+    "flow_visual_intensity": {
+      "anyOf": [
+        {
+          "maximum": 1,
+          "minimum": 0,
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "display hint from percentile; not depth",
+      "title": "Flow Visual Intensity"
+    },
+    "headroom": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Headroom"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "id": {
+      "pattern": "^fp:nwps:[A-Z0-9]+$|^station:[a-z]+:[A-Za-z0-9:._-]+$",
+      "title": "Id",
+      "type": "string"
+    },
+    "location": {
+      "anyOf": [
+        {
+          "maxItems": 2,
+          "minItems": 2,
+          "prefixItems": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "number"
+            }
+          ],
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "[lon, lat] WGS84; cartographic",
+      "title": "Location"
+    },
+    "name": {
+      "title": "Name",
+      "type": "string"
+    },
+    "observed": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ObservedRiverState"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "observed_category": {
+      "$ref": "#/$defs/FloodCategory",
+      "default": "unknown"
+    },
+    "observed_category_reason": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Observed Category Reason"
+    },
+    "official_forecast": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/OfficialForecastSummary"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "reach_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Reach Id"
+    },
+    "regulation": {
+      "$ref": "#/$defs/Regulation",
+      "default": {
+        "class": "unknown",
+        "regulated_by": []
+      }
+    },
+    "station_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Station Id"
+    },
+    "thresholds": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Thresholds"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "topology": {
+      "$ref": "#/$defs/Topology",
+      "default": {
+        "downstream": [],
+        "upstream": []
+      }
+    },
+    "trend": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Trend"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    }
+  },
+  "required": [
+    "id",
+    "name",
+    "basin_id"
+  ],
+  "title": "RiverVisualizationState",
+  "type": "object"
+}

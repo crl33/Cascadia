@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "include": [
+    "/basins",
+    "/basins/*",
+    "/viz/*",
+    "/forecast-points/*",
+    "/stations/*",
+    "/scene/*",
+    "/search",
+    "/system/*"
+  ],
+  "exclude": ["/_routes.json"]
+}

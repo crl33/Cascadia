@@ -1,0 +1,350 @@
+{
+ "name": "ns1:timeSeriesResponseType",
+ "declaredType": "org.cuahsi.waterml.TimeSeriesResponseType",
+ "scope": "javax.xml.bind.JAXBElement$GlobalScope",
+ "value": {
+  "queryInfo": {
+   "queryURL": "http://waterservices.usgs.gov/nwis/iv/format=json&sites=12119000%2C12149000%2C12200500%2C12213100%2C12113000%2C12100490&parameterCd=00065%2C00060&period=PT12H&siteStatus=all",
+   "criteria": {
+    "locationParam": "[ALL:12119000, ALL:12149000, ALL:12200500, ALL:12213100, ALL:12113000, ALL:12100490]",
+    "variableParam": "[00065, 00060]",
+    "parameter": []
+   },
+   "note": [
+    {
+     "value": "[ALL:12119000, ALL:12149000, ALL:12200500, ALL:12213100, ALL:12113000, ALL:12100490]",
+     "title": "filter:sites"
+    },
+    {
+     "value": "[mode=PERIOD, period=PT12H, modifiedSince=null]",
+     "title": "filter:timeRange"
+    },
+    {
+     "value": "methodIds=[ALL]",
+     "title": "filter:methodId"
+    },
+    {
+     "value": "2026-08-22T13:16:40.564Z",
+     "title": "requestDT"
+    },
+    {
+     "value": "b65e6d20-9e2b-11f1-971b-005056beda50",
+     "title": "requestId"
+    },
+    {
+     "value": "Provisional data are subject to revision. Go to http://waterdata.usgs.gov/nwis/help/?provisional for more information.",
+     "title": "disclaimer"
+    },
+    {
+     "value": "caas01",
+     "title": "server"
+    }
+   ]
+  },
+  "timeSeries": [
+   {
+    "sourceInfo": {
+     "siteName": "SKAGIT RIVER NEAR MOUNT VERNON, WA",
+     "siteCode": [
+      {
+       "value": "12200500",
+       "network": "NWIS",
+       "agencyCode": "USGS"
+      }
+     ],
+     "timeZoneInfo": {
+      "defaultTimeZone": {
+       "zoneOffset": "-08:00",
+       "zoneAbbreviation": "PST"
+      },
+      "daylightSavingsTimeZone": {
+       "zoneOffset": "-07:00",
+       "zoneAbbreviation": "PDT"
+      },
+      "siteUsesDaylightSavingsTime": true
+     },
+     "geoLocation": {
+      "geogLocation": {
+       "srs": "EPSG:4326",
+       "latitude": 48.4448278,
+       "longitude": -122.3354369
+      },
+      "localSiteXY": []
+     },
+     "note": [],
+     "siteType": [],
+     "siteProperty": [
+      {
+       "value": "ST",
+       "name": "siteTypeCd"
+      },
+      {
+       "value": "17110007",
+       "name": "hucCd"
+      },
+      {
+       "value": "53",
+       "name": "stateCd"
+      },
+      {
+       "value": "53057",
+       "name": "countyCd"
+      }
+     ]
+    },
+    "variable": {
+     "variableCode": [
+      {
+       "value": "00060",
+       "network": "NWIS",
+       "vocabulary": "NWIS:UnitValues",
+       "variableID": 45807197,
+       "default": true
+      }
+     ],
+     "variableName": "Streamflow, ft&#179;/s",
+     "variableDescription": "Discharge, cubic feet per second",
+     "valueType": "Derived Value",
+     "unit": {
+      "unitCode": "ft3/s"
+     },
+     "options": {
+      "option": [
+       {
+        "name": "Statistic",
+        "optionCode": "00000"
+       }
+      ]
+     },
+     "note": [],
+     "noDataValue": -999999.0,
+     "variableProperty": [],
+     "oid": "45807197"
+    },
+    "values": [
+     {
+      "value": [
+       {
+        "value": "6640",
+        "qualifiers": [
+         "P"
+        ],
+        "dateTime": "2026-08-22T04:45:00.000-07:00"
+       },
+       {
+        "value": "-999999",
+        "qualifiers": [
+         "P"
+        ],
+        "dateTime": "2026-08-22T05:00:00.000-07:00"
+       },
+       {
+        "value": "n/a",
+        "qualifiers": [
+         "P"
+        ],
+        "dateTime": "2026-08-22T05:15:00.000-07:00"
+       },
+       {
+        "value": "6620",
+        "qualifiers": [
+         "P",
+         "Ice"
+        ],
+        "dateTime": "2026-08-22T05:30:00.000-07:00"
+       },
+       {
+        "value": "6620",
+        "qualifiers": [
+         "P"
+        ],
+        "dateTime": "2026-08-22T05:45:00.000-07:00"
+       },
+       {
+        "value": "6620",
+        "qualifiers": [
+         "P"
+        ],
+        "dateTime": "2026-08-22T06:00:00.000-07:00"
+       }
+      ],
+      "qualifier": [
+       {
+        "qualifierCode": "P",
+        "qualifierDescription": "Provisional data subject to revision.",
+        "qualifierID": 0,
+        "network": "NWIS",
+        "vocabulary": "uv_rmk_cd"
+       }
+      ],
+      "qualityControlLevel": [],
+      "method": [
+       {
+        "methodDescription": "",
+        "methodID": 151445
+       }
+      ],
+      "source": [],
+      "offset": [],
+      "sample": [],
+      "censorCode": []
+     }
+    ],
+    "name": "USGS:12200500:00060:00000"
+   },
+   {
+    "sourceInfo": {
+     "siteName": "SKAGIT RIVER NEAR MOUNT VERNON, WA",
+     "siteCode": [
+      {
+       "value": "12200500",
+       "network": "NWIS",
+       "agencyCode": "USGS"
+      }
+     ],
+     "timeZoneInfo": {
+      "defaultTimeZone": {
+       "zoneOffset": "-08:00",
+       "zoneAbbreviation": "PST"
+      },
+      "daylightSavingsTimeZone": {
+       "zoneOffset": "-07:00",
+       "zoneAbbreviation": "PDT"
+      },
+      "siteUsesDaylightSavingsTime": true
+     },
+     "geoLocation": {
+      "geogLocation": {
+       "srs": "EPSG:4326",
+       "latitude": 48.4448278,
+       "longitude": -122.3354369
+      },
+      "localSiteXY": []
+     },
+     "note": [],
+     "siteType": [],
+     "siteProperty": [
+      {
+       "value": "ST",
+       "name": "siteTypeCd"
+      },
+      {
+       "value": "17110007",
+       "name": "hucCd"
+      },
+      {
+       "value": "53",
+       "name": "stateCd"
+      },
+      {
+       "value": "53057",
+       "name": "countyCd"
+      }
+     ]
+    },
+    "variable": {
+     "variableCode": [
+      {
+       "value": "00065",
+       "network": "NWIS",
+       "vocabulary": "NWIS:UnitValues",
+       "variableID": 45807202,
+       "default": true
+      }
+     ],
+     "variableName": "Gage height, ft",
+     "variableDescription": "Gage height, feet",
+     "valueType": "Derived Value",
+     "unit": {
+      "unitCode": "ft"
+     },
+     "options": {
+      "option": [
+       {
+        "name": "Statistic",
+        "optionCode": "00000"
+       }
+      ]
+     },
+     "note": [],
+     "noDataValue": -999999.0,
+     "variableProperty": [],
+     "oid": "45807202"
+    },
+    "values": [
+     {
+      "value": [
+       {
+        "value": "10.58",
+        "qualifiers": [
+         "P"
+        ],
+        "dateTime": "2026-08-22T04:45:00.000-07:00"
+       },
+       {
+        "value": "-999999",
+        "qualifiers": [
+         "P"
+        ],
+        "dateTime": "2026-08-22T05:00:00.000-07:00"
+       },
+       {
+        "value": "n/a",
+        "qualifiers": [
+         "P"
+        ],
+        "dateTime": "2026-08-22T05:15:00.000-07:00"
+       },
+       {
+        "value": "10.57",
+        "qualifiers": [
+         "P",
+         "Ice"
+        ],
+        "dateTime": "2026-08-22T05:30:00.000-07:00"
+       },
+       {
+        "value": "10.57",
+        "qualifiers": [
+         "P"
+        ],
+        "dateTime": "2026-08-22T05:45:00.000-07:00"
+       },
+       {
+        "value": "10.57",
+        "qualifiers": [
+         "P"
+        ],
+        "dateTime": "2026-08-22T06:00:00.000-07:00"
+       }
+      ],
+      "qualifier": [
+       {
+        "qualifierCode": "P",
+        "qualifierDescription": "Provisional data subject to revision.",
+        "qualifierID": 0,
+        "network": "NWIS",
+        "vocabulary": "uv_rmk_cd"
+       }
+      ],
+      "qualityControlLevel": [],
+      "method": [
+       {
+        "methodDescription": "[(2)]",
+        "methodID": 151446
+       }
+      ],
+      "source": [],
+      "offset": [],
+      "sample": [],
+      "censorCode": []
+     }
+    ],
+    "name": "USGS:12200500:00065:00000"
+   }
+  ]
+ },
+ "nil": false,
+ "globalScope": true,
+ "typeSubstituted": false
+}

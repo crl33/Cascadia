@@ -1,0 +1,41 @@
+/**
+ * scene/bridge.ts — the ONLY module that subscribes the Zustand store to the controllers, and
+ * the only place controller events write back to the store. Store → controller: selection,
+ * motion preference, layer intents. Controller → store: altitude band, flight state, picks.
+ */
+import { shallow } from 'zustand/shallow';
+import { resolveMotion } from '../design-system/motion';
+import type { SceneStoreApi } from '../state/store';
+import type { SceneController } from './SceneController';
+
+export function attachScene(controller: SceneController, store: SceneStoreApi): () => void {
+  const unsubscribes: (() => void)[] = [];
+  const initial = store.getState();
+
+  // Deep-link load is a cut regardless of motion preference (docs/CAMERA_SYSTEM.md §7).
+  if (initial.selectedBasinId || initial.selectedForecastPointId) {
+    controller.select({ basinId: initial.selectedBasinId, forecastPointId: initial.selectedForecastPointId }, { reason: 'deep-link', cut: true });
+  }
+
+  unsubscribes.push(
+    store.subscribe(
+      (s) => ({ basinId: s.selectedBasinId, forecastPointId: s.selectedForecastPointId }),
+      (selection) => controller.select(selection, { reason: 'selection' }),
+      { equalityFn: shallow },
+    ),
+    store.subscribe((s) => resolveMotion(s.motionSetting, s.systemReducedMotion), (motion) => controller.setMotion(motion), { fireImmediately: true }),
+    store.subscribe((s) => s.activeLayers, (layers) => controller.setLayerIntents(layers), { fireImmediately: true }),
+    controller.zoom.on('bandChanged', (e) => store.getState().setAltitudeBand(e.next)),
+    controller.camera.on('started', () => store.getState().setFlightState('flying')),
+    controller.camera.on('settled', () => store.getState().setFlightState('settled')),
+    controller.camera.on('interrupted', () => store.getState().setFlightState('settled')),
+    controller.onPicked((hit) => {
+      const state = store.getState();
+      if (hit.entityId.startsWith('basin:')) state.selectBasin(hit.entityId);
+      else if (hit.entityId.startsWith('fp:nwps:')) state.selectForecastPoint(hit.entityId, hit.basinId);
+    }),
+  );
+  store.getState().setAltitudeBand(controller.zoom.band);
+
+  return () => unsubscribes.forEach((u) => u());
+}

@@ -1,0 +1,453 @@
+{
+  "category": "weather-forecast-models-and-atmospheric-rivers",
+  "summary": "Researched 2026-08-22 with live fetches. Key findings: (1) api.weather.gov raw gridpoints (2.5 km) expose quantitativePrecipitation (mm), snowfallAmount (mm), iceAccumulation (mm), snowLevel (m MSL), probabilityOfPrecipitation (%), temperature/dewpoint (degC) as ISO-8601 interval time series to ~8 days; alerts filter by area=WA or zone=WAZ311/WAC057; text products (AFD/ESF/FLW/FLS/FFA/RVF/HYD...) are retained ~7 days; User-Agent mandatory; rate limit undisclosed. (2) NBM is now v5.0 (operational May 5, 2026, SCN 26-24): s3://noaa-nbm-grib2-pds/blend.YYYYMMDD/HH/{core,qmd,text}/; CONUS core f001-f264 (hourly to 48, 3-h to 192, 6-h to 264); core carries APCP/ASNOW (1-h, 6-h) with exceedance probabilities and percentiles, and a SNOWLVL element (wet-bulb 0.5 C height, deterministic + 1-99 percentiles); qmd carries APCP percentiles 0-99 and exceedance probabilities; observed latency ~72-78 min. (3) HRRR (v4, 3 km, hourly; 48 h at 00/06/12/18Z, else 18 h; 15-min wrfsubh): wrfsfc has APCP, PRATE, ASNOW, WEASD, FROZR, HGT at 0C isotherm and highest tropospheric freezing level, TMP/DPT 2 m, PWAT, SSRUN/BGRUN; observed latency ~53 min for f01. RRFS/REFS go operational Oct 6, 2026; HRRR keeps running as a REFS member but has no published retirement date. (4) GFS pgrb2.0p25 (hourly to f120, 3-h to f384) includes SPFH/UGRD/VGRD on 41 pressure levels plus APCP, PWAT, 0C-isotherm height -- everything needed to compute IVT; GEFS (31 members, 0.5 deg, 3-h to f240, 6-h to f384, 00Z to f840) needs pgrb2b for SPFH -- pgrb2a only has RH/limited winds; no NOAA pre-computed IVT products exist. (5) CW3E AR Scale (Ralph et al. 2019: max IVT 250/500/750/1000/1250 with <24 h demotion, >48 h promotion) and IVT forecast tools (GFS/GEFS/ECMWF/West-WRF) are image-only, 'research purposes only', no public API; NOAA PSL AR portal is also image-only. WPC QPF/ERO are programmatically accessible via ArcGIS REST (mapservices.weather.noaa.gov), GeoJSON (ERO Day1-5), shapefiles and 5-km GRIB2 (ftp-wpc.ncep.noaa.gov/5km_qpf/). (6) Snow level vs freezing level: Seattle broadcast meteorologists (incl. ex-NWS Seattle Ted Buehner) cite ~1,000 ft below the freezing level; NWS research cited by OpenSnow gives ~700 ft average with a 500-1,500 ft range; NBM defines snow level as the wet-bulb 0.5 C height. No weather.gov page stating the 1,000-ft rule was found.",
+  "providers": [
+    {
+      "name": "NWS API (api.weather.gov) - gridpoint forecasts, alerts, text products",
+      "authority": "NOAA / National Weather Service (forecasts from WFO Seattle SEW, Spokane OTX, Portland PQR, Pendleton PDT; hydrologic text from NWRFC via issuing office PTR)",
+      "data_kind": "forecast",
+      "access": {
+        "mechanism": "REST/JSON over HTTPS. Point lookup /points/{lat},{lon} returns gridId/gridX/gridY and links to /gridpoints/{wfo}/{x},{y} (raw numerical grid), /forecast (12-h periods), /forecast/hourly, plus forecastZone/county/fireWeatherZone URLs. Alerts: /alerts/active?area=WA, /alerts/active?zone=WAZ311 (forecast zone) or ?zone=WAC057 (county), /alerts/active/zone/{zoneId}, /alerts (history with start/end/cursor/limit). Text products: /products/types, /products/types/{typeId}/locations/{locationId}, .../latest (includes productText), /products?type=AFD&office=KSEW&start=&end=&limit=. OpenAPI spec at https://api.weather.gov/openapi.json.",
+        "base_urls": [
+          "https://api.weather.gov/points/48.50,-122.24",
+          "https://api.weather.gov/gridpoints/SEW/136,109",
+          "https://api.weather.gov/gridpoints/SEW/136,109/forecast/hourly",
+          "https://api.weather.gov/alerts/active?area=WA",
+          "https://api.weather.gov/alerts/active?zone=WAC057",
+          "https://api.weather.gov/products/types/AFD/locations/SEW/latest",
+          "https://api.weather.gov/products?type=FLW&office=KSEW",
+          "https://api.weather.gov/openapi.json"
+        ],
+        "auth": "None. A User-Agent header is required to identify the application (documented format: 'User-Agent: (myweatherapp.com, contact@myweatherapp.com)'); requests without one are refused.",
+        "rate_limits": "Documented only as 'reasonable rate limits ... a generous amount for typical use'; exceeded requests return an error and 'may be retried after the limit clears (typically within 5 seconds)'. No numeric limit published. Observed response header on /alerts/active: Cache-Control: public, max-age=5. No X-RateLimit headers observed.",
+        "formats": ["application/geo+json (default)", "application/ld+json", "application/vnd.noaa.dwml+xml", "application/cap+xml (alerts)", "application/vnd.noaa.obs+xml", "application/atom+xml (alerts)"]
+      },
+      "cadence": "Gridpoint data refresh whenever the WFO publishes a new grid (observed updateTime 2026-08-22T06:26Z for SEW; typically several times per day). Alerts are near-real-time. AFD issued ~3-4x/day by SEW (observed 28 AFDs in 7 days).",
+      "latency": "Minutes after WFO publication (not documented numerically). Alerts endpoint cache max-age=5 s.",
+      "spatial_resolution": "2.5 km NDFD grid (OpenAPI description: 'Returns raw numerical forecast data for a 2.5km grid area'). Alerts are polygons/UGC zones (forecast zones WAZxxx, counties WACxxx).",
+      "temporal_resolution": "Raw gridpoint values are ISO-8601 interval-valued (e.g. validTime '2026-08-22T00:00:00+00:00/PT6H'): observed quantitativePrecipitation/snowfallAmount/iceAccumulation in PT6H blocks, snowLevel PT3H, probabilityOfPrecipitation PT2H-PT12H, temperature PT1H-PT2H. Hourly forecast endpoint is hourly; /forecast is 12-h periods.",
+      "historical_depth": "Forecasts: none (only current grid; validTimes extent observed P8DT1H ~ 8 days). Alerts: /alerts supports start/end history queries. Text products: observed retention ~7 days (oldest KSEW AFD and oldest FLW in /products on 2026-08-22 were 2026-08-15).",
+      "missing_data_semantics": "Gridpoint properties present but with empty 'values' arrays when the element is not populated (observed: hainesIndex, lightningActivityLevel, pressure, wave fields with n=0); uom is null for non-numeric elements (weather, hazards). Alerts: empty features array when none active. Products: '@graph' empty list when no product issued in retention window (observed ESF/RVF at PTR count=0 in August).",
+      "quality_flags": "None in gridpoint data. Alerts carry status (actual/exercise/test), messageType (alert/update/cancel), severity, certainty, urgency, and VTEC in parameters.",
+      "units": "WMO unit codes: wmoUnit:degC, wmoUnit:percent, wmoUnit:mm (quantitativePrecipitation, snowfallAmount, iceAccumulation), wmoUnit:m (snowLevel, elevation), wmoUnit:km_h-1 (wind), wmoUnit:degree_(angle).",
+      "licensing": "U.S. Government work; no license statement on the API docs page (INFERENCE: public domain). NWS abusive-user policy allows IP blocking of clients that impair service; contact sdm@noaa.gov.",
+      "limitations": [
+        "No numeric rate limit published; design polling around product refresh cycles per the NWS abusive-user guidance.",
+        "Grid mappings occasionally change; docs say to re-check /points periodically rather than caching gridX/gridY forever.",
+        "Text product retention is only ~7 days (observed), so an archive must be built by polling; ESF (Flood Potential Outlook), FLW/FLS/FFA for SEW/PTR were absent in the August window and will only appear when issued.",
+        "snowLevel is provided as a WFO-edited grid (m MSL) with no definition of the underlying method in the API.",
+        "Alerts endpoints do not carry SPC SEL language for tornado watches (documented); irrelevant to hydrology but shows product text is not embedded in alerts.",
+        "Product-type catalog lists QPF code with only 1 issuing location nationally; WPC QPF should come from WPC services, not this API."
+      ],
+      "evidence": [
+        {"claim": "User-Agent required; rate limits 'reasonable' and undisclosed; retry typically within 5 seconds; formats GeoJSON/JSON-LD/DWML/CAP/OXML/ATOM; /points and /gridpoints endpoints; re-check /points periodically", "url": "https://www.weather.gov/documentation/services-web-api", "status": "FACT"},
+        {"claim": "Raw gridpoint properties include quantitativePrecipitation (wmoUnit:mm, PT6H), snowfallAmount (mm), iceAccumulation (mm), snowLevel (wmoUnit:m, PT3H), probabilityOfPrecipitation (percent), temperature/dewpoint (degC), validTimes P8DT1H", "url": "https://api.weather.gov/gridpoints/SEW/124,67", "status": "FACT"},
+        {"claim": "Sedro-Woolley 48.50,-122.24 maps to SEW grid 136,109; forecastZone WAZ311; county WAC057; fire zone WAZ656; radar KATX", "url": "https://api.weather.gov/points/48.50,-122.24", "status": "FACT"},
+        {"claim": "OpenAPI: /gridpoints returns 'raw numerical forecast data for a 2.5km grid area'; /alerts/active params status, message_type, event, code, area, point, region, region_type, zone (forecast or county), urgency, severity, certainty; /alerts adds start, end, limit, cursor; /products params location, start, end, office, wmoid, type, limit", "url": "https://api.weather.gov/openapi.json", "status": "FACT"},
+        {"claim": "Alert feature properties: event, severity, urgency, certainty, status, messageType, areaDesc, sent/effective/onset/expires/ends, headline, description, instruction, geocode.SAME/UGC, affectedZones, parameters.NWSheadline/VTEC", "url": "https://api.weather.gov/alerts/active?area=WA", "status": "FACT"},
+        {"claim": "?zone=WAC057 (Skagit County) filter works and titles 'Current watches, warnings, and advisories for Skagit County (WAC057) WA'; /alerts/active/zone/WAZ568 returns 200; Cache-Control max-age=5", "url": "https://api.weather.gov/alerts/active?zone=WAC057", "status": "FACT"},
+        {"claim": "Product codes: AFD, HWO, ESF=Flood Potential Outlook, FLW=Flood Warning, FLS=Flood Statement, FFA/FFW/FFS/FFG, RVF=River Forecast, RVA, RVS, RVD, HYD=Daily Hydrometeorological Products, ESP/ESG/ESS, QPF, HMD, AHD", "url": "https://api.weather.gov/products/types", "status": "FACT"},
+        {"claim": "SEW recently issued AFD, QPS, PFM, ZFP, RR*, HML etc.; PTR (NWRFC) issued HYD, FTP, RR1-3, RRS; OTX issued AFD, FLS, FZL (Freezing Level Data/RADAT)", "url": "https://api.weather.gov/products/locations/SEW/types", "status": "FACT"},
+        {"claim": "Oldest retained KSEW AFD on 2026-08-22 was issued 2026-08-15 (28 products); oldest FLW nationally 2026-08-15 -> ~7-day retention", "url": "https://api.weather.gov/products?type=AFD&office=KSEW&limit=500", "status": "FACT"},
+        {"claim": "Retention is a fixed 7-day window", "url": "https://api.weather.gov/products?type=FLW&limit=500", "status": "INFERENCE"},
+        {"claim": "NWS may block IPs impacting service; align requests to data refresh cycles; contact sdm@noaa.gov", "url": "https://www.weather.gov/abusive-user-block", "status": "FACT"}
+      ],
+      "relevance_to_cascade_oracle": "Primary source for official WFO-edited QPF, snow amount and snow level grids at 2.5 km for every WA basin, for flood watches/warnings by county/zone (Skagit WAC057, etc.), and for AFD/ESF/FLW/FLS/RVF narrative text. Poll gridpoints per basin centroid/elevation band and archive text products daily to build history."
+    },
+    {
+      "name": "National Blend of Models (NBM) v5.0 GRIB2 on AWS Open Data / NOMADS",
+      "authority": "NOAA / NWS Meteorological Development Laboratory (MDL); disseminated via NCEP Central Operations and NOAA Open Data Dissemination (NODD)",
+      "data_kind": "forecast",
+      "access": {
+        "mechanism": "Anonymous S3 (HTTPS GET / aws s3 --no-sign-request). Prefix: blend.YYYYMMDD/HH/core/blend.tHHz.core.fFFF.RR.grib2 and .../qmd/blend.tHHz.qmd.fFFF.RR.grib2 (RR = co, ak, hi, pr, gu, oc, global), each with a .idx sidecar for byte-range subsetting; text bulletins under blend.YYYYMMDD/HH/text/blend_nb{h,s,e,x,p}tx.tHHz. Also NOMADS https://nomads.ncep.noaa.gov/pub/data/nccf/com/blend/prod/blend.YYYYMMDD/CC/{core,qmd,text}/ and grib filter https://nomads.ncep.noaa.gov/cgi-bin/filter_blend.pl. SNS new-object notifications available (Lambda/SQS only). A COG (GeoTIFF) mirror exists in s3://noaa-nbm-pds.",
+        "base_urls": [
+          "s3://noaa-nbm-grib2-pds/ (us-east-1)",
+          "https://noaa-nbm-grib2-pds.s3.amazonaws.com/blend.20260821/12/core/blend.t12z.core.f024.co.grib2",
+          "https://noaa-nbm-grib2-pds.s3.amazonaws.com/blend.20260821/12/qmd/blend.t12z.qmd.f024.co.grib2.idx",
+          "s3://noaa-nbm-pds/ (COG, us-east-1)",
+          "https://nomads.ncep.noaa.gov/pub/data/nccf/com/blend/prod/",
+          "https://nomads.ncep.noaa.gov/cgi-bin/filter_blend.pl"
+        ],
+        "auth": "None (public bucket; --no-sign-request). NOMADS: none but subject to 120 hits/min per IP.",
+        "rate_limits": "AWS: none documented. NOMADS: 120 hits/minute per IP across NCEP sites (SCN 21-32, effective 2021-04-20).",
+        "formats": ["GRIB2 (+ wgrib2-style .idx)", "Cloud-Optimized GeoTIFF (noaa-nbm-pds)", "ASCII text bulletins (NBH/NBS/NBE/NBX/NBP)"]
+      },
+      "cadence": "Runs every hour (24 cycles/day); each cycle produces output to 264 h (SCN 26-24). Observed on AWS: every hour 00-23Z present.",
+      "latency": "Observed for the 2026-08-21 12Z cycle (CONUS core): f001 landed 13:12:41Z (+72 min), f036 13:14:34Z, f264 13:18:28Z (+78 min). SCN 26-24 warns v5.0 changed timing for some qmd/core products (some later, some earlier); MDL publishes an 'NBMv5.0 Timing Differences' document.",
+      "spatial_resolution": "CONUS 2.5 km NDFD grid (INFERENCE; not re-verified on a fetched page). Domains: co, ak, hi, pr, gu, oc, global (observed in bucket).",
+      "temporal_resolution": "CONUS core (observed 12Z 2026-08-21): f001-f264 with 1-h steps to f048, 3-h steps f048-f192, 6-h steps f192-f264 (108 files). CONUS qmd: files present for every hour f001-f276 (276 files; element content per hour varies). Precip: APCP 1-h (e.g. '23-24 hour acc') and 6-h ('18-24 hour acc') windows in core; qmd percentiles for 6/12/24/48/72-h windows per NBM element list.",
+      "historical_depth": "AWS GRIB2 archive begins blend.20200518 (observed earliest prefix). NOMADS keeps 1-2 days only (nbm-download page). Note version discontinuities: v4.0 2020-09-29, v4.1 2023-01-17, v4.2 2024-05-15, v4.3 2025-04-15, v5.0 2026-05-05.",
+      "missing_data_semantics": "GRIB2 bitmap/missing values; percentile records are labeled e.g. 'ASNOW:surface:18-24 hour acc@(fcst,dt=6 hour),missing=0:50% level' (missing treated as 0 in the accumulation aggregation). Only a subset of elements exists at each forecast hour (e.g. 6-h accumulations only at hours divisible by 6); absence of a record in the .idx means not produced for that hour, not a data outage.",
+      "quality_flags": "None per-record. Probabilistic spread available via 'ens std dev' records (e.g. DPT:2 m above ground:ens std dev) and percentile/exceedance records.",
+      "units": "GRIB2 SI: APCP/ASNOW/FICEAC in kg m-2 (= mm liquid / m snow per GRIB convention; ASNOW thresholds observed as 0.0254, 0.0508 ... m i.e. 1, 2 inches), SNOWLVL in m above MSL, TMP/DPT in K, PWAT kg m-2, WIND m s-1.",
+      "licensing": "NODD: 'NOAA data disseminated through NODD are open to the public and can be used as desired'; attribution for unaltered data requested; modified data must be labeled as such; no implied NOAA endorsement.",
+      "limitations": [
+        "NBM v5.0 (May 5, 2026) changed element mix and timing vs v4.3; pipelines written against 2025 documentation need re-validation (hourly guidance now to 48 h; Haines Index removed; new 24-h PMM QPF and 24/48/72-h calibrated snow exceedance products; new PWAT).",
+        "No freezing-level (0C isotherm height) element observed in the CONUS core f024 index; NBM provides SNOWLVL (wet-bulb 0.5 C height) instead. Use HRRR/GFS HGT:0C isotherm for freezing level.",
+        "Full CONUS files are large; use .idx byte-range subsetting (Herbie) for a WA window rather than downloading whole files.",
+        "NOMADS retains only 1-2 days of NBM; AWS is the archive.",
+        "Percentile and exceedance records use GRIB2 local-table encodings that older cfgrib/eccodes tables may not name correctly (one unnamed record observed: 'var discipline=0 center=7 local_table=1 parmcat=0 parm=206')."
+      ],
+      "evidence": [
+        {"claim": "Buckets arn:aws:s3:::noaa-nbm-grib2-pds (GRIB2) and arn:aws:s3:::noaa-nbm-pds (COG), us-east-1; updated hourly; NODD license text; SNS notifications", "url": "https://registry.opendata.aws/noaa-nbm/", "status": "FACT"},
+        {"claim": "Bucket layout blend.YYYYMMDD/HH/{core,qmd,text}/, regions co/ak/hi/pr/gu/oc/global, earliest prefix blend.20200518, text files blend_nbetx/nbhtx/nbptx/nbstx/nbxtx.t12z", "url": "https://noaa-nbm-grib2-pds.s3.amazonaws.com/?prefix=blend.20260821/12/&delimiter=/", "status": "FACT"},
+        {"claim": "CONUS core 12Z cycle: f001-f264, 1-h to f048, 3-h to f192, 6-h to f264; qmd f001-f276 hourly files; LastModified f001 13:12:41Z, f264 13:18:28Z", "url": "https://noaa-nbm-grib2-pds.s3.amazonaws.com/?prefix=blend.20260821/12/core/blend.t12z.core.f0", "status": "FACT"},
+        {"claim": "Core f024 CONUS index contains APCP (1-h and 6-h acc, deterministic + prob >0.254), ASNOW (1-h/6-h deterministic, exceedance probs, 1-99% percentiles), FICEAC, SNOWLVL deterministic ('0 m above mean sea level') plus SNOWLVL percentiles 1-99%, SNOWLR, PTYPE probabilities, TMP/DPT/RH 2 m, TMIN, APTMP, WIND/GUST, PWAT, CAPE; 216 records; no HGT:0C isotherm record", "url": "https://noaa-nbm-grib2-pds.s3.amazonaws.com/blend.20260821/12/core/blend.t12z.core.f024.co.grib2.idx", "status": "FACT"},
+        {"claim": "qmd f024 CONUS index: 327 records; APCP 18-24 h exceedance probabilities (>0.254, 2.54, 6.35, 12.7, 25.4, 38.1, 50.8, 63.5, 76.2, 127 mm) and percentiles 0-95% in 5% steps; also TMP, DPT, RH, WIND, GUST, APTMP, HTSGW, JFWPRB", "url": "https://noaa-nbm-grib2-pds.s3.amazonaws.com/blend.20260821/12/qmd/blend.t12z.qmd.f024.co.grib2.idx", "status": "FACT"},
+        {"claim": "NBM snow level element defined as 'Elevation where the wet bulb temperature reaches 0.5 degrees C'; QPF01/06 to 264 h; PoP01/06/12; PctQPF06/12/24/48/72 percentiles 1-99 in QMD; SnowAmt01/06/24/48/72; PctSnow; ProbSnow; PType; snow ratio", "url": "https://vlab.noaa.gov/web/mdl/nbm-weather-elements", "status": "FACT"},
+        {"claim": "Version 5.0 is current operational as of May 5, 2026 (update July 28, 2026 for temperature issues); v4.3 2025-04-15; v4.2 2024-05-15", "url": "https://vlab.noaa.gov/web/mdl/nbm-versions", "status": "FACT"},
+        {"claim": "NCO change log lists NBM v5.0 implementation May 5, 2026", "url": "https://www.nco.ncep.noaa.gov/pmb/changes/", "status": "FACT"},
+        {"claim": "SCN 26-24 (updated AAC): effective on/about April 30, 2026 13Z with CWD fallback; NBM runs hourly producing output to 264 h; hourly guidance extended from 36 to 48 h; new 24-h PMM QPF and snow/ice (CO, AK); new 24/48/72-h calibrated snow exceedance (CO); new deterministic/probabilistic PWAT; Haines Index removed; dissemination timing changes; parallel data at nomads .../blend/para/", "url": "https://www.weather.gov/media/notification/pdf_2026/scn26-24_Updated_NBM_V5.0_aac.pdf", "status": "FACT"},
+        {"claim": "NOMADS paths .../blend/prod/blend.YYYYMMDD/CC/core/ and /qmd/ and /text/; AWS index URL; retention on NOMADS 1-2 days; file naming blend.tCCz.{core,qmd}.fXXX.RR.grib2", "url": "https://vlab.noaa.gov/web/mdl/nbm-download", "status": "FACT"},
+        {"claim": "https://nomads.ncep.noaa.gov/cgi-bin/filter_blend.pl returns HTTP 200", "url": "https://nomads.ncep.noaa.gov/cgi-bin/filter_blend.pl", "status": "FACT"},
+        {"claim": "CONUS grid spacing is 2.5 km", "url": "https://vlab.noaa.gov/web/mdl/nbm", "status": "INFERENCE"}
+      ],
+      "relevance_to_cascade_oracle": "Best single calibrated, probabilistic QPF/snow source for WA basins out to 11 days: 6-h APCP percentiles and exceedance probabilities (qmd) give rain-on-snow and flood-volume uncertainty directly; SNOWLVL percentiles give snow-line uncertainty per basin; hourly steps to 48 h match flashy west-slope basins. Subset a WA bounding box via .idx byte ranges each hour."
+    },
+    {
+      "name": "HRRR (High-Resolution Rapid Refresh) on AWS Open Data (noaa-hrrr-bdp-pds)",
+      "authority": "NOAA NCEP (run by NCO; developed by NOAA GSL); NODD distribution",
+      "data_kind": "forecast",
+      "access": {
+        "mechanism": "Anonymous S3. Prefix hrrr.YYYYMMDD/conus/hrrr.tHHz.{wrfsfc,wrfprs,wrfnat,wrfsubh}fFF.grib2 (+.idx); hrrr.YYYYMMDD/alaska/ for AK. Also NOMADS https://nomads.ncep.noaa.gov/pub/data/nccf/com/hrrr/prod/ and grib filter https://nomads.ncep.noaa.gov/cgi-bin/filter_hrrr_2d.pl. Zarr mirror s3://hrrrzarr (us-west-1, University of Utah). SNS topic arn:aws:sns:us-east-1:123901341784:NewHRRRObject.",
+        "base_urls": [
+          "s3://noaa-hrrr-bdp-pds/ (us-east-1)",
+          "https://noaa-hrrr-bdp-pds.s3.amazonaws.com/hrrr.20260821/conus/hrrr.t12z.wrfsfcf06.grib2",
+          "https://noaa-hrrr-bdp-pds.s3.amazonaws.com/hrrr.20260821/conus/hrrr.t12z.wrfsubhf06.grib2.idx",
+          "s3://hrrrzarr/ (us-west-1)",
+          "https://nomads.ncep.noaa.gov/cgi-bin/filter_hrrr_2d.pl"
+        ],
+        "auth": "None (public bucket).",
+        "rate_limits": "AWS: none documented. NOMADS: 120 hits/min per IP.",
+        "formats": ["GRIB2 (+ .idx)", "Zarr (hrrrzarr mirror)", "BUFR soundings (bufrsnd.tar.gz)"]
+      },
+      "cadence": "Hourly cycles (24/day); radar data assimilated every 15 min.",
+      "latency": "Observed 2026-08-21 12Z CONUS: wrfsfcf01 at 12:53:14Z (+53 min), f18 at 13:13:07Z (+73 min), f48 at 13:46:19Z (+106 min).",
+      "spatial_resolution": "3 km Lambert conformal CONUS (and Alaska).",
+      "temporal_resolution": "Hourly output; 00/06/12/18Z cycles run to 48 h (observed 49 files f00-f48 for wrfsfc/wrfprs/wrfnat at 12Z), other cycles to 18 h (observed 13Z wrfsfc max f18). wrfsubh: 15-min fields (each file holds HH and 15/30/45 min before) to 18 h only (observed 19 files at 12Z).",
+      "historical_depth": "AWS archive from hrrr.20140730 (observed earliest prefix) to present; early years are pre-HRRRv4 (v4 operational 2020-12-02).",
+      "missing_data_semantics": "GRIB2 bitmap. Accumulation records carry explicit windows ('0-6 hour acc', '5-6 hour acc'); sub-hourly APCP windows are '300-315 min acc'. f00 has no accumulation.",
+      "quality_flags": "None.",
+      "units": "APCP kg m-2 (mm), PRATE kg m-2 s-1, ASNOW m, WEASD kg m-2, SNOD m, HGT m (geopotential height of 0C isotherm / highest tropospheric freezing level), TMP/DPT K, PWAT kg m-2, SSRUN/BGRUN kg m-2.",
+      "licensing": "NODD public; attribution requested; no endorsement claims.",
+      "limitations": [
+        "18-h horizon for 20 of 24 cycles; only 48 h at synoptic cycles -- short lead for multi-day AR events.",
+        "Full CONUS files are ~100+ MB; subset via .idx/Herbie to a WA window.",
+        "RRFS/REFS become operational 2026-10-06 12 UTC (SCN 26-48); HRRR continues (it supplies two REFS members) but NOAA has signalled eventual retirement with no published date -- plan an RRFS migration path (parallel feed on NOMADS since 2026-08-11 at .../rrfs/para/).",
+        "rapidrefresh.noaa.gov is behind Cloudflare bot protection (403 to automated fetches); rely on NCO product pages and the AWS registry for docs.",
+        "0C-isotherm height and 'highest tropospheric freezing level' are model freezing levels, not snow levels; apply a snow-level offset or use wet-bulb from wrfprs."
+      ],
+      "evidence": [
+        {"claim": "Buckets noaa-hrrr-bdp-pds (us-east-1, archive since 2014) and hrrrzarr (us-west-1, Univ. of Utah); hourly; 3-km, hourly updated, radar assimilation every 15 min; NODD license wording", "url": "https://registry.opendata.aws/noaa-hrrr-pds/", "status": "FACT"},
+        {"claim": "SNS topic arn:aws:sns:us-east-1:123901341784:NewHRRRObject; s3://noaa-hrrr-bdp-pds", "url": "https://github.com/awslabs/open-data-docs/tree/main/docs/noaa/noaa-hrrr", "status": "FACT"},
+        {"claim": "Families wrfprs (3D pressure), wrfnat (native), wrfsfc (2D surface), wrfsubh (sub-hourly: HH plus 15/30/45 min before); 00/06/12/18Z to 48 h, others 18 h; sub-hourly stays 18 h; naming hrrr.tCCz.[product]FF.[ak].grib2", "url": "https://www.nco.ncep.noaa.gov/pmb/products/hrrr/", "status": "FACT"},
+        {"claim": "12Z 2026-08-21: 49 wrfsfc/wrfprs/wrfnat files (f00-f48), 19 wrfsubh (f00-f18); 13Z wrfsfc max f18; alaska/ and conus/ prefixes; earliest prefix hrrr.20140730; LastModified f01 12:53Z, f18 13:13Z, f48 13:46Z", "url": "https://noaa-hrrr-bdp-pds.s3.amazonaws.com/?prefix=hrrr.20260821/conus/hrrr.t12z", "status": "FACT"},
+        {"claim": "wrfsfcf06 index (173 records) includes APCP 0-6 h and 5-6 h acc, PRATE, ASNOW, WEASD, SNOD, SNOWC, FROZR, FRZR, CSNOW/CICEP/CFRZR/CRAIN, TMP/DPT 2 m, TMP surface, PWAT, HGT:0C isotherm, RH:0C isotherm, HGT:highest tropospheric freezing level, SSRUN, BGRUN, REFC", "url": "https://noaa-hrrr-bdp-pds.s3.amazonaws.com/hrrr.20260821/conus/hrrr.t12z.wrfsfcf06.grib2.idx", "status": "FACT"},
+        {"claim": "wrfsubhf06 index has APCP 15-min accumulations (300-315, 315-330, 330-345, 345-360 min) and PRATE at 315/330/345/360 min", "url": "https://noaa-hrrr-bdp-pds.s3.amazonaws.com/hrrr.20260821/conus/hrrr.t12z.wrfsubhf06.grib2.idx", "status": "FACT"},
+        {"claim": "HRRR v4.0 and RAP v5.0 implemented December 2, 2020", "url": "https://www.nco.ncep.noaa.gov/pmb/changes/", "status": "FACT"},
+        {"claim": "SCN 26-48 (updated AAB, 2026-07-06): RRFS/REFS effective October 6, 2026; RRFS hourly, North America at 3 km; replaces NAM, HREF, SREF, HiresW (retirements in SCN 26-47); HRRR provides two additional REFS members (current and 6-h-old cycles) for CONUS and Alaska; parallel feed from Aug 11, 2026 at nomads .../rrfs/para/ and .../refs/para/", "url": "https://www.weather.gov/media/notification/pdf_2026/scn26-048_RRFS_and_REFS_Implementation.aab.pdf", "status": "FACT"},
+        {"claim": "RRFS 00/06/12/18Z cycles to 84 h, other hourly cycles to 18 h; public S3 bucket noaa-rrfs-ops-pds for the parallel feed", "url": "https://gribstream.com/blog/noaa-rrfs-refs-operational-august-2026", "status": "INFERENCE"},
+        {"claim": "Date on which HRRR itself will be retired", "url": "https://www.weather.gov/notification/", "status": "OPEN_QUESTION"}
+      ],
+      "relevance_to_cascade_oracle": "Highest-resolution operational QPF, precipitation type, 15-min rain rates, freezing-level height and surface/baseflow runoff proxies for orographic west-slope basins (Skagit, Nooksack, Snoqualmie, Cedar, Green, Puyallup/White) at 0-18/48 h. Use for nowcast-range AR intensity and rain/snow partition; pair with NBM/GFS/GEFS for longer leads."
+    },
+    {
+      "name": "GFS (Global Forecast System) 0.25-degree GRIB2 on AWS Open Data / NOMADS",
+      "authority": "NOAA NCEP / EMC; NODD distribution",
+      "data_kind": "forecast",
+      "access": {
+        "mechanism": "Anonymous S3: gfs.YYYYMMDD/HH/atmos/gfs.tHHz.pgrb2.0p25.fFFF (+.idx); also pgrb2.0p50, pgrb2.1p00, goessimpgrb2 families observed in the bucket. NOMADS directory https://nomads.ncep.noaa.gov/pub/data/nccf/com/gfs/prod/ and grib filters https://nomads.ncep.noaa.gov/cgi-bin/filter_gfs_0p25.pl and filter_gfs_0p25_1hr.pl (subset by variable, level, lat/lon box).",
+        "base_urls": [
+          "s3://noaa-gfs-bdp-pds/ (us-east-1)",
+          "https://noaa-gfs-bdp-pds.s3.amazonaws.com/gfs.20260821/12/atmos/gfs.t12z.pgrb2.0p25.f006",
+          "https://noaa-gfs-bdp-pds.s3.amazonaws.com/gfs.20260821/12/atmos/gfs.t12z.pgrb2.0p25.f006.idx",
+          "https://nomads.ncep.noaa.gov/cgi-bin/filter_gfs_0p25.pl",
+          "https://nomads.ncep.noaa.gov/pub/data/nccf/com/gfs/prod/"
+        ],
+        "auth": "None.",
+        "rate_limits": "AWS: none documented. NOMADS: 120 hits/min per IP (SCN 21-32).",
+        "formats": ["GRIB2 (+ .idx)"]
+      },
+      "cadence": "4 cycles/day (00, 06, 12, 18 UTC).",
+      "latency": "Observed 2026-08-21 12Z: pgrb2.0p25.f006 at 15:36Z (+3 h 36 min), f120 at 16:09Z, f384 at 17:16Z (+5 h 16 min).",
+      "spatial_resolution": "0.25 deg lat/lon output grid (registry: ~28 km base, ~70 km beyond one week).",
+      "temporal_resolution": "Observed: hourly f000-f120, then 3-hourly to f384 (209 files). APCP windows are cumulative from f000 ('0-6 hour acc') with 6-h reset buckets in GFS convention.",
+      "historical_depth": "AWS bucket prefixes start gfs.20210101 (observed); 0.25-deg GRIB2 from 2021. Older GFS history requires NCEI/other archives.",
+      "missing_data_semantics": "GRIB2 bitmap. f000 has no APCP. Accumulated and averaged variants coexist (APCP acc, PRATE ave, CSNOW/CRAIN both instantaneous and 0-6 h ave).",
+      "quality_flags": "None.",
+      "units": "SPFH kg kg-1, UGRD/VGRD m s-1, HGT gpm, APCP kg m-2, PRATE kg m-2 s-1, PWAT kg m-2, TMP/DPT K.",
+      "licensing": "NODD public; attribution requested; modified data must be labeled.",
+      "limitations": [
+        "No pre-computed IVT or IWV-transport product: IVT must be integrated from SPFH, UGRD, VGRD on pressure levels (1000-300 hPa typical) per grid point.",
+        "pgrb2b.0p25 (less-common parameters) was not present in the AWS atmos/ listing for the 12Z 2026-08-21 cycle (observed absence); pgrb2.0p25 already holds SPFH/UGRD/VGRD on 41 levels so it is not needed for IVT.",
+        "GFS v17 (9-km coupled system) has been proposed for October 2026 with product/naming changes and removal of some legacy products -- third-party report; official SCN not yet seen. Re-validate file paths at cutover.",
+        "Coarse 0.25 deg grid smooths Cascade/Olympic orography; use for synoptic AR/IVT and freezing level, not basin QPF."
+      ],
+      "evidence": [
+        {"claim": "Bucket arn:aws:s3:::noaa-gfs-bdp-pds (us-east-1); 4x/day every 6 h; 16-day horizon; ~28 km base resolution, 70 km beyond one week; NODD license text", "url": "https://registry.opendata.aws/noaa-gfs-bdp-pds/", "status": "FACT"},
+        {"claim": "Families pgrb2.0p25 (most common params), pgrb2b.0p25 (least common), pgrb2.0p50, pgrb2.1p00, pgrb2full.0p50, sfluxgrb; FFF 000-384; cycles 00/06/12/18", "url": "https://www.nco.ncep.noaa.gov/pmb/products/gfs/", "status": "FACT"},
+        {"claim": "12Z 2026-08-21 pgrb2.0p25: 209 files f000-f384, 1-h steps to f120 then 3-h; other families present: pgrb2.0p50 (129), pgrb2.1p00 (60), goessimpgrb2; pgrb2b.0p25 not listed; LastModified f006 15:36Z, f120 16:09Z, f384 17:16Z; earliest prefix gfs.20210101", "url": "https://noaa-gfs-bdp-pds.s3.amazonaws.com/?prefix=gfs.20260821/12/atmos/gfs.t12z.pgrb2.0p25.f", "status": "FACT"},
+        {"claim": "pgrb2.0p25.f006 index (743 records): SPFH, UGRD (and VGRD) on 41 pressure levels 1000,975,950,925,900,850,800,...,300,...,0.01 mb; APCP 0-6 h acc; PRATE; PWAT; HGT:0C isotherm; RH:0C isotherm; HGT:highest tropospheric freezing level; TMP/DPT 2 m; CSNOW/CRAIN; WEASD", "url": "https://noaa-gfs-bdp-pds.s3.amazonaws.com/gfs.20260821/12/atmos/gfs.t12z.pgrb2.0p25.f006.idx", "status": "FACT"},
+        {"claim": "NOMADS grib filters filter_gfs_0p25.pl and filter_gfs_0p25_1hr.pl exist (HTTP 200)", "url": "https://nomads.ncep.noaa.gov/cgi-bin/filter_gfs_0p25.pl", "status": "FACT"},
+        {"claim": "NOMADS access policy restricts individual users to 120 hits/minute, summed per IP across listed NCEP sites, effective April 20, 2021", "url": "https://www.weather.gov/media/notification/pdf2/scn21-32nomad_changes.pdf", "status": "FACT"},
+        {"claim": "GFS v16.3 implemented November 29, 2022 (current major version)", "url": "https://www.nco.ncep.noaa.gov/pmb/changes/", "status": "FACT"},
+        {"claim": "GFS v17 proposed for October 2026 (PNS 26-29, 9-km coupled; product removals)", "url": "https://gribstream.com/blog/gfs-v17-proposed-october-2026-coupled-upgrade", "status": "INFERENCE"},
+        {"claim": "NOAA publishes no IVT field in GFS GRIB2 output", "url": "https://noaa-gfs-bdp-pds.s3.amazonaws.com/gfs.20260821/12/atmos/gfs.t12z.pgrb2.0p25.f006.idx", "status": "INFERENCE"}
+      ],
+      "relevance_to_cascade_oracle": "Deterministic source for computing IVT/AR-scale at WA coastal landfall points (e.g. 47.5N/124.5W, 48.5N/124.5W) out to 16 days, plus PWAT, 0C-isotherm height and synoptic QPF. Hourly output to 120 h supports AR duration (>=24/48 h) calculations required by the Ralph AR scale."
+    },
+    {
+      "name": "GEFS (Global Ensemble Forecast System) on AWS Open Data / NOMADS",
+      "authority": "NOAA NCEP / EMC; NODD distribution",
+      "data_kind": "forecast",
+      "access": {
+        "mechanism": "Anonymous S3: gefs.YYYYMMDD/HH/atmos/{pgrb2ap5,pgrb2bp5,pgrb2sp25}/ge{c00|p01..p30|avg|spr}.tHHz.pgrb2{a|b|s}.0p{50|25}.fFFF (+.idx). NOMADS https://nomads.ncep.noaa.gov/pub/data/nccf/com/gens/prod/ and grib filter https://nomads.ncep.noaa.gov/cgi-bin/filter_gefs_atmos_0p50a.pl.",
+        "base_urls": [
+          "s3://noaa-gefs-pds/ (us-east-1)",
+          "https://noaa-gefs-pds.s3.amazonaws.com/gefs.20260821/12/atmos/pgrb2ap5/gep01.t12z.pgrb2a.0p50.f006",
+          "https://noaa-gefs-pds.s3.amazonaws.com/gefs.20260821/12/atmos/pgrb2bp5/gep01.t12z.pgrb2b.0p50.f006.idx",
+          "https://noaa-gefs-pds.s3.amazonaws.com/gefs.20260821/12/atmos/pgrb2sp25/gep01.t12z.pgrb2s.0p25.f006",
+          "https://nomads.ncep.noaa.gov/cgi-bin/filter_gefs_atmos_0p50a.pl"
+        ],
+        "auth": "None.",
+        "rate_limits": "AWS: none documented. NOMADS: 120 hits/min per IP.",
+        "formats": ["GRIB2 (+ .idx)"]
+      },
+      "cadence": "4 cycles/day (00, 06, 12, 18 UTC); 00Z cycle extended to 840 h (35 days) in pgrb2ap5.",
+      "latency": "Observed 2026-08-21 12Z: gep01 pgrb2a f006 at 15:49Z (+3 h 49 min); f384 (pgrb2a and pgrb2b) at 18:35Z (+6 h 35 min).",
+      "spatial_resolution": "0.5 deg (pgrb2a, pgrb2b); 0.25 deg for the reduced surface set (pgrb2s) to 240 h.",
+      "temporal_resolution": "Observed gep01 pgrb2ap5: f000-f384 with 3-h steps to f240 and 6-h steps f240-f384 (105 files); pgrb2sp25 to f240; 00Z pgrb2ap5 continues to f840. APCP as 6-h accumulations (0-6 h acc at f006).",
+      "historical_depth": "AWS prefixes exist from gefs.20170101 (observed) and gefs.20200101; GEFS v12 (31 members, 0.25/0.5 deg) began 2020-09-23 (INFERENCE) so pre-2020 files differ in member count/resolution.",
+      "missing_data_semantics": "GRIB2 bitmap; ensemble member encoded in the index suffix ('ENS=+1' for p01, 'ENS=low-res ctl' style for c00).",
+      "quality_flags": "Ensemble spread via geavg/gespr products and member-wise statistics.",
+      "units": "As GFS: SPFH kg kg-1, UGRD/VGRD m s-1, HGT gpm, APCP kg m-2, PWAT kg m-2, TMP K.",
+      "licensing": "NODD public; attribution requested.",
+      "limitations": [
+        "IVT cannot be computed from pgrb2a alone: pgrb2a has RH (not SPFH) on 10 levels and UGRD/VGRD on 12 levels; SPFH on 31 pressure levels (1000-1 mb, incl. 975/950/925/900/850/800/750/700/650/600/550/500/450/400/350/300) lives in pgrb2b, which also holds HGT:0C isotherm and HGT:highest tropospheric freezing level. Per-member IVT therefore needs 2 files x 31 members per forecast hour.",
+        "pgrb2sp25 (0.25 deg) has surface fields only (APCP, PWAT, TMP/DPT 2 m, CSNOW/CRAIN, WEASD, SNOD, CAPE...), no pressure levels.",
+        "No pre-computed IVT, AR probability, or AR-scale products from NOAA; CW3E/PSL compute these from GEFS but publish images only.",
+        "Bucket listings exceed 1000 keys per cycle-directory; paginate or use member-specific prefixes.",
+        "Version drift: GEFS v12.3.x patches (e.g. SCN 26-15 'GEFS 12.3.18') can change products."
+      ],
+      "evidence": [
+        {"claim": "Bucket arn:aws:s3:::noaa-gefs-pds (us-east-1); 4x/day; 'to 16 days'; NODD license; docs link", "url": "https://registry.opendata.aws/noaa-gefs/", "status": "FACT"},
+        {"claim": "pgrb2a (most used, 0.5 deg), pgrb2b (secondary, 0.5 deg), pgrb2s (most used, 0.25 deg); 31 members (c00 + p01-p30); standard runs to 384 h; 00Z extended to FH003-840; 0.25-deg limited to 240 h; cycles 00/06/12/18", "url": "https://www.nco.ncep.noaa.gov/pmb/products/gens/", "status": "FACT"},
+        {"claim": "12Z 2026-08-21 atmos/ subdirs init, pgrb2ap5, pgrb2bp5, pgrb2sp25; members gec00, gep01..gep30 (gep31 absent), geavg, gespr; gep01 pgrb2a f000-f384 with 3-h to f240 then 6-h; 00Z pgrb2a reaches f840; pgrb2s max f240; earliest prefixes gefs.20170101 and gefs.20200101", "url": "https://noaa-gefs-pds.s3.amazonaws.com/?prefix=gefs.20260821/12/atmos/pgrb2ap5/&max-keys=1000", "status": "FACT"},
+        {"claim": "pgrb2a gep01 f006 index (85 records): no SPFH on pressure levels; RH at 1000/925/850/700/500/250/200/100/50/10 mb; UGRD at 1000/925/850/700/500/400/300/250/200/100/50/10 mb; APCP 0-6 h, PWAT, TMP 2 m, CSNOW/CRAIN, WEASD", "url": "https://noaa-gefs-pds.s3.amazonaws.com/gefs.20260821/12/atmos/pgrb2ap5/gep01.t12z.pgrb2a.0p50.f006.idx", "status": "FACT"},
+        {"claim": "pgrb2b gep01 f006 index (505 records): SPFH on 31 levels 1000-1 mb, extra UGRD levels (975/950/900/800/750/650/600/550/450/350/150/70/30/20/7/5/3/2/1 mb), HGT:0C isotherm, HGT:highest tropospheric freezing level", "url": "https://noaa-gefs-pds.s3.amazonaws.com/gefs.20260821/12/atmos/pgrb2bp5/gep01.t12z.pgrb2b.0p50.f006.idx", "status": "FACT"},
+        {"claim": "pgrb2s 0.25-deg gep01 f006 holds surface-only fields: VIS, GUST, PRES, TSOIL, SOILW, WEASD, SNOD, TMP/DPT/RH 2 m, TMAX/TMIN, UGRD/VGRD 10 m, CPOFP, APCP, CSNOW/CICEP/CFRZR/CRAIN, CAPE/CIN, PWAT, TCDC, radiation, HLCY, PRMSL", "url": "https://noaa-gefs-pds.s3.amazonaws.com/gefs.20260821/12/atmos/pgrb2sp25/gep01.t12z.pgrb2s.0p25.f006.idx", "status": "FACT"},
+        {"claim": "Observed LastModified: gep01 pgrb2a f006 15:48:59Z; f384 18:35:34Z", "url": "https://noaa-gefs-pds.s3.amazonaws.com/?prefix=gefs.20260821/12/atmos/pgrb2ap5/gep01.t12z.pgrb2a.0p50.f384", "status": "FACT"},
+        {"claim": "NOMADS filter_gefs_atmos_0p50a.pl exists (HTTP 200)", "url": "https://nomads.ncep.noaa.gov/cgi-bin/filter_gefs_atmos_0p50a.pl", "status": "FACT"},
+        {"claim": "GEFS v12 (31 members) became operational September 2020", "url": "https://www.emc.ncep.noaa.gov/emc/pages/numerical_forecast_systems/gefs.php", "status": "INFERENCE"}
+      ],
+      "relevance_to_cascade_oracle": "Only free source of probabilistic AR/IVT forecasts for WA: compute per-member IVT at coastal transect points and derive P(IVT>250), P(IVT>500), AR-scale distributions and AR duration probabilities out to 16 days, mirroring CW3E/PSL products but as data rather than images. Also supplies ensemble QPF/PWAT/freezing level for basin risk envelopes."
+    },
+    {
+      "name": "CW3E (Scripps) Atmospheric River Scale and IVT/IWV forecast tools",
+      "authority": "Center for Western Weather and Water Extremes, Scripps Institution of Oceanography, UC San Diego (AR scale: Ralph et al. 2019, BAMS)",
+      "data_kind": "derived",
+      "access": {
+        "mechanism": "Web pages with static/animated images and JavaScript viewers (AR Scale maps, plume diagrams, ensemble diagnostics; IVT/IWV maps from GFS, GEFS v12, ECMWF, West-WRF). Email/text alert signup for forecast AR-scale events on the U.S. West Coast. No documented public API or bulk data download on the AR Scale or IVT pages (no .txt/.csv/.nc/.json links found).",
+        "base_urls": [
+          "https://cw3e.ucsd.edu/arscale/",
+          "https://cw3e.ucsd.edu/iwv-and-ivt-forecasts/",
+          "https://cw3e.ucsd.edu/cw3e-launches-new-ar-scale-ensemble-forecast-tool/"
+        ],
+        "auth": "None for viewing images.",
+        "rate_limits": "Not published.",
+        "formats": ["PNG/GIF images", "MP4 explainer", "HTML/JS viewers"]
+      },
+      "cadence": "GEFS-based AR-scale products update 4x daily (00/06/12/18 UTC) roughly 6 h after initialization (~5, 11, 17, 23 PDT); ECMWF EPS-based products 2x daily (00/12 UTC). Deterministic IVT/IWV maps follow GFS/ECMWF cycles.",
+      "latency": "~6 h after model initialization for GEFS AR-scale products (page statement).",
+      "spatial_resolution": "Model native (GFS/GEFS 0.25-0.5 deg; West-WRF 9 km and 3 km); coastal point transects along the U.S. West Coast.",
+      "temporal_resolution": "GFS/ECMWF deterministic to 180 h; West-WRF to 240 h; GEFS to 16 days; 7-day AR-scale plumes; subseasonal weeks 2-4 outlooks.",
+      "historical_depth": "Not offered as downloadable archive on these pages (OPEN_QUESTION whether CW3E shares archives on request; a separate UCSD Library dataset of AR object data exists for research).",
+      "missing_data_semantics": "Not applicable (images). AR-scale plots shade periods with IVT>250 but <24 h duration in gray (below AR1).",
+      "quality_flags": "None.",
+      "units": "IVT kg m-1 s-1; IWV cm/mm.",
+      "licensing": "Products 'provided as is and are intended for research purposes only' (IVT page disclaimer). No redistribution license stated; scraping images for an operational product needs CW3E permission (OPEN_QUESTION).",
+      "limitations": [
+        "Image-only; no machine-readable AR scale or IVT feed. Cascade Oracle should reimplement the AR scale from GFS/GEFS/ECMWF open data using the published algorithm.",
+        "Coverage is the U.S. West Coast / western U.S.; the Washington coast is included in the West-Coast alert framing but specific WA transect points were not verified on a fetched page (INFERENCE).",
+        "Ralph et al. 2019 paper itself (AMS) returned HTTP 403 to automated fetch; thresholds were read from the CW3E news release and Wikipedia summary.",
+        "Research disclaimer limits use in decision-support messaging without attribution/caveats."
+      ],
+      "evidence": [
+        {"claim": "AR scale is 'determined based on the duration of AR conditions (IVT >250 kg m-1 s-1) and maximum IVT during the AR as described in Ralph et al. 2019'; products: Coastal Maximum AR Scale and precipitation maps (GEFS, ECMWF), AR Scale plume diagrams, ensemble diagnostics; GEFS = 31 members, plots update ~6 h after init (~5, 11, 17, 23 PDT); text/email alerts for U.S. West Coast; no data download links on page", "url": "https://cw3e.ucsd.edu/arscale/", "status": "FACT"},
+        {"claim": "Ensemble AR Scale tool uses GEFS (4x daily) and ECMWF EPS (2x daily), forecasts 'for locations in the western U.S. over the next seven days', image panels only", "url": "https://cw3e.ucsd.edu/cw3e-launches-new-ar-scale-ensemble-forecast-tool/", "status": "FACT"},
+        {"claim": "IVT/IWV products from GFS, GEFS v12, ECMWF, West-WRF (9 km/3 km); 180 h deterministic, 240 h West-WRF, 16-day GEFS; image-only; 'provided as is ... research purposes only'", "url": "https://cw3e.ucsd.edu/iwv-and-ivt-forecasts/", "status": "FACT"},
+        {"claim": "Five categories weak/moderate/strong/extreme/exceptional; AR lasting <24 h demoted one category, >48 h promoted one; scale published in February 2019 BAMS", "url": "https://cw3e.ucsd.edu/cw3e-releases-new-scale-to-characterize-strength-and-impacts-of-atmospheric-rivers/", "status": "FACT"},
+        {"claim": "Preliminary rank by max IVT: 250-500 -> 1, 500-750 -> 2, 750-1000 -> 3, 1000-1250 -> 4, >=1250 -> 5 (kg m-1 s-1), then duration adjustment (<24 h -1, >48 h +1); Ralph et al. 2019 BAMS 100(2) 269-289, doi:10.1175/BAMS-D-18-0023.1", "url": "https://en.wikipedia.org/wiki/Atmospheric_river", "status": "FACT"},
+        {"claim": "Whether CW3E provides gridded IVT/AR-scale data files or an API to partners", "url": "https://cw3e.ucsd.edu/arscale/", "status": "OPEN_QUESTION"}
+      ],
+      "relevance_to_cascade_oracle": "Defines the AR-scale algorithm and IVT thresholds (250/500/750/1000/1250 kg m-1 s-1; 24/48-h duration rules) that Cascade Oracle should implement on GFS/GEFS data for WA landfall points; CW3E pages serve as a verification/benchmark display, not a data feed."
+    },
+    {
+      "name": "NOAA PSL Atmospheric River Portal (forecasts section)",
+      "authority": "NOAA Physical Sciences Laboratory (with CW3E and Plymouth State University for GFS/GEFS products)",
+      "data_kind": "derived",
+      "access": {
+        "mechanism": "Web image galleries: IWV, IVT and time-integrated IVT maps from GFS and NAM (to 180 h) and GEFS (to 15 days); GEFS landfall tool with probabilities of IVT >250 and >500 kg m-1 s-1 along the West Coast. No data download/THREDDS/FTP links on the forecasts page. The portal root page returned empty content to automated fetch.",
+        "base_urls": [
+          "https://psl.noaa.gov/arportal/ar_forecasts/",
+          "https://psl.noaa.gov/arportal/"
+        ],
+        "auth": "None.",
+        "rate_limits": "Not published.",
+        "formats": ["PNG images / animations"]
+      },
+      "cadence": "Follows GFS/NAM/GEFS cycles (not stated numerically on the page).",
+      "latency": "Not stated.",
+      "spatial_resolution": "Model native; regional views: North Pacific, Northeast Pacific, U.S. West Coast, North America, North Atlantic.",
+      "temporal_resolution": "GFS/NAM to 180 h; GEFS to 15 days.",
+      "historical_depth": "Not offered as data on the forecasts page.",
+      "missing_data_semantics": "Not applicable (images).",
+      "quality_flags": "None.",
+      "units": "IVT kg m-1 s-1; IWV mm.",
+      "licensing": "U.S. Government (NOAA) work; images public domain (INFERENCE).",
+      "limitations": [
+        "Image-only; NAM-based products will disappear after NAM retirement on 2026-10-06 (SCN 26-47).",
+        "Root portal page unreadable by automated fetch; observation/climatology sections not verified."
+      ],
+      "evidence": [
+        {"claim": "Forecast products from GFS, NAM and GEFS; IWV, IVT, time-integrated IVT; GEFS landfall tool with probabilities for IVT >250 and >500; GFS/NAM to 180 h, ensemble to 15 days; regions include U.S. West Coast; image-based only", "url": "https://psl.noaa.gov/arportal/ar_forecasts/", "status": "FACT"},
+        {"claim": "NAM, SREF, HREF, HiresW and NAM MOS retired effective October 6, 2026 12 UTC", "url": "https://www.weather.gov/media/notification/pdf_2026/scn26-47_Retirement_of_NAM_SREF_HREF_HiresW_NAM_MOS.aaa.pdf", "status": "INFERENCE"}
+      ],
+      "relevance_to_cascade_oracle": "Useful as a reference display for AR landfall probability along the WA coast and to validate in-house IVT computations; not an ingest source."
+    },
+    {
+      "name": "WPC Quantitative Precipitation Forecast (QPF) and Excessive Rainfall Outlook (ERO) - GIS, GeoJSON, GRIB2",
+      "authority": "NOAA / NWS Weather Prediction Center (WPC)",
+      "data_kind": "forecast",
+      "access": {
+        "mechanism": "(a) ArcGIS REST (IDP GIS): precip/wpc_qpf/MapServer layers 0-25 (24-h Day 1/2/3, 48-h Day 4-5 and 6-7, cumulative 48/72/120/168 h, 6-h intervals 00-06 through 72-78 h) and hazards/wpc_precip_hazards/MapServer layers 0-4 (ERO Day 1-5); query with /MapServer/{layer}/query?where=1=1&outFields=*&f=geojson. (b) ERO GeoJSON: https://www.wpc.ncep.noaa.gov/exper/eromap/geojson/Day{1..5}_Latest.geojson and Day1-3_Latest.geojson. (c) Shapefiles: ftp.wpc.ncep.noaa.gov/shapefiles/qpf/{day1,day2,day3,day45,day67,5day,7day,excessive,...}/ (HTTP redirects to https://ftp-wpc.ncep.noaa.gov/...), e.g. EXCESSIVERAIN_Day1_latest.zip, QPF24hr_Day1_latest.tar, dated 94e_/98e_/99e_/d4_/d5_YYYYMMDDHH.zip. (d) 5-km GRIB: https://ftp-wpc.ncep.noaa.gov/5km_qpf/p06m_YYYYMMDDHHfFFF.grb (6-h QPF f006-f168), p24m_...f024-f168, p48m_...f120/f168, p120m_...f120, p168m_...f168. (e) KML: wpc.ncep.noaa.gov/kml/qpf/ and /kml/ero/.",
+        "base_urls": [
+          "https://mapservices.weather.noaa.gov/vector/rest/services/precip/wpc_qpf/MapServer",
+          "https://mapservices.weather.noaa.gov/vector/rest/services/hazards/wpc_precip_hazards/MapServer",
+          "https://www.wpc.ncep.noaa.gov/exper/eromap/geojson/Day1_Latest.geojson",
+          "https://ftp-wpc.ncep.noaa.gov/5km_qpf/",
+          "https://ftp-wpc.ncep.noaa.gov/shapefiles/qpf/excessive/",
+          "https://www.wpc.ncep.noaa.gov/kml/ero/"
+        ],
+        "auth": "None.",
+        "rate_limits": "Not published (NWS abusive-user policy applies).",
+        "formats": ["ArcGIS REST JSON/GeoJSON", "GeoJSON (ERO)", "Shapefile (zip/tar)", "GRIB (5-km QPF)", "KML/KMZ"]
+      },
+      "cadence": "QPF: 6-h and 24-h forecasts Days 1-3, 48-h Days 4-5 and 6-7, issued on 00Z/06Z/12Z/18Z-based schedules (6-h files exist per 00/06/12/18 init; 24-h/120-h/168-h products per 00/12 init). ERO Days 1-5 updated several times daily (observed Day-1 issue 2026-08-21 23:22 valid 01Z-12Z 08/22).",
+      "latency": "Not published; GIS layers carry issue_time/idp_ingestdate fields so ingest lag can be measured.",
+      "spatial_resolution": "Polygons (contours) for GIS/GeoJSON; 5-km grid for GRIB QPF. ERO: probability of exceeding FFG within 40 km (25 mi) of a point.",
+      "temporal_resolution": "QPF 6-h (to 78 h in GIS; to 168 h in GRIB), 24-h, 48-h, cumulative 120/168 h. ERO: daily 12Z-12Z periods Days 1-5 (Day 1 is issued as 'until 12Z' updates).",
+      "historical_depth": "ftp-wpc 5km_qpf listing held ~2 weeks (2026-08-08 to 2026-08-22); shapefile archive holds dated files back at least ~2 months (excessive/ from 2026-06-24). GIS services hold current issuance only.",
+      "missing_data_semantics": "Absence of polygons means no risk area / zero contour; GeoJSON OUTLOOK strings e.g. 'Marginal (At Least 5%)'.",
+      "quality_flags": "None; products are human-forecaster products.",
+      "units": "QPF in inches ('qpf' and 'units' fields in GIS layers); GRIB in kg m-2 (INFERENCE for GRIB units).",
+      "licensing": "NOAA/NWS/WPC public domain; ArcGIS copyrightText lists NOAA/NWS/WPC for attribution.",
+      "limitations": [
+        "ERO risk definitions: Marginal >=5 %, Slight >=15 % read on the official page; Moderate >=40 % and High (Day 1-2 only, >=70 %) come from third-party explanations and memory -- confirm on WPC's ERO category image.",
+        "ftp.wpc.ncep.noaa.gov redirects (302) to ftp-wpc.ncep.noaa.gov; follow redirects.",
+        "WPC QPF is CONUS-wide human guidance at coarse effective resolution; it complements, not replaces, NBM/HRRR basin QPF.",
+        "KML product page blocked automated fetch (403); use ArcGIS/GeoJSON/shapefile paths instead."
+      ],
+      "evidence": [
+        {"claim": "QPF products: 6-hourly Days 1-3, 24-hourly Days 1-3, 48-h Days 4-5 and 6-7; GRIB2, shapefiles, KML available", "url": "https://www.wpc.ncep.noaa.gov/qpf/qpf2.shtml", "status": "FACT"},
+        {"claim": "ERO forecasts 'the probability that rainfall will exceed flash flood guidance (FFG) within 40 kilometers (25 miles) of a point'; Marginal at least 5 %, Slight at least 15 %; 12Z-12Z validity; KML at wpc.ncep.noaa.gov/kml/ero/, shapefiles at ftp.wpc.ncep.noaa.gov/shapefiles/qpf/excessive/, GeoJSON at wpc.ncep.noaa.gov/exper/eromap/geojson/, ArcGIS REST hazards/wpc_precip_hazards", "url": "https://www.wpc.ncep.noaa.gov/qpf/excessive_rainfall_outlook_ero.php", "status": "FACT"},
+        {"claim": "wpc_precip_hazards MapServer: layers 0-4 'Excessive Rainfall Day 1..5'; copyrightText NOAA/NWS/WPC", "url": "https://mapservices.weather.noaa.gov/vector/rest/services/hazards/wpc_precip_hazards/MapServer?f=pjson", "status": "FACT"},
+        {"claim": "wpc_qpf MapServer layers 0-25 incl. 'QPF 24 Hour Day 1', 'QPF 48 Hour Day 4-5', 'QPF 168 Hour Day 1-7', 6-h intervals 00-06 ... 72-78 hr; layer 1 fields: product, valid_time, qpf, units, issue_time, start_time, end_time, idp_filedate, idp_ingestdate; also precip/wpc_prob_winter_precip service", "url": "https://mapservices.weather.noaa.gov/vector/rest/services/precip/wpc_qpf/MapServer?f=pjson", "status": "FACT"},
+        {"claim": "Day1_Latest.geojson: FeatureCollection with properties PRODUCT, VALID_TIME, OUTLOOK ('Marginal (At Least 5%)'), ISSUE_TIME, START_TIME, END_TIME; directory also has Day2-5 and Day1-3 files", "url": "https://www.wpc.ncep.noaa.gov/exper/eromap/geojson/Day1_Latest.geojson", "status": "FACT"},
+        {"claim": "ftp.wpc.ncep.noaa.gov/5km_qpf/ redirects to ftp-wpc.ncep.noaa.gov; files p06m_YYYYMMDDHHfFFF.grb (f006-f168), p24m (f024-f168), p48m (f120,f168), p120m_f120, p168m_f168; dates 2026-08-08..2026-08-22", "url": "https://ftp-wpc.ncep.noaa.gov/5km_qpf/", "status": "FACT"},
+        {"claim": "shapefiles/qpf/ has day1, day2, day3, day45, day67, 5day, 7day, excessive, collab_excessive, mpd, metadata; excessive/ holds EXCESSIVERAIN_Day1..Day5_latest.zip/tar plus dated 94e_/98e_/99e_/d4_/d5_YYYYMMDDHH files", "url": "https://ftp-wpc.ncep.noaa.gov/shapefiles/qpf/excessive/", "status": "FACT"},
+        {"claim": "Moderate risk >=40 %; High risk only on Day 1 or Day 2", "url": "https://www.nwahomepage.com/weather/weather-101/weather-101-wpc-excessive-rainfall-outlooks/", "status": "INFERENCE"},
+        {"claim": "High risk threshold >=70 %", "url": "https://www.wpc.ncep.noaa.gov/qpf/excessive_rainfall_outlook_ero.php", "status": "OPEN_QUESTION"}
+      ],
+      "relevance_to_cascade_oracle": "National human-QC'd QPF and a flash-flood risk outlook that can be clipped to WA basins via ArcGIS/GeoJSON queries; ERO polygons are a ready-made 'official risk' layer and WPC QPF is also an NBM v5.0 input (SCN 26-24 adds a WPC product as input), so it is a useful consistency check."
+    },
+    {
+      "name": "Snow level vs freezing level relationship (NWS Seattle forecast practice reference)",
+      "authority": "NWS Seattle (WFO SEW) practice as described by Seattle broadcast meteorologists (Morgan Palmer, KIRO 7; Ted Buehner, KIRO Newsradio, formerly NWS Seattle) and NWS research summarized by OpenSnow; NBM element definition from NWS MDL",
+      "data_kind": "static",
+      "access": {
+        "mechanism": "Reference knowledge, not a data feed. Operational inputs: NWS gridpoint snowLevel (m MSL), NBM SNOWLVL (wet-bulb 0.5 C height), HRRR/GFS/GEFS HGT at 0C isotherm and 'highest tropospheric freezing level', OTX FZL (RADAT freezing-level) text product, and twice-daily balloon freezing levels at Forks (UIL) and Spokane (OTX).",
+        "base_urls": [
+          "https://www.kiro7.com/news/how-freezing-level-different-snow-level-2/43394074/",
+          "https://mynorthwest.com/pacific-northwest-weather/mountain-forecasts-vital-difference-freezing-level-snow-level/3939285",
+          "https://opensnow.com/news/post/snow-levels-and-freezing-levels-explained",
+          "https://www.weather.gov/sew/Mountainforecast",
+          "https://vlab.noaa.gov/web/mdl/nbm-weather-elements"
+        ],
+        "auth": "None.",
+        "rate_limits": "Not applicable.",
+        "formats": ["Prose"]
+      },
+      "cadence": "Not applicable.",
+      "latency": "Not applicable.",
+      "spatial_resolution": "Not applicable; relationship varies with precipitation intensity and low-level humidity.",
+      "temporal_resolution": "Not applicable.",
+      "historical_depth": "Not applicable.",
+      "missing_data_semantics": "Not applicable.",
+      "quality_flags": "Not applicable.",
+      "units": "Feet (broadcast rule of thumb); metres in NWS API and GRIB products.",
+      "licensing": "Third-party articles are copyrighted; use the numbers, not the text.",
+      "limitations": [
+        "No weather.gov page stating the '1,000 ft below freezing level' rule was found; the NWS Seattle mountain page discusses freezing levels (balloon soundings at Forks/Spokane; highest freezing level shown if multiple) but does not define the offset.",
+        "NWS research cited by OpenSnow gives a smaller mean offset (~700 ft) with a 500-1,500 ft range; heavy precipitation and dry low-level air push the snow level further below the freezing level (melting cooling / evaporative cooling).",
+        "Model 'freezing level' fields (0C isotherm height) should be converted to snow level with an offset or, better, by computing the wet-bulb 0.5 C height (NBM definition) from model T/RH profiles."
+      ],
+      "evidence": [
+        {"claim": "KIRO 7 chief meteorologist Morgan Palmer: snow level approximately 1,000 ft below the freezing level because snow takes on average about 1,000 ft of above-freezing air to melt; varies with precipitation amount/intensity; 'generally the rule of thumb'", "url": "https://www.kiro7.com/news/how-freezing-level-different-snow-level-2/43394074/", "status": "FACT"},
+        {"claim": "Ted Buehner (KIRO Newsradio, former NWS Seattle): 'The snow level is usually around 1,000 feet lower than the freezing level'; freezing level used when dry, snow level when precipitation is forecast", "url": "https://mynorthwest.com/pacific-northwest-weather/mountain-forecasts-vital-difference-freezing-level-snow-level/3939285", "status": "FACT"},
+        {"claim": "'According to research conducted by National Weather Service scientists, the snow level, on average, is about 700 feet lower than the freezing level, with a typical range of anywhere from 500 to 1,500 feet below the freezing level'", "url": "https://opensnow.com/news/post/snow-levels-and-freezing-levels-explained", "status": "FACT"},
+        {"claim": "NWS Seattle mountain page: freezing levels measured twice daily at Forks and Spokane by balloon; if multiple freezing levels, the highest is shown; page gives no snow-level offset", "url": "https://www.weather.gov/sew/Mountainforecast", "status": "FACT"},
+        {"claim": "NBM snow level = elevation where wet-bulb temperature reaches 0.5 C", "url": "https://vlab.noaa.gov/web/mdl/nbm-weather-elements", "status": "FACT"},
+        {"claim": "Ted Buehner's NWS Seattle affiliation (former warning coordination meteorologist)", "url": "https://mynorthwest.com/pacific-northwest-weather/mountain-forecasts-vital-difference-freezing-level-snow-level/3939285", "status": "INFERENCE"},
+        {"claim": "Authoritative NWS Seattle citation for the 1,000-ft rule", "url": "https://www.weather.gov/sew/", "status": "OPEN_QUESTION"}
+      ],
+      "relevance_to_cascade_oracle": "Needed to translate model freezing levels into basin rain/snow partitions (rain-on-snow risk in Skagit/Nooksack/Snoqualmie/Puyallup). Recommended: default offset 1,000 ft (300 m) with sensitivity range 500-1,500 ft, overridden by NBM SNOWLVL percentiles or NWS gridpoint snowLevel where available."
+    },
+    {
+      "name": "GRIB tooling: Herbie, cfgrib/eccodes, xarray (brief)",
+      "authority": "Open-source (Herbie by Brian Blaylock; cfgrib by ECMWF)",
+      "data_kind": "static",
+      "access": {
+        "mechanism": "pip install herbie-data (Python 3.11+); Herbie locates files across AWS, Google Cloud, NOMADS and Azure for HRRR, RAP, GFS, GEFS, NBM, RRFS, AIGFS/AIGEFS, RTMA/URMA, HAFS, CFS, ECMWF open data, NAVGEM, HRDPS; subsets by regex on the .idx inventory using HTTP byte-range requests; returns xarray via cfgrib (wgrib2 optional).",
+        "base_urls": [
+          "https://herbie.readthedocs.io/en/stable/"
+        ],
+        "auth": "None.",
+        "rate_limits": "Inherits the source's limits (NOMADS 120 hits/min).",
+        "formats": ["GRIB2 -> xarray.Dataset"]
+      },
+      "cadence": "Not applicable.",
+      "latency": "Not applicable.",
+      "spatial_resolution": "Not applicable.",
+      "temporal_resolution": "Not applicable.",
+      "historical_depth": "Not applicable.",
+      "missing_data_semantics": "cfgrib maps GRIB bitmap to NaN.",
+      "quality_flags": "Not applicable.",
+      "units": "As encoded in GRIB2.",
+      "licensing": "Herbie MIT (INFERENCE; not read on fetched page).",
+      "limitations": [
+        "NBM v5.0 local-table records may lack names in older eccodes definitions; verify variable mapping after the May 2026 upgrade.",
+        "Byte-range subsetting selects whole GRIB messages (variables), not spatial windows; spatial clipping happens after decode."
+      ],
+      "evidence": [
+        {"claim": "Herbie supports HRRR, RAP, GFS, GEFS, AIGFS/AIGEFS, NBM, RRFS, RTMA/URMA, HAFS, CFS, ECMWF open data, NAVGEM, HRDPS; searches AWS, Google Cloud, NOMADS, Azure; uses index files with byte-range requests and regex search strings; Python 3.11+, xarray, cfgrib, optional wgrib2; pip install herbie-data", "url": "https://herbie.readthedocs.io/en/stable/", "status": "FACT"}
+      ],
+      "relevance_to_cascade_oracle": "Practical ingestion layer for all GRIB2 sources above; use search strings like ':APCP:surface:0-6 hour acc', ':HGT:0C isotherm', ':SPFH:(1000|925|850|700|500|300) mb' to pull only the WA-relevant messages."
+    }
+  ],
+  "open_questions": [
+    "Exact NWS API numeric rate limit (undocumented); whether a registered User-Agent contact raises it.",
+    "Whether NWS product-API retention is a fixed 7 days for all product types (observed ~7 days for AFD and FLW).",
+    "NBM v5.0 per-cycle timing table ('NBMv5.0 Timing Differences' doc on VLab) -- not fetched; observed ~72-78 min for 12Z CONUS core.",
+    "Confirm NBM CONUS grid is 2.5 km on an official v5.0 page (marked INFERENCE).",
+    "Why CONUS qmd files exist hourly to f276 while core stops at f264 -- check the v5.0 GRIB2 section-4 qmd documentation (https://vlab.noaa.gov/web/mdl/nbm-v5.0-grib2-section-4-qmd).",
+    "HRRR retirement date after RRFS (Oct 6, 2026) -- no SCN found; HRRR continues as a REFS member.",
+    "GFS v17 implementation date and product/path changes (PNS 26-29 proposed October 2026; official SCN not yet seen).",
+    "GFS pgrb2b.0p25 absence in the AWS atmos/ prefix for the inspected cycle -- confirm whether it is published elsewhere or dropped.",
+    "Whether CW3E will share AR-scale/IVT data (netCDF/JSON) or an API with partners; current public products are image-only under a research-use disclaimer.",
+    "Official WPC ERO probability thresholds for Moderate and High (page text only showed Marginal >=5 % and Slight >=15 %).",
+    "An NWS Seattle (weather.gov/sew) citation for the 1,000-ft snow-level-below-freezing-level rule; NWS research summarized by OpenSnow says ~700 ft mean (500-1,500 ft range).",
+    "NOMADS data retention depth for GFS/GEFS/HRRR (directory listings returned empty to curl; commonly ~10 days -- unverified).",
+    "NOAA NODD program page (noaa.gov/information-technology/open-data-dissemination) returned 403; license wording was taken from the AWS registry pages."
+  ]
+}

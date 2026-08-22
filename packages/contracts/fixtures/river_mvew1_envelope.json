@@ -1,0 +1,111 @@
+{
+  "contract": "RiverVisualizationState",
+  "version": "1.0.0",
+  "generated_at": "2026-08-22T09:00:00Z",
+  "as_of": "2026-08-22T09:00:00Z",
+  "time": { "valid": "2026-08-22T09:00:00Z", "mode": "now" },
+  "items": [
+    {
+      "id": "fp:nwps:MVEW1",
+      "name": "Skagit River near Mount Vernon",
+      "station_id": "station:usgs:12200500",
+      "reach_id": "reach:nwm:24270288",
+      "basin_id": "basin:skagit",
+      "observed": {
+        "prov": "usgs-iv-12200500",
+        "truth": "observation",
+        "stage": { "value": 10.59, "unit": "ft", "datum": "NGVD29" },
+        "flow": { "value": 6660, "unit": "cfs" },
+        "valid_time": "2026-08-22T08:15:00Z"
+      },
+      "observed_category": "none",
+      "observed_category_reason": "Observed stage 10.59 ft is below action stage 23.5 ft (NGVD29, official NWPS).",
+      "trend": {
+        "prov": "cascade-trend-6h",
+        "truth": "cascade_derived",
+        "window_h": 6,
+        "rate": { "value": 0.01, "unit": "ft/h" },
+        "direction": "steady"
+      },
+      "headroom": {
+        "basis": "stage",
+        "to_category": "action",
+        "value": { "value": 12.91, "unit": "ft", "datum": "NGVD29" },
+        "time_to_threshold_h": null,
+        "prov": "cascade-headroom",
+        "reason": "time_to_threshold requires a rising trend"
+      },
+      "official_forecast": {
+        "prov": "nwps-forecast-mvew1",
+        "truth": "authoritative_model",
+        "issued_at": "2026-08-21T15:05:00Z",
+        "issuer": "NWRFC",
+        "crest": { "value": 11.1, "unit": "ft", "datum": "NGVD29" },
+        "crest_valid_time": "2026-08-24T00:00:00Z",
+        "category": "none",
+        "points": 31
+      },
+      "thresholds": {
+        "basis": "stage",
+        "unit": "ft",
+        "datum": "NGVD29",
+        "action": 23.5,
+        "minor": 28.0,
+        "moderate": 30.0,
+        "major": 32.0,
+        "prov": "nwps-thresholds-mvew1"
+      },
+      "topology": { "upstream": ["fp:nwps:CONW1"], "downstream": [] },
+      "regulation": { "class": "regulated", "regulated_by": ["reservoir:ross-lake", "reservoir:baker"] },
+      "location": [-122.3342, 48.4453],
+      "flow_visual_intensity": null
+    }
+  ],
+  "provenance_refs": {
+    "usgs-iv-12200500": {
+      "source_id": "src:usgs-nwis-iv",
+      "source_kind": "OBSERVED",
+      "product_id": "product:usgs-iv-00065-00060",
+      "valid_time": "2026-08-22T08:15:00Z",
+      "retrieved_at": "2026-08-22T08:26:43Z",
+      "freshness": { "state": "current", "age_seconds": 2700, "expected_cadence_seconds": 900 },
+      "quality": ["provisional"],
+      "label": "USGS instantaneous values (provisional)"
+    },
+    "cascade-trend-6h": {
+      "source_id": "src:cascade",
+      "source_kind": "DERIVED",
+      "method_id": "method:rate-of-rise@1.0.0",
+      "valid_time": "2026-08-22T08:15:00Z",
+      "retrieved_at": "2026-08-22T08:26:43Z",
+      "freshness": { "state": "current", "age_seconds": 2700 },
+      "label": "Cascade rate of rise over 6 h from stored USGS observations"
+    },
+    "cascade-headroom": {
+      "source_id": "src:cascade",
+      "source_kind": "DERIVED",
+      "method_id": "method:stage-headroom@1.0.0",
+      "valid_time": "2026-08-22T08:15:00Z",
+      "freshness": { "state": "current", "age_seconds": 2700 },
+      "label": "Cascade stage headroom to official action stage"
+    },
+    "nwps-forecast-mvew1": {
+      "source_id": "src:nwps-v1",
+      "source_kind": "OFFICIAL_FORECAST",
+      "product_id": "product:nwps-stageflow-forecast",
+      "issued_at": "2026-08-21T15:05:00Z",
+      "valid_time": "2026-08-24T00:00:00Z",
+      "retrieved_at": "2026-08-22T08:26:43Z",
+      "freshness": { "state": "current", "age_seconds": 64500, "expected_cadence_seconds": 86400 },
+      "label": "NWRFC official river forecast via NOAA NWPS"
+    },
+    "nwps-thresholds-mvew1": {
+      "source_id": "src:nwps-v1",
+      "source_kind": "OFFICIAL_FORECAST",
+      "product_id": "product:nwps-gauge-flood-categories",
+      "retrieved_at": "2026-08-22T08:26:43Z",
+      "freshness": { "state": "current", "age_seconds": 2700, "expected_cadence_seconds": 21600 },
+      "label": "Official NWS flood categories (NWPS)"
+    }
+  }
+}

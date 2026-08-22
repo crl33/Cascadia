@@ -1,0 +1,503 @@
+{
+  "category": "precipitation-observations",
+  "summary": "Observed-precipitation sources for Washington watersheds, verified 2026-08-22. Gridded: (1) MRMS on AWS (noaa-mrms-pds, GRIB2, 0.01 deg / 7000x3500 CONUS grid, lat 20.005-54.995 N, lon -129.995 to -60.005; RadarOnly_QPE every 2 min, MultiSensor_QPE Pass1 ~20 min latency / Pass2 ~1 h latency, archive on AWS from 2020-10-14; Iowa State mtarchive from 2014-11 with hourly-only MultiSensor files; GaugeCorr_QPE was retired at MRMS v12 in Oct 2020; missing=-1, no-coverage=-3; western Washington radar coverage is structurally weak and MRMS fills gaps with gauge/PRISM Mountain Mapper and HRRR QPF, so RadarQualityIndex/GaugeInflIndex must be carried as quality covariates). (2) NCEP Stage IV (HRAP ~4.76 km polar stereographic, 01h/06h/24h GRIB2 on NOMADS with ~7-day rolling retention; NWPS daily NetCDF/GeoTIFF archive from 2016-06-28; NCAR EOL archive 2002-2026; NCEI holdings sparse). Empirical check: initial-issue 01h/06h Stage IV on NOMADS is 100% missing over WA/OR/CA (western RFCs, incl. NWRFC, deliver later), but 3- and 7-day-old re-issues are back-filled over Washington for 01h, 06h and 24h; so Stage IV is a reanalysis-grade source for WA, not a real-time one. (3) NWRFC publishes 6-h/24-h station QPE as CSV/XML (display_file.php -> /weather/xml/qpe6_YYYYMMDDHHMM.csv) and MRMS overlays via the NWS mapservices ImageServer. Point gauges: api.weather.gov ASOS/AWOS observations (precipitationLastHour/3Hours/6Hours, ~7-day retention, values widely null at WA ASOS, User-Agent required); Synoptic Weather API (derived precip service, station-hour caps, commercial or .edu-only Open Access, redistribution restrictions); NRCS AWDB REST (78 active WA SNOTEL, PREC water-year accumulation hourly/daily, PRCP/PRCPSA daily increments, no key); USGS Water Data OGC API (parameter 00045 'Precipitation, total, inches', 30 active WA 15-min sites, api.data.gov keys, waterservices.usgs.gov decommission Q1 2027); King County HIC (15-min rainfall, WRIAs 7/8/9/10/15, form-driven ASP.NET downloads, Public Domain per KC open-data record); Seattle SPU (17 active + 2 closed gauges, 1-min data since Jan 1978 per SDCI Appendix F; RainWatch terminated 2018-12-01; no public time-series API found). Frequency context: Washington is NOT in NOAA Atlas 14 (PFDS returns 'not within a project area'); NOAA Atlas 2 (1973) still applies with only 2-yr/100-yr x 6-h/24-h grids; Atlas 15 CONUS preliminary estimates are scheduled for September 2026 with final in 2027; WSDOT/Schaefer-Wallis regional L-moment products are the de facto modern WA alternative.",
+  "providers": [
+    {
+      "name": "MRMS (Multi-Radar Multi-Sensor) QPE via NOAA Open Data Dissemination on AWS (noaa-mrms-pds)",
+      "authority": "NOAA NSSL (algorithm/operations) and NWS/NCEP (operational production); distributed through NOAA NODD on AWS",
+      "data_kind": "mixed",
+      "access": {
+        "mechanism": "Anonymous S3 object GET and ListObjects; optional SNS topic for new-object notifications. Key pattern: CONUS/<Product>_<level>/<YYYYMMDD>/MRMS_<Product>_<level>_<YYYYMMDD>-<HHMMSS>.grib2.gz (e.g., CONUS/MultiSensor_QPE_01H_Pass2_00.00/20260822/MRMS_MultiSensor_QPE_01H_Pass2_00.00_20260822-070000.grib2.gz). Top-level prefixes: ALASKA/, ANC/, CARIB/, CONUS/, CONUS_5KM/, ConvectProb/, GUAM/, HAWAII/, ProbSevere/, unsupported/.",
+        "base_urls": [
+          "https://noaa-mrms-pds.s3.amazonaws.com/",
+          "arn:aws:s3:::noaa-mrms-pds (us-east-1)",
+          "arn:aws:sns:us-east-1:123901341784:NewMRMSObject",
+          "https://mapservices.weather.noaa.gov/raster/rest/services/obs/mrms_qpe/ImageServer"
+        ],
+        "auth": "None (public bucket, no AWS credentials required; SNS subscription supports Lambda and SQS protocols only)",
+        "rate_limits": "No published limit; standard S3 public-bucket behavior (requester is not charged for anonymous GETs per NODD registry terms)",
+        "formats": ["GRIB2 (gzip-compressed .grib2.gz; data representation template 5.41 PNG packing)", "GeoTIFF/NIDS exist on LDM/NCEP web services per MRMS v12.2 supplemental, not in this bucket"]
+      },
+      "cadence": "RadarOnly_QPE_01H, PrecipRate, PrecipFlag, RadarQualityIndex: every 2 minutes. RadarOnly_QPE_03H..72H, MultiSensor_QPE_*_Pass1/Pass2, GaugeInflIndex, RadarAccumulationQualityIndex: every 60 minutes (top of hour). RadarOnly_QPE_15M: 15 min. RadarOnly_QPE_Since12Z: hourly.",
+      "latency": "Observed 2026-08-22 08:30Z from object timestamps: RadarOnly_QPE_01H valid 08:26Z landed 08:28:47Z (~2-3 min); MultiSensor_QPE_01H_Pass1 valid 08:00Z landed 08:16:25Z (~16 min; NSSL table says '20-minute latency'); MultiSensor_QPE_01H_Pass2 valid 07:00Z landed 07:57:34Z (~57 min; NSSL table says '1-hour latency'). Older documentation (Planetary Computer STAC, pre-v12 NSSL updates) still quotes 60/120 min for Pass1/Pass2; NSSL reduced these to 20/60 min.",
+      "spatial_resolution": "0.01 deg x 0.01 deg (~1 km N-S); CONUS grid Ni=7000 x Nj=3500 (24,500,000 points); first point lat 54.995 N, lon 230.005 E (-129.995); last point lat 20.005 N, lon 299.995 E (-60.005); scan mode 0 (row-major from NW corner). Read directly from GRIB2 section 3 of a 2026-08-22 file.",
+      "temporal_resolution": "Accumulation windows: 15 min (RadarOnly only), 1, 3, 6, 12, 24, 48, 72 h, and Since12Z (RadarOnly). PrecipRate is an instantaneous 2-min rate (mm/h).",
+      "historical_depth": "AWS bucket: all CONUS QPE products listed begin 2020-10-14 (RadarOnly_QPE_01H, MultiSensor_QPE_01H_Pass1/Pass2, MultiSensor_QPE_24H_Pass2, RadarQualityIndex, PrecipRate all have 20201014 as first date prefix) and run to present (20260822). GaugeCorr_QPE_* does not exist in the bucket (retired with MRMS v12 Pass1/Pass2 structure). No NCEI general MRMS archive; see the separate 'MRMS archive holdings' provider for Iowa State (2014-11 onward) and the 2002-2011 NEXRAD QPE CDR.",
+      "missing_data_semantics": "Per NSSL operational GRIB2 table: Missing = -1, No Coverage = -3 (for PrecipRate, RadarOnly_QPE_*, MultiSensor_QPE_*, PrecipFlag, RadarQualityIndex, GaugeInflIndex, RadarAccumulationQualityIndex). THREDDS CDL of a Pass2 file shows missing_value=-1.0 and _FillValue=-3.0. pysteps docs note -3 must not be confused with zero precipitation. Model_* fields use -99/-999.",
+      "quality_flags": "Companion grids: RadarQualityIndex (0-1, 2-min; RQI = blockage term x beam-height term), RadarAccumulationQualityIndex_xxH (hourly), GaugeInflIndex_xxH_Pass1/Pass2 (gauge influence on multi-sensor QPE), PrecipFlag (surface precip type: convective/stratiform/tropical/hail/snow; flag table). MultiSensor QPE is a decision-tree blend of locally gauge-corrected radar QPE, Mountain Mapper (hourly gauges interpolated on PRISM climatology) and HRRR 1-h QPF where radar coverage is poor; ~20,000 HADS+MADIS gauge obs/hour ingested, ~85% pass QC (Martinaitis et al. 2020). Product status in GRIB2 section 1: production status 2 (research/operational per NOAA table), type 7.",
+      "units": "mm for QPE accumulations; mm/h for PrecipRate; non-dimensional for RQI/GaugeInflIndex; flag codes for PrecipFlag",
+      "licensing": "NOAA data, publicly available; AWS registry states attribution is requested for unaltered data and modified data must not be misrepresented as original NOAA data. Contact mrms@noaa.gov / nodd@noaa.gov.",
+      "limitations": [
+        "Western Washington radar coverage is structurally limited: KATX (Camano Island) is blocked by the Olympic Mountains toward the coast; KLGX (Langley Hill, commissioned Sept 2011, scans as low as 0.2 deg) filled the former coastal gap but interior Olympic/Cascade valleys (Skagit, Nooksack, Snoqualmie headwaters) remain beam-blocked or overshot; MSQPE therefore relies on gauge/PRISM and HRRR fill there. Always ingest RadarQualityIndex and GaugeInflIndex alongside QPE.",
+        "Canadian (ECCC) radars that cover the Nooksack/Skagit border region dropped out of MRMS from 5-15 June 2023 when ECCC changed scan strategies; NSSL later reintegrated them in a subsequent build. Expect a discontinuity in northern-border QPE in mid-2023.",
+        "Pass1 (~20 min) includes only a subset of gauges; Pass2 (~1 h) is the better hydrologic forcing. Planetary Computer and some docs still quote 60/120 min latencies, which are stale.",
+        "Product naming changed at MRMS v12.0 (Oct 2020): GaugeCorr_QPE_* replaced by MultiSensor_QPE_*_Pass1/Pass2; GaugeInflIndex_xxH became GaugeInflIndex_xxH_Pass1. Archives before Oct 2020 use the old names.",
+        "AWS archive only starts 2020-10-14; hourly-only coverage of MultiSensor products exists at Iowa State from 2020-10 and RadarOnly/PrecipRate at 2-min since 2014-11.",
+        "Files are full-CONUS (~0.4-8 MB gz each); subsetting to Washington requires decoding the whole grid or using byte-range-unfriendly PNG packing (template 5.41) - plan a regional re-chunking step.",
+        "MRMS operational code changes (v12.3.0 on 5 Aug 2025; v12.3.1 planned Spring 2026) alter QPE behavior over time; version boundaries should be tracked in provenance."
+      ],
+      "evidence": [
+        {"claim": "Bucket noaa-mrms-pds, us-east-1, 2-minute real-time update cycle, SNS topic arn:aws:sns:us-east-1:123901341784:NewMRMSObject, NOAA attribution terms", "url": "https://registry.opendata.aws/noaa-mrms-pds/", "status": "FACT"},
+        {"claim": "Top-level prefixes (ALASKA, ANC, CARIB, CONUS, CONUS_5KM, ConvectProb, GUAM, HAWAII, ProbSevere, unsupported) and full CONUS product list incl. RadarOnly_QPE_{15M,01H..72H,Since12Z}, MultiSensor_QPE_{01..72}H_Pass1/Pass2, RadarQualityIndex, RadarAccumulationQualityIndex_xxH, GaugeInflIndex_xxH_Pass1/2, PrecipFlag, PrecipRate; no GaugeCorr prefixes", "url": "https://noaa-mrms-pds.s3.amazonaws.com/?delimiter=/&prefix=CONUS/", "status": "FACT"},
+        {"claim": "First date prefix 20201014 for RadarOnly_QPE_01H, MultiSensor_QPE_01H_Pass1/Pass2, MultiSensor_QPE_24H_Pass2, RadarQualityIndex, PrecipRate; latest 20260822", "url": "https://noaa-mrms-pds.s3.amazonaws.com/?delimiter=/&prefix=CONUS/MultiSensor_QPE_01H_Pass2_00.00/", "status": "FACT"},
+        {"claim": "Observed object timestamps on 2026-08-22: RadarOnly_QPE_01H every 2 min with ~2-3 min latency; Pass1 ~16 min; Pass2 ~57 min", "url": "https://noaa-mrms-pds.s3.amazonaws.com/?prefix=CONUS/MultiSensor_QPE_01H_Pass2_00.00/20260822/", "status": "FACT"},
+        {"claim": "GRIB2 section 3: template 3.0, Ni 7000, Nj 3500, lat1 54.995, lon1 230.005, lat2 20.005, lon2 299.995, di=dj=0.01; section 4 category 6 number 37 (MultiSensor_QPE_01H_Pass2); data representation template 5.41", "url": "https://noaa-mrms-pds.s3.amazonaws.com/CONUS/MultiSensor_QPE_01H_Pass2_00.00/20260822/MRMS_MultiSensor_QPE_01H_Pass2_00.00_20260822-070000.grib2.gz", "status": "FACT"},
+        {"claim": "NSSL operational GRIB2 table: PrecipRate 2-min mm/hr; RadarOnly_QPE_01H 2-min; RadarOnly_QPE_03H..72H 60-min; MultiSensor_QPE_xxH_Pass1 '20-minute latency'; Pass2 '1-hour latency'; RadarOnly_QPE_15M 15-min; Missing -1, No Coverage -3; RadarQualityIndex 2-min; GaugeInflIndex_xxH_Pass1 'was GaugeInflIndex_xxH prior to v12.0'", "url": "https://www.nssl.noaa.gov/projects/mrms/operational/tables.php", "status": "FACT"},
+        {"claim": "MRMS ingests WSR-88D and Canadian radars plus TDWRs; 1-km x 2-min update cycle; GRIB2 IDs updated for v12.2", "url": "https://www.nssl.noaa.gov/projects/mrms/", "status": "FACT"},
+        {"claim": "Past code updates: Pass1 latency reduced 60->20 min and Pass2 120->60 min; gauge feed includes MADIS and HADS; gauge wait reduced 70->50 min", "url": "https://inside.nssl.noaa.gov/mrms/past-code-updates/", "status": "FACT"},
+        {"claim": "Most recent significant operational update MRMS v12.3.0 on 5 August 2025; next v12.3.1 Spring 2026", "url": "https://inside.nssl.noaa.gov/mrms/", "status": "FACT"},
+        {"claim": "Canadian radars changed scan patterns 5-15 June 2023 and dropped out of operational MRMS pending a patch; later post titled 'Reintegration of Canadian Radar Data into MRMS'", "url": "https://inside.nssl.noaa.gov/mrms/2023/06/canadian-radar-changes-and-mrms-outages/", "status": "FACT"},
+        {"claim": "THREDDS CDL of MultiSensor_QPE_12H_Pass2: lon=7000, lat=3500, units mm, missing_value -1.0, _FillValue -3.0, Grib2 parameter 209-6-40, originating center 'US NOAA OAR'", "url": "https://thredds.climate.ncsu.edu/thredds/cdmremote/ncei/mrms/202507/20250711/MRMS_MultiSensor_QPE_12H_Pass2_00.00_20250711-140000.grib2?req=cdl", "status": "FACT"},
+        {"claim": "pysteps: in MRMS GRIB files -3 represents No Coverage/Missing and must not be treated as zero precipitation", "url": "https://pysteps.readthedocs.io/en/stable/generated/pysteps.io.importers.import_mrms_grib.html", "status": "FACT"},
+        {"claim": "MSQPE design: ~20,000 HADS+MADIS gauges/hour, ~85% pass QC; Mountain Mapper = hourly gauges on PRISM climatology; HRRR 1-h QPF fill; RQI = blockage x height; ~85-min total latency in the 2020 research configuration; improved skill over western US where beam blockage/poor coverage", "url": "https://training.weather.gov/wdtd/courses/MRMS/lessons/Hydro-products/hydro3-v12.2/presentation_content/external_files/Martinaitis2020-MSQPE-JHM.pdf", "status": "FACT"},
+        {"claim": "KLGX commissioned Sept 2011 at Langley Hill near Copalis Beach; previously the Olympic Peninsula coast was the only US coastline without radar; KATX on Camano Island blocked by the Olympics; KLGX scans as low as 0.2 deg", "url": "https://en.wikipedia.org/wiki/Langley_Hill_Doppler_radar", "status": "FACT"},
+        {"claim": "MRMS v12.2 supplemental: GRIB2 and GeoTIFF products via LDM and NCEP web services; NIDS via LDM only", "url": "https://www.weather.gov/idp/MRMS_v12.2_Supplemental", "status": "FACT"},
+        {"claim": "NWS mapservices ImageServer 'obs/mrms_qpe' exposes rft_1hr..rft_72hr layers (used by NWRFC's map)", "url": "https://www.nwrfc.noaa.gov/rfc/mrms/js/mrms_nwrfc.js?version=20250128v1", "status": "FACT"},
+        {"claim": "KRTX (Portland) coverage of SW Washington (Cowlitz/Lewis) is also terrain-limited", "url": "https://www.nssl.noaa.gov/projects/mrms/", "status": "INFERENCE"}
+      ],
+      "relevance_to_cascade_oracle": "Primary real-time gridded precipitation forcing and nowcast input for all WA basins; use RadarOnly_QPE_01H (2-min) for nowcasting and MultiSensor_QPE_01H_Pass2 (hourly, ~1 h latency) for hydrologic forcing; carry RadarQualityIndex/GaugeInflIndex as per-cell quality covariates because Skagit, Nooksack, Snoqualmie and Olympic basins sit in low-RQI terrain; build a Washington-subset re-chunking pipeline from the S3 bucket with SNS/SQS triggers."
+    },
+    {
+      "name": "MRMS archive holdings (Iowa State MTArchive, NCEI NEXRAD QPE CDR reanalysis, Microsoft Planetary Computer mirror)",
+      "authority": "Iowa State University IEM (mtarchive.geol.iastate.edu); NOAA NCEI (CDR); Microsoft (Planetary Computer mirror of NODD)",
+      "data_kind": "mixed",
+      "access": {
+        "mechanism": "IEM: plain HTTPS directory tree https://mtarchive.geol.iastate.edu/YYYY/MM/DD/mrms/ncep/<Product>/<Product>_00.00_YYYYMMDD-HHMMSS.grib2.gz. Planetary Computer: STAC API collection noaa-mrms-qpe-1h-pass2 (COG + source GRIB2). NCEI CDR: metadata landing page gov.noaa.ncdc:C01543 (restricted).",
+        "base_urls": [
+          "https://mtarchive.geol.iastate.edu/",
+          "https://planetarycomputer.microsoft.com/api/stac/v1/collections/noaa-mrms-qpe-1h-pass2",
+          "https://www.ncei.noaa.gov/access/metadata/landing-page/bin/iso?id=gov.noaa.ncdc%3AC01543"
+        ],
+        "auth": "IEM: none ('There are no usage restrictions for this website'). Planetary Computer: STAC API public; asset access may require PC SAS tokens. NCEI CDR: marked Restricted.",
+        "rate_limits": "IEM: none published (single university server; be polite). Planetary Computer: standard PC limits.",
+        "formats": ["GRIB2 .gz (IEM)", "Cloud Optimized GeoTIFF + GRIB2 (Planetary Computer)", "netCDF-4 (NCEI CDR)"]
+      },
+      "cadence": "IEM mirrors operational NCEP MRMS: RadarOnly_QPE_01H and PrecipRate at 2-min (720 files/day observed for 2025-12-01); MultiSensor_QPE_01H/24H/72H_Pass2, RadarOnly_QPE_24H/72H, RadarQualityIndex, PrecipFlag hourly/2-min as produced. Planetary Computer: hourly Pass2.",
+      "latency": "IEM: near-real-time mirror (files for 2025-12-01 stamped within the hour). Planetary Computer: follows NODD delivery.",
+      "spatial_resolution": "Same 0.01 deg CONUS grid as operational MRMS",
+      "temporal_resolution": "As per product (2-min, hourly, 24 h, 72 h)",
+      "historical_depth": "IEM mrms/ncep tree exists from 2014-11-01 (404 for 2014-10-15 and earlier); product set evolves: 2014-11 = PrecipRate, RadarOnly_QPE_01H/24H; 2019-01 adds GaugeCorr_QPE_01H/24H/72H, PrecipFlag, RadarOnly_QPE_72H, RadarQualityIndex, SeamlessHSR; 2021-01 onward = MultiSensor_QPE_01H/24H/72H_Pass2 (no Pass1, no 3/6/12/48 h), FLASH, MESH. Planetary Computer 1h Pass2: 2022-07-21T20:00Z to present. NCEI NEXRAD QPE CDR (MRMS reanalysis): 2002-01-01 to 2011-12-31, radar-only, gauge-corrected and MOS2D fields, netCDF-4, restricted access.",
+      "missing_data_semantics": "Same as MRMS GRIB2 (-1 missing, -3 no coverage); IEM is a best-effort mirror and may have gaps during outages (not audited here).",
+      "quality_flags": "RadarQualityIndex and PrecipFlag mirrored at IEM; GaugeInflIndex and RadarAccumulationQualityIndex are NOT in the IEM product subset.",
+      "units": "mm; mm/h",
+      "licensing": "IEM: no usage restrictions, general disclaimer; Planetary Computer lists license as 'proprietary' in STAC (NOAA data, attribution requested); NCEI CDR restricted.",
+      "limitations": [
+        "IEM keeps only a product subset (no MultiSensor Pass1; no 3/6/12/48-h MultiSensor; no GaugeInflIndex) and its completeness is not guaranteed.",
+        "Pre-Oct-2020 archive uses GaugeCorr_QPE_* (different algorithm generation) so long-period statistics mix MRMS versions.",
+        "NSSL's public operational display keeps only a one-week rolling archive; it is not an archive source."
+      ],
+      "evidence": [
+        {"claim": "MTArchive root states no usage restrictions; contact akrherz@iastate.edu", "url": "https://mtarchive.geol.iastate.edu/", "status": "FACT"},
+        {"claim": "mrms/ncep exists from 2014-11-01 (2014-10-15 returns 404); product folders 2014-11-01: PrecipRate, RadarOnly_QPE_01H, RadarOnly_QPE_24H; 2019-01-01 adds GaugeCorr_QPE_01H/24H/72H, PrecipFlag, RadarQualityIndex; 2021-01-01 and 2026-08-22: MultiSensor_QPE_01H/24H/72H_Pass2, RadarOnly_QPE_01H/24H/72H, PrecipFlag, PrecipRate, RadarQualityIndex, FLASH, MESH, SeamlessHSR, ProbSevere", "url": "https://mtarchive.geol.iastate.edu/2021/01/01/mrms/ncep/", "status": "FACT"},
+        {"claim": "720 RadarOnly_QPE_01H files and 720 PrecipRate files for 2025-12-01 (2-min cadence preserved); MultiSensor_QPE_01H_Pass2 hourly files stamped ~56 min after valid time", "url": "https://mtarchive.geol.iastate.edu/2025/12/01/mrms/ncep/RadarOnly_QPE_01H/", "status": "FACT"},
+        {"claim": "Planetary Computer STAC: 1-Hour Pass 2 collection, temporal extent from 2022-07-21T20:00Z, COG + GRIB2, providers NSSL and Microsoft, license 'proprietary'; description still states Pass1 60-min / Pass2 120-min latency", "url": "https://planetarycomputer.microsoft.com/api/stac/v1/collections/noaa-mrms-qpe-1h-pass2", "status": "FACT"},
+        {"claim": "NSSL MRMS Operational Display keeps a one-week rolling archive only", "url": "https://inside.nssl.noaa.gov/mrms/links/", "status": "FACT"},
+        {"claim": "NCEI NEXRAD QPE CDR from MRMS reanalysis covers 2002-01-01 to 2011-12-31, netCDF-4, radar-only and gauge-corrected fields, restricted", "url": "https://www.ncei.noaa.gov/access/metadata/landing-page/bin/iso?id=gov.noaa.ncdc%3AC01543", "status": "INFERENCE"}
+      ],
+      "relevance_to_cascade_oracle": "Use IEM for backfilling 2014-2020 MRMS history (training data, event reanalysis for 2015, 2017, 2020, 2021 atmospheric-river floods) and AWS for 2020-10 onward; note the 2-min RadarOnly archive at IEM is the only long 2-min record."
+    },
+    {
+      "name": "NCEP Stage IV multi-sensor QPE (RFC-produced, NCEP-mosaicked) with NWPS, NOMADS, NCAR EOL and NCEI access",
+      "authority": "NWS River Forecast Centers (Stage III analyses, manual QC) mosaicked by NCEP/EMC; archived/redistributed by NWS Office of Water Prediction (NWPS), NCAR EOL, NCEI",
+      "data_kind": "derived",
+      "access": {
+        "mechanism": "NOMADS HTTPS directory pcpanl.YYYYMMDD/ with st4_conus.YYYYMMDDHH.{01h,06h,24h}.grb2 (+ st4_ak, .gif); NWPS HTTPS downloads: stageIV/current/nws_precip_{1hour,last2hours,last3hours,last6hours,last12hours,last24hours,since12z}_{conus,ak,pr}.nc and stageIV/YYYY/MM/DD/nws_precip_1day_YYYYMMDD_conus.{nc,tif}, nws_precip_last10days_..., plus ncep_stage_iv_source_files_YYYYMMDD.tar; NCAR EOL dataset 21.093 (DOI 10.5065/D6PG1QDD); NCEI directory nws-quantitative-precipitation-estimates/access/YYYY/MM/conus_YYYYMMDD_24h.grb2.",
+        "base_urls": [
+          "https://nomads.ncep.noaa.gov/pub/data/nccf/com/pcpanl/prod/",
+          "https://water.noaa.gov/resources/downloads/precip/stageIV/",
+          "https://water.noaa.gov/resources/downloads/precip/stageIII/",
+          "https://data.eol.ucar.edu/dataset/21.093",
+          "https://www.ncei.noaa.gov/data/nws-quantitative-precipitation-estimates/access/"
+        ],
+        "auth": "None for NOMADS/NWPS/NCEI; NCAR EOL requires a free EOL account for downloads (INFERENCE)",
+        "rate_limits": "None published; NWPS recommends wget scripting; anonymous FTP discontinued",
+        "formats": ["GRIB2 (NOMADS; GRIB1 before 2020-07-20; XMRG before 2017-03-22 at EOL)", "NetCDF (CF-1.6) and GeoTIFF on HRAP polar stereographic grid (NWPS)", "Shapefile (Stage III historical only)"]
+      },
+      "cadence": "01h files every hour; 06h files at 00/06/12/18Z; 24h files at 12Z (two per day folder observed: 48 x 01h, 8 x 06h, 2 x 24h per day on NOMADS including re-issues); NWPS 1-day product daily at 12Z.",
+      "latency": "Initial 01h issue ~55 min after the hour (st4_conus.2026082100.01h.grb2 posted 22-Aug 00:56Z); 06h ~2-3 h after period end; files are re-issued as late RFC data arrive (NOMADS folder keeps ~7 days and older files were observed back-filled).",
+      "spatial_resolution": "HRAP grid: polar stereographic true at 60 N, central meridian -105, sphere radius 6371200 m; Ni 1121 x Nj 881; Dx=Dy=4762.5 m; first grid point 23.117 N, 240.977 E. NWPS NetCDF carries x/y in metres with proj4 '+proj=stere +lat_0=90 +lat_ts=60 +lon_0=-105 +a=6371200 +b=6371200'.",
+      "temporal_resolution": "1 h, 6 h, 24 h accumulations (NWPS derives 1-365 day, month-to-date and water-year sums)",
+      "historical_depth": "NCAR EOL: 2001-12-31 to 2026-05-31 (hourly, 6-hourly, 24-hourly; CONUS, AK, PR from April 2017). NWPS daily Stage IV: 2016-06-28 to present (CONUS), Alaska Mar 2017+, Puerto Rico Apr 2017+; Stage III daily 2005-01-01 to 2017-06-27. NCEI holdings are sparse: year folders 2005-2010, 2013-2015, 2019, 2021, 2022 only, 24h GRIB2 files. NOMADS: rolling ~7 days.",
+      "missing_data_semantics": "GRIB2 bitmap with missingValue 9999 (eccodes); NWPS NetCDF uses _FillValue -3.4e38 outside the domain and a -10000 sentinel for 'no data yet' cells inside the domain. Empirically on 2026-08-22 07Z the NWPS 1-hour/last6/last24 grids were -10000 over 100% of eastern WA, OR and N. CA and 72% of western WA (rest off-grid ocean), while Georgia was 100% valid; the initial NOMADS 01h and 06h files for 2026-08-21 18Z were 100% missing over WA/OR/CA. Files 3 and 7 days old (2026-08-19 12Z and 2026-08-15 12Z) had 85.9% valid over western WA (remaining 14% is ocean) and 100% over eastern WA for 01h, 06h and 24h, i.e. western RFC data are back-filled in re-issues.",
+      "quality_flags": "None in-grid; quality depends on RFC manual QC. NWRFC, CNRFC and CBRFC use Mountain Mapper (gauge/PRISM) rather than radar-dominant Stage III, producing discontinuities at RFC boundaries (Nelson et al. 2016 recommend analyzing western RFCs separately).",
+      "units": "kg m-2 (= mm) in GRIB2; inches in NWPS NetCDF ('Inches' attribute)",
+      "licensing": "US Government work, no access or legal constraints (NCAR EOL record: 'Access Constraints: none', 'Legal Constraints: none')",
+      "limitations": [
+        "Not usable as real-time forcing for Washington: the western RFCs' contribution (NWRFC Mountain Mapper QPE) is absent from initial hourly/6-hourly issues and appears only in later re-issues; treat Stage IV as a T+2-7 day reanalysis product for WA.",
+        "Hourly values over NWRFC are effectively disaggregated 6-h gauge analyses, not radar-hourly fields (INFERENCE from Mountain Mapper workflow).",
+        "HRAP ~4.76 km grid is coarse relative to Cascade/Olympic orography; reprojection from polar stereographic is required.",
+        "NCEI holdings are incomplete; use NCAR EOL (2002-2026) or NWPS (2016+) for continuous archives.",
+        "NOMADS retention is only ~7 days; a daily pull of the back-filled files is needed to capture re-issues."
+      ],
+      "evidence": [
+        {"claim": "NOMADS pcpanl.20260821 contains st4_conus.YYYYMMDDHH.{01h,06h,24h}.grb2 (+gif) and st4_ak; 48/8/2 counts per day; 01h file for 00Z posted 00:56Z", "url": "https://nomads.ncep.noaa.gov/pub/data/nccf/com/pcpanl/prod/pcpanl.20260821/", "status": "FACT"},
+        {"claim": "eccodes decode of st4_conus.2026082118.01h.grb2 and .06h: shortName tp, units kg m**-2, polar_stereographic, Ni 1121 Nj 881, Dx=Dy 4762.5 m, first point 23.117 N / 240.977 E, bitmap present, missingValue 9999; 100% missing over WA/OR/N.CA boxes, 100% valid over Kansas/Georgia", "url": "https://nomads.ncep.noaa.gov/pub/data/nccf/com/pcpanl/prod/pcpanl.20260821/st4_conus.2026082118.01h.grb2", "status": "FACT"},
+        {"claim": "Re-issued files st4_conus.2026081912.{01h,06h,24h}.grb2 and st4_conus.2026081512.*.grb2 show 85.9% valid over western WA (ocean excluded) and 100% over eastern WA", "url": "https://nomads.ncep.noaa.gov/pub/data/nccf/com/pcpanl/prod/pcpanl.20260819/st4_conus.2026081912.01h.grb2", "status": "FACT"},
+        {"claim": "NWPS precipitation data access: Stage IV hourly latest 1/2/3/6/12/24-h; daily from 2016-06-28; Stage III 2005-01-01 to 2017-06-27; NetCDF/GeoTIFF/shapefile/GRIB2; HRAP polar stereographic; wget recommended; no FTP", "url": "https://water.noaa.gov/about/precipitation-data-access", "status": "FACT"},
+        {"claim": "NWPS stageIV folders 2016-2026 plus current/; files nws_precip_1hour_conus.nc, nws_precip_last{2,3,6,12,24}hours_conus.nc, nws_precip_since12z_conus.nc, nws_precip_1day_YYYYMMDD_conus.{nc,tif}, ncep_stage_iv_source_files_YYYYMMDD.tar", "url": "https://water.noaa.gov/resources/downloads/precip/stageIV/2026/08/20/", "status": "FACT"},
+        {"claim": "NWPS 1-hour NetCDF: variables time, crs, observation, normal, departure_from_normal, percent_of_normal, x, y; units 'Inches'; _FillValue -3.4e38; proj4 stere lat_ts=60 lon_0=-105 a=b=6371200; shape 881x1121; -10000 sentinel over WA/OR/CA on 2026-08-22 07Z while 1-day 20260820 file is 85%/100% valid over western/eastern WA", "url": "https://water.noaa.gov/resources/downloads/precip/stageIV/current/nws_precip_1hour_conus.nc", "status": "FACT"},
+        {"claim": "NCAR EOL Stage IV dataset: 2001-12-31 to 2026-05-31; hourly/6-hourly/24-hourly; GRIB1 to GRIB2 on 2020-07-20; 4-km polar stereographic; no access/legal constraints; DOI 10.5065/D6PG1QDD", "url": "https://data.ucar.edu/dataset/ncep-emc-4km-gridded-data-grib-stage-iv-data", "status": "FACT"},
+        {"claim": "NCEI nws-quantitative-precipitation-estimates/access has only years 2005-2010, 2013-2015, 2019, 2021, 2022; files like conus_20220226_24h.grb2", "url": "https://www.ncei.noaa.gov/data/nws-quantitative-precipitation-estimates/access/", "status": "FACT"},
+        {"claim": "Nelson et al. 2016 assessed 2002-2012 Stage IV, found discontinuities from differing RFC techniques and recommended separating western RFCs", "url": "https://ncics.org/cics-news/stage-iv-qpe-assessment/", "status": "FACT"},
+        {"claim": "CNRFC, NWRFC and CBRFC use Mountain Mapper gauge-based processing; hourly estimates at some RFCs lack manual QC", "url": "https://journals.ametsoc.org/view/journals/wefo/31/2/waf-d-14-00112_1.xml", "status": "INFERENCE"},
+        {"claim": "EMC Stage IV documentation page (re-issue schedule, RFC notes) could not be fetched (HTTP 403 from both EMC paths)", "url": "https://www.emc.ncep.noaa.gov/mmb/SREF/pcpanl/stage4/", "status": "OPEN_QUESTION"}
+      ],
+      "relevance_to_cascade_oracle": "Best long-record, RFC-QC'd gridded QPE for model calibration, bias-correcting MRMS, and computing event totals after the fact; do not use for real-time WA operations. Schedule a D+3 and D+7 re-pull of NOMADS files (or the NWPS daily tar) to capture NWRFC back-fill."
+    },
+    {
+      "name": "NWRFC (Northwest River Forecast Center) observed precipitation products",
+      "authority": "NOAA/NWS Northwest River Forecast Center, Portland OR",
+      "data_kind": "mixed",
+      "access": {
+        "mechanism": "Web map at /rfc/ with QPE 6-h/24-h point layers and QPE grids; point data download via display_file.php?product={qpe6|qpe24|qpf6|qpf24|qtf24min|qtf24max|qte24max|qte24min|qte6ta}&format={csv|xml}&date=YYYYMMDD which HTTP-302s to a timestamped file under /weather/xml/ (e.g., /weather/xml/qpe6_202608211449.csv). MRMS QPE overlays come from the NWS ImageServer obs/mrms_qpe (rft_1hr..rft_72hr).",
+        "base_urls": [
+          "https://www.nwrfc.noaa.gov/rfc/",
+          "https://www.nwrfc.noaa.gov/rfc/display_file.php",
+          "https://www.nwrfc.noaa.gov/weather/xml/",
+          "https://mapservices.weather.noaa.gov/raster/rest/services/obs/mrms_qpe/ImageServer"
+        ],
+        "auth": "None",
+        "rate_limits": "None published (single NWS regional web server; be polite)",
+        "formats": ["CSV", "XML", "PNG overlays", "ArcGIS ImageServer (WMS/REST) for MRMS grids"]
+      },
+      "cadence": "QPE6 file observed with a 2026-08-21 14:49 timestamp; qpe24 and same-day qpe6 returned 'File not found' at 08:30Z, so generation appears once daily after the 12Z/DH18 observation cycle (INFERENCE on exact schedule).",
+      "latency": "Same-day and prior-day QPE24 were unavailable at 08:30Z; QPE6 for the prior day was available (stamped 14:49 local the previous day). Treat as ~1 day latency.",
+      "spatial_resolution": "Point stations (CSV columns: lid, per0..per3, Total, stationName, latitude, longitude, elevation, dh); stations span WA, OR, ID, MT, BC (e.g., ABEW1 'ABERDEEN 20 NNE', CKKQ2 in BC). Gridded QPE/QPF grids are displayed as map overlays; no NetCDF/GRIB grid download endpoint was found on the public site.",
+      "temporal_resolution": "Four 6-h periods (per0-per3) and 24-h total per station per day",
+      "historical_depth": "Map datepicker minDate is 2014-01-01, implying files back to 2014 (the documented example date is 20140613); not verified for all dates.",
+      "missing_data_semantics": "Not documented; '0.00' appears for stations with no rain; missing handling unknown (OPEN_QUESTION).",
+      "quality_flags": "None in CSV; NWRFC QPE is forecaster-QC'd input to NWSRFS/Mountain Mapper (INFERENCE).",
+      "units": "Inches (consistent with NWS RFC convention; the CSV header does not state units) - INFERENCE",
+      "licensing": "US Government work; no terms stated",
+      "limitations": [
+        "No documented API; the download path was reverse-engineered from map.js and may change without notice.",
+        "Gridded NWRFC QPE is only available as map imagery on the public site; the underlying grids reach users through Stage IV (with delay) rather than a direct download (OPEN_QUESTION whether an internal NetCDF endpoint exists).",
+        "NWRFC's own page links BC River Forecast Centre and BC Hydro for Canadian data; cross-border Nooksack/Skagit headwater gauges require those sources separately."
+      ],
+      "evidence": [
+        {"claim": "RFC page offers Observed Precipitation (QPE) 24-h/6-h point data with XML/CSV download, QPE Grid 24/6 h, MRMS QPE radar-only overlays with 1/3/6/12/24/48/72-h options, and QPF 240/24/6 h", "url": "https://www.nwrfc.noaa.gov/rfc/", "status": "FACT"},
+        {"claim": "map.js builds 'display_file.php?product=<product>&format=<format>&date=YYYYMMDD' from selects name=product/name=format and a datepicker with minDate 2014-01-01", "url": "https://www.nwrfc.noaa.gov/rfc/map.js?version=20260710v2", "status": "FACT"},
+        {"claim": "display_file.php usage text lists products qpf6 qpf24 qtf24min qtf24max qte24max qte24min qte6ta qpe6 qpe24, formats csv/xml, date YYYYMMDD; qpe6 for 20260821 redirected (302) to /weather/xml/qpe6_202608211449.csv with header lid, per0..per3, Total, stationName, latitude, longitude, elevation, dh", "url": "https://www.nwrfc.noaa.gov/rfc/display_file.php?product=qpe6&format=csv&date=20260821", "status": "FACT"},
+        {"claim": "mrms_nwrfc.js queries https://mapservices.weather.noaa.gov/raster/rest/services/obs/mrms_qpe/ImageServer (layers rft_1hr, rft_3hr, rft_6hr, rft_12hr, rft_24hr, rft_48hr, rft_72hr) and converts mm to inches client-side", "url": "https://www.nwrfc.noaa.gov/rfc/mrms/js/mrms_nwrfc.js?version=20250128v1", "status": "FACT"},
+        {"claim": "NWRFC site map lists a 'Precipitation Summary' under water supply and links the legacy AHPS national archive", "url": "https://www.nwrfc.noaa.gov/site_map.cgi", "status": "FACT"}
+      ],
+      "relevance_to_cascade_oracle": "Daily QC'd station 6-h/24-h precipitation for the whole NWRFC domain (including BC stations) is a cheap validation set for MRMS/Stage IV bias in WA basins; the ImageServer gives a ready-made MRMS QPE tile service for UI overlays."
+    },
+    {
+      "name": "NWS API (api.weather.gov) station observations - ASOS/AWOS precipitation",
+      "authority": "NOAA National Weather Service",
+      "data_kind": "observational",
+      "access": {
+        "mechanism": "REST/GeoJSON: GET /stations/{stationId}/observations?start=&end=&limit= and /stations/{stationId}/observations/latest; OpenAPI at /openapi.json",
+        "base_urls": ["https://api.weather.gov"],
+        "auth": "No key; a User-Agent header identifying the application and contact is required",
+        "rate_limits": "Unpublished 'reasonable' limits; on exceedance retry after ~5 s; proxies hit limits sooner",
+        "formats": ["GeoJSON (default)", "JSON-LD", "DWML", "OXML", "CAP", "ATOM"]
+      },
+      "cadence": "Hourly METAR plus specials (KSEA returned 100 observations/day with limit=100)",
+      "latency": "Minutes after the METAR is issued (latest KSEA obs timestamp 08:10Z fetched at 08:30Z)",
+      "spatial_resolution": "Point (ASOS/AWOS airports: KSEA, KBLI, KBFI, KPAE, KOLM, KTIW, KPUW, KGEG etc.)",
+      "temporal_resolution": "Observation-level; fields precipitationLastHour, precipitationLast3Hours, precipitationLast6Hours (wmoUnit:mm)",
+      "historical_depth": "Rolling ~7 days: on 2026-08-22, KSEA and KBLI returned 100 obs/day for 2026-08-15 through 08-17 and 0 for 2026-08-14 and earlier",
+      "missing_data_semantics": "Field value null with qualityControl code (e.g., 'Z'); in 200 recent KSEA observations all three precipitation fields were null (dry August and/or ASOS reporting practice), so absence of a value does not mean zero.",
+      "quality_flags": "Per-field qualityControl code (MADIS-style letters such as 'Z', 'V', 'S')",
+      "units": "wmoUnit:mm; the documentation's known-issues list (Dec 2025) notes precipitation values in observation endpoints are rounded down to the nearest centimeter",
+      "licensing": "US Government work, public domain",
+      "limitations": [
+        "Only ~7 days of history; historical ASOS precipitation must come from NCEI (ISD/LCD) or Synoptic.",
+        "Precipitation fields are frequently null at WA ASOS sites and are coarsely rounded; use ASOS via NCEI/Synoptic 1-min/5-min feeds if precision matters.",
+        "No bulk endpoint; one station per request."
+      ],
+      "evidence": [
+        {"claim": "Base URL api.weather.gov, User-Agent required, unpublished rate limits with ~5 s retry, formats GeoJSON/JSON-LD/DWML/OXML/CAP/ATOM, /stations/{id}/observations/latest, Dec 2025 known issue that precipitation values are rounded down to nearest centimeter", "url": "https://www.weather.gov/documentation/services-web-api", "status": "FACT"},
+        {"claim": "OpenAPI Observation schema precipitation fields: precipitationLastHour, precipitationLast3Hours, precipitationLast6Hours", "url": "https://api.weather.gov/openapi.json", "status": "FACT"},
+        {"claim": "KSEA latest observation 2026-08-22T08:10Z had precipitationLast3Hours value null, qualityControl 'Z', unitCode wmoUnit:mm; 0 non-null precip values in last 200 obs", "url": "https://api.weather.gov/stations/KSEA/observations/latest", "status": "FACT"},
+        {"claim": "Retention probe: 100 features/day for 2026-08-15..17 and 0 for 2026-08-14 and earlier at KSEA and KBLI", "url": "https://api.weather.gov/stations/KSEA/observations?start=2026-08-14T00:00:00Z&end=2026-08-14T23:59:00Z&limit=100", "status": "FACT"}
+      ],
+      "relevance_to_cascade_oracle": "Free real-time ASOS point check for lowland basins (Sea-Tac for Green-Duwamish, Bellingham for Nooksack, Paine Field for Snohomish) but a weak precipitation source; better as temperature/wind context than as gauge truth."
+    },
+    {
+      "name": "Synoptic Data Weather API (Mesonet API) - aggregated ASOS/AWOS, RAWS, SNOTEL, HADS and mesonet precipitation",
+      "authority": "Synoptic Data PBC (aggregator; also operates NOAA's National Mesonet Program feed)",
+      "data_kind": "derived",
+      "access": {
+        "mechanism": "REST: /v2/stations/timeseries, /latest, /nearesttime, /precip (derived precipitation: pmode=totals|intervals|last with interval or accum_hours), /statistics, /percentiles, /networks; station selection by stid, state, radius, bbox, network",
+        "base_urls": ["https://api.synopticdata.com/v2/stations/precip", "https://api.synopticdata.com/v2/networks"],
+        "auth": "API token (commercial account, 14-day trial, NOAA-employee program, or Open Access for .edu)",
+        "rate_limits": "Timeseries/nearesttime: 100,000 station-hours per request; latest: 75,000 stations max and at least one station selector; statistics: 2M station-hours; percentiles: 50,000 stations / 150,000 station-hours hourly; concurrency default 1, configurable up to 5 (up to 20 requests 'at a time'); Open Access shares a pooled resource, Commercial has dedicated scaling; contracts scope spatial extent and years of history",
+        "formats": ["JSON (default)", "XML", "CSV download tool"]
+      },
+      "cadence": "Real-time as stations report (ASOS hourly/5-min, RAWS hourly, SNOTEL hourly, HADS 15-min/hourly)",
+      "latency": "Minutes (network-dependent; not quantified on docs)",
+      "spatial_resolution": "Points; 60,000+ stations nationally; WA coverage includes ASOS/AWOS (network id 1), RAWS (shortname 'raws'), SNOTEL, HADS, WSDOT, AgWeatherNet and others (network composition beyond id 1 is INFERENCE)",
+      "temporal_resolution": "Native observation interval; precip service returns totals or user-defined intervals (hour/day/week/month/year or N hours)",
+      "historical_depth": "Contract-dependent (measured in years before present); Open Access tier: 1 year of history",
+      "missing_data_semantics": "Derived precip_intervals/precip_accumulated replace 20+ raw conventions (15-min, hourly, since-midnight, water-year accumulators); QC removes implausible dips/spikes; missing periods are omitted rather than zero-filled (INFERENCE on omission behavior)",
+      "quality_flags": "Basic QC included; 'robust QC methods to remove outlier data' for derived precip; QC flags available via qc parameters (INFERENCE on parameter names)",
+      "units": "mm default; cm or in selectable",
+      "licensing": "Terms: Restricted Data Content cannot be redistributed without written approval; Public Data Content may be used internally but commercial redistribution requires written consent; attribution 'Data Aggregated by Synoptic' with hyperlink when serving third parties; Open Access is non-commercial, .edu only, requires credit and sharing results",
+      "limitations": [
+        "Cascade Oracle as a non-.edu product needs a commercial contract; pricing not published (commercial pricing page/contact).",
+        "Redistribution of even public-origin data through a product requires Synoptic's written consent under the T&Cs.",
+        "Derived precipitation is an interpretation layer; for audit trails keep raw agency feeds (NRCS AWDB, USGS, FEMS) alongside."
+      ],
+      "evidence": [
+        {"claim": "Precipitation service path https://api.synopticdata.com/v2/stations/precip; token required; start/end or recent; pmode totals/intervals/last with interval or accum_hours; variables precip_accum_five_minute/one_hour/six_hour; units mm/cm/in; JSON/XML", "url": "https://docs.synopticdata.com/services/precipitation", "status": "FACT"},
+        {"claim": "Limits: 100,000 station-hours per timeseries/nearesttime request; latest 75,000 stations; statistics 2M station-hours; percentiles 50,000 stations/150,000 station-hours; concurrency 1 default up to 5; Open Access pooled vs Commercial dedicated; spatial/temporal scoping by contract", "url": "https://docs.synopticdata.com/services/api-performance-and-limits", "status": "FACT"},
+        {"claim": "Derived precipitation replaces >20 reporting conventions with precip_intervals and precip_accumulated across 60,000+ stations with outlier QC", "url": "https://docs.synopticdata.com/services/precipitation-service-explained", "status": "FACT"},
+        {"claim": "Networks service https://api.synopticdata.com/v2/networks (token; id; shortname e.g. 'uunet,raws'); network 1 = ASOS/AWOS", "url": "https://docs.synopticdata.com/services/networks", "status": "FACT"},
+        {"claim": "Pricing: Open Access for researchers/academics, Commercial tiers with 14-day trial, NOAA employees via National Mesonet Program; no prices listed", "url": "https://synopticdata.com/pricing/", "status": "FACT"},
+        {"claim": "Open Access: accredited US institutions with .edu email, non-commercial, 1 year history, 1 concurrent request, credit Synoptic and share results, scoped to project region/time", "url": "https://synopticdata.com/open-access-program/", "status": "FACT"},
+        {"claim": "T&Cs: no redistribution of Restricted Data Content; Public Data Content internal use OK, commercial redistribution requires written consent; attribution 'Data Aggregated by Synoptic'; 1 TB/yr raw storage cap for redistribution clients", "url": "https://synopticdata.com/tcs", "status": "FACT"}
+      ],
+      "relevance_to_cascade_oracle": "Fastest path to a unified real-time gauge feed (ASOS+RAWS+SNOTEL+HADS+WSDOT) for WA with consistent derived accumulations; budget for a commercial license and redistribution consent, or use it for internal QC only and serve agency-native feeds publicly."
+    },
+    {
+      "name": "RAWS (Remote Automated Weather Stations) precipitation via WRCC RAWS USA Climate Archive and USFS FEMS",
+      "authority": "Interagency wildland fire program (USFS/BLM/NPS/state agencies); WRCC/DRI archive; USDA Forest Service Fire Environment Mapping System (FEMS)",
+      "data_kind": "observational",
+      "access": {
+        "mechanism": "WRCC: web forms/CGI (state image-map pages, e.g., wraws/waF.html frames wa.html), no API. FEMS: UI download (menu > Download > Weather Observation) and a read-only GraphQL API at https://fems.fs2c.usda.gov/api/ext-climatology/graphql using HTTP Basic auth (username + generated FEMS API key); only accounts with the 'FEMS API' or 'FEMS Admin' role can generate keys; queries include NfdrCatalog (station metadata incl. weather_hourly_visible/weather_hourly_download flags) and WeatherObs (startDateTimeRange, station ids; fields include observation_time, hourly_precip, observation_type). Synoptic also redistributes RAWS (shortname 'raws').",
+        "base_urls": ["https://raws.dri.edu/", "https://fems.fs2c.usda.gov/ui", "https://fems.fs2c.usda.gov/api/ext-climatology/graphql"],
+        "auth": "WRCC: none (web). FEMS API: FEMS account with API role + API key (Basic auth). FEMS UI public access reported as most recent 2 weeks of hourly RAWS and 7-day forecast; authenticated users get full history (INFERENCE from search snippet)",
+        "rate_limits": "Not documented",
+        "formats": ["HTML/CSV via web forms (WRCC)", "JSON (GraphQL), CSV downloads (FEMS)"]
+      },
+      "cadence": "Hourly observations (RAWS GOES transmission); some stations 15-min",
+      "latency": "Typically within the hour via GOES/FEMS ingest (INFERENCE)",
+      "spatial_resolution": "Points; dense in forested/upland WA (DNR, USFS, NPS stations) where ASOS/USGS gauges are absent",
+      "temporal_resolution": "Hourly precipitation increments (hourly_precip) and daily summaries",
+      "historical_depth": "WRCC archive from station inception (many WA RAWS from 1980s-1990s); FEMS holds historical and current observations (FEMS fire-danger outputs shown through Oct 31 2025 on the wildfire.gov page)",
+      "missing_data_semantics": "Not documented publicly; RAWS tipping buckets are unheated at many sites so winter precipitation is undercaught or delayed (INFERENCE, well known)",
+      "quality_flags": "FEMS applies NFDRS-oriented QC; WRCC serves raw/edited archives (INFERENCE)",
+      "units": "Inches (RAWS convention; FEMS field 'hourly_precip') - INFERENCE on units",
+      "licensing": "US Government/interagency data, public; FEMS API restricted to role-holders",
+      "limitations": [
+        "No public programmatic API without a FEMS role; WRCC is form-driven.",
+        "Unheated gauges: unreliable in snow season, which is the flood season for WA rivers.",
+        "Stations may be seasonal (powered down in winter) and relocated."
+      ],
+      "evidence": [
+        {"claim": "WRCC RAWS USA Climate Archive landing page: state image map, stations/historical data still being added, contact wrcc@dri.edu; WA page is a CGI image map with frames wa.html/stname.html", "url": "https://raws.dri.edu/", "status": "FACT"},
+        {"claim": "FEMS Read-Only API User Guide (Mar 2026): API key generated in FEMS by users with FEMS API/Admin role; Basic auth with username + key; endpoint https://fems.fs2c.usda.gov/api/ext-climatology/graphql; NfdrCatalog and WeatherObs queries; station fields weather_hourly_visible/weather_hourly_download; observation fields observation_time, hourly_precip, observation_type", "url": "https://wildfireweb-prod-media-bucket.s3.us-gov-west-1.amazonaws.com/s3fs-public/2026-03/FEMS_Read_Only_API_User_Guide-20206-0326.pdf", "status": "FACT"},
+        {"claim": "FEMS provides historical and current observations and forecasts; a read-only API for external applications; download page with hourly or daily options", "url": "https://www.wildfire.gov/application/fems", "status": "FACT"},
+        {"claim": "Public FEMS users can access RAWS hourly observations for the most recent 2-week period; authenticated users have full history", "url": "https://www.wildfire.gov/application/fems", "status": "INFERENCE"}
+      ],
+      "relevance_to_cascade_oracle": "Only dense upland gauge network in Olympic/Cascade foothills (e.g., DNR RAWS in Skagit/Nooksack/Snoqualmie forests) for summer/fall storms; for winter use SNOTEL instead. Obtain a FEMS API role or license RAWS via Synoptic."
+    },
+    {
+      "name": "NRCS SNOTEL precipitation via AWDB REST API (PREC, PRCP, PRCPSA, PRCPMTD)",
+      "authority": "USDA Natural Resources Conservation Service, National Water and Climate Center (Air-Water Database, AWDB)",
+      "data_kind": "observational",
+      "access": {
+        "mechanism": "REST (OpenAPI 'AWDB REST API' v1.0): GET /services/v1/data?stationTriplets=&elements=&duration={HOURLY|DAILY|...}&beginDate=&endDate=&periodRef=&returnFlags=&returnOriginalValues=&returnSuspectData=; /services/v1/stations (filters: stationTriplets wildcards e.g. *:WA:SNTL, hucs, countyNames, elements, durations, activeOnly, returnStationElements); /services/v1/reference-data; /services/v1/forecasts",
+        "base_urls": ["https://wcc.sc.egov.usda.gov/awdbRestApi", "https://wcc.sc.egov.usda.gov/awdbRestApi/v3/api-docs", "https://wcc.sc.egov.usda.gov/awdbRestApi/swagger-ui/index.html"],
+        "auth": "None",
+        "rate_limits": "Not documented; requests are bounded by station list and date range",
+        "formats": ["JSON"]
+      },
+      "cadence": "Hourly (PREC HOURLY) and daily (PREC, PRCP, PRCPSA DAILY); data arrive via meteor-burst/cell telemetry, typically hourly",
+      "latency": "Hours: 2026-08-21 00:00-06:00 hourly PREC for 908:WA:SNTL was available on 2026-08-22 08:30Z; daily values for 2026-08-20 available 2026-08-22 (INFERENCE on typical 1-3 h telemetry lag)",
+      "spatial_resolution": "Points: 78 active WA SNOTEL stations (e.g., 908:WA:SNTL Alpine Meadows, King County, HUC 171100100501, 3500 ft, SHEF APSW1); station metadata include HUC and associated HUCs",
+      "temporal_resolution": "Hourly accumulator readings; daily increments",
+      "historical_depth": "Station-dependent; 672:WA:SNTL PREC from 1980-10-01, PRCP/PRCPSA derived daily from 1979-10-01; 908:WA:SNTL hourly PREC from 1994-09-16",
+      "missing_data_semantics": "Absent values are omitted from the values array; flags available with returnFlags=true; suspect data filtered unless returnSuspectData=true; PREC is a water-year cumulative gauge reading (resets Oct 1) so increments must be differenced and can be negative/noisy; PRCP is a derived daily increment (derivedData:true) and PRCPSA is snow-adjusted",
+      "quality_flags": "Per-value flags (returnFlags), original vs edited values (returnOriginalValues), suspect filtering; PRCPSA uses SWE increase to adjust undercatch",
+      "units": "inches stored (storedUnitCode 'in'; metric mm available per element reference), precision 1-2 decimals",
+      "licensing": "US Government work, public domain",
+      "limitations": [
+        "Storage-gauge accumulators have wind undercatch and freeze/thaw artifacts; use PRCPSA for snow season or derive from SWE.",
+        "Hourly PREC increments are coarse (0.1 in resolution observed) and noisy; sub-daily rainfall rates are unreliable.",
+        "Coverage is mountain-only; lowland basins need other gauges."
+      ],
+      "evidence": [
+        {"claim": "OpenAPI: AWDB REST API v1.0, server https://wcc.sc.egov.usda.gov/awdbRestApi, GET /services/v1/{stations,reference-data,forecasts,data} with parameters stationTriplets, elements, duration, beginDate, endDate, periodRef, returnFlags, returnOriginalValues, returnSuspectData; stations filters hucs, countyNames, durations, activeOnly", "url": "https://wcc.sc.egov.usda.gov/awdbRestApi/v3/api-docs", "status": "FACT"},
+        {"claim": "Element reference: PREC 'PRECIPITATION ACCUMULATION' (Water Year Accumulated Precipitation, in/mm); PRCP 'PRECIPITATION INCREMENT' (Total Precipitation, derived D); PRCPSA 'PRECIPITATION INCREMENT - SNOW-ADJ'; PRCPMTD month-to-date", "url": "https://wcc.sc.egov.usda.gov/awdbRestApi/services/v1/reference-data?referenceLists=elements", "status": "FACT"},
+        {"claim": "Sample: 672:WA:SNTL daily PRCP/PRCPSA (derivedData true, begin 1979-10-01) and PREC (derivedData false, begin 1980-10-01, value 124.9-125.0 in on 2026-08-18..20)", "url": "https://wcc.sc.egov.usda.gov/awdbRestApi/services/v1/data?stationTriplets=672:WA:SNTL&elements=PREC,PRCP,PRCPSA&duration=DAILY&beginDate=2026-08-18&endDate=2026-08-20&periodRef=END", "status": "FACT"},
+        {"claim": "78 active WA SNOTEL stations; first is 908:WA:SNTL Alpine Meadows (King County, HUC 171100100501, 3500 ft, SHEF APSW1, begin 1994-09-01)", "url": "https://wcc.sc.egov.usda.gov/awdbRestApi/services/v1/stations?stationTriplets=*:WA:SNTL&activeOnly=true", "status": "FACT"},
+        {"claim": "Hourly PREC for 908:WA:SNTL available (156.6-156.7 in, 2026-08-21 00-06Z, beginDate 1994-09-16)", "url": "https://wcc.sc.egov.usda.gov/awdbRestApi/services/v1/data?stationTriplets=908:WA:SNTL&elements=PREC&duration=HOURLY&beginDate=2026-08-21%2000:00&endDate=2026-08-21%2006:00", "status": "FACT"}
+      ],
+      "relevance_to_cascade_oracle": "Core mountain precipitation truth for Skagit, Nooksack, Snoqualmie, Cedar, Green and Puyallup/White headwaters; pairs with SWE/TOBS for rain-on-snow detection; HUC metadata lets stations be mapped to basins automatically."
+    },
+    {
+      "name": "USGS Water Data APIs - continuous precipitation (parameter 00045) at USGS rain gauges",
+      "authority": "U.S. Geological Survey Water Resources Mission Area (Water Data for the Nation)",
+      "data_kind": "observational",
+      "access": {
+        "mechanism": "OGC API - Features: /ogcapi/v0/collections/{continuous|daily|latest-continuous|monitoring-locations|time-series-metadata|parameter-codes}/items with filters parameter_code, state_name, hydrologic_unit_code, bbox, time, limit; API key via api_key query or X-Api-Key header (api.data.gov); OpenAPI at /ogcapi/v0/openapi; legacy https://waterservices.usgs.gov/ (IV/DV/site) to be decommissioned",
+        "base_urls": ["https://api.waterdata.usgs.gov/ogcapi/v0/", "https://api.waterdata.usgs.gov/ogcapi/v0/collections/continuous/items", "https://api.waterdata.usgs.gov/ogcapi/v0/collections/time-series-metadata/items", "https://api.waterdata.usgs.gov/ogcapi/v0/collections/parameter-codes/items/00045", "https://api.waterdata.usgs.gov/signup/"],
+        "auth": "Optional api.data.gov API key (higher limits); keyless access allowed",
+        "rate_limits": "Per-endpoint limits exposed in X-RateLimit-Limit / X-RateLimit-Remaining headers (docs example shows X-RateLimit-Limit: 1000); 429 on exceedance; custom limits via wdfn@usgs.gov",
+        "formats": ["GeoJSON", "JSON-LD", "HTML", "CSV (dataRetrieval/dataretrieval clients)"]
+      },
+      "cadence": "Continuous sensors mostly 15-min ('often at a fixed 15-minute interval'); daily summaries in /daily",
+      "latency": "Telemetered sites appear 'within minutes'; observed last_modified within ~25 min of observation time for USGS-12143400",
+      "spatial_resolution": "Points: 55 WA 00045 time series (42 'Decumulated' 15-min, 11 'Sum' daily, 2 'Max'); 39 active series at 30 distinct sites as of 2026-08; e.g., USGS-12143400 (Snoqualmie area), USGS-12210220 (Nooksack area), USGS-12020800, USGS-14240311",
+      "temporal_resolution": "15-min increments (Decumulated) and daily sums",
+      "historical_depth": "Earliest WA 00045 series begins 1999-10-01; many current series begin 2019-2026 (several re-registered 2026-04-20)",
+      "missing_data_semantics": "Gaps omitted; time-series-metadata has data_gap_interval; approval_status 'Provisional' vs 'Approved'; qualifier codes (e.g., Ice, Eqp) on values",
+      "quality_flags": "approval_status, qualifier, last_modified per value",
+      "units": "in (00045 'Precipitation, total, inches'); 00046 is in/week",
+      "licensing": "US Government work, public domain",
+      "limitations": [
+        "Only ~30 active USGS rain gauges in WA; most are co-located with streamgages in lowland/foothill locations.",
+        "waterservices.usgs.gov (IV/DV) will be decommissioned in Q1 2027 with possible intentional degradation from Aug 2026; migrate to OGC API now.",
+        "state_code is not a queryable on time-series-metadata (use state_name or bbox)."
+      ],
+      "evidence": [
+        {"claim": "Parameter 00045 = Precipitation, unit 'in', group PHY, description 'Precipitation, total, inches'; 00046 = in/week", "url": "https://api.waterdata.usgs.gov/ogcapi/v0/collections/parameter-codes/items/00045?f=json", "status": "FACT"},
+        {"claim": "time-series-metadata queryables include parameter_code, state_name, hydrologic_unit_code, computation_identifier, begin, end, data_gap_interval (state_code rejected with InvalidQuery)", "url": "https://api.waterdata.usgs.gov/ogcapi/v0/collections/time-series-metadata/queryables?f=json", "status": "FACT"},
+        {"claim": "WA 00045: 55 series (42 Decumulated, 11 Sum, 2 Max), 39 active at 30 sites, earliest begin 1999-10-01", "url": "https://api.waterdata.usgs.gov/ogcapi/v0/collections/time-series-metadata/items?parameter_code=00045&state_name=Washington&limit=1000&f=json", "status": "FACT"},
+        {"claim": "Continuous items for USGS-12143400 at 15-min spacing with approval_status 'Provisional', unit 'in', last_modified ~25 min after observation", "url": "https://api.waterdata.usgs.gov/ogcapi/v0/collections/continuous/items?parameter_code=00045&bbox=-122.5,47.2,-121.5,47.8&time=2026-08-19T00:00:00Z/2026-08-20T00:00:00Z&limit=5&f=json", "status": "FACT"},
+        {"claim": "API keys via api.data.gov; api_key param or X-Api-Key header; rate limits reported in X-RateLimit-Limit/Remaining headers (example 1000); 429 on exceedance", "url": "https://api.waterdata.usgs.gov/docs/ogcapi/keys/", "status": "FACT"},
+        {"claim": "Continuous collection description: high-frequency sensors, often fixed 15-minute interval, telemetered within minutes", "url": "https://api.waterdata.usgs.gov/ogcapi/v0/collections/continuous?f=json", "status": "FACT"},
+        {"claim": "WaterServices decommission in Q1 2027; no intentional degradation before August 2026; migration guide at api.waterdata.usgs.gov/docs/ogcapi/migration/", "url": "https://waterdata.usgs.gov/blog/api-waterservices-decom/", "status": "FACT"},
+        {"claim": "Summer 2026 update: /continuous and /daily accept state name and HUC filters; peaks endpoint added; WaterServices decommissioning winter 2027", "url": "https://waterdata.usgs.gov/blog/api-updates-2026/", "status": "FACT"}
+      ],
+      "relevance_to_cascade_oracle": "Small but high-quality 15-min gauge set co-located with streamgages (ideal for rainfall-runoff lag estimation in Snoqualmie, Nooksack, Cedar basins); use the same OGC API already needed for discharge."
+    },
+    {
+      "name": "King County Hydrologic Information Center (HIC) rain gauges",
+      "authority": "King County Department of Natural Resources and Parks, Water and Land Resources Division",
+      "data_kind": "observational",
+      "access": {
+        "mechanism": "ASP.NET web app: GaugeListSearch.aspx (filter by parameter incl. Precipitation, WRIA 07/08/09/10/15, Active/Real-time only), GaugeMap.aspx (parameter toggles, JSON web method GaugeMap.aspx/GetDischargeInfo), DataDownload.aspx?G_ID=<id> (multi-parameter download form with site codes like 02a, 31u, 41a...), GaugeMetaData.aspx?G_ID=, SummaryDataTables.aspx?G_ID=; King County open-data catalog entry 'Rain Gage Data' (pzrb-xkes) is an external link",
+        "base_urls": ["https://green2.kingcounty.gov/hydrology/", "https://green2.kingcounty.gov/hydrology/DataDownload.aspx", "https://green2.kingcounty.gov/hydrology/GaugeListSearch.aspx", "https://data.kingcounty.gov/Environment-Waste-Management/Rain-Gage-Data/pzrb-xkes"],
+        "auth": "None",
+        "rate_limits": "None published; form POST-driven, not designed for bulk automation",
+        "formats": ["CSV/Excel-style downloads via form (INFERENCE on exact format)", "HTML tables and graphs"]
+      },
+      "cadence": "15-minute rainfall and streamflow; daily totals; real-time gauges flagged separately from non-telemetered",
+      "latency": "Real-time gauges update near-continuously (telemetered); others updated after field download (INFERENCE)",
+      "spatial_resolution": "Points across King County WRIAs 7 (Snohomish), 8 (Cedar-Sammamish), 9 (Duwamish-Green), 10 (Puyallup-White), 15 (Vashon); several hundred site codes listed in the download selector",
+      "temporal_resolution": "15-min and daily",
+      "historical_depth": "Decades for long-running gauges (page last updated 2016; data continue); not quantified here (OPEN_QUESTION)",
+      "missing_data_semantics": "Not documented on the pages fetched; provisional vs QA'd status is not stated (OPEN_QUESTION)",
+      "quality_flags": "Not documented publicly (OPEN_QUESTION)",
+      "units": "Inches (INFERENCE)",
+      "licensing": "King County open-data catalog record lists license 'Public Domain'; HIC pages reference generic county terms of use",
+      "limitations": [
+        "No API; scraping ASP.NET postbacks is brittle. A data-sharing agreement or bulk export from KC WLRD is the realistic route.",
+        "Provisional/QC semantics undocumented; contact listed on HIC page (Brendan Grant, 206-477-4698).",
+        "Only King County; equivalent county networks (Snohomish, Whatcom, Skagit, Pierce) must be sourced separately."
+      ],
+      "evidence": [
+        {"claim": "HIC provides daily rainfall totals, average daily discharge, 15-minute rainfall and streamflow, discrete water quality; Sea-Tac precipitation page; contact Brendan Grant", "url": "https://green2.kingcounty.gov/hydrology/", "status": "FACT"},
+        {"claim": "Browse a List: parameters incl. Precipitation; WRIAs 07 Snohomish, 08 Cedar-Sammamish, 09 Duwamish-Green, 10 Puyallup-White, 15 Vashon; 'View Active Gages Only' and 'View Real Time Gages Only'", "url": "https://green2.kingcounty.gov/hydrology/GaugeListSearch.aspx", "status": "FACT"},
+        {"claim": "Station Map toggles Precipitation and distinguishes Current/Real time/Discontinued gages; links DataDownload.aspx?G_ID=, GaugeMetaData.aspx?G_ID=, SummaryDataTables.aspx?G_ID=, WaterQualityDataDownload.aspx?G_ID=, web method GaugeMap.aspx/GetDischargeInfo", "url": "https://green2.kingcounty.gov/hydrology/GaugeMap.aspx", "status": "FACT"},
+        {"claim": "Multi-Parameter Data download page lists site codes (01a, 02a ... 49AA) with options for Gauge Metadata, Multi-Site, Annual Summary, Multi-Depth, Crest/Stage, Field Measurements", "url": "https://green2.kingcounty.gov/hydrology/DataDownload.aspx", "status": "FACT"},
+        {"claim": "King County open data 'Rain Gage Data' (pzrb-xkes): 'Data from King County rain gages', attribution King County, license Public Domain, external link to the flood warning rain-gages page", "url": "https://data.kingcounty.gov/api/views/pzrb-xkes.json", "status": "FACT"}
+      ],
+      "relevance_to_cascade_oracle": "Densest rain-gauge network for Cedar/Lake Washington, Green-Duwamish, Snoqualmie (King County portion) and White River; essential for urban-basin nowcasting and MRMS bias correction in the Puget lowland."
+    },
+    {
+      "name": "Seattle Public Utilities (SPU) rain gauge network and Seattle RainWatch",
+      "authority": "City of Seattle, Seattle Public Utilities (Drainage and Wastewater); RainWatch was built/operated by the University of Washington Atmospheric Sciences for SPU",
+      "data_kind": "observational",
+      "access": {
+        "mechanism": "No public time-series API found. Gauge locations are published as GIS layer 'Rain Gages' (Socrata federated id w3ip-ra4u from cos-data.seattle.gov; Seattle GeoData ArcGIS layer SeattleCityGIS::rain-gages, table UTIL.RAIN_GAGES). Historical 1-minute series are referenced by the SDCI/SPU Stormwater Manual Appendix F for design use (obtain from SPU). RainWatch (radar-calibrated nowcasts + SPU gauges) was terminated 2018-12-01.",
+        "base_urls": ["https://data.seattle.gov/dataset/Rain-Gages/w3ip-ra4u", "https://data-seattlecitygis.opendata.arcgis.com/datasets/SeattleCityGIS::rain-gages", "https://www.atmos.washington.edu/SPU/"],
+        "auth": "None for GIS locations; data request to SPU for time series (OPEN_QUESTION)",
+        "rate_limits": "n/a",
+        "formats": ["GeoJSON/Shapefile (locations)", "Time series format unknown"]
+      },
+      "cadence": "Gauges record at 1-minute time step (Appendix F); historical SPU blog posts describe 5-minute postings (INFERENCE)",
+      "latency": "Unknown; no public real-time feed located (OPEN_QUESTION)",
+      "spatial_resolution": "17 active + 2 closed gauges within Seattle city limits (station IDs 45-S001 Haller Lake Shop, 45-S002 Magnuson Park, 45-S003 UW Hydraulics Lab, 45-S004 Maple Leaf Reservoir, 45-S005 Fauntleroy Ferry Dock, 45-S007 Whitman MS, 45-S008 Ballard Locks, 45-S009 Woodland Park Zoo, ...)",
+      "temporal_resolution": "1 minute (0.01 in tip resolution)",
+      "historical_depth": "January 1978 to present",
+      "missing_data_semantics": "Unknown (OPEN_QUESTION)",
+      "quality_flags": "Unknown (OPEN_QUESTION)",
+      "units": "Inches",
+      "licensing": "City of Seattle open data terms for GIS layer (no license field populated); time-series terms unknown",
+      "limitations": [
+        "RainWatch (UW real-time radar-gauge product for Seattle) has been discontinued since 2018-12-01 when SPU withdrew support; no successor service identified.",
+        "Open-data searches found only gauge locations and a RainWise rebate dataset, not readings; a catalog entry describing 5-minute readings could not be located as of 2026-08-22.",
+        "Coverage limited to Seattle city limits (lower Cedar/Lake Washington and Duwamish outlets)."
+      ],
+      "evidence": [
+        {"claim": "RainWatch terminated 2018-12-01 after SPU withdrew support; built after the 2006-12-14 flooding; contact Cliff Mass for revival", "url": "https://www.atmos.washington.edu/SPU/", "status": "FACT"},
+        {"claim": "Stormwater Manual Appendix F (Jan 2026 draft): continuous historical precipitation from 17 active and 2 closed SPU rain gauges, January 1978 to present, 1-minute time step; Table F.2 station IDs 45-S001 etc.", "url": "https://www.seattle.gov/documents/departments/sdci/codes/changestocodes/stormwaterwatercodemanualupdate2026/apxf_hydrologicanalysis_jan2026draft_redlines.pdf", "status": "FACT"},
+        {"claim": "'Rain Gages' dataset: supports permanent CSO monitoring network to determine start/end of rainfall events; data from UTIL.RAIN_GAGES; tags dww, rain gage; rows updated 2025-02-03", "url": "https://data.seattle.gov/api/views/w3ip-ra4u.json", "status": "FACT"},
+        {"claim": "Socrata catalog search on data.seattle.gov for 'rain' returns only the federated GIS 'Rain Gages' layer and SPU underdrain/rain-garden layers, no readings dataset", "url": "https://data.seattle.gov/api/catalog/v1?q=rain&limit=40", "status": "FACT"},
+        {"claim": "SPU posts 5-minute rain gauge readings on the open-data portal", "url": "https://data.seattle.gov/browse?tags=precipitation", "status": "OPEN_QUESTION"}
+      ],
+      "relevance_to_cascade_oracle": "Longest high-resolution urban gauge record in the region (1978+, 1-min) for Seattle-side tributaries of Lake Washington/Duwamish; pursue an SPU data agreement; RainWatch's demise leaves a gap Cascade Oracle could fill."
+    },
+    {
+      "name": "NOAA precipitation-frequency atlases for Washington: NOAA Atlas 2 (current), Atlas 14 (not applicable), Atlas 15 (forthcoming), plus WSDOT/Schaefer-Wallis regional L-moment analyses",
+      "authority": "NOAA/NWS Office of Water Prediction, Hydrometeorological Design Studies Center (HDSC); WSDOT / MGS Engineering for state products",
+      "data_kind": "static",
+      "access": {
+        "mechanism": "PFDS web map and backend (cgi_readH5.py?lat=&lon=&type=pf&data=depth&units=english&series=pds) return Atlas 14 quantiles only inside Atlas 14 project areas; Washington returns 'Error 3.0: Selected location is not within a project area'. NOAA Atlas 2 grids (15-sec ArcInfo ASCII) for WA/OR from the HDSC Atlas 2 page. Atlas 14 GIS grids (zipped ASCII) for 12 volumes; Atlas 15 will be served through PFDS.",
+        "base_urls": ["https://hdsc.nws.noaa.gov/pfds/", "https://hdsc.nws.noaa.gov/cgi-bin/new/cgi_readH5.py", "https://hdsc.nws.noaa.gov/pfds/pfds_gis.html", "https://www.weather.gov/owp/hdsc_noaa_atlas2", "https://water.noaa.gov/about/atlas15"],
+        "auth": "None",
+        "rate_limits": "None published",
+        "formats": ["ASCII grids (zipped)", "CSV/JS quantile tables from PFDS", "PDF atlases"]
+      },
+      "cadence": "Static; Atlas 15 Vol 1 preliminary CONUS estimates September 2026, published 2027",
+      "latency": "n/a",
+      "spatial_resolution": "Atlas 2 grids 15 arc-sec; Atlas 14 grids ~30 arc-sec (INFERENCE); WSDOT products mapped on PRISM grid",
+      "temporal_resolution": "Atlas 2 WA grids: 6-h and 24-h durations only; Atlas 14: 5-min to 60-day; Atlas 15: 5-min to 60-day with exceedance probabilities 50% to 0.1%",
+      "historical_depth": "Atlas 2 based on pre-1970 records (1973 publication); WSDOT/HESS 2007 analysis more than doubled record length; Atlas 15 Vol 1 uses trend-aware historical records, Vol 2 model projections to 2100",
+      "missing_data_semantics": "n/a (gridded estimates); outside-project-area errors from PFDS",
+      "quality_flags": "Atlas 14 provides 90% confidence limits; Atlas 2 provides none",
+      "units": "inches (english) or mm",
+      "licensing": "US Government work, public domain; WSDOT reports public; HESS paper CC-BY (INFERENCE)",
+      "limitations": [
+        "Washington has no NOAA Atlas 14 volume; only Atlas 2 (2-yr and 100-yr ARIs at 6-h/24-h) is official, so return-period context for other durations/ARIs must come from Schaefer/Wallis regional L-moment products (2-h and 24-h, 12 regions, GEV/Kappa) or be derived locally.",
+        "Atlas 15 timeline has slipped (a 2025 ASFPM note listed preliminary 2025/final 2026; NOAA now says preliminary Sept 2026, final 2027).",
+        "Atlas 14 Vol 12 (ID/MT/WY, effective 2024-08-31) borders eastern WA but does not cover it."
+      ],
+      "evidence": [
+        {"claim": "PFDS backend returns result 'none' and 'Error 3.0: Selected location is not within a project area' for Seattle (47.6062, -122.3321) while Boise returns quantile arrays", "url": "https://hdsc.nws.noaa.gov/cgi-bin/new/cgi_readH5.py?lat=47.6062&lon=-122.3321&type=pf&data=depth&units=english&series=pds", "status": "FACT"},
+        {"claim": "NOAA Atlas 2 page: 15-sec grids for Oregon and Washington for 2-year and 100-year ARIs at 6-hour and 24-hour durations in ArcInfo ASCII; Atlas 2 superseded for ID/MT/WY by Atlas 14 Vol 12 effective 2024-08-31", "url": "https://www.weather.gov/owp/hdsc_noaa_atlas2", "status": "FACT"},
+        {"claim": "PFDS home lists Oregon and Washington among locations and offers ASCII grids, temporal distributions, time series at observation sites", "url": "https://hdsc.nws.noaa.gov/pfds/", "status": "FACT"},
+        {"claim": "Atlas 14 GIS grids exist for 12 volumes with durations 5-min through 60-day; no Washington/Oregon grids listed", "url": "https://hdsc.nws.noaa.gov/pfds/pfds_gis.html", "status": "FACT"},
+        {"claim": "Atlas 15: exceedance probabilities 50% to 0.1%, durations 5 min to 60 days; Vol 1 supersedes Atlas 14, Vol 2 projections to 2100; Montana pilot released 2024-09-26 (review closed); CONUS preliminary September 2026, published 2027; served via PFDS", "url": "https://water.noaa.gov/about/atlas15", "status": "FACT"},
+        {"claim": "ASFPM note: Atlas 15 contracts paused ~1 month in early 2025; earlier timeline preliminary 2025 / published 2026", "url": "https://www.floods.org/news-views/policy-matters/after-brief-delay-noaas-atlas-15-project-moves-ahead/", "status": "FACT"},
+        {"claim": "Wallis, Schaefer, Barker, Taylor (HESS 2007): regional L-moment precipitation-frequency for 2-h and 24-h durations, 12 regions in Washington, GEV to 1-in-500 and Kappa beyond, PRISM mapping; updates the 1973 NWS atlas", "url": "https://hess.copernicus.org/articles/11/415/2007/", "status": "FACT"},
+        {"claim": "WSDOT research report 640-1 (western WA 2002) and eastern WA (2006) by MGS Engineering are the underlying state reports", "url": "https://www.wsdot.wa.gov/research/reports/fullreports/640-1.pdf", "status": "INFERENCE"}
+      ],
+      "relevance_to_cascade_oracle": "Return-period labeling of observed MRMS/gauge accumulations for WA cannot use Atlas 14; implement Atlas 2 (2/100-yr, 6/24-h) plus Schaefer-Wallis regional curves now and plan an Atlas 15 ingest for late 2026/2027; MRMS FLASH_QPE_ARI products embed Atlas 14 and are therefore unreliable over WA (INFERENCE)."
+    },
+    {
+      "name": "NCEI Cooperative Observer Hourly Precipitation Data (COOP-HPD v2, DSI-3240 successor)",
+      "authority": "NOAA NCEI",
+      "data_kind": "observational",
+      "access": {
+        "mechanism": "HTTPS directory: coop-hourly-precipitation/v2/{access,archive,doc,station-inventory}; docs CHPD-v2-ATBD-20181023.pdf, COOP-HPD-description.pdf, readme.csv.txt, hpd-states.txt, status.txt",
+        "base_urls": ["https://www.ncei.noaa.gov/data/coop-hourly-precipitation/v2/"],
+        "auth": "None",
+        "rate_limits": "None published",
+        "formats": ["CSV per station (readme.csv.txt)"]
+      },
+      "cadence": "Periodic archive updates (status.txt); not real-time",
+      "latency": "Months (INFERENCE)",
+      "spatial_resolution": "Points (COOP Fischer-Porter/hourly stations; WA coverage per hpd-states.txt)",
+      "temporal_resolution": "Hourly",
+      "historical_depth": "Multi-decadal (1940s+ for some stations) - INFERENCE",
+      "missing_data_semantics": "Documented in readme.csv.txt and ATBD (not read here) - OPEN_QUESTION",
+      "quality_flags": "Measurement/quality flags per hourly value per ATBD - INFERENCE",
+      "units": "Hundredths of inches (INFERENCE)",
+      "licensing": "US Government work, public domain",
+      "limitations": ["Not real-time; useful only for long-term calibration/frequency work."],
+      "evidence": [
+        {"claim": "Directory v2 contains access, archive, doc, station-inventory; doc includes CHPD-v2-ATBD-20181023.pdf, COOP-HPD-description.pdf, readme.csv.txt, hpd-states.txt, status.txt", "url": "https://www.ncei.noaa.gov/data/coop-hourly-precipitation/v2/doc/", "status": "FACT"}
+      ],
+      "relevance_to_cascade_oracle": "Long hourly gauge record for training/bias analysis and for local precipitation-frequency estimation where Atlas 14 is absent."
+    }
+  ],
+  "open_questions": [
+    "NCEP/EMC Stage IV documentation (re-issue schedule, per-RFC hourly availability) returned HTTP 403 from both EMC URLs; the back-fill behavior over NWRFC was established empirically (initial 01h/06h 100% missing over WA; 3- and 7-day-old files filled) but the official re-issue cadence and cutoff should be confirmed with EMC/NWRFC.",
+    "Whether NWRFC exposes gridded 6-h/24-h QPE (NetCDF/GRIB) for direct download; only map overlays and station CSV/XML via display_file.php were found.",
+    "SPU rain gauge time series (1-min since 1978): access path and terms; no open-data readings dataset was found and RainWatch is defunct.",
+    "King County HIC: provisional vs QA'd data semantics, download file format, and whether a bulk export or API can be arranged.",
+    "FEMS public (unauthenticated) access window for RAWS hourly data (2-week claim) and whether a FEMS API role can be granted to a non-agency platform.",
+    "Synoptic commercial pricing and written redistribution consent scope for a public-facing WA product.",
+    "USGS OGC API numeric rate limits with and without key (docs only show an example header of 1000).",
+    "NOAA Atlas 15 Volume 1 CONUS preliminary release (Sept 2026) - grid formats and whether MRMS FLASH ARI products will be regenerated from it.",
+    "Iowa State mtarchive completeness (gaps/outages) for 2014-2020 MRMS and exact date GaugeCorr_QPE was replaced by MultiSensor_QPE in the mirror.",
+    "Canadian (ECCC) radar reintegration date into MRMS after June 2023 and any residual gaps for the Nooksack/Skagit border."
+  ]
+}

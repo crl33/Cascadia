@@ -1,0 +1,714 @@
+{
+  "category": "Backend stack decisions and scientific Python tooling (for ADRs)",
+  "summary": "Research date 2026-08-22. Database: PostgreSQL 18.6 is the current stable line (19 is at Beta 3); PostGIS 3.6.1 is current stable (3.7.0beta2 adds PG19). TimescaleDB 2.29.2 supports PG 16-18, but every feature that matters for an observation store (columnstore/compression, continuous aggregates, retention policies, background jobs) is Timescale/Tiger License (TSL) only; the Apache-2 edition is essentially hypertable chunking. For ~thousands of observation series (e.g. 5,000 series x 96 obs/day ~ 175M rows/yr, INFERENCE) plain declarative partitioning (monthly RANGE on observed_at) managed by pg_partman 5.5.0's background worker is sufficient and keeps hosting options open; PostgreSQL docs say the planner handles 'up to a few thousand partitions fairly well' when pruning applies. Python: FastAPI 0.141.1 now requires Pydantic v2 (v1 dropped in 0.126, pydantic.v1 shim dropped in 0.128); Pydantic 2.13.4; SQLAlchemy 2.0.52 async via asyncpg 0.31.0 or psycopg 3.3.4 (psycopg is the one DBAPI that serves both create_engine and create_async_engine from the same URL); Alembic 1.19.1 with the `-t async` template; GeoAlchemy2 0.20.0 with Alembic helpers. Scientific wheels (rasterio 1.5.1, rioxarray 0.23.0, zarr 3.3.0, VirtualiZarr 2.7.3, Icechunk 2.1.2) require Python >=3.12, so the project floor is Python 3.12. Jobs with Postgres as the only infrastructure: recommend Procrastinate 3.9.0 (psycopg3, async-native, LISTEN/NOTIFY + SELECT FOR UPDATE, retry strategies with linear/exponential wait, DB-coordinated cron so 'deferring only happens once per period, even with multiple workers', `lock` for per-resource serialization, `queueing_lock` for enqueue-time dedupe, heartbeats + get_stalled_jobs). PgQueuer 1.3.2 is the strongest alternative (asyncpg or psycopg, SKIP LOCKED, dedupe_key unique partial index, DatabaseRetryEntrypointExecutor backoff, automatic heartbeat_timeout re-pickup, cron SchedulerManager, Prometheus/tracing/dashboard) but younger. APScheduler 3.11.3 is in-process only (4.0 is alpha: 'do NOT use this release in production'); Celery 5.6.3 has no PostgreSQL broker and beat must be a single instance; Dramatiq 2.2.0 (LGPL) and arq 0.28.0 ('maintained in a limited capacity') need Redis/RabbitMQ; Prefect 3.8.3 and Dagster 1.13.19 (both Apache-2.0) are full orchestration products needing their own server/daemon/DB and are overweight as the job engine for a modular monolith, though Dagster's asset graph is a credible later layer. Object storage: MinIO's GitHub repo is archived (read-only since 2026-04-25, 'THIS REPOSITORY IS NO LONGER MAINTAINED', community edition source-only, last binary release 2025-10-15) - do not adopt. SeaweedFS 4.44 (Apache-2.0, `weed mini` single-node, versioning/lifecycle/tagging/object-lock per its wiki) or Garage v2.3.0 (AGPLv3, no versioning/tagging) for self-hosted/dev; Cloudflare R2 ($0.015/GB-month, zero egress, 10 GB free, but no versioning/tagging) or S3 for production. Use obstore 0.11.1 (Rust object_store, sync+async, S3-compatible endpoints, fsspec adapter, also backs zarr's experimental ObjectStore) as the primary client; boto3 1.43.78 for admin; aioboto3 15.5.0 only if boto3 parity is needed. Science: xarray 2026.7.0; cfgrib 0.9.15.1 + eccodes 2.47.0 (pip wheels bundle eccodeslib since 2.43.0 - no conda required); Herbie 2026.3.0 for HRRR/GFS/GEFS/NBM/RRFS/RTMA/ECMWF from AWS NODD/GCP/Azure/NOMADS; exactextract 0.3.0 (fractional pixel coverage, coverage_weight, min_coverage_frac, weighted_* ops) over rasterstats 0.21.0 for basin-average zonal statistics on 3-km grids against small Cascade basins; pyproj 3.7.2, shapely 2.1.2, GeoPandas 1.1.4; Zarr 3.3.0 (spec v2+v3, sharding; avoid yanked 3.0.0-3.0.7), kerchunk 0.2.10, VirtualiZarr 2.7.3 (alpha), Icechunk 2.1.2; pint 0.25.3 + pint-xarray 0.6.1. Observability: OpenTelemetry Python traces and metrics are Stable, logs still 'Development' (SDK 1.44.0) with instrumentations for fastapi/asgi/sqlalchemy/asyncpg/psycopg/httpx/logging/system-metrics; structlog 26.1.0; prometheus_client 0.26.0 multiprocess mode has real limitations (no Info/Enum, custom collectors don't work) so prefer OTLP metrics or one process per container; Grafana is AGPL-3.0-only. Testing: pytest 9.1.1, pytest-asyncio 1.4.0 (asyncio_mode, asyncio_default_fixture_loop_scope, asyncio_default_test_loop_scope), respx 0.23.1 (httpx>=0.25) vs pytest-httpx 0.36.2 (pins httpx==0.28.*, pytest==9.*), testcontainers 4.15.0 (PostgresContainer accepts a custom image, e.g. a postgis image), schemathesis 4.25.0 (OpenAPI 3.1/3.2, from_asgi for FastAPI), Playwright 1.62.0, hypothesis 6.165.10 (MPL-2.0).",
+  "providers": [
+    {
+      "name": "PostgreSQL 18 + PostGIS 3.6 (core relational/spatial store)",
+      "authority": "PostgreSQL Global Development Group; PostGIS Project Steering Committee (OSGeo)",
+      "data_kind": "static",
+      "access": {
+        "mechanism": "Self-hosted server software (apt/yum/Docker) or managed PostgreSQL; accessed via libpq-compatible drivers (asyncpg, psycopg 3)",
+        "base_urls": [
+          "https://www.postgresql.org/",
+          "https://postgis.net/news/",
+          "https://www.postgresql.org/docs/current/ddl-partitioning.html",
+          "https://www.postgresql.org/support/versioning/"
+        ],
+        "auth": "SCRAM-SHA-256 (md5 deprecated in PG 18); OAuth 2.0 mechanism new in PG 18",
+        "rate_limits": "N/A",
+        "formats": ["SQL over PostgreSQL wire protocol (protocol 3.2 introduced in PG 18)"]
+      },
+      "cadence": "One major release per year (September); quarterly minor releases. PG 18.6 released 2026-08-13; PG 19 Beta 3 released 2026-08-13. PostGIS 3.6.1 released 2025-11-12; 3.7.0beta2 2026-08-10.",
+      "latency": "N/A",
+      "spatial_resolution": "N/A (PostGIS geometry/geography/raster types at arbitrary precision)",
+      "temporal_resolution": "N/A (timestamptz microsecond precision)",
+      "historical_depth": "Support window: PG 18 supported until 2030-11-14; PG 17 until 2029-11-08; PG 16 until 2028-11-09; PG 14 ends 2026-11-12.",
+      "missing_data_semantics": "SQL NULL; application-defined qualifier/flag columns",
+      "quality_flags": "Production-stable. PG 18 headline features: asynchronous I/O subsystem (io_method worker/io_uring/sync), B-tree skip scan, uuidv7(), virtual generated columns, OLD/NEW in RETURNING, preserved planner statistics across pg_upgrade, page checksums on by default, temporal WITHOUT OVERLAPS constraints.",
+      "units": "N/A",
+      "licensing": "PostgreSQL License (permissive; INFERENCE - not read on a fetched page this session). PostGIS is GPLv2+ (INFERENCE - not read this session).",
+      "limitations": [
+        "PostGIS 3.6.1 supports PostgreSQL 12-18; PG 19 support only in the 3.7.0 beta series (3.7.0beta2 supports PG 14-19beta2) - do not plan on PG 19 until PostGIS 3.7.0 final ships.",
+        "Declarative partitioning guidance: 'The query planner is generally able to handle partition hierarchies with up to a few thousand partitions fairly well, provided that typical queries allow the query planner to prune all but a small number of partitions'; too many partitions increase planning time and per-session memory because 'each partition requires its metadata to be loaded into the local memory of each session that touches it'.",
+        "Partitioned tables need the partition key in PRIMARY KEY/UNIQUE constraints (INFERENCE from general PG behavior; not quoted from the fetched page).",
+        "Re-partitioning is slow; the docs advise simulating the workload before committing to a strategy."
+      ],
+      "evidence": [
+        {"claim": "Latest stable PostgreSQL is 18.6 (2026-08-13); PostgreSQL 19 Beta 3 released 2026-08-13", "url": "https://www.postgresql.org/", "status": "FACT"},
+        {"claim": "PostGIS 3.6.1 released 2025-11-12 supports 'PostgreSQL 12 - 18'; 3.7.0beta2 (2026-08-10) supports 'PostgreSQL 14 - 19beta2'; 3.6.0 released 2025-09-02", "url": "https://postgis.net/news/", "status": "FACT"},
+        {"claim": "PG 18 released 2025-09-25 with async I/O (io_method worker/io_uring/sync), skip scan, uuidv7(), virtual generated columns, OLD/NEW in RETURNING, statistics preserved by pg_upgrade, checksums default on, OAuth auth, md5 deprecated, protocol 3.2", "url": "https://www.postgresql.org/about/news/postgresql-18-released-3142/", "status": "FACT"},
+        {"claim": "Supported majors and EOL: 18 -> 2030-11-14; 17 -> 2029-11-08; 16 -> 2028-11-09; 15 -> 2027-11-11; 14 -> 2026-11-12", "url": "https://www.postgresql.org/support/versioning/", "status": "FACT"},
+        {"claim": "Planner handles 'up to a few thousand partitions fairly well' with pruning; more remaining partitions after pruning -> longer planning and higher memory; 'Never just assume that more partitions are better than fewer partitions, nor vice-versa'", "url": "https://www.postgresql.org/docs/current/ddl-partitioning.html", "status": "FACT"},
+        {"claim": "Volume estimate: 5,000 series x 96 obs/day (15-min) ~ 480k rows/day ~ 175M rows/yr; ~40-50 B/row narrow tuple -> single-digit GB/yr heap - comfortably within plain PG with monthly partitions", "url": "", "status": "INFERENCE"}
+      ],
+      "relevance_to_cascade_oracle": "Primary system of record for stations, series metadata, observations, derived basin aggregates, forecasts, and basin geometries (PostGIS). Adopt PG 18.x now (5-year support to 2030-11) with PostGIS 3.6.1; plan PG 19 only after PostGIS 3.7.0 final. Partition the observation table by month on observed_at (RANGE) with a (series_id, observed_at) composite index; ~12-36 partitions per year-span is far below the 'few thousand' ceiling. uuidv7() is useful for job/event ids; OLD/NEW RETURNING simplifies idempotent upsert auditing."
+    },
+    {
+      "name": "TimescaleDB vs native partitioning + pg_partman (time-series storage decision)",
+      "authority": "Tiger Data (formerly Timescale) for TimescaleDB; Keith Fiske / pgpartman project for pg_partman",
+      "data_kind": "static",
+      "access": {
+        "mechanism": "PostgreSQL extensions (CREATE EXTENSION timescaledb / pg_partman); pg_partman ships a background worker (BGW) for maintenance",
+        "base_urls": [
+          "https://www.tigerdata.com/docs/about/latest/timescaledb-editions",
+          "https://github.com/timescale/timescaledb/releases",
+          "https://github.com/pgpartman/pg_partman",
+          "https://api.github.com/repos/pgpartman/pg_partman/releases/latest"
+        ],
+        "auth": "N/A (database roles; pg_partman 5.5.0 BGW now defaults to a non-superuser role `partman_maintainer`)",
+        "rate_limits": "N/A",
+        "formats": ["SQL"]
+      },
+      "cadence": "TimescaleDB 2.29.2 released 2026-08-18 (frequent minor releases). pg_partman v5.5.0 released 2026-07-22.",
+      "latency": "N/A",
+      "spatial_resolution": "N/A",
+      "temporal_resolution": "N/A (time-partitioned chunks/partitions at any interval)",
+      "historical_depth": "TimescaleDB 2.29.x supports PostgreSQL 16, 17, 18 ('PostgreSQL 15 Support Removed' in 2.29.0). pg_partman requires 'PostgreSQL >= 14'.",
+      "missing_data_semantics": "N/A",
+      "quality_flags": "Both mature. TimescaleDB 2.28+/2.29 notes: Hypercore engine with faster first()/last() on compressed data, lighter continuous-aggregate refreshes, vectorized CASE on compressed data, DML chunk-exclusion improvements.",
+      "units": "N/A",
+      "licensing": "TimescaleDB has two editions: 'Apache 2 Edition' and 'Community Edition' under the Tiger Data License (TSL). Under TSL 'You cannot sell TimescaleDB Community Edition as a service, even if you are the main contributor' but self-hosting for your own product is permitted; 'You can sell TimescaleDB Apache 2 Edition as a service'. pg_partman: repository LICENSE.txt (PostgreSQL-style permissive license, INFERENCE - license text not read).",
+      "limitations": [
+        "Apache-2 TimescaleDB lacks everything that makes it attractive for an observation store: columnstore/hypercore compression (ALTER TABLE ... hypercore, add_columnstore_policy), continuous aggregates (CREATE MATERIALIZED VIEW ... continuous aggregate and policies), retention policies (add_retention_policy/remove_retention_policy 'are only available in TimescaleDB Community Edition'), background jobs (add_job/alter_job/delete_job/run_job), and advanced chunk ops (split_chunk/reorder_chunk/move_chunk).",
+        "TSL (Community) edition constrains hosting: managed providers must ship it (e.g., AWS RDS does not include TimescaleDB - INFERENCE, not read this session); TSL forbids offering TimescaleDB itself as a service, which is not Cascade Oracle's business model so it is otherwise usable.",
+        "pg_partman 5.x supports only native declarative partitioning ('the older trigger-based methods have been deprecated'); v5.5.0 breaking change: pg_partman_bgw.role defaults to partman_maintainer - 'If this parameter had not been explicitly set before, this will cause the BGW to no longer run successfully' without that role; retention schema must be owned by the child-table owner.",
+        "Neither native partitioning nor pg_partman provides columnar compression or incremental materialized aggregates; those must be built as ordinary tables refreshed by jobs (Procrastinate periodic tasks) if needed."
+      ],
+      "evidence": [
+        {"claim": "Edition feature split: hypertables/create_hypertable/show_chunks/drop_chunks in both; columnstore/hypercore, continuous aggregates, retention policies, add_job/alter_job, reorder/move/split chunk are Community (TSL) only; 'You cannot sell TimescaleDB Community Edition as a service'", "url": "https://www.tigerdata.com/docs/about/latest/timescaledb-editions", "status": "FACT"},
+        {"claim": "TimescaleDB 2.29.2 released 2026-08-18; supports PostgreSQL 16, 17, 18; 'PostgreSQL 15 Support Removed' in 2.29.0", "url": "https://github.com/timescale/timescaledb/releases", "status": "FACT"},
+        {"claim": "pg_partman: time- and number-based partition sets, 'PostgreSQL >= 14', 'only built-in, declarative partitioning is supported', includes 'A background worker (BGW) process ... to automatically run partition maintenance without the need of an external scheduler', retention via dropping old partitions", "url": "https://github.com/pgpartman/pg_partman", "status": "FACT"},
+        {"claim": "pg_partman latest tag v5.5.0 published 2026-07-22T14:46:50Z; BGW role default changed to partman_maintainer; CVE fixes for SQL injection/privilege escalation; detach-before-drop support; RLS maintenance_role", "url": "https://api.github.com/repos/pgpartman/pg_partman/releases/latest", "status": "FACT"},
+        {"claim": "Recommendation: plain declarative partitioning + pg_partman is sufficient at ~thousands of series; revisit TimescaleDB Community only if storage cost (compression) or dashboard-speed aggregates become the bottleneck", "url": "", "status": "INFERENCE"}
+      ],
+      "relevance_to_cascade_oracle": "ADR recommendation: do NOT adopt TimescaleDB initially. Use native RANGE partitioning (monthly, on observed_at) with pg_partman 5.5.0 BGW for auto-creation and retention; keep a (series_id, observed_at DESC) index per partition, consider BRIN on observed_at for append-only scans. This keeps the schema portable to any PostgreSQL host and avoids TSL. Document the trigger to revisit: >~1B rows or a need for transparent compression/continuous aggregates, at which point TimescaleDB Community (2.29.x on PG 16-18, self-hosted) is license-compatible for a SaaS that is not itself selling TimescaleDB."
+    },
+    {
+      "name": "Python async web/ORM stack: FastAPI + Pydantic v2 + SQLAlchemy 2.0 asyncio + asyncpg/psycopg 3 + Alembic + GeoAlchemy2",
+      "authority": "Sebastián Ramírez (FastAPI); Pydantic Services; SQLAlchemy/Alembic (Mike Bayer, zzzeek); MagicStack (asyncpg); Daniele Varrazzo (psycopg); GeoAlchemy2 maintainers",
+      "data_kind": "static",
+      "access": {
+        "mechanism": "PyPI packages",
+        "base_urls": [
+          "https://pypi.org/project/fastapi/",
+          "https://fastapi.tiangolo.com/how-to/migrate-from-pydantic-v1-to-pydantic-v2/",
+          "https://pypi.org/project/pydantic/",
+          "https://pydantic.dev/docs/validation/latest/get-started/version-policy/",
+          "https://pypi.org/project/sqlalchemy/",
+          "https://docs.sqlalchemy.org/en/20/orm/extensions/asyncio.html",
+          "https://docs.sqlalchemy.org/en/20/changelog/whatsnew_20.html",
+          "https://docs.sqlalchemy.org/en/20/dialects/postgresql.html",
+          "https://pypi.org/project/asyncpg/",
+          "https://pypi.org/project/psycopg/",
+          "https://pypi.org/project/alembic/",
+          "https://alembic.sqlalchemy.org/en/latest/cookbook.html",
+          "https://pypi.org/project/GeoAlchemy2/",
+          "https://geoalchemy-2.readthedocs.io/en/latest/"
+        ],
+        "auth": "N/A",
+        "rate_limits": "N/A",
+        "formats": ["Python wheels/sdists"]
+      },
+      "cadence": "FastAPI 0.141.1 (2026-07-29); Pydantic 2.13.4 (2026-05-06); SQLAlchemy 2.0.52 (2026-08-11); asyncpg 0.31.0 (2025-11-24); psycopg 3.3.4 (2026-05-01); Alembic 1.19.1 (2026-08-08); GeoAlchemy2 0.20.0 (2026-05-12)",
+      "latency": "N/A",
+      "spatial_resolution": "N/A (GeoAlchemy2 maps PostGIS geometry/geography/raster columns)",
+      "temporal_resolution": "N/A",
+      "historical_depth": "Python floors: FastAPI >=3.10; Pydantic 3.9+ (v1 not compatible with Python 3.14+); SQLAlchemy >=3.7 (wheels through 3.15); asyncpg >=3.9 (PostgreSQL 9.5-18); psycopg >=3.10; Alembic >=3.10; GeoAlchemy2 >=3.10 and SQLAlchemy >=1.4",
+      "missing_data_semantics": "N/A (Pydantic Optional/None; SQL NULL)",
+      "quality_flags": "All production-stable. Pydantic V3 has no announced date ('Any associated breaking changes in the V3 release will be introduced with care'); V1 gets only critical/security fixes until V3.",
+      "units": "N/A",
+      "licensing": "FastAPI MIT, Pydantic MIT, SQLAlchemy MIT, Alembic MIT, asyncpg Apache-2.0, GeoAlchemy2 MIT (read on PyPI); psycopg 3 is LGPL-3.0-only (read on PyPI) - dynamic use from Python is fine for proprietary code (INFERENCE on legal effect).",
+      "limitations": [
+        "FastAPI 0.126.0 'dropped support for Pydantic v1, while still supporting pydantic.v1 for a little while'; 0.128.0 'dropped support for pydantic.v1 as well, so the latest versions of FastAPI require Pydantic v2'. pydantic.v1 'is no longer supported in Python 3.14 and above'.",
+        "SQLAlchemy asyncio depends on greenlet: 'This dependency is installed by default on common machine platforms' but 'there are many architectures omitted, including Apple M1' - install as sqlalchemy[asyncio] to force it.",
+        "Async ORM forbids implicit lazy loads; use AsyncAttrs.awaitable_attrs, selectinload(), expire_on_commit=False, lazy='raise', or AsyncSession.run_sync().",
+        "asyncpg dialect has a prepared-statement cache and a documented 'Prepared Statement Name with PGBouncer' caveat - transaction-pooling PgBouncer needs care (INFERENCE on the specifics; section title is FACT).",
+        "GeoAlchemy2 docs build shows a dev version string ('0.1.dev50+...') - rely on PyPI 0.20.0 for the release number.",
+        "Alembic autogenerate for PostGIS needs GeoAlchemy2's Alembic helpers (spatial index handling); the helpers exist per docs but their exact API was not read this session (INFERENCE)."
+      ],
+      "evidence": [
+        {"claim": "FastAPI 0.141.1 released 2026-07-29, Python >=3.10, Pydantic is a core dependency", "url": "https://pypi.org/project/fastapi/", "status": "FACT"},
+        {"claim": "FastAPI 0.119.0 added pydantic.v1 partial support; 0.126.0 dropped Pydantic v1; 0.128.0 dropped pydantic.v1 - 'the latest versions of FastAPI require Pydantic v2'; Pydantic v1/pydantic.v1 unsupported on Python 3.14+", "url": "https://fastapi.tiangolo.com/how-to/migrate-from-pydantic-v1-to-pydantic-v2/", "status": "FACT"},
+        {"claim": "Pydantic 2.13.4 released 2026-05-06; 'Pydantic V1 is not compatible with Python 3.14 and greater'", "url": "https://pypi.org/project/pydantic/", "status": "FACT"},
+        {"claim": "No V3 date; 'critical bug fixes and security vulnerabilities will be fixed in V1 until the release of Pydantic V3'", "url": "https://pydantic.dev/docs/validation/latest/get-started/version-policy/", "status": "FACT"},
+        {"claim": "SQLAlchemy 2.0.52 released 2026-08-11; extras include asyncio and postgresql-asyncpg", "url": "https://pypi.org/project/sqlalchemy/", "status": "FACT"},
+        {"claim": "greenlet dependency and platform note; AsyncAttrs.awaitable_attrs; run_sync; create_async_engine", "url": "https://docs.sqlalchemy.org/en/20/orm/extensions/asyncio.html", "status": "FACT"},
+        {"claim": "'psycopg is the first DBAPI supported by SQLAlchemy which provides both a pep-249 synchronous API as well as an asyncio driver'; same URL works with create_engine() and create_async_engine()", "url": "https://docs.sqlalchemy.org/en/20/changelog/whatsnew_20.html", "status": "FACT"},
+        {"claim": "PostgreSQL dialects: psycopg2, psycopg (3), pg8000, asyncpg, psycopg2cffi; asyncpg has 'Prepared Statement Cache' and 'Prepared Statement Name with PGBouncer' sections", "url": "https://docs.sqlalchemy.org/en/20/dialects/postgresql.html", "status": "FACT"},
+        {"claim": "asyncpg 0.31.0 (2025-11-24), Python >=3.9, 'supported for PostgreSQL versions 9.5 to 18'", "url": "https://pypi.org/project/asyncpg/", "status": "FACT"},
+        {"claim": "psycopg 3.3.4 (2026-05-01), Python >=3.10, LGPL-3.0-only, install as psycopg[binary,pool]", "url": "https://pypi.org/project/psycopg/", "status": "FACT"},
+        {"claim": "Alembic 1.19.1 (2026-08-08), Python >=3.10", "url": "https://pypi.org/project/alembic/", "status": "FACT"},
+        {"claim": "`alembic init -t async` (or `-t pyproject_async`); env.py uses async_engine_from_config + connection.run_sync(do_run_migrations)", "url": "https://alembic.sqlalchemy.org/en/latest/cookbook.html", "status": "FACT"},
+        {"claim": "GeoAlchemy2 0.20.0 (2026-05-12), MIT, Python >=3.10", "url": "https://pypi.org/project/GeoAlchemy2/", "status": "FACT"},
+        {"claim": "'GeoAlchemy 2 requires SQLAlchemy >= 1.4'; PostGIS 2 and 3 focus; SpatiaLite >= 4.3.0 (alembic helpers need >= 5); MySQL >= 8; GeoPackage; Alembic helpers section exists", "url": "https://geoalchemy-2.readthedocs.io/en/latest/", "status": "FACT"},
+        {"claim": "Alternatives (Litestar, Django+Ninja, Starlette-only) exist; not evaluated against fetched docs this session", "url": "", "status": "INFERENCE"}
+      ],
+      "relevance_to_cascade_oracle": "ADR recommendation: FastAPI 0.141.x + Pydantic 2.13.x + SQLAlchemy 2.0.5x async + Alembic 1.19.x (async template) + GeoAlchemy2 0.20.x. Driver choice: standardize on psycopg 3 (one driver for API, Alembic, and Procrastinate; sync+async from the same URL; native LISTEN/NOTIFY support - INFERENCE on notify API) unless benchmarks show asyncpg's raw throughput matters for the read API; if both are used, keep separate pools and be explicit about PgBouncer pooling mode. Pin Python 3.12 (scientific wheels) and avoid Pydantic v1 code paths entirely."
+    },
+    {
+      "name": "Procrastinate (recommended Postgres-only job/worker system)",
+      "authority": "procrastinate-org (open-source maintainers, lead Joachim Jablon)",
+      "data_kind": "static",
+      "access": {
+        "mechanism": "PyPI package; schema installed into PostgreSQL via `procrastinate schema --apply`; workers run as separate processes sharing the app DB",
+        "base_urls": [
+          "https://procrastinate.readthedocs.io/en/stable/",
+          "https://api.github.com/repos/procrastinate-org/procrastinate/releases/latest",
+          "https://pypi.org/pypi/procrastinate/json",
+          "https://procrastinate.readthedocs.io/en/stable/discussions.html",
+          "https://procrastinate.readthedocs.io/en/stable/howto/advanced/retry.html",
+          "https://procrastinate.readthedocs.io/en/stable/howto/advanced/cron.html",
+          "https://procrastinate.readthedocs.io/en/stable/howto/advanced/queueing_locks.html",
+          "https://procrastinate.readthedocs.io/en/stable/howto/production/retry_stalled_jobs.html"
+        ],
+        "auth": "PostgreSQL role credentials",
+        "rate_limits": "N/A (worker concurrency and per-queue configuration)",
+        "formats": ["Python task functions; job rows in PostgreSQL"]
+      },
+      "cadence": "3.9.0 released 2026-06-20 (tag 3.9.0); regular minor releases",
+      "latency": "Near-immediate wake-up via LISTEN/NOTIFY plus periodic polling (fetch_job_polling_interval) for scheduled/locked jobs",
+      "spatial_resolution": "N/A",
+      "temporal_resolution": "Cron with 5 columns plus optional 6th seconds column for periodic tasks",
+      "historical_depth": "Requires Python 3.10+ and PostgreSQL 13+; job history retained until 'Delete finished jobs' maintenance runs",
+      "missing_data_semantics": "N/A",
+      "quality_flags": "Mature (3.x); MIT; async-native with sync support; Django integration optional; heartbeat-based stalled-job detection",
+      "units": "N/A",
+      "licensing": "MIT (PyPI classifier). Depends on psycopg[pool] (LGPL-3.0).",
+      "limitations": [
+        "Stalled-job recovery is not automatic: you must write a periodic task (docs example uses @app.periodic(cron='*/10 * * * *')) that calls JobManager.get_stalled_jobs() and retry_job(); workers heartbeat 'every 10 seconds by default' and jobs are stalled when the worker has no heartbeat 'since the last (by default) 30 seconds'. The nb_seconds parameter is deprecated.",
+        "Finished-job cleanup is a manual/periodic concern ('Delete finished jobs' how-to); the jobs table grows otherwise.",
+        "A crashed job holding a `lock` blocks 'following jobs with the same lock ... until the interrupted job is either manually set to failed or succeeded' (or retried via the stalled-job task).",
+        "No bundled web dashboard or Prometheus exporter (INFERENCE - none seen in fetched docs; PgQueuer has both).",
+        "Connectors: PsycopgConnector (async, psycopg 3) and SyncPsycopgConnector; aiopg and psycopg2 connectors are optional extras; sqlalchemy~=2.0 extra exists (deferral-only SQLAlchemy connector - INFERENCE on scope).",
+        "At-least-once semantics are implied by the retry/stalled-job design but not stated verbatim on the fetched discussions page."
+      ],
+      "evidence": [
+        {"claim": "Python 3.10+, PostgreSQL 13+, connectors SyncPsycopgConnector/PsycopgConnector, periodic tasks, retries, priorities, locks and queueing locks, Django integration, ASGI-friendly", "url": "https://procrastinate.readthedocs.io/en/stable/", "status": "FACT"},
+        {"claim": "Latest release tag 3.9.0 published 2026-06-20T23:02:05Z; adds task/worker middleware and Django DB connection management", "url": "https://api.github.com/repos/procrastinate-org/procrastinate/releases/latest", "status": "FACT"},
+        {"claim": "PyPI 3.9.0: requires_python >=3.10; MIT; deps asgiref, attrs, croniter, packaging, psycopg[pool], python-dateutil, typing-extensions; extras aiopg, psycopg2, django>=2.2, sqlalchemy~=2.0", "url": "https://pypi.org/pypi/procrastinate/json", "status": "FACT"},
+        {"claim": "Uses LISTEN for notifications and 'SELECT FOR UPDATE' locking so 'when a worker starts executing a job, it's the only one'; fetch_job_polling_interval and abort_job_polling_interval; lock = sequential execution per resource", "url": "https://procrastinate.readthedocs.io/en/stable/discussions.html", "status": "FACT"},
+        {"claim": "retry=True/int; RetryStrategy(max_attempts, wait, linear_wait, exponential_wait, retry_exceptions); custom BaseRetryStrategy.get_retry_decision -> RetryDecision(retry_in/retry_at, priority, queue, lock)", "url": "https://procrastinate.readthedocs.io/en/stable/howto/advanced/retry.html", "status": "FACT"},
+        {"claim": "@app.periodic(cron=...) with 5 or 6 columns; tasks receive `timestamp`; 'the database is responsible for making sure deferring only happens once per period, even with multiple workers'; periodic_id distinguishes multiple schedules", "url": "https://procrastinate.readthedocs.io/en/stable/howto/advanced/cron.html", "status": "FACT"},
+        {"claim": "'Trying to defer a task when the queueing_lock is active will result in an AlreadyEnqueued exception, which you can choose to ignore'; queueing_lock allows a single job in todo while multiple may be doing; combine with lock to serialize", "url": "https://procrastinate.readthedocs.io/en/stable/howto/advanced/queueing_locks.html", "status": "FACT"},
+        {"claim": "Heartbeats every 10 s by default; get_stalled_jobs() fetches doing-jobs of workers without heartbeat for 30 s; retry requires a user-written periodic task calling retry_job(); nb_seconds deprecated", "url": "https://procrastinate.readthedocs.io/en/stable/howto/production/retry_stalled_jobs.html", "status": "FACT"}
+      ],
+      "relevance_to_cascade_oracle": "ADR recommendation for the modular monolith + workers: Procrastinate 3.9.x. Pattern: one `App` in the monolith package; API process defers jobs inside the same DB transaction as the triggering write (psycopg connector); N worker processes (`procrastinate worker -q ingest,derive,notify`). Idempotency: key ingestion jobs by (source, station_or_basin, window_start) via `queueing_lock` (dedupes pending work) and use `lock` per station/source to serialize fetches; persist with INSERT ... ON CONFLICT (series_id, observed_at) DO UPDATE so reruns are safe; periodic tasks get `timestamp` so backfills are deterministic. Retries: RetryStrategy(max_attempts=5, exponential_wait=...) with retry_exceptions limited to transient HTTP/DB errors. Ops: ship a periodic stalled-job retry task and a finished-job deletion task from day one; export worker metrics through OpenTelemetry yourself."
+    },
+    {
+      "name": "PgQueuer (Postgres-only alternative job queue)",
+      "authority": "janbjorge (open-source maintainer)",
+      "data_kind": "static",
+      "access": {
+        "mechanism": "PyPI package; `pgq install` creates tables; PgQueuer.from_asyncpg_pool()/from_asyncpg_connection() and psycopg drivers; in-memory mode for tests",
+        "base_urls": [
+          "https://github.com/janbjorge/pgqueuer",
+          "https://pypi.org/project/pgqueuer/",
+          "https://raw.githubusercontent.com/janbjorge/pgqueuer/main/docs/guides/reliability.md",
+          "https://raw.githubusercontent.com/janbjorge/pgqueuer/main/docs/getting-started/core-concepts.md"
+        ],
+        "auth": "PostgreSQL role credentials",
+        "rate_limits": "Per-entrypoint concurrency_limit enforced in the database",
+        "formats": ["async Python entrypoints; pgqueuer_jobs / pgqueuer_log / pgqueuer_statistics tables"]
+      },
+      "cadence": "v1.3.2 released 2026-07-27",
+      "latency": "LISTEN/NOTIFY 'wakes workers the moment a job lands' with polling fallback",
+      "spatial_resolution": "N/A",
+      "temporal_resolution": "Cron schedules with 5-field (minute) or 6-field (seconds) expressions; execute_after for delayed jobs",
+      "historical_depth": "Python >=3.10 (PyPI) / 3.11+ (README); PostgreSQL 12+ (README)",
+      "missing_data_semantics": "N/A",
+      "quality_flags": "Active but younger/smaller project than Procrastinate (INFERENCE on maturity); 1.x API; MIT",
+      "units": "N/A",
+      "licensing": "MIT",
+      "limitations": [
+        "'PgQueuer does not automatically prune pgqueuer_log' - periodic deletes or partitioning required.",
+        "Entrypoints must be `async def`; sync code needs threads (INFERENCE).",
+        "At-least-once delivery: job functions must be idempotent or checkpoint progress (stated in reliability doc).",
+        "Single primary maintainer (INFERENCE from repository metadata); bus-factor risk for a core infrastructure dependency."
+      ],
+      "evidence": [
+        {"claim": "LISTEN/NOTIFY wake-up with polling fallback; FOR UPDATE SKIP LOCKED claims; asyncpg and psycopg drivers; transactional enqueue; per-entrypoint concurrency limits; cron-style recurring tasks and execute_after; custom executors for retry/backoff; Prometheus metrics, tracing, dashboard; in-memory test mode; MIT; Python 3.11+, PostgreSQL 12+", "url": "https://github.com/janbjorge/pgqueuer", "status": "FACT"},
+        {"claim": "PyPI v1.3.2 released 2026-07-27; Python >=3.10; MIT; optional Logfire/Sentry/OpenTelemetry integrations; `pgq install`", "url": "https://pypi.org/project/pgqueuer/", "status": "FACT"},
+        {"claim": "Retries: raise RetryRequested(delay, reason); DatabaseRetryEntrypointExecutor with max_attempts and initial_delay exponential backoff; heartbeat_timeout makes stalled 'picked' jobs re-pickable; dedupe_key enforced by 'UNIQUE (dedupe_key) WHERE status IN (queued, picked)'; on_conflict='skip'; pgqueuer_log and pgqueuer_statistics (log_aggregation_interval); log not auto-pruned; at-least-once", "url": "https://raw.githubusercontent.com/janbjorge/pgqueuer/main/docs/guides/reliability.md", "status": "FACT"},
+        {"claim": "Entrypoints via @pgq.entrypoint() with concurrency_limit, on_failure ('delete'/'hold'), accepts_context; QueueManager dequeues batches with FOR UPDATE SKIP LOCKED; SchedulerManager uses FOR UPDATE SKIP LOCKED 'to ensure only one worker runs each scheduled task, even across multiple processes'; Queries.requeue_jobs()", "url": "https://raw.githubusercontent.com/janbjorge/pgqueuer/main/docs/getting-started/core-concepts.md", "status": "FACT"}
+      ],
+      "relevance_to_cascade_oracle": "Runner-up to Procrastinate. It wins on built-in observability (Prometheus, tracing, dashboard), automatic stalled-job re-pickup, and first-class dedupe_key; it loses on ecosystem maturity and sync support. Keep task bodies as plain functions so a switch is cheap if Procrastinate's ops gaps (dashboard, auto-stall recovery) prove costly."
+    },
+    {
+      "name": "Broker-backed queues and in-process schedulers: Celery, Dramatiq, arq, APScheduler (not recommended as primary)",
+      "authority": "Celery project; Bogdan Popa (Dramatiq); Samuel Colvin (arq); Alex Grönholm (APScheduler)",
+      "data_kind": "static",
+      "access": {
+        "mechanism": "PyPI packages; Celery/Dramatiq/arq require an external broker (RabbitMQ/Redis); APScheduler runs inside a Python process",
+        "base_urls": [
+          "https://docs.celeryq.dev/en/stable/getting-started/backends-and-brokers/index.html",
+          "https://docs.celeryq.dev/en/stable/userguide/periodic-tasks.html",
+          "https://pypi.org/project/celery/",
+          "https://dramatiq.io/",
+          "https://dramatiq.io/cookbook.html",
+          "https://pypi.org/pypi/dramatiq/json",
+          "https://arq-docs.helpmanual.io/",
+          "https://pypi.org/pypi/arq/json",
+          "https://apscheduler.readthedocs.io/en/master/versionhistory.html",
+          "https://pypi.org/pypi/apscheduler/json"
+        ],
+        "auth": "Broker credentials (Redis/AMQP) where applicable",
+        "rate_limits": "N/A",
+        "formats": ["Python tasks; broker messages"]
+      },
+      "cadence": "Celery 5.6.3 (2026-03-26); Dramatiq 2.2.0 (2026-06-17); arq 0.28.0 (April 2026); APScheduler 3.11.3 (2026-06-28), 4.0.0a6 pre-release",
+      "latency": "N/A",
+      "spatial_resolution": "N/A",
+      "temporal_resolution": "Cron-style scheduling via celery beat, APScheduler triggers, arq cron jobs",
+      "historical_depth": "Celery Python >=3.9; Dramatiq >=3.10; arq >=3.9 (redis<6,>=4.2); APScheduler 3.x >=3.8",
+      "missing_data_semantics": "N/A",
+      "quality_flags": "Celery and Dramatiq mature; arq 'maintained in a limited capacity only'; APScheduler 4.x explicitly not production-ready",
+      "units": "N/A",
+      "licensing": "Celery BSD-3-Clause; Dramatiq LGPL-3.0-or-later; arq MIT; APScheduler MIT",
+      "limitations": [
+        "Celery has no PostgreSQL broker: stable brokers are RabbitMQ, Redis, Amazon SQS (Zookeeper/Kafka/GCP Pub/Sub experimental); SQLAlchemy is only a result backend. Violates the 'Postgres as the only infra' constraint.",
+        "Celery beat: 'You have to ensure only a single scheduler is running for a schedule at a time, otherwise you'd end up with duplicate tasks' - HA scheduling needs external coordination.",
+        "Dramatiq: brokers are RabbitMQ and Redis; 'APScheduler is the recommended scheduler to use with Dramatiq' (no built-in cron); async actors run on a single event-loop thread per worker process with concurrency still bounded by worker threads (8 default).",
+        "arq: Redis only; 'pessimistic execution' (jobs rerun after crash, favours multiple times over zero times - so idempotency is mandatory); PyPI description says it is 'maintained in a limited capacity only'.",
+        "APScheduler 3.x is an in-process scheduler without multi-node job-store coordination (INFERENCE for 3.x; 4.x adds shareable data stores and lease extension but 'The v4.0 series is provided as a pre-release and may change in a backwards incompatible fashion without any migration pathway, so do NOT use this release in production!')."
+      ],
+      "evidence": [
+        {"claim": "Celery brokers: RabbitMQ/Redis/SQS stable; Zookeeper/Kafka/Pub/Sub experimental; no PostgreSQL broker; 'SQLAlchemy is a backend'; docs for 5.6.3", "url": "https://docs.celeryq.dev/en/stable/getting-started/backends-and-brokers/index.html", "status": "FACT"},
+        {"claim": "Single beat instance requirement quote; PersistentScheduler shelve file; django-celery-beat DatabaseScheduler", "url": "https://docs.celeryq.dev/en/stable/userguide/periodic-tasks.html", "status": "FACT"},
+        {"claim": "Celery 5.6.3 released 2026-03-26; Python >=3.9; BSD-3-Clause", "url": "https://pypi.org/project/celery/", "status": "FACT"},
+        {"claim": "Dramatiq v2.2.0; RabbitMQ and Redis brokers; LGPL; Python 3.10+", "url": "https://dramatiq.io/", "status": "FACT"},
+        {"claim": "'APScheduler is the recommended scheduler to use with Dramatiq'; AsyncIO middleware runs one event-loop thread per worker process", "url": "https://dramatiq.io/cookbook.html", "status": "FACT"},
+        {"claim": "Dramatiq 2.2.0 uploaded 2026-06-17; extras rabbitmq, redis, watch, gevent, memcached, prometheus", "url": "https://pypi.org/pypi/dramatiq/json", "status": "FACT"},
+        {"claim": "arq 0.28.0 (April 2026); Redis; retries, cron, job uniqueness via custom ids, deferral; 'arq favours multiple times over zero times'", "url": "https://arq-docs.helpmanual.io/", "status": "FACT"},
+        {"claim": "arq requires redis[hiredis]<6,>=4.2.0; 'currently maintained in a limited capacity only'", "url": "https://pypi.org/pypi/arq/json", "status": "FACT"},
+        {"claim": "APScheduler 4.0.0a6 latest pre-release; not-for-production warning; 4.x SQLAlchemy/PostgreSQL data store, asyncpg/psycopg/Redis/MQTT event brokers, 'Made persistent data stores shareable between multiple processes and nodes', lease extension for schedules/jobs", "url": "https://apscheduler.readthedocs.io/en/master/versionhistory.html", "status": "FACT"},
+        {"claim": "APScheduler stable 3.11.3 uploaded 2026-06-28; Python >=3.8; MIT", "url": "https://pypi.org/pypi/apscheduler/json", "status": "FACT"}
+      ],
+      "relevance_to_cascade_oracle": "Rejected for the primary job system because each adds Redis/RabbitMQ or lacks distributed coordination. Record in the ADR: APScheduler 3.x remains acceptable as a single 'beat' process if ever needed; Dramatiq/Celery become relevant only if a broker is adopted for other reasons (e.g., pub/sub fan-out to many consumers)."
+    },
+    {
+      "name": "Orchestration-as-product: Prefect 3 and Dagster OSS",
+      "authority": "Prefect Technologies; Dagster Labs",
+      "data_kind": "static",
+      "access": {
+        "mechanism": "PyPI packages plus self-hosted server/webserver/daemon processes and a database",
+        "base_urls": [
+          "https://github.com/PrefectHQ/prefect",
+          "https://pypi.org/pypi/prefect/json",
+          "https://docs.prefect.io/v3/concepts/server",
+          "https://github.com/dagster-io/dagster",
+          "https://pypi.org/pypi/dagster/json",
+          "https://docs.dagster.io/deployment/oss/oss-instance-configuration"
+        ],
+        "auth": "N/A for OSS server (add your own auth/proxy - INFERENCE)",
+        "rate_limits": "N/A",
+        "formats": ["Python flows/tasks (Prefect) or assets/ops (Dagster); web UI; REST/GraphQL APIs"]
+      },
+      "cadence": "Prefect 3.8.3; Dagster 1.13.19 (PyPI current)",
+      "latency": "N/A",
+      "spatial_resolution": "N/A",
+      "temporal_resolution": "Cron/interval schedules and sensors",
+      "historical_depth": "Prefect Python >=3.10,<3.15; Dagster Python >=3.10,<3.15",
+      "missing_data_semantics": "N/A",
+      "quality_flags": "Mature products with commercial cloud tiers; OSS server features lag cloud (INFERENCE)",
+      "units": "N/A",
+      "licensing": "Prefect Apache-2.0; Dagster Apache-2.0",
+      "limitations": [
+        "Prefect self-hosted: SQLite default 'Recommended for lightweight, single-server deployments'; PostgreSQL 'Best for production use, high availability, and multi-server deployments' and requires PostgreSQL 14.9+ with the pg_trgm extension - i.e., a second schema/database plus an API server and worker processes.",
+        "Dagster OSS production needs webserver + daemon (required for QueuedRunCoordinator/schedules/sensors) + code locations + run launcher, with storage.postgres configured (dagster-postgres) - operational weight comparable to a second application.",
+        "Neither is a low-latency job queue for high-volume small jobs (INFERENCE); both model runs, not per-station micro-tasks."
+      ],
+      "evidence": [
+        {"claim": "Prefect repo is Apache-2.0", "url": "https://github.com/PrefectHQ/prefect", "status": "FACT"},
+        {"claim": "Prefect 3.8.3; Python <3.15,>=3.10; Apache-2.0", "url": "https://pypi.org/pypi/prefect/json", "status": "FACT"},
+        {"claim": "SQLite default for single-server; PostgreSQL for production/HA; requires PostgreSQL 14.9+ with pg_trgm", "url": "https://docs.prefect.io/v3/concepts/server", "status": "FACT"},
+        {"claim": "Dagster is Apache 2.0 licensed; asset-oriented orchestrator", "url": "https://github.com/dagster-io/dagster", "status": "FACT"},
+        {"claim": "Dagster 1.13.19; Python <3.15,>=3.10; Apache-2.0", "url": "https://pypi.org/pypi/dagster/json", "status": "FACT"},
+        {"claim": "Dagster OSS storage: SQLite default, PostgreSQL via storage.postgres + dagster-postgres, MySQL; components webserver, daemon, code locations, run launchers (Default/Docker/K8s); single dagster.yaml", "url": "https://docs.dagster.io/deployment/oss/oss-instance-configuration", "status": "FACT"}
+      ],
+      "relevance_to_cascade_oracle": "Not the job engine. Dagster OSS (Postgres-backed) is the natural later addition if the team wants asset lineage/backfill UI for model-grid pipelines (HRRR -> basin stats -> forecasts); it can share the PostgreSQL instance in a separate database. Prefect is the lighter of the two to self-host but duplicates what Procrastinate already provides for this use case."
+    },
+    {
+      "name": "Object storage: MinIO (archived), SeaweedFS, Garage, Cloudflare R2 / AWS S3",
+      "authority": "MinIO Inc.; Chris Lu / SeaweedFS project; Deuxfleurs (Garage); Cloudflare; AWS",
+      "data_kind": "static",
+      "access": {
+        "mechanism": "S3-compatible HTTP API (SigV4); self-hosted binaries/containers or hosted service",
+        "base_urls": [
+          "https://github.com/minio/minio",
+          "https://github.com/minio/minio/releases",
+          "https://github.com/seaweedfs/seaweedfs",
+          "https://github.com/seaweedfs/seaweedfs/releases",
+          "https://github.com/seaweedfs/seaweedfs/wiki/Amazon-S3-API",
+          "https://garagehq.deuxfleurs.fr/",
+          "https://garagehq.deuxfleurs.fr/documentation/reference-manual/s3-compatibility/",
+          "https://git.deuxfleurs.fr/Deuxfleurs/garage",
+          "https://git.deuxfleurs.fr/Deuxfleurs/garage/tags",
+          "https://developers.cloudflare.com/r2/pricing/",
+          "https://developers.cloudflare.com/r2/api/s3/api/"
+        ],
+        "auth": "S3 access key / secret key (SigV4); R2 API tokens",
+        "rate_limits": "R2 bills Class A $4.50/M and Class B $0.36/M requests (Standard); others N/A",
+        "formats": ["Objects/bytes; multipart upload; presigned URLs"]
+      },
+      "cadence": "SeaweedFS 4.44 released 2026-08-22; Garage v2.3.0 tagged 2026-04-16; MinIO last release RELEASE.2025-10-15T17-29-55Z; R2 is a continuously updated service",
+      "latency": "N/A",
+      "spatial_resolution": "N/A",
+      "temporal_resolution": "N/A",
+      "historical_depth": "N/A",
+      "missing_data_semantics": "N/A",
+      "quality_flags": "MinIO: repository archived/read-only; SeaweedFS: very active; Garage: active but niche; R2: production service with zero egress",
+      "units": "Storage GB-month; requests per million",
+      "licensing": "MinIO AGPLv3 (community edition now source-only); SeaweedFS Apache-2.0; Garage AGPLv3; R2/S3 proprietary services",
+      "limitations": [
+        "MinIO: README states 'THIS REPOSITORY IS NO LONGER MAINTAINED' and 'The MinIO community edition is now distributed as source code only. We will no longer provide pre-compiled binary releases for the community version'; repo archived read-only 2026-04-25; last binary release 2025-10-15 was a CVE fix. AIStor Free license terms were not readable this session (OPEN_QUESTION).",
+        "Garage: 'Garage does not (yet) support object versioning'; no object tagging, no ACL/policies (custom per-key bucket permissions), lifecycle only AbortIncompleteMultipartUpload/Expiration; SSE-C only. The compatibility page shows last updates from 2022 so it may understate current v2.3.0 features (OPEN_QUESTION). Designed for 3-zone geo-replication; single-node suitability not stated.",
+        "SeaweedFS: lifecycle 'Transition rules not supported'; no website hosting or bucket notifications; no MFA delete. Architecture has several daemons (master, volume, filer, S3 gateway) though `weed mini` bundles them.",
+        "R2: object versioning (Get/PutBucketVersioning) and object tagging unimplemented; no ACLs/ownership controls; no object lock; UploadPartCopy lacks conditional headers; region must be 'auto'. Infrequent Access has 30-day minimum billing and $0.01/GB retrieval.",
+        "AWS S3 itself was not fetched this session; pricing/feature claims about S3 would be INFERENCE."
+      ],
+      "evidence": [
+        {"claim": "MinIO AGPLv3; 'THIS REPOSITORY IS NO LONGER MAINTAINED'; archived read-only as of 2026-04-25; community edition source-only; points to AIStor Free / AIStor Enterprise", "url": "https://github.com/minio/minio", "status": "FACT"},
+        {"claim": "Latest MinIO release RELEASE.2025-10-15T17-29-55Z (security fix: privilege escalation via session policy bypass)", "url": "https://github.com/minio/minio/releases", "status": "FACT"},
+        {"claim": "Secondary reporting: maintenance notice posted 2026-02-12; console/admin UI removed from community edition May 2025; Docker Hub images stopped Oct 2025", "url": "https://itsfoss.com/news/minio-moves-away-from-open-source/", "status": "INFERENCE"},
+        {"claim": "SeaweedFS Apache-2.0; S3-compatible API; master/volume/filer/S3 gateway; O(1) disk read per file; rack-aware 10.4 erasure coding; `weed mini` single-node bundle", "url": "https://github.com/seaweedfs/seaweedfs", "status": "FACT"},
+        {"claim": "SeaweedFS 4.44 released 2026-08-22", "url": "https://github.com/seaweedfs/seaweedfs/releases", "status": "FACT"},
+        {"claim": "SeaweedFS S3: versioning, object lock/retention/legal hold, lifecycle (no transitions), bucket/object tagging, presigned URLs, multipart, bucket policies, SSE-KMS/SSE-C/SSE-S3 supported; website hosting, notifications, MFA delete unsupported", "url": "https://github.com/seaweedfs/seaweedfs/wiki/Amazon-S3-API", "status": "FACT"},
+        {"claim": "Garage targets geo-distributed small clusters (1 GB RAM, 16 GB disk, <=200 ms inter-node latency)", "url": "https://garagehq.deuxfleurs.fr/", "status": "FACT"},
+        {"claim": "Garage S3: SigV4, path/vhost style, presigned URLs, full multipart, CORS, partial lifecycle, SSE-C; no versioning, tagging, ACL/policies, replication, object lock; page last updated 2022", "url": "https://garagehq.deuxfleurs.fr/documentation/reference-manual/s3-compatibility/", "status": "FACT"},
+        {"claim": "Garage is AGPLv3; 'S3-compatible object store for small self-hosted geo-distributed deployments'", "url": "https://git.deuxfleurs.fr/Deuxfleurs/garage", "status": "FACT"},
+        {"claim": "Garage tags: v2.3.0 (2026-04-16), v2.2.0 and v1.3.1 (2026-01-24), v2.1.0 (2025-09-15)", "url": "https://git.deuxfleurs.fr/Deuxfleurs/garage/tags", "status": "FACT"},
+        {"claim": "R2 pricing: Standard $0.015/GB-month, IA $0.01/GB-month; Class A $4.50/M (IA $9.00/M), Class B $0.36/M (IA $0.90/M); egress 'Free'; free tier 10 GB-month, 1M Class A, 10M Class B", "url": "https://developers.cloudflare.com/r2/pricing/", "status": "FACT"},
+        {"claim": "R2 implements ListObjectsV2, Get/Put/Delete/Head Object, multipart, STANDARD and STANDARD_IA; versioning, tagging, ACLs, object lock unimplemented", "url": "https://developers.cloudflare.com/r2/api/s3/api/", "status": "FACT"}
+      ],
+      "relevance_to_cascade_oracle": "ADR recommendation: do not adopt MinIO. Production: Cloudflare R2 (zero egress matters for serving GRIB subsets/Zarr/rasters to the app and users; compensate for missing versioning with immutable content-addressed keys like forecasts/hrrr/2026-08-22T12Z/f06/wa.zarr). Dev/CI/air-gapped: SeaweedFS `weed mini` (Apache-2.0, broadest S3 feature set) or Garage (tiny footprint). Keep the S3 surface minimal (Put/Get/Head/List/multipart/presign) so all four backends remain interchangeable."
+    },
+    {
+      "name": "Object-storage Python clients: obstore, boto3, aioboto3",
+      "authority": "developmentseed (obstore, on Rust object_store); AWS (boto3); Terry Cain (aioboto3)",
+      "data_kind": "static",
+      "access": {
+        "mechanism": "PyPI packages",
+        "base_urls": [
+          "https://pypi.org/project/obstore/",
+          "https://pypi.org/project/boto3/",
+          "https://pypi.org/project/aioboto3/"
+        ],
+        "auth": "Static keys, env vars, instance roles; obstore refreshes credentials before expiry",
+        "rate_limits": "N/A",
+        "formats": ["Bytes/streams; Arrow list results (obstore optional)"]
+      },
+      "cadence": "obstore 0.11.1 (2026-08-21); boto3 1.43.78 (2026-08-21); aioboto3 15.5.0 (2025-10-30)",
+      "latency": "obstore benchmarks claim ~9x fsspec and ~2.8x aioboto3 throughput for concurrent small async requests (vendor claim)",
+      "spatial_resolution": "N/A",
+      "temporal_resolution": "N/A",
+      "historical_depth": "obstore Python >=3.10; boto3 >=3.10; aioboto3 >=3.9",
+      "missing_data_semantics": "N/A",
+      "quality_flags": "obstore 0.x (pre-1.0) but widely adopted in the Zarr/xarray ecosystem (INFERENCE); boto3 GA; aioboto3 wraps aiobotocore and has had breaking API changes (context managers required since v9)",
+      "units": "N/A",
+      "licensing": "obstore MIT; boto3 Apache-2.0; aioboto3 Apache-2.0",
+      "limitations": [
+        "obstore covers object operations only (no bucket admin/IAM) - keep boto3 for administrative tasks (INFERENCE on scope).",
+        "aioboto3 lags boto3 releases and 'tested with DynamoDB, S3, Kinesis, SSM Parameter Store, and Athena' only.",
+        "zarr's ObjectStore (obstore-backed) is labeled experimental by the zarr docs."
+      ],
+      "evidence": [
+        {"claim": "obstore 0.11.1 released 2026-08-21; Rust object_store bindings; S3/GCS/Azure and 'other S3-compliant APIs'; sync + async APIs; streaming, multipart, credential refresh, fsspec integration; MIT; Python >=3.10; throughput claims vs fsspec/aioboto3", "url": "https://pypi.org/project/obstore/", "status": "FACT"},
+        {"claim": "boto3 1.43.78 released 2026-08-21; Python >=3.10; Apache-2.0", "url": "https://pypi.org/project/boto3/", "status": "FACT"},
+        {"claim": "aioboto3 15.5.0 released 2025-10-30; wraps aiobotocore; Python >=3.9; Apache-2.0; v9 removed aioboto3.client()/resource() in favor of sessions/context managers", "url": "https://pypi.org/project/aioboto3/", "status": "FACT"}
+      ],
+      "relevance_to_cascade_oracle": "Use obstore as the single data-path client (async in workers/API, same code against R2/SeaweedFS/Garage via endpoint config); boto3 for provisioning scripts; skip aioboto3 unless a boto3-only feature is needed."
+    },
+    {
+      "name": "NWP/GRIB ingest tooling: xarray, cfgrib, eccodes, Herbie (NOAA open data on AWS)",
+      "authority": "pydata/xarray (NumFOCUS); ECMWF (cfgrib, eccodes); Brian Blaylock (Herbie); NOAA NODD / AWS Open Data (HRRR bucket)",
+      "data_kind": "static",
+      "access": {
+        "mechanism": "PyPI packages; Herbie fetches GRIB2 from AWS/GCP/Azure/NOMADS via HTTP(S), optionally byte-range subsets",
+        "base_urls": [
+          "https://pypi.org/project/xarray/",
+          "https://docs.xarray.dev/en/stable/user-guide/io.html",
+          "https://pypi.org/project/cfgrib/",
+          "https://pypi.org/project/eccodes/",
+          "https://herbie.readthedocs.io/en/stable/",
+          "https://pypi.org/project/herbie-data/",
+          "https://registry.opendata.aws/noaa-hrrr-pds/"
+        ],
+        "auth": "None for NODD buckets (public)",
+        "rate_limits": "None documented for NODD; NOMADS has its own limits (INFERENCE)",
+        "formats": ["GRIB2 (HRRR/GFS/etc.), netCDF/HDF5, Zarr (hrrrzarr bucket)"]
+      },
+      "cadence": "xarray 2026.7.0 (2026-07-09); cfgrib 0.9.15.1 (2025-09-30); eccodes 2.47.0 (2026-04-22); Herbie 2026.3.0 (2026-03-07); HRRR on AWS updated hourly",
+      "latency": "N/A (library); HRRR hourly cycles",
+      "spatial_resolution": "Model-dependent (HRRR 3 km - INFERENCE, not on fetched page)",
+      "temporal_resolution": "Model-dependent (HRRR hourly cycles per AWS registry)",
+      "historical_depth": "xarray Python >=3.11; cfgrib Python 3.7+; eccodes wheels Python 3.9-3.14; Herbie Python >=3.11",
+      "missing_data_semantics": "GRIB bitmap/missing values mapped to NaN by cfgrib (INFERENCE)",
+      "quality_flags": "xarray Production/Stable; cfgrib read-only engine, write support alpha; eccodes wheels self-contained since 2.43.0",
+      "units": "GRIB-native units; CF attributes attached by cfgrib",
+      "licensing": "xarray Apache-2.0; cfgrib Apache-2.0; eccodes Apache-2.0; Herbie MIT; NODD data 'open to the public and can be used as desired' (attribution requested)",
+      "limitations": [
+        "cfgrib 'relies on ecCodes for anything related to coordinate systems / gridType' and heterogeneous GRIB files need cfgrib.open_datasets or filter_by_keys (INFERENCE on filter_by_keys specifics).",
+        "Herbie's GRIB subsetting mechanism (.idx byte ranges) was not read on the fetched page; the docs confirm 'download full or subset GRIB2 files' and optional wgrib2 for 'advanced subsetting'.",
+        "HRRR Zarr bucket (hrrrzarr, us-west-1) is a University of Utah near-real-time archive, not NOAA-operated; HRRR GRIB2 bucket is noaa-hrrr-bdp-pds (us-east-1).",
+        "xarray cfgrib engine recommended install 'via conda' in xarray docs; pip works now that eccodes wheels bundle eccodeslib (2.43.0+)."
+      ],
+      "evidence": [
+        {"claim": "xarray 2026.7.0 released 2026-07-09; Python >=3.11; Apache-2.0", "url": "https://pypi.org/project/xarray/", "status": "FACT"},
+        {"claim": "xarray Zarr I/O: zarr_format=2/3 selectable; consolidated metadata by default; region writes 'safe as long as they modify distinct chunks'; append_dim; 'Xarray supports reading GRIB files via ECMWF cfgrib' with engine='cfgrib'", "url": "https://docs.xarray.dev/en/stable/user-guide/io.html", "status": "FACT"},
+        {"claim": "cfgrib 0.9.15.1 released 2025-09-30; Apache-2.0; engine='cfgrib' read-only xarray backend; handles 'most GRIB 1 and 2 files including heterogeneous ones' via open_datasets; relies on ecCodes for gridType", "url": "https://pypi.org/project/cfgrib/", "status": "FACT"},
+        {"claim": "eccodes 2.47.0 released 2026-04-22; 'From version 2.43.0, the ecCodes Python bindings on PyPi will depend on the PyPi package eccodeslib on Linux and MacOS'; Apache-2.0", "url": "https://pypi.org/project/eccodes/", "status": "FACT"},
+        {"claim": "Herbie supports HRRR, RAP, GFS, GEFS, AIGFS, NBM, RRFS, RTMA/URMA, HAFS, CFS, ECMWF Open Data, NAVGEM, HRDPS; sources AWS, Google Cloud, NOMADS, Azure (NODD); 'download full or subset GRIB2 files'; uses xarray and cfgrib; wgrib2 optional", "url": "https://herbie.readthedocs.io/en/stable/", "status": "FACT"},
+        {"claim": "herbie-data 2026.3.0 released 2026-03-07; Python >=3.11; MIT", "url": "https://pypi.org/project/herbie-data/", "status": "FACT"},
+        {"claim": "HRRR on AWS: arn:aws:s3:::noaa-hrrr-bdp-pds (us-east-1), hrrrzarr (us-west-1, Univ. of Utah); hourly updates; NODD data open to the public", "url": "https://registry.opendata.aws/noaa-hrrr-pds/", "status": "FACT"}
+      ],
+      "relevance_to_cascade_oracle": "Ingest path for model forcing over WA basins: Herbie (search/subset HRRR, NBM, GFS/GEFS, RRFS from NODD on AWS) -> cfgrib/eccodes -> xarray -> clip to a WA bounding box -> basin zonal stats (next provider) -> PostgreSQL; persist clipped cycles as Zarr v3 in object storage. pip-only install is now viable (eccodes wheels), which simplifies the worker container."
+    },
+    {
+      "name": "Raster/vector geospatial processing: rasterio, rioxarray, exactextract, rasterstats, pyproj, shapely 2, GeoPandas",
+      "authority": "rasterio org (ex-Mapbox); Corteva (rioxarray); ISciences / Daniel Baston (exactextract); Matthew Perry (rasterstats); pyproj4; shapely; GeoPandas",
+      "data_kind": "static",
+      "access": {
+        "mechanism": "PyPI packages (binary wheels bundle GDAL/PROJ/GEOS)",
+        "base_urls": [
+          "https://pypi.org/project/rasterio/",
+          "https://pypi.org/project/rioxarray/",
+          "https://pypi.org/project/exactextract/",
+          "https://isciences.github.io/exactextract/",
+          "https://isciences.github.io/exactextract/operations.html",
+          "https://pypi.org/project/rasterstats/",
+          "https://pypi.org/project/pyproj/",
+          "https://pypi.org/project/shapely/",
+          "https://pypi.org/project/geopandas/"
+        ],
+        "auth": "N/A",
+        "rate_limits": "N/A",
+        "formats": ["GeoTIFF/COG, netCDF/HDF5 via GDAL; GeoParquet/GeoPackage/Shapefile via pyogrio (INFERENCE for pyogrio)"]
+      },
+      "cadence": "rasterio 1.5.1 (2026-08-08); rioxarray 0.23.0 (2026-07-27); exactextract 0.3.0 (2025-12-01); rasterstats 0.21.0 (2026-05-23); pyproj 3.7.2 (2025-08-14); shapely 2.1.2 (2025-09-24); GeoPandas 1.1.4 (2026-06-26)",
+      "latency": "N/A",
+      "spatial_resolution": "Arbitrary; exactextract computes fractional pixel coverage for polygon/grid overlaps",
+      "temporal_resolution": "N/A",
+      "historical_depth": "Python floors: rasterio >=3.12 (also NumPy >=2, GDAL >=3.8); rioxarray >=3.12; exactextract >=3.9; rasterstats >=3.9; pyproj >=3.11; shapely >=3.10 (GEOS >=3.9); GeoPandas >=3.10",
+      "missing_data_semantics": "Raster nodata masks honored; exactextract excludes NODATA unless default_value/default_weight set; min_coverage_frac threshold",
+      "quality_flags": "rasterio/shapely/pyproj/GeoPandas stable; rioxarray 'Beta' classifier; exactextract 0.x but C++-backed and actively released",
+      "units": "Raster-native; exactextract coverage_weight options 'fraction' (0-1), 'none', 'area_cartesian', 'area_spherical_m2', 'area_spherical_km2'",
+      "licensing": "rasterio BSD-3; rioxarray Apache-2.0; exactextract Apache; rasterstats BSD-3; pyproj MIT; shapely BSD-3; GeoPandas BSD-3",
+      "limitations": [
+        "rasterio 1.5.x requires Python >=3.12 and NumPy >=2 - this sets the project Python floor.",
+        "exactextract's Python-side signature for xarray inputs was not read verbatim; the docs state it works with gdal, rasterio, fiona, geopandas, and xarray inputs and can output pandas data frames/GDAL datasets.",
+        "rasterstats uses whole-pixel membership (all_touched or pixel-center) rather than fractional coverage (INFERENCE from prior knowledge; not read this session), which biases small-basin means on 3-km grids.",
+        "pyproj's bundled PROJ version not shown on PyPI (OPEN_QUESTION if datum-grid downloads matter)."
+      ],
+      "evidence": [
+        {"claim": "rasterio 1.5.1 released 2026-08-08; Python >=3.12; NumPy >=2; GDAL >=3.8; BSD-3-Clause; wheels with HDF5/netCDF/OpenJPEG", "url": "https://pypi.org/project/rasterio/", "status": "FACT"},
+        {"claim": "rioxarray 0.23.0 released 2026-07-27; Python >=3.12; Apache-2.0; depends on rasterio, xarray, pyproj", "url": "https://pypi.org/project/rioxarray/", "status": "FACT"},
+        {"claim": "exactextract 0.3.0 released 2025-12-01; Apache; Python >=3.9; maintained by Daniel Baston/ISciences; works with rasterio, xarray, GDAL, GeoPandas", "url": "https://pypi.org/project/exactextract/", "status": "FACT"},
+        {"claim": "exact_extract() 'is able to work with inputs from many Python packages for spatial data, such as gdal, rasterio, fiona, geopandas, and xarray'; pandas/GDAL outputs available", "url": "https://isciences.github.io/exactextract/", "status": "FACT"},
+        {"claim": "Operations include mean, weighted_mean, weighted_sum, weighted_stdev, weighted_frac, coverage, frac, count, sum, min, max, median, quantile, stdev, variance, majority, minority, unique, values, cell_id, center_x/y; coverage_weight modes; min_coverage_frac; default_value/default_weight", "url": "https://isciences.github.io/exactextract/operations.html", "status": "FACT"},
+        {"claim": "rasterstats 0.21.0 released 2026-05-23; BSD-3-Clause; Python >=3.9; zonal statistics and point queries", "url": "https://pypi.org/project/rasterstats/", "status": "FACT"},
+        {"claim": "pyproj 3.7.2 released 2025-08-14; Python >=3.11; MIT", "url": "https://pypi.org/project/pyproj/", "status": "FACT"},
+        {"claim": "shapely 2.1.2 released 2025-09-24; Python >=3.10; GEOS >=3.9; NumPy >=1.21; vectorized ufunc interface; releases the GIL during GEOS ops; BSD-3", "url": "https://pypi.org/project/shapely/", "status": "FACT"},
+        {"claim": "GeoPandas 1.1.4 released 2026-06-26; Python >=3.10; BSD-3-Clause", "url": "https://pypi.org/project/geopandas/", "status": "FACT"}
+      ],
+      "relevance_to_cascade_oracle": "Basin-average forcing (precip, temperature, snow) for Skagit/Nooksack/Snoqualmie/Cedar/Green/Puyallup sub-basins: use exactextract with coverage_weight='area_spherical_m2' (or 'fraction' on an equal-area projection) and weighted_mean so 3-km HRRR cells straddling small, steep sub-basin boundaries are weighted by true overlap; store basin polygons in PostGIS and load via GeoPandas. Use rioxarray for CRS/clip on xarray grids, shapely 2 vectorized ops for geometry prep, pyproj for transforms (WA typically EPSG:2926/2927 or UTM 10N - INFERENCE)."
+    },
+    {
+      "name": "Cloud-native array storage: Zarr v3 (zarr-python 3), kerchunk, VirtualiZarr, Icechunk",
+      "authority": "zarr-developers (NumFOCUS); fsspec/kerchunk; VirtualiZarr (Tom Nicholas et al.); Earthmover (Icechunk)",
+      "data_kind": "static",
+      "access": {
+        "mechanism": "PyPI packages; Zarr stores on local disk, object storage (FsspecStore, experimental ObjectStore via obstore), zip, memory",
+        "base_urls": [
+          "https://pypi.org/project/zarr/",
+          "https://zarr.readthedocs.io/en/stable/",
+          "https://zarr.readthedocs.io/en/stable/user-guide/storage/",
+          "https://zarr.readthedocs.io/en/stable/user-guide/performance/",
+          "https://pypi.org/pypi/kerchunk/json",
+          "https://github.com/fsspec/kerchunk",
+          "https://pypi.org/project/virtualizarr/",
+          "https://pypi.org/pypi/icechunk/json"
+        ],
+        "auth": "Inherited from object-store credentials",
+        "rate_limits": "N/A",
+        "formats": ["Zarr v2 and v3 (sharded chunks), kerchunk JSON/Parquet references, Icechunk repositories"]
+      },
+      "cadence": "zarr 3.3.0 (2026-07-30); kerchunk 0.2.10 (2026-03-30); VirtualiZarr 2.7.3 (2026-08-07); Icechunk 2.1.2 (current PyPI)",
+      "latency": "N/A",
+      "spatial_resolution": "N/A",
+      "temporal_resolution": "N/A",
+      "historical_depth": "zarr Python >=3.12; kerchunk >=3.11 (zarr>=3.0.1, fsspec>=2025.2.0); VirtualiZarr >=3.12; Icechunk >=3.12",
+      "missing_data_semantics": "fill_value per array; Zarr v3 decouples _FillValue from fill_value (per xarray docs)",
+      "quality_flags": "zarr 3.3.0 stable, but 3.0.0-3.0.7 were yanked for data-loss/corruption bugs (pin >=3.1); VirtualiZarr classifier 'Alpha'; ObjectStore 'experimental'",
+      "units": "N/A",
+      "licensing": "zarr MIT; kerchunk MIT; VirtualiZarr Apache-2.0; Icechunk Apache-2.0 (per PyPI description text)",
+      "limitations": [
+        "zarr-python 3's store API is async-native ('utilizes a custom store API that utilizes Python's AsyncIO library'), so custom stores must be rewritten from the v2 MutableMapping style.",
+        "Sharding docs do not state a v3-only restriction verbatim, but the example shows 'Zarr format: 3' - treat sharding as a v3-format feature (INFERENCE).",
+        "kerchunk GRIB2 scanning (scan_grib) exists but GRIB reference generation is slower and more brittle than HDF5 (INFERENCE).",
+        "VirtualiZarr is alpha with pluggable parsers; GRIB support routed through kerchunk-style parsing (per PyPI text: opens 'netCDF4, HDF5, and GRIB files' virtually).",
+        "Consolidated metadata is on by default in xarray; mismatch between consolidated/unconsolidated stores triggers warnings/errors."
+      ],
+      "evidence": [
+        {"claim": "zarr 3.3.0 released 2026-07-30; Python >=3.12; MIT; 3.0.0-3.0.7 yanked for zarr.load() data deletion and indexing corruption issues", "url": "https://pypi.org/project/zarr/", "status": "FACT"},
+        {"claim": "'Specification support for both Zarr format 2 and 3'; 'Zarr requires Python 3.12 or higher'", "url": "https://zarr.readthedocs.io/en/stable/", "status": "FACT"},
+        {"claim": "Stores: LocalStore, ZipStore, FsspecStore, MemoryStore, ObjectStore ('experimental', any obstore backend incl. S3/GCS/Azure); v3 store API is AsyncIO-based", "url": "https://zarr.readthedocs.io/en/stable/user-guide/storage/", "status": "FACT"},
+        {"claim": "Sharding stores 'multiple chunks in a single storage object or file'; ShardingCodec subchunk_write_order; example shows Zarr format 3", "url": "https://zarr.readthedocs.io/en/stable/user-guide/performance/", "status": "FACT"},
+        {"claim": "kerchunk 0.2.10 (2026-03-30); Python >=3.11; MIT; deps fsspec>=2025.2.0, zarr>=3.0.1, numcodecs, ujson; extras grib2, hdf, netcdf3, fits", "url": "https://pypi.org/pypi/kerchunk/json", "status": "FACT"},
+        {"claim": "kerchunk supports NetCDF4/HDF5, GRIB2 (scan_grib), TIFF, FITS; fsspec backends; MIT", "url": "https://github.com/fsspec/kerchunk", "status": "FACT"},
+        {"claim": "VirtualiZarr 2.7.3 released 2026-08-07; Apache-2.0; Python >=3.12; Alpha; opens netCDF4/HDF5/GRIB virtually; persists to Kerchunk references or Icechunk; v2 added Zarr v3 support and pluggable parsers", "url": "https://pypi.org/project/virtualizarr/", "status": "FACT"},
+        {"claim": "Icechunk 2.1.2; Python >=3.12; described as Apache-2.0 transactional storage engine for ND-array data on object storage", "url": "https://pypi.org/pypi/icechunk/json", "status": "FACT"}
+      ],
+      "relevance_to_cascade_oracle": "Store clipped WA forecast cycles and derived grids (SWE, precip accumulations) as Zarr v3 with sharding in R2/SeaweedFS via obstore-backed stores; pin zarr>=3.1 and xarray>=2025.x. Defer kerchunk/VirtualiZarr for archive GRIB until a backfill/reanalysis use case appears; Icechunk is a candidate if versioned, transactional grid updates become a requirement."
+    },
+    {
+      "name": "Units handling: pint and pint-xarray",
+      "authority": "hgrecco/pint; xarray-contrib/pint-xarray",
+      "data_kind": "static",
+      "access": {
+        "mechanism": "PyPI packages",
+        "base_urls": [
+          "https://pypi.org/project/pint/",
+          "https://pypi.org/pypi/pint-xarray/json"
+        ],
+        "auth": "N/A",
+        "rate_limits": "N/A",
+        "formats": ["Unit registry text definitions; Quantity-wrapped NumPy arrays"]
+      },
+      "cadence": "pint 0.25.3 (2026-03-19); pint-xarray 0.6.1 (2026-03-23)",
+      "latency": "N/A",
+      "spatial_resolution": "N/A",
+      "temporal_resolution": "N/A",
+      "historical_depth": "pint Python >=3.11; pint-xarray Python >=3.11 (xarray>=2023.07.0, numpy>=1.26, pint>=0.24)",
+      "missing_data_semantics": "N/A",
+      "quality_flags": "pint mature; pint-xarray 0.x",
+      "units": "SI and customary (cfs, ft, in, degF etc.) with editable definitions; temperature offset handling",
+      "licensing": "pint BSD; pint-xarray Apache-2.0",
+      "limitations": [
+        "Unit-carrying arrays add overhead in hot loops; convert at boundaries (ingest -> canonical SI in DB; display -> US customary) rather than carrying pint through storage (INFERENCE/design guidance).",
+        "Hydrology units like 'cfs' exist in pint's default registry (INFERENCE, not verified this session)."
+      ],
+      "evidence": [
+        {"claim": "pint 0.25.3 released 2026-03-19; BSD; Python >=3.11; NumPy integration; temperature conversions; no external deps", "url": "https://pypi.org/project/pint/", "status": "FACT"},
+        {"claim": "pint-xarray 0.6.1 (2026-03-23); Apache-2.0; Python >=3.11; deps xarray>=2023.07.0, numpy>=1.26, pint>=0.24", "url": "https://pypi.org/pypi/pint-xarray/json", "status": "FACT"}
+      ],
+      "relevance_to_cascade_oracle": "Use pint at ingest boundaries to normalize USGS (cfs, ft), SNOTEL (in, degF), NWM (m3/s, mm) into canonical SI columns, and pint-xarray when converting model grids; record the canonical unit per parameter in the series metadata table."
+    },
+    {
+      "name": "Observability: OpenTelemetry Python, structlog, prometheus_client, Grafana",
+      "authority": "OpenTelemetry (CNCF); Hynek Schlawack (structlog); Prometheus; Grafana Labs",
+      "data_kind": "static",
+      "access": {
+        "mechanism": "PyPI packages; OTLP export to a collector/backend; Prometheus scrape endpoint; Grafana self-hosted",
+        "base_urls": [
+          "https://opentelemetry.io/docs/languages/python/",
+          "https://opentelemetry-python-contrib.readthedocs.io/en/latest/",
+          "https://pypi.org/pypi/opentelemetry-sdk/json",
+          "https://www.structlog.org/en/stable/",
+          "https://pypi.org/pypi/structlog/json",
+          "https://prometheus.github.io/client_python/multiprocess/",
+          "https://pypi.org/pypi/prometheus-client/json",
+          "https://github.com/grafana/grafana"
+        ],
+        "auth": "Backend-specific",
+        "rate_limits": "N/A",
+        "formats": ["OTLP (traces/metrics/logs), Prometheus text exposition, JSON logs"]
+      },
+      "cadence": "opentelemetry-sdk 1.44.0 (api 1.44.0, semantic-conventions 0.65b0); structlog 26.1.0 (2026-06-06); prometheus-client 0.26.0 (2026-07-24)",
+      "latency": "N/A",
+      "spatial_resolution": "N/A",
+      "temporal_resolution": "N/A",
+      "historical_depth": "OTel Python requires Python 3.10+; structlog >=3.10; prometheus-client >=3.9",
+      "missing_data_semantics": "N/A",
+      "quality_flags": "OTel Python: Traces 'Stable', Metrics 'Stable', Logs 'Development'",
+      "units": "N/A",
+      "licensing": "OpenTelemetry Apache-2.0; structlog 'MIT OR Apache-2.0'; prometheus-client 'Apache-2.0 AND BSD-2-Clause'; Grafana 'AGPL-3.0-only' (with Apache-2.0 exceptions per LICENSING.md)",
+      "limitations": [
+        "OTel logs signal is still in Development for Python - do not build the logging pipeline on the OTel log bridge yet; emit structlog JSON to stdout and collect with the platform/collector.",
+        "prometheus_client multiprocess mode: PROMETHEUS_MULTIPROC_DIR must be set 'from a start-up shell script, and not directly from Python'; 'Custom collectors do not work'; 'Info and Enum metrics do not work'; pushgateway unusable; gauges need multiprocess_mode; Gunicorn needs child_exit -> multiprocess.mark_process_dead(pid).",
+        "Grafana AGPL affects only modified/hosted Grafana distribution, not dashboards you build (INFERENCE on legal effect)."
+      ],
+      "evidence": [
+        {"claim": "Python OTel status: Traces Stable, Metrics Stable, Logs Development; Python 3.10 and higher", "url": "https://opentelemetry.io/docs/languages/python/", "status": "FACT"},
+        {"claim": "Instrumentation packages exist for FastAPI, Starlette, ASGI, SQLAlchemy, asyncpg, psycopg, HTTPX, aiohttp client, logging, system metrics (opentelemetry-instrumentation-*)", "url": "https://opentelemetry-python-contrib.readthedocs.io/en/latest/", "status": "FACT"},
+        {"claim": "opentelemetry-sdk 1.44.0; Python >=3.10; Apache-2.0; requires opentelemetry-api==1.44.0 and semantic-conventions==0.65b0", "url": "https://pypi.org/pypi/opentelemetry-sdk/json", "status": "FACT"},
+        {"claim": "structlog 26.1.0; JSON/logfmt/console rendering; stdlib logging, asyncio and contextvars integration", "url": "https://www.structlog.org/en/stable/", "status": "FACT"},
+        {"claim": "structlog 26.1.0 uploaded 2026-06-06; Python >=3.10; MIT OR Apache-2.0", "url": "https://pypi.org/pypi/structlog/json", "status": "FACT"},
+        {"claim": "Multiprocess mode env var, limitations (custom collectors, Info/Enum, pushgateway, exemplars), gauge multiprocess_mode values, Gunicorn child_exit hook", "url": "https://prometheus.github.io/client_python/multiprocess/", "status": "FACT"},
+        {"claim": "prometheus-client 0.26.0 uploaded 2026-07-24; Python >=3.9; Apache-2.0 AND BSD-2-Clause", "url": "https://pypi.org/pypi/prometheus-client/json", "status": "FACT"},
+        {"claim": "'Grafana is distributed under AGPL-3.0-only. For Apache-2.0 exceptions, see LICENSING.md.'", "url": "https://github.com/grafana/grafana", "status": "FACT"}
+      ],
+      "relevance_to_cascade_oracle": "ADR: structlog (JSON to stdout, contextvars bound with request_id/job_id/station_id) + OpenTelemetry traces and metrics exported via OTLP (auto-instrument FastAPI, SQLAlchemy, psycopg/asyncpg, httpx; manual spans around Procrastinate tasks) -> Grafana stack (Tempo/Mimir/Loki - INFERENCE on backend choice). Avoid prometheus_client multiprocess mode by running one uvicorn worker per container or by exporting metrics through OTLP; expose a /metrics endpoint only for single-process worker containers."
+    },
+    {
+      "name": "Testing stack: pytest, pytest-asyncio, respx / pytest-httpx, testcontainers-python, schemathesis, Playwright, hypothesis",
+      "authority": "pytest-dev; Jonas Obrist/pytest-asyncio maintainers; Jonas Lundberg (respx); Colin Bounouar (pytest-httpx); testcontainers org; Dmitry Dygalo (schemathesis); Microsoft (Playwright); HypothesisWorks",
+      "data_kind": "static",
+      "access": {
+        "mechanism": "PyPI packages; testcontainers requires a reachable Docker daemon",
+        "base_urls": [
+          "https://pypi.org/pypi/pytest/json",
+          "https://pypi.org/pypi/pytest-asyncio/json",
+          "https://pytest-asyncio.readthedocs.io/en/latest/reference/configuration.html",
+          "https://pypi.org/pypi/respx/json",
+          "https://pypi.org/pypi/pytest-httpx/json",
+          "https://pypi.org/pypi/testcontainers/json",
+          "https://testcontainers-python.readthedocs.io/en/latest/",
+          "https://pypi.org/pypi/schemathesis/json",
+          "https://schemathesis.readthedocs.io/en/stable/",
+          "https://pypi.org/pypi/playwright/json",
+          "https://pypi.org/pypi/hypothesis/json"
+        ],
+        "auth": "N/A",
+        "rate_limits": "N/A",
+        "formats": ["pytest plugins; Docker images; OpenAPI 2.0/3.0/3.1/3.2 and GraphQL schemas (schemathesis)"]
+      },
+      "cadence": "pytest 9.1.1; pytest-asyncio 1.4.0; respx 0.23.1 (2026-04-08); pytest-httpx 0.36.2; testcontainers 4.15.0; schemathesis 4.25.0; playwright 1.62.0; hypothesis 6.165.10",
+      "latency": "N/A",
+      "spatial_resolution": "N/A",
+      "temporal_resolution": "N/A",
+      "historical_depth": "pytest >=3.10; pytest-asyncio >=3.10 with 'pytest<10,>=8.4'; respx >=3.8 (httpx>=0.25.0); pytest-httpx >=3.10 (httpx==0.28.*, pytest==9.*); testcontainers >=3.10; schemathesis >=3.10 (hypothesis<7,>=6.130.12); playwright >=3.10; hypothesis >=3.10",
+      "missing_data_semantics": "N/A",
+      "quality_flags": "All stable; pytest-asyncio 1.x changed loop-scope defaults (asyncio_default_fixture_loop_scope will default to function in future)",
+      "units": "N/A",
+      "licensing": "pytest MIT; pytest-asyncio Apache-2.0; respx BSD-3-Clause; pytest-httpx MIT; testcontainers Apache-2.0; schemathesis MIT; playwright Apache-2.0; hypothesis MPL-2.0",
+      "limitations": [
+        "pytest-httpx hard-pins httpx==0.28.* and pytest==9.* - upgrades are lock-stepped; respx only requires httpx>=0.25.0.",
+        "pytest-asyncio: 'test classes subclassing the standard unittest library are not supported'; set asyncio_default_fixture_loop_scope explicitly to silence future-default warnings (INFERENCE on warning).",
+        "testcontainers community modules are 'supported on a best-effort basis and breaking changes DO NOT create major versions'; CI needs Docker socket or DOCKER_HOST.",
+        "schemathesis in-process ASGI loader (schemathesis.openapi.from_asgi) is documented in its Python-apps guide, found via search but that page was not fetched (INFERENCE).",
+        "hypothesis is MPL-2.0 (file-level copyleft) - fine as a test dependency (INFERENCE on legal effect)."
+      ],
+      "evidence": [
+        {"claim": "pytest 9.1.1; Python >=3.10; MIT", "url": "https://pypi.org/pypi/pytest/json", "status": "FACT"},
+        {"claim": "pytest-asyncio 1.4.0; Python >=3.10; Apache-2.0; requires pytest<10,>=8.4", "url": "https://pypi.org/pypi/pytest-asyncio/json", "status": "FACT"},
+        {"claim": "Config keys: asyncio_mode (default strict; CLI overrides ini), asyncio_default_fixture_loop_scope (currently fixture scope; future default function), asyncio_default_test_loop_scope (default function), asyncio_debug", "url": "https://pytest-asyncio.readthedocs.io/en/latest/reference/configuration.html", "status": "FACT"},
+        {"claim": "respx 0.23.1 uploaded 2026-04-08; Python >=3.8; BSD-3-Clause; httpx>=0.25.0; mocks HTTPX and HTTP Core", "url": "https://pypi.org/pypi/respx/json", "status": "FACT"},
+        {"claim": "pytest-httpx 0.36.2; Python >=3.10; MIT; httpx==0.28.*; pytest==9.*", "url": "https://pypi.org/pypi/pytest-httpx/json", "status": "FACT"},
+        {"claim": "testcontainers 4.15.0; Python >=3.10; Apache-2.0; extras include postgres and minio", "url": "https://pypi.org/pypi/testcontainers/json", "status": "FACT"},
+        {"claim": "PostgresContainer accepts an image argument (example 'postgres:16'); Docker socket/DOCKER_HOST needed; community modules best-effort; extras-based install since 4.0.0", "url": "https://testcontainers-python.readthedocs.io/en/latest/", "status": "FACT"},
+        {"claim": "schemathesis 4.25.0; Python >=3.10; MIT; hypothesis<7,>=6.130.12", "url": "https://pypi.org/pypi/schemathesis/json", "status": "FACT"},
+        {"claim": "Schemathesis generates property-based tests from OpenAPI 2.0/3.0/3.1/3.2 or GraphQL; pytest, CLI, GitHub Actions integrations; curl reproducers", "url": "https://schemathesis.readthedocs.io/en/stable/", "status": "FACT"},
+        {"claim": "playwright 1.62.0; Python >=3.10; Apache-2.0", "url": "https://pypi.org/pypi/playwright/json", "status": "FACT"},
+        {"claim": "hypothesis 6.165.10; Python >=3.10; MPL-2.0", "url": "https://pypi.org/pypi/hypothesis/json", "status": "FACT"}
+      ],
+      "relevance_to_cascade_oracle": "ADR: pytest 9 + pytest-asyncio 1.4 (asyncio_mode=auto, asyncio_default_fixture_loop_scope=session for a shared engine fixture); respx for recording/mocking USGS/NWPS/AWDB HTTP fixtures (looser pins than pytest-httpx); testcontainers PostgresContainer with a postgis image (tag naming for PG18/PostGIS 3.6 to be verified) for migration and spatial tests; schemathesis from_asgi against the FastAPI app in CI for contract tests; hypothesis strategies for unit conversions and time-window/idempotency logic; Playwright for a small E2E smoke suite of the dashboard."
+    }
+  ],
+  "open_questions": [
+    "Driver strategy: single driver (psycopg 3 for API + Alembic + Procrastinate) vs asyncpg for the read API. Benchmark on representative partition-pruned range queries before deciding; confirm PgBouncer pooling mode interplay (asyncpg prepared-statement names; LISTEN/NOTIFY needs session pooling).",
+    "Procrastinate operational gaps: decide the finished-job deletion cadence and whether procrastinate_jobs should itself be partitioned; write the stalled-job retry periodic task as part of the bootstrap.",
+    "PgQueuer vs Procrastinate final call: if a built-in dashboard/Prometheus exporter and automatic stalled-job re-pickup are must-haves, PgQueuer 1.3.2 wins on features; maturity/bus-factor data not quantified this session.",
+    "TimescaleDB: confirm whether any target managed PostgreSQL host offers the Community (TSL) extension; if not, the native-partitioning decision is effectively locked in.",
+    "PostGIS Docker image tags for PostgreSQL 18 / PostGIS 3.6 (e.g., postgis/postgis:18-3.6) were not verified; needed for testcontainers fixtures and local dev.",
+    "Garage's S3 compatibility page is dated 2022; verify against v2.3.0 release notes before relying on feature gaps (versioning/tagging) in the ADR.",
+    "AIStor Free license terms (node/capacity limits, redistribution) were not readable; MinIO is rejected regardless, but record the reason precisely.",
+    "Herbie GRIB subsetting mechanics (.idx byte-range requests) and recommended WA-bbox subsetting for HRRR/NBM were not read on fetched pages; validate throughput and NODD request patterns.",
+    "Python 3.12 vs 3.13: all key wheels list support through 3.14 on PyPI classifiers, but a full lockfile resolution on 3.13 with rasterio 1.5.1/zarr 3.3.0/eccodes 2.47.0 should be run before pinning.",
+    "exactextract xarray input path: confirm the exact call signature and CRS handling for rioxarray-backed DataArrays in 0.3.0, and benchmark against rasterstats on ~50 sub-basins x hourly HRRR.",
+    "pyproj bundled PROJ version and datum-grid (NADCON/NGS) needs for WA state plane transforms not checked.",
+    "OpenTelemetry logs signal is 'Development' in Python: decide whether to bridge structlog into OTel later or keep stdout JSON collection permanently.",
+    "Choose between prometheus_client (multiprocess limitations) and OTLP metrics; depends on the chosen Grafana backend (Mimir vs Prometheus).",
+    "License review: psycopg 3 (LGPL-3.0), Dramatiq (LGPL, not adopted), Grafana (AGPL), hypothesis (MPL-2.0) - confirm acceptable for a proprietary SaaS.",
+    "VirtualiZarr/kerchunk GRIB parser maturity for archive HRRR; defer until a backfill use case exists."
+  ]
+}

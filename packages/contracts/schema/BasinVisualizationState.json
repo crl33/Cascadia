@@ -1,0 +1,531 @@
+{
+  "$defs": {
+    "AgreementLevel": {
+      "enum": [
+        "high",
+        "moderate",
+        "low",
+        "unknown"
+      ],
+      "title": "AgreementLevel",
+      "type": "string"
+    },
+    "AgreementState": {
+      "additionalProperties": false,
+      "properties": {
+        "explanation_ref": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Explanation Ref"
+        },
+        "prov": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Prov",
+          "type": "array"
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "why UNKNOWN/LOW, when it is",
+          "title": "Reason"
+        },
+        "state": {
+          "$ref": "#/$defs/AgreementLevel"
+        }
+      },
+      "required": [
+        "state"
+      ],
+      "title": "AgreementState",
+      "type": "object"
+    },
+    "BasinSurfaces": {
+      "additionalProperties": false,
+      "properties": {
+        "agreement": {
+          "$ref": "#/$defs/AgreementState"
+        },
+        "forcing": {
+          "$ref": "#/$defs/SurfaceState"
+        },
+        "hazard": {
+          "$ref": "#/$defs/HazardState"
+        },
+        "susceptibility": {
+          "$ref": "#/$defs/SurfaceState"
+        }
+      },
+      "required": [
+        "susceptibility",
+        "forcing",
+        "hazard",
+        "agreement"
+      ],
+      "title": "BasinSurfaces",
+      "type": "object"
+    },
+    "ConfidenceLabel": {
+      "description": "Categorical by doctrine; numeric confidence is reserved for calibrated quantities.",
+      "enum": [
+        "high",
+        "moderate",
+        "low",
+        "unknown"
+      ],
+      "title": "ConfidenceLabel",
+      "type": "string"
+    },
+    "Driver": {
+      "additionalProperties": false,
+      "properties": {
+        "direction": {
+          "title": "Direction",
+          "type": "string"
+        },
+        "feature": {
+          "title": "Feature",
+          "type": "string"
+        },
+        "prov": {
+          "title": "Prov",
+          "type": "string"
+        },
+        "rank": {
+          "minimum": 1,
+          "title": "Rank",
+          "type": "integer"
+        },
+        "unit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Unit"
+        },
+        "value": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Value"
+        }
+      },
+      "required": [
+        "feature",
+        "direction",
+        "rank",
+        "prov"
+      ],
+      "title": "Driver",
+      "type": "object"
+    },
+    "FloodCategory": {
+      "enum": [
+        "none",
+        "action",
+        "minor",
+        "moderate",
+        "major",
+        "unknown"
+      ],
+      "title": "FloodCategory",
+      "type": "string"
+    },
+    "GeometryRef": {
+      "additionalProperties": false,
+      "properties": {
+        "feature_id": {
+          "title": "Feature Id",
+          "type": "string"
+        },
+        "lod": {
+          "pattern": "^(orbital|state|basin|river|local|ground)$",
+          "title": "Lod",
+          "type": "string"
+        },
+        "url": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "GeoJSON or tile URL template; cartographic truth class",
+          "title": "Url"
+        }
+      },
+      "required": [
+        "lod",
+        "feature_id"
+      ],
+      "title": "GeometryRef",
+      "type": "object"
+    },
+    "HazardState": {
+      "additionalProperties": false,
+      "properties": {
+        "cascade_index": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "only after hindcast evaluation (ADR-0008)",
+          "title": "Cascade Index"
+        },
+        "horizon_h": {
+          "minimum": 0,
+          "title": "Horizon H",
+          "type": "integer"
+        },
+        "model_probability": {
+          "anyOf": [
+            {
+              "additionalProperties": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "number"
+                  }
+                ]
+              },
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "e.g. {\"model\": \"nwm-mr-ens\", \"exceeds\": \"minor\", \"fraction\": 0.43}",
+          "title": "Model Probability"
+        },
+        "official_category": {
+          "$ref": "#/$defs/FloodCategory"
+        },
+        "official_prov": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Official Prov"
+        },
+        "prov": {
+          "description": "key into ContractEnvelope.provenance_refs",
+          "title": "Prov",
+          "type": "string"
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reason"
+        },
+        "truth": {
+          "$ref": "#/$defs/TruthClass"
+        }
+      },
+      "required": [
+        "prov",
+        "truth",
+        "horizon_h",
+        "official_category"
+      ],
+      "title": "HazardState",
+      "type": "object"
+    },
+    "OfficialAlert": {
+      "additionalProperties": false,
+      "properties": {
+        "event": {
+          "title": "Event",
+          "type": "string"
+        },
+        "expires": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Expires"
+        },
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "issuer": {
+          "title": "Issuer",
+          "type": "string"
+        },
+        "onset": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Onset"
+        },
+        "prov": {
+          "title": "Prov",
+          "type": "string"
+        },
+        "severity": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Severity"
+        }
+      },
+      "required": [
+        "id",
+        "event",
+        "issuer",
+        "prov"
+      ],
+      "title": "OfficialAlert",
+      "type": "object"
+    },
+    "SurfaceLevel": {
+      "enum": [
+        "low",
+        "moderate",
+        "high",
+        "very_high",
+        "unknown"
+      ],
+      "title": "SurfaceLevel",
+      "type": "string"
+    },
+    "SurfaceState": {
+      "additionalProperties": false,
+      "description": "One of the risk surfaces (docs/HYDROLOGY.md \u00a73\u2013\u00a76).",
+      "properties": {
+        "confidence": {
+          "$ref": "#/$defs/ConfidenceLabel",
+          "default": "unknown"
+        },
+        "experimental": {
+          "default": false,
+          "title": "Experimental",
+          "type": "boolean"
+        },
+        "horizon_h": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Horizon H"
+        },
+        "prov": {
+          "description": "key into ContractEnvelope.provenance_refs",
+          "title": "Prov",
+          "type": "string"
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "why UNKNOWN, when it is",
+          "title": "Reason"
+        },
+        "score": {
+          "anyOf": [
+            {
+              "maximum": 1,
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "experimental index, never a probability",
+          "title": "Score"
+        },
+        "state": {
+          "$ref": "#/$defs/SurfaceLevel"
+        },
+        "truth": {
+          "$ref": "#/$defs/TruthClass"
+        }
+      },
+      "required": [
+        "prov",
+        "truth",
+        "state"
+      ],
+      "title": "SurfaceState",
+      "type": "object"
+    },
+    "TruthClass": {
+      "description": "docs/VISUAL_TRUTH_DOCTRINE.md \u2014 what kind of thing a rendered element is.",
+      "enum": [
+        "observation",
+        "authoritative_model",
+        "cascade_derived",
+        "cartographic",
+        "cinematic"
+      ],
+      "title": "TruthClass",
+      "type": "string"
+    }
+  },
+  "$id": "https://cascade-oracle.dev/schema/BasinVisualizationState.json",
+  "additionalProperties": false,
+  "properties": {
+    "geometry_ref": {
+      "$ref": "#/$defs/GeometryRef"
+    },
+    "headline_drivers": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/Driver"
+      },
+      "title": "Headline Drivers",
+      "type": "array"
+    },
+    "id": {
+      "pattern": "^basin:[a-z0-9-]+$",
+      "title": "Id",
+      "type": "string"
+    },
+    "label_priority": {
+      "default": 3,
+      "maximum": 5,
+      "minimum": 1,
+      "title": "Label Priority",
+      "type": "integer"
+    },
+    "name": {
+      "title": "Name",
+      "type": "string"
+    },
+    "official_alerts": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/OfficialAlert"
+      },
+      "title": "Official Alerts",
+      "type": "array"
+    },
+    "outlet_forecast_point_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Outlet Forecast Point Id"
+    },
+    "regulation_class": {
+      "pattern": "^(natural|partially_regulated|regulated|regulated_upper|unknown)$",
+      "title": "Regulation Class",
+      "type": "string"
+    },
+    "surfaces": {
+      "$ref": "#/$defs/BasinSurfaces"
+    },
+    "tension": {
+      "anyOf": [
+        {
+          "maximum": 1,
+          "minimum": 0,
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "wake-up intensity hint; documented method; not a probability",
+      "title": "Tension"
+    }
+  },
+  "required": [
+    "id",
+    "name",
+    "regulation_class",
+    "surfaces",
+    "geometry_ref"
+  ],
+  "title": "BasinVisualizationState",
+  "type": "object"
+}

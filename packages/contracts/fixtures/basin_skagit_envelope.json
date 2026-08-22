@@ -1,0 +1,75 @@
+{
+  "contract": "BasinVisualizationState",
+  "version": "1.0.0",
+  "generated_at": "2026-08-22T09:00:00Z",
+  "as_of": "2026-08-22T09:00:00Z",
+  "time": { "valid": "2026-08-22T09:00:00Z", "mode": "now" },
+  "items": [
+    {
+      "id": "basin:skagit",
+      "name": "Skagit",
+      "regulation_class": "regulated_upper",
+      "surfaces": {
+        "susceptibility": {
+          "state": "unknown",
+          "prov": "cascade-susceptibility",
+          "truth": "cascade_derived",
+          "confidence": "unknown",
+          "experimental": true,
+          "reason": "Susceptibility index not implemented in the spike (ROADMAP Phase 3)."
+        },
+        "forcing": {
+          "state": "unknown",
+          "horizon_h": 72,
+          "prov": "cascade-forcing",
+          "truth": "cascade_derived",
+          "confidence": "unknown",
+          "experimental": true,
+          "reason": "Meteorological forcing not ingested in the spike (ROADMAP Phase 2)."
+        },
+        "hazard": {
+          "horizon_h": 72,
+          "official_category": "none",
+          "official_prov": "nwps-forecast-mvew1",
+          "prov": "nwps-forecast-mvew1",
+          "truth": "authoritative_model",
+          "reason": "Official NWRFC forecast crest 11.1 ft remains below action stage 23.5 ft (NGVD29)."
+        },
+        "agreement": { "state": "unknown", "prov": [] }
+      },
+      "tension": null,
+      "headline_drivers": [],
+      "official_alerts": [],
+      "outlet_forecast_point_id": "fp:nwps:MVEW1",
+      "geometry_ref": { "lod": "basin", "feature_id": "basin:skagit", "url": "/basins/basin:skagit/geometry?lod=basin" },
+      "label_priority": 1
+    }
+  ],
+  "provenance_refs": {
+    "cascade-susceptibility": {
+      "source_id": "src:cascade",
+      "source_kind": "EXPERIMENTAL",
+      "method_id": "method:susceptibility-index@0.0.0",
+      "freshness": { "state": "missing" },
+      "label": "Cascade experimental susceptibility index (not yet computed)"
+    },
+    "cascade-forcing": {
+      "source_id": "src:cascade",
+      "source_kind": "EXPERIMENTAL",
+      "method_id": "method:forcing-assessment@0.0.0",
+      "freshness": { "state": "missing" },
+      "label": "Cascade forcing assessment (not yet computed)"
+    },
+    "nwps-forecast-mvew1": {
+      "source_id": "src:nwps-v1",
+      "source_kind": "OFFICIAL_FORECAST",
+      "product_id": "product:nwps-stageflow-forecast",
+      "issued_at": "2026-08-21T15:05:00Z",
+      "valid_time": "2026-08-24T00:00:00Z",
+      "retrieved_at": "2026-08-22T08:26:43Z",
+      "freshness": { "state": "current", "age_seconds": 64500, "expected_cadence_seconds": 86400 },
+      "quality": [],
+      "label": "NWRFC official river forecast via NOAA NWPS"
+    }
+  }
+}

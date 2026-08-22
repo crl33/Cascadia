@@ -1,0 +1,803 @@
+{
+  "category": "Static geospatial foundations for a basin-centric PostGIS model",
+  "summary": "Researched 2026-08-22 with live fetches. Key findings for Washington: (1) WBD/NHD/NHDPlus HR are frozen legacy products (USGS moved to 3DHP in 2024); the WBD REST service and the NHDPlus HR HU4-1711 geodatabase on prd-tnm are the stable static inputs, and all six target basins are fully resolvable to HUC8/HUC10 (21 HUC8s in 1711, 51 HUC10s across the target HUC8s, 511 HUC12s). (2) 3DHP already serves 58k flowlines with hydrosequence/levelpath attributes in the Skagit bbox but zero catchments there (workunitid='NHD', i.e. legacy-derived), so catchments must still come from NHDPlus HR. (3) NLDI and the NWS/NWM reach IDs are NHDPlusV2 (medium-res) COMIDs, not NHDPlus HR IDs; the NWPS reachId for CONW1 (24270512) equals the NHDPlusV2 COMID returned by NLDI at that point, so a COMID crosswalk table is essential. (4) Legacy StreamStats services were decommissioned 2026-01-30; SS-Delineate and SS-Hydro work for WA (4.8 s delineation). (5) The Lynker-Spatial NextGen hydrofabric bucket lists but anonymous object GETs now return 403, and its v2.2 license.txt says CC BY-NC-SA 4.0 while NOAA docs say ODbL; treat as blocked/uncertain for commercial use. (6) 3DEP 1/3 arc-second (NAD83 GCS, NAVD88 m) and 1 m (NAD83 UTM 10N, NAVD88 m) are on prd-tnm with ~25 WA 1 m projects; WA DNR lidar is in NAD83(HARN) State Plane N/S US-survey-feet with NAVD88 ftUS heights. (7) FEMA NFHL REST (EPSG:4269, monthly) covers King/Pierce/Snohomish/Whatcom but Skagit County (53057C) has ZERO NFHL polygons or panels: Skagit flood maps are ~40-year-old paper FIRMs, a hard gap for the flagship basin. (8) USACE NLD exposes 339 WA leveed areas via ArcGIS FeatureServer and a 155-path JSON API. (9) NWPS has 285 WA gauges (200 with USGS IDs, 73 with flood stages); 126 report gauge datums in NGVD29 vs 61 in NAVD88, while USGS now publishes NAVD88 altitudes; NGS NCAT (VERTCON 3.0) gives NAVD88 = NGVD29 + 1.07 to 1.20 m (3.50 to 3.93 ft) across the Puget Sound gauges, which exactly explains the NWPS-vs-USGS datum discrepancies observed (e.g., Cedar at Renton 15.2 ft NGVD29 vs 18.77 ft NAVD88). (10) Legacy waterservices.usgs.gov is decommissioned Q1 2027; use api.waterdata.usgs.gov OGC API (X-Api-Key). (11) Ecology GIS data carries a 'commercial use prohibited' clause; TIGER, 3DEP, NFHL, NLD are public domain; OSM/Geofabrik/Microsoft/Overture buildings are ODbL.",
+  "open_questions": [
+    "Lynker-Spatial hydrofabric: anonymous GETs on s3://lynker-spatial/hydrofabric/v2.2/... and v3.0 beta objects return 403 AccessDenied (listing works). Is access now requester-pays or gated through the Lynker Data Service? And which license governs: v2.2/license.txt (CC BY-NC-SA 4.0) or the ODbL stated in NOAA-OWP docs?",
+    "NWPS API: no published rate limits or terms; GET /gauges with bbox.* params returned an empty list for a Skagit bbox even though /gauges/{lid} works. Is srid required, or is bbox in a projected CRS by default?",
+    "NLDI: /nldi/v3/api-docs did not return parseable JSON in this session; confirm the current OpenAPI location and whether NLDI will ever index NHDPlus HR / 3DHP IDs.",
+    "Skagit County FEMA maps: the county is absent from NFHL (0 polygons, 0 panels for 53057C). Is a preliminary/pending DFIRM available in the FEMA Preliminary & Pending NFHL services, and what vertical datum (NGVD29 vs NAVD88) do the legacy Skagit FIRMs/FIS use?",
+    "TNM Access API /api/v1/products timed out (HTTP 504) on two attempts; the /datasets endpoint works. Is the products endpoint reliable enough for automated tile discovery, or should prd-tnm S3 listing be the primary path?",
+    "USACE NLD api-local: the state= parameter on /leveed-areas was ignored (returned CA records). Which query parameters filter by state/bbox on the JSON API, versus using the ArcGIS FeatureServer STATES field?",
+    "WA DNR Lidar Portal: no explicit license/terms text was found on the portal or help page; confirm public-domain/redistribution status and whether bulk S3/AWS access exists beyond the AOI download tool.",
+    "Ecology copyright page prohibits commercial and political use of 'Ecology Material' including 'linked database and map servers'; does this clause apply to CHAMP and Levee Inventory GIS downloads in a commercial product?",
+    "3DHP: when will elevation-derived hydrography and catchments be populated for Puget Sound work units (currently catchments count = 0 in the Skagit bbox)?",
+    "WBD REST copyright string says 'Data refreshed July, 2026' while USGS states WBD is no longer maintained and the national GDB on S3 is dated 2025-01-07; what changed in the July 2026 refresh?",
+    "NWPS reachId equals NHDPlusV2 COMID at CONW1 (24270512); confirm this holds for all WA forecast points and for NWM v3 feature_id semantics before building the crosswalk."
+  ],
+  "providers": [
+    {
+      "name": "USGS Watershed Boundary Dataset (WBD) HUC2-HUC16",
+      "authority": "U.S. Geological Survey, National Geospatial Program / The National Map",
+      "data_kind": "static",
+      "access": {
+        "mechanism": "ArcGIS REST MapServer (query/identify, JSON/geoJSON/PBF), plus zipped FileGDB/Shapefile/GeoPackage downloads from the prd-tnm S3 bucket and The National Map downloader; TNM Access API dataset tag 'National Watershed Boundary Dataset (WBD)'",
+        "base_urls": [
+          "https://hydro.nationalmap.gov/arcgis/rest/services/wbd/MapServer",
+          "https://hydro.nationalmap.gov/arcgis/rest/services/wbd/MapServer/4/query (HUC8) ; /5/query (HUC10) ; /6/query (HUC12)",
+          "https://prd-tnm.s3.amazonaws.com/StagedProducts/Hydrography/WBD/National/GDB/WBD_National_GDB.zip",
+          "https://prd-tnm.s3.amazonaws.com/index.html?prefix=StagedProducts/Hydrography/WBD/",
+          "https://apps.nationalmap.gov/downloader"
+        ],
+        "auth": "None (anonymous)",
+        "rate_limits": "Not published. REST maxRecordCount = 2000 per query (use resultOffset pagination or download the national GDB, 2,780,809,554 bytes).",
+        "formats": ["ArcGIS REST JSON", "GeoJSON", "PBF", "FileGDB (zip)", "Shapefile", "GeoPackage (TNM downloader)"]
+      },
+      "cadence": "Frozen: USGS shifted in 2024 from maintaining NHD/WBD/NHDPlus HR to 3DHP; TNM dataset registry lists WBD refreshCycle 'no longer applicable'. The REST service copyright string nonetheless reads 'Data refreshed July, 2026'; the national GDB on S3 is dated 2025-01-07.",
+      "latency": "N/A (static)",
+      "spatial_resolution": "1:24,000-scale hydrologic unit polygons; service advertises display at 1:250,000 to 1:2,000,000",
+      "temporal_resolution": "N/A",
+      "historical_depth": "Single current snapshot; older snapshots not served",
+      "missing_data_semantics": "HUC14/16 are optional and incomplete nationally; HUC2-12 complete. Non-contributing areas carried in noncontributingareasqkm. Cross-border units carry states='CN,WA' (Upper Skagit, Nooksack, Sumas, Strait of Georgia, San Juan Islands, Dungeness-Elwha, Crescent-Hoko).",
+      "quality_flags": "hutype, humod, loaddate, metasourceid/sourcedatadesc fields; service disclaimer: should not be used for critical applications without awareness of limitations",
+      "units": "areasqkm (km^2), areaacres; service SR WKID 102100 (EPSG:3857); downloads in NAD83 geographic",
+      "licensing": "U.S. Government work, public domain (NHDPlus HR metadata: 'No access constraints as all data are open and non-proprietary'); acknowledgement of USGS appreciated",
+      "limitations": [
+        "No longer maintained; boundary edits after FY2024 will only appear in 3DHP drainage areas/catchments.",
+        "Service geometry is Web Mercator; reproject to EPSG:4269/4326 or an equal-area CRS before area computations (use areasqkm attribute instead).",
+        "Upper Skagit HUC8 17110005 (5,205.51 km^2) and Nooksack 17110004 extend into British Columbia; WBD is the only USGS product with the Canadian portion."
+      ],
+      "evidence": [
+        {"claim": "WBD REST MapServer layers: 0 WBDLine, 1 2-digit HU, 2 4-digit, 3 6-digit, 4 8-digit, 5 10-digit, 6 12-digit, 7 14-digit, 8 16-digit; SR WKID 102100; formats JSON/geoJSON/PBF; maxRecordCount 2000; copyright 'USGS WBD - Watershed Boundary Dataset. Data refreshed July, 2026.'", "url": "https://hydro.nationalmap.gov/arcgis/rest/services/wbd/MapServer", "status": "FACT"},
+        {"claim": "HUC8 query for huc8 LIKE '1711%' returned 21 units incl. 17110004 Nooksack (2,639.15 km^2, CN,WA), 17110005 Upper Skagit (5,205.51, CN,WA), 17110006 Sauk (1,896.86), 17110007 Lower Skagit (1,173.06), 17110008 Stillaguamish (1,817.71), 17110009 Skykomish (2,156.48), 17110010 Snoqualmie (1,788.75), 17110011 Snohomish (769.09), 17110012 Lake Washington (1,572.35), 17110013 Duwamish (1,257.91), 17110014 Puyallup (2,533.97), 17110015 Nisqually, 17110016 Deschutes, 17110017 Skokomish, 17110018 Hood Canal, 17110019 Puget Sound, 17110020 Dungeness-Elwha, 17110021 Crescent-Hoko, 17110001 Sumas River, 17110002 Strait of Georgia, 17110003 San Juan Islands", "url": "https://hydro.nationalmap.gov/arcgis/rest/services/wbd/MapServer/4/query?where=huc8+LIKE+'1711%25'&outFields=huc8,name,states,areasqkm&returnGeometry=false&f=json", "status": "FACT"},
+        {"claim": "HUC10s for the six target basins (51 total) e.g. 1711000401-07 Nooksack forks/frontal; 1711000501-11 Upper Skagit (incl. 1711000510 Baker River 769.3 km^2, 1711000508 Cascade River); 1711000601-04 Sauk/Suiattle; 1711000701 Finney Creek-Skagit River, 1711000702 Skagit River-Frontal Skagit Bay; 1711000901-07 Skykomish; 1711001001-06 Snoqualmie (1711001005 Tolt River, 1711001006 Lower Snoqualmie); 1711001101 Pilchuck, 1711001102 Quilceda Creek-Frontal Possession Sound; 1711001201 Cedar River (482.9), 1711001202 Lake Sammamish, 1711001203/04 Sammamish River; 1711001301-03 Upper/Middle/Lower Green River; 1711001401 Carbon River, 1711001402 Upper Puyallup, 1711001403 Upper White River (756.7), 1711001404 Lower White River, 1711001405 Lower Puyallup River", "url": "https://hydro.nationalmap.gov/arcgis/rest/services/wbd/MapServer/5/query", "status": "FACT"},
+        {"claim": "HUC12 count for huc12 LIKE '171100%' = 511; HUC12 layer fields include tnmid, loaddate, areaacres, areasqkm, states, huc12, name, hutype, humod, tohuc, noncontributingareaacres, noncontributingareasqkm", "url": "https://hydro.nationalmap.gov/arcgis/rest/services/wbd/MapServer/6", "status": "FACT"},
+        {"claim": "National WBD GDB object WBD_National_GDB.zip size 2,780,809,554 bytes, LastModified 2025-01-07", "url": "https://prd-tnm.s3.amazonaws.com/?prefix=StagedProducts/Hydrography/WBD/National/GDB/", "status": "FACT"},
+        {"claim": "WBD has 'eight levels of progressive hydrologic units identified by unique 2- to 16-digit codes', complete through 12-digit; 14/16-digit optional and incomplete; snapshot captures edits from the past fiscal year", "url": "https://www.usgs.gov/national-hydrography/watershed-boundary-dataset", "status": "FACT"},
+        {"claim": "TNM dataset registry: 'Watershed Boundary Dataset (WBD)' refreshCycle 'no longer applicable'; hydrography parent formats Shapefile, FileGDB, GeoPackage", "url": "https://tnmaccess.nationalmap.gov/api/v1/datasets", "status": "FACT"},
+        {"claim": "In 2024 USGS transitioned from maintaining NHD, WBD, and NHDPlus HR to producing 3DHP; legacy datasets remain available but are no longer updated", "url": "https://www.usgs.gov/3d-hydrography-program/access-3dhp-data-products", "status": "FACT"}
+      ],
+      "relevance_to_cascade_oracle": "Primary basin/sub-basin polygon layer for the PostGIS 'basin' hierarchy (HUC8 -> HUC10 -> HUC12) with tohuc for downstream HUC12 routing. Use the S3 national GDB as the canonical static load; use REST only for spot checks."
+    },
+    {
+      "name": "USGS NHDPlus High Resolution (NHDPlus HR) for HU4 1711 (Puget Sound)",
+      "authority": "U.S. Geological Survey, National Geospatial Program",
+      "data_kind": "static",
+      "access": {
+        "mechanism": "Zipped FileGDB per HU4 (vector + VAAs) and 7z raster bundle from prd-tnm S3; dynamic ArcGIS REST MapServer for flowlines/catchments (with VAA fields exposed on NetworkNHDFlowline)",
+        "base_urls": [
+          "https://prd-tnm.s3.amazonaws.com/StagedProducts/Hydrography/NHDPlusHR/Beta/GDB/NHDPLUS_H_1711_HU4_GDB.zip",
+          "https://prd-tnm.s3.amazonaws.com/StagedProducts/Hydrography/NHDPlusHR/Beta/GDB/NHDPLUS_H_1711_HU4_RASTER.7z",
+          "https://prd-tnm.s3.amazonaws.com/index.html?prefix=StagedProducts/Hydrography/NHDPlusHR/",
+          "https://hydro.nationalmap.gov/arcgis/rest/services/NHDPlus_HR/MapServer",
+          "https://hydro.nationalmap.gov/arcgis/rest/services/NHDPlus_HR/MapServer/3 (NetworkNHDFlowline) ; /10 (NHDPlusCatchment)"
+        ],
+        "auth": "None",
+        "rate_limits": "Not published; REST maxRecordCount 2000",
+        "formats": ["FileGDB (zip)", "GeoTIFF rasters (7z)", "ArcGIS REST JSON/GeoJSON", "WMS/WFS/WMTS per USGS access page"]
+      },
+      "cadence": "Production halted ('Production of NHDPlus HR has been halted to allow USGS to focus on the 3DHP'); National Release 2 published February 2025; HU4 1711 GDB object dated 2023-12-20 (metadata pubdate 20180827); REST service 'Data refreshed October, 2022'",
+      "latency": "N/A",
+      "spatial_resolution": "1:24,000 NHD high-resolution flowlines; catchments derived from 10 m 3DEP DEM",
+      "temporal_resolution": "N/A",
+      "historical_depth": "Single release",
+      "missing_data_semantics": "NonNetworkNHDFlowline features have no VAAs; divergences flagged by divergence/dnminorhyd; terminal paths by terminalfl; statusflag and hwtype describe headwater/network status",
+      "quality_flags": "statusflag, elevfixed, thinner, vpuin/vpuout, divergence, rtndiv; catchment sourcefc/gridcode",
+      "units": "lengthkm (km), areasqkm/totdasqkm/divdasqkm (km^2), pathlength (km), maxelevsmo/minelevsmo (cm per NHDPlus convention: INFERENCE), slope (m/m: INFERENCE), qama/vama mean annual flow and velocity; horizontal datum NAD83",
+      "licensing": "Public domain: 'No access constraints as all data are open and non-proprietary'; acknowledgement of USGS appreciated",
+      "limitations": [
+        "Frozen at National Release 2; no corrections for post-2023 channel changes.",
+        "nhdplusid keys are NOT the NHDPlusV2 COMIDs used by NLDI, NWM, and NWPS reachId; a crosswalk (via reachcode/measure or spatial join) is required.",
+        "HU4 1711 excludes the Canadian portion of the Skagit/Nooksack headwaters beyond NHD coverage (INFERENCE: NHD is US-only)."
+      ],
+      "evidence": [
+        {"claim": "NHDPLUS_H_1711_HU4_GDB.zip = 485,774,087 bytes (2023-12-20); NHDPLUS_H_1711_HU4_RASTER.7z = 3,784,975,651 bytes", "url": "https://prd-tnm.s3.amazonaws.com/?prefix=StagedProducts/Hydrography/NHDPlusHR/Beta/GDB/NHDPLUS_H_1711", "status": "FACT"},
+        {"claim": "HU4 1711 metadata: title 'USGS National Hydrography Dataset Plus High Resolution (NHDPlus HR) for 4-digit Hydrologic Unit - 1711 (published 20180827)'; horizontal datum NAD83; 'No access constraints as all data are open and non-proprietary'", "url": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Hydrography/NHDPlusHR/Beta/GDB/NHDPLUS_H_1711_HU4_GDB.xml", "status": "FACT"},
+        {"claim": "REST NetworkNHDFlowline fields include nhdplusid, vpuid, reachcode, fromnode, tonode, hydroseq, levelpathi, pathlength, terminalpa, arbolatesu, divergence, startflag, terminalfl, uplevelpat, uphydroseq, dnlevel, dnlevelpat, dnhydroseq, dnminorhyd, dndraincou, frommeas, tomeas, rtndiv, areasqkm, totdasqkm, divdasqkm, maxelevsmo, minelevsmo, slope, slopelenkm, streamorde, streamleve, qama, vama, gageidma; NHDPlusCatchment fields nhdplusid, sourcefc, gridcode, areasqkm, vpuid", "url": "https://hydro.nationalmap.gov/arcgis/rest/services/NHDPlus_HR/MapServer/3", "status": "FACT"},
+        {"claim": "NHDPlus_HR MapServer layers: 0 NHDPlusGage, 1 NHDPlusSink, 2 NHDPoint, 3 NetworkNHDFlowline, 4 NonNetworkNHDFlowline, 5 FlowDirection, 6 NHDPlusWall, 7 NHDLine, 8 NHDArea, 9 NHDWaterbody, 10 NHDPlusCatchment, 11 NHDPlusBoundaryUnit, 12 WBDHU12; 'Data refreshed October, 2022'", "url": "https://hydro.nationalmap.gov/arcgis/rest/services/NHDPlus_HR/MapServer", "status": "FACT"},
+        {"claim": "NHDPlus HR by 4-digit HU at prd-tnm; 'National Release 2 was published February 2025'; NHD retired October 1, 2023; services USGSHydroCached, NHD, WBD, NHDPlus_HR under https://hydro.nationalmap.gov/arcgis/rest/services/", "url": "https://www.usgs.gov/national-hydrography/access-national-hydrography-products", "status": "FACT"},
+        {"claim": "'Production of NHDPlus HR has been halted to allow USGS to focus on the 3DHP'", "url": "https://www.usgs.gov/national-hydrography/nhdplus-high-resolution", "status": "FACT"}
+      ],
+      "relevance_to_cascade_oracle": "Source of flowlines, catchments and VAAs (hydroseq/dnhydroseq/levelpathi/totdasqkm) for upstream/downstream navigation and catchment-level aggregation inside each WA basin. Load the HU4 1711 GDB once into PostGIS; build a recursive CTE on hydroseq/dnhydroseq."
+    },
+    {
+      "name": "USGS 3D Hydrography Program (3DHP) services (successor to NHD/WBD/NHDPlus HR)",
+      "authority": "U.S. Geological Survey, National Geospatial Program",
+      "data_kind": "static",
+      "access": {
+        "mechanism": "ArcGIS FeatureServer/MapServer (query by bbox/attribute), plus annual downloadable release on ScienceBase and TNM downloader (Shapefile/FileGDB/GeoPackage)",
+        "base_urls": [
+          "https://3dhp.nationalmap.gov/arcgis/rest/services/usgs_3dhp_all/FeatureServer",
+          "https://3dhp.nationalmap.gov/arcgis/rest/services/usgs_3dhp_all/MapServer",
+          "https://www.sciencebase.gov/catalog/item/6930876ed4be027594fed169 (3DHP Downloadable Data - 2025)"
+        ],
+        "auth": "None",
+        "rate_limits": "Not published; ArcGIS default paging",
+        "formats": ["ArcGIS REST JSON/GeoJSON", "Shapefile", "FileGDB", "GeoPackage"]
+      },
+      "cadence": "Services: new elevation-derived hydrography added quarterly (last refreshed July 2026); downloadable product updated early each fiscal year; TNM registry: 'HU4/8:Monthly,State:Bi-monthly'",
+      "latency": "N/A",
+      "spatial_resolution": "Flowlines currently NHD-derived in WA (workunitid='NHD'); elevation-derived hydrography from 3DEP lidar where processed",
+      "temporal_resolution": "N/A",
+      "historical_depth": "Annual DOI-stamped releases starting FY2024/2025",
+      "missing_data_semantics": "Catchments/drainage areas populated only where flow network derivatives have been computed; count of Catchment features intersecting the Skagit bbox (-122.4,48.3,-121.0,48.9) = 0 on 2026-08-22",
+      "quality_flags": "workunitid, featuredate, onsurface/flowdirection labels; known issue noted for Big Darby Creek OH in July 2026 release",
+      "units": "lengthkm, areasqkm, totestdrainareasqkm; service SR EPSG:3857",
+      "licensing": "USGS public domain",
+      "limitations": [
+        "No catchments yet in the Skagit test bbox, so NHDPlus HR remains necessary for catchment-based aggregation.",
+        "Flowline attributes use new id3dhp keys plus mainstemid (geoconnex URIs); not interchangeable with nhdplusid or NHDPlusV2 COMID."
+      ],
+      "evidence": [
+        {"claim": "FeatureServer layers: 20/30/40 HydroLocation classes, 50 Flowline, 60 Waterbody, 80 Catchment; SR 102100/3857; description says service 'will include catchments, drainage areas, and flow network derivatives as they are populated in the future'", "url": "https://3dhp.nationalmap.gov/arcgis/rest/services/usgs_3dhp_all/FeatureServer", "status": "FACT"},
+        {"claim": "Flowline fields: id3dhp, featuredate, mainstemid, gnisid, featuretype, lengthkm, waterbodyid3dhp, flowdirection, onsurface, catchmentid3dhp, flowpathid3dhp, streamlevel, startflag, terminalflag, streamorder, streamcalculator, hydrosequence, dnhydrosequence, uphydrosequence, dnlevelpath, uplevelpath, pathlength, arbolatesum, divergence, rtrndivergence, levelpath, terminalpath, workunitid; Catchment fields id3dhp, mainstemid, areasqkm, totestdrainareasqkm, workunitid", "url": "https://3dhp.nationalmap.gov/arcgis/rest/services/usgs_3dhp_all/FeatureServer/50", "status": "FACT"},
+        {"claim": "Skagit bbox query: 58,069 flowlines (58,005 with hydrosequence populated), 0 catchments; sample flowline mainstemid 'https://geoconnex.us/usgs/mainstems/2014306', workunitid 'NHD'", "url": "https://3dhp.nationalmap.gov/arcgis/rest/services/usgs_3dhp_all/FeatureServer/50/query", "status": "FACT"},
+        {"claim": "3DHP: web services at https://3dhp.nationalmap.gov/ and annual downloadable product with DOI; 'New Elevation-Derived Hydrography (EDH) data and attributes will be added to the services quarterly'; services last refreshed July 2026", "url": "https://www.usgs.gov/3d-hydrography-program/access-3dhp-data-products", "status": "FACT"}
+      ],
+      "relevance_to_cascade_oracle": "Forward-looking replacement for NHD-based flowlines; adopt id3dhp and mainstemid columns now so the schema survives the NHDPlus HR freeze, but keep NHDPlus HR catchments until 3DHP catchments exist for Puget Sound."
+    },
+    {
+      "name": "USGS Hydro Network-Linked Data Index (NLDI) + pygeoapi geoprocessing",
+      "authority": "U.S. Geological Survey, Water Mission Area (Water Data for the Nation)",
+      "data_kind": "derived",
+      "access": {
+        "mechanism": "REST/GeoJSON API over NHDPlusV2 catchments/flowlines; navigation (UM/UT/DM/DD), basin delineation, point-to-COMID lookup; OGC API Processes for split-catchment and flow trace",
+        "base_urls": [
+          "https://api.water.usgs.gov/nldi/linked-data",
+          "https://api.water.usgs.gov/nldi/linked-data/nwissite/USGS-{siteno}",
+          "https://api.water.usgs.gov/nldi/linked-data/{featureSource}/{featureID}/navigation/{UM|UT|DM|DD}/flowlines?distance={km}",
+          "https://api.water.usgs.gov/nldi/linked-data/{featureSource}/{featureID}/basin?simplified=true|false&splitCatchment=true|false",
+          "https://api.water.usgs.gov/nldi/linked-data/comid/position?coords=POINT(lon lat)",
+          "https://api.water.usgs.gov/nldi/linked-data/hydrolocation?coords=POINT(lon lat)",
+          "https://api.water.usgs.gov/nldi/pygeoapi/processes/{nldi-flowtrace|nldi-splitcatchment|nldi-xsatpoint|nldi-xsatendpts|nldi-xsatpathpts}/execution",
+          "https://api.water.usgs.gov/docs/nldi/"
+        ],
+        "auth": "None",
+        "rate_limits": "Not published; responses served via CloudFront (Age header present)",
+        "formats": ["GeoJSON (f=json)"]
+      },
+      "cadence": "Index refreshed as sources update; network is a fixed NHDPlusV2 snapshot",
+      "latency": "Sub-second for feature lookup; UT navigation over 20 km and basin delineation for USGS-12200500 returned within the 90-120 s timeouts used",
+      "spatial_resolution": "NHDPlusV2 medium-resolution (1:100,000) network; hydrolocation snaps within 200 m",
+      "temporal_resolution": "N/A",
+      "historical_depth": "N/A",
+      "missing_data_semantics": "Features not on the network are returned with empty navigation; indexed sources only (nwissite covers active NWIS surface-water sites)",
+      "quality_flags": "sourceName 'Automatically indexed by the NLDI' vs 'Provided via API call' on hydrolocation responses",
+      "units": "distance in km; measure is percent along reach; coordinates WGS84/NAD83 lon-lat GeoJSON",
+      "licensing": "USGS public domain",
+      "limitations": [
+        "NHDPlusV2 only: COMIDs differ from NHDPlus HR nhdplusid and 3DHP id3dhp.",
+        "Basin polygons are NHDPlusV2 catchment unions (coarser than NHDPlus HR catchments); splitCatchment needed for gauge-precise basins.",
+        "OpenAPI at /nldi/v3/api-docs did not return JSON in this session (OPEN_QUESTION)."
+      ],
+      "evidence": [
+        {"claim": "Feature sources include comid, huc12pp, WQP, nwissite, wade, ref_gage, ca_gages, gfv11_pois, vigil, nwisgw, nmwdi-st, geoconnex-demo, epa_nrsa, census2020-nhdpv2, npdes, huc12pp_102020, ref_dams, wade_rights, wade_timeseries", "url": "https://api.water.usgs.gov/nldi/linked-data?f=json", "status": "FACT"},
+        {"claim": "GET /linked-data/nwissite/USGS-12200500 returns comid 24270288, reachcode 17110007000093, measure 66.152, mainstem https://geoconnex.us/ref/mainstems/2334517, navigation URL; navigation modes JSON lists UM, UT, DM, DD", "url": "https://api.water.usgs.gov/nldi/linked-data/nwissite/USGS-12200500", "status": "FACT"},
+        {"claim": "UT flowlines with distance=20 and /basin?simplified=true both returned GeoJSON for USGS-12200500", "url": "https://api.water.usgs.gov/nldi/linked-data/nwissite/USGS-12200500/navigation/UT/flowlines?distance=20&f=json", "status": "FACT"},
+        {"claim": "hydrolocation for POINT(-121.7697 48.5244) near Skagit at Concrete returned comid 24270512, reachcode 17110007000189, measure 75.913; comid/position returned the flowline geometry", "url": "https://api.water.usgs.gov/nldi/linked-data/hydrolocation?coords=POINT(-121.7697%2048.5244)&f=json", "status": "FACT"},
+        {"claim": "Docs: indexes to 'NHDPlusV2 catchments'; endpoints navigation/{mode}/flowlines?distance=, /basin?simplified&splitCatchment, /linked-data/comid/position?coords=, /linked-data/hydrolocation?coords= (snap within 200 m); base https://api.water.usgs.gov/nldi/linked-data; swagger-ui at /nldi/swagger-ui.html; OpenAPI at /nldi/v3/api-docs", "url": "https://api.water.usgs.gov/docs/nldi/", "status": "FACT"},
+        {"claim": "pygeoapi server 'Network Linked Data Index Geoprocessing Server' 0.23.4 exposes processes nldi-flowtrace, nldi-splitcatchment, nldi-xsatendpts, nldi-xsatpathpts, nldi-xsatpoint", "url": "https://api.water.usgs.gov/nldi/pygeoapi/openapi?f=json", "status": "FACT"},
+        {"claim": "NLDI intro blog: navigation modes UM/UT/DM/DD, distance in km, nwissite and huc12pp sources, GeoJSON output", "url": "https://waterdata.usgs.gov/blog/nldi-intro/", "status": "FACT"}
+      ],
+      "relevance_to_cascade_oracle": "Fast gauge-to-network linking and upstream/downstream navigation keyed by NHDPlusV2 COMID, which is also the NWM/NWPS reach key. Use it to build the gauge<->COMID<->NWPS reachId crosswalk and quick basin masks; use NHDPlus HR locally for fine catchments."
+    },
+    {
+      "name": "USGS StreamStats services (SS-Delineate, SS-Hydro, NSS, GageStats)",
+      "authority": "U.S. Geological Survey",
+      "data_kind": "derived",
+      "access": {
+        "mechanism": "REST/JSON (OpenAPI 3) services for point-based watershed delineation, basin characteristics, regional regression flow statistics, and gage statistics",
+        "base_urls": [
+          "https://streamstats.usgs.gov/ss-delineate/docs (OpenAPI: https://streamstats.usgs.gov/ss-delineate/openapi.json)",
+          "https://streamstats.usgs.gov/ss-delineate/v1/delineate/features/{region}?lat=&lon=",
+          "https://streamstats.usgs.gov/ss-delineate/v1/delineate/sshydro/{region}?lat=&lon=",
+          "https://streamstats.usgs.gov/ss-hydro/docs (OpenAPI: https://streamstats.usgs.gov/ss-hydro/openapi.json)",
+          "https://streamstats.usgs.gov/ss-hydro/v1/basin-characteristics/{regionAbbreviation}",
+          "POST https://streamstats.usgs.gov/ss-hydro/v1/basin-characteristics/calculate-using-ssdelineate/?region=&lat=&lon=&BCs=",
+          "https://streamstats.usgs.gov/nssservices/regions",
+          "https://streamstats.usgs.gov/gagestatsservices/stations",
+          "https://www.usgs.gov/streamstats/web-services"
+        ],
+        "auth": "None observed",
+        "rate_limits": "Not published",
+        "formats": ["GeoJSON FeatureCollection (delineation)", "JSON"]
+      },
+      "cadence": "Static underlying hydro-DEM per state; service versions SS-Delineate 1.2.0, SS-Hydro 1.4.0",
+      "latency": "WA delineation at Skagit near Concrete returned in 4.8 s (features endpoint) and 4.75 s (sshydro endpoint)",
+      "spatial_resolution": "State hydro-enforced DEM (WA basin characteristics reference 30 m DEM slopes; PRISM 1981-2010 precip)",
+      "temporal_resolution": "N/A",
+      "historical_depth": "N/A",
+      "missing_data_semantics": "Legacy /streamstatsservices/* now HTTP 404 (decommissioned 2026-01-30); adjoint_catchment feature may have zero Shape_Area when not applicable",
+      "quality_flags": "scope attribute on returned features: pourpoint, split_catchment, adjoint_catchment; HUCID 1711",
+      "units": "Basin characteristics per code: DRNAREA square miles, ELEV/MINBELEV feet, PRECIP/PRECPRIS10 inches, BSLDEM30M percent",
+      "licensing": "USGS public domain",
+      "limitations": [
+        "Legacy StreamStats Services (watershed.geojson, parameters.json) decommissioned January 30, 2026; any code using https://streamstats.usgs.gov/streamstatsservices/ must migrate.",
+        "Returned delineation lacks an explicit CRS member (assume WGS84 lon/lat GeoJSON: INFERENCE).",
+        "Regional regression (NSS) statistics are for ungaged estimation, not forecasting."
+      ],
+      "evidence": [
+        {"claim": "'The StreamStats Services are being decommissioned and replaced by new services' effective January 30, 2026; replacements SS-Delineate https://streamstats.usgs.gov/ss-delineate/docs and SS-Hydro https://streamstats.usgs.gov/ss-hydro/docs; NSS and Gage Statistics services remain", "url": "https://streamstats.usgs.gov/docs/streamstatsservices/Views/homeview.html", "status": "FACT"},
+        {"claim": "ss-delineate openapi.json: 'Delineate Services' 1.2.0; GET /v1/delineate/features/{region} (lat, lon required), /v1/delineate/sshydro/{region}, /v1/storm/features/{region} (surfaceonly), /v1/about/health", "url": "https://streamstats.usgs.gov/ss-delineate/openapi.json", "status": "FACT"},
+        {"claim": "ss-hydro openapi.json: 'SS-Hydro' 1.4.0; GET /v1/basin-characteristics/{regionAbbreviation}; POST /v1/basin-characteristics/calculate, /calculate-using-input-file/, /calculate-using-ssdelineate/ (region, lat, lon, BCs), /v1/additional-features/calculate-using-ssdelineate", "url": "https://streamstats.usgs.gov/ss-hydro/openapi.json", "status": "FACT"},
+        {"claim": "GET /ss-delineate/v1/delineate/features/WA?lat=48.5244&lon=-121.7697 -> HTTP 200 in 4.8 s; FeatureCollection with pourpoint (Point), split_catchment (Polygon, HUCID 1711), adjoint_catchment", "url": "https://streamstats.usgs.gov/ss-delineate/v1/delineate/features/WA?lat=48.5244&lon=-121.7697", "status": "FACT"},
+        {"claim": "GET /ss-hydro/v1/basin-characteristics/WA lists DRNAREA (square miles), ELEV (feet), PRECIP (inches), MINBELEV, PRECPRIS10, BSLDEM30M (percent), NFSL30, SLOP30_30M, CANOPY_PCT", "url": "https://streamstats.usgs.gov/ss-hydro/v1/basin-characteristics/WA", "status": "FACT"},
+        {"claim": "Legacy https://streamstats.usgs.gov/streamstatsservices/watershed.geojson?... returns HTTP 404; /nssservices/regions and /gagestatsservices/stations return HTTP 200 JSON", "url": "https://streamstats.usgs.gov/streamstatsservices/", "status": "FACT"},
+        {"claim": "USGS web services page lists Gage Statistics (https://streamstats.usgs.gov/docs/gagestatsservices/#/), Navigation, NSS (https://streamstats.usgs.gov/docs/nssservices/), Runoff Modeling, Water Use, Krig services", "url": "https://www.usgs.gov/streamstats/web-services", "status": "FACT"}
+      ],
+      "relevance_to_cascade_oracle": "On-demand basin delineation for arbitrary points (ungauged tributaries, user-clicked locations) and standard basin characteristics to seed per-basin metadata; prefer SS-Delineate over NLDI basin when hydro-DEM precision matters."
+    },
+    {
+      "name": "NOAA OWP / Lynker-Spatial NextGen hydrofabric and reference fabric (NWM hydrofabric)",
+      "authority": "NOAA Office of Water Prediction with Lynker-Spatial (distribution)",
+      "data_kind": "derived",
+      "access": {
+        "mechanism": "S3 bucket lynker-spatial (HTTP listing works anonymously; object GETs returned 403 AccessDenied on 2026-08-22); GeoPackage per CONUS/VPU and hive-partitioned parquet (vpuid=17 for Pacific Northwest); R package hfsubsetR::get_subset()",
+        "base_urls": [
+          "https://lynker-spatial.s3.amazonaws.com/?prefix=hydrofabric/ (prefixes v2.2/, v2.3/, v3.0/, bathymetry/, modeling-fabric/)",
+          "s3://lynker-spatial/hydrofabric/v2.2/conus/conus_nextgen.gpkg ; conus_reference.gpkg ; hydrolocations.gpkg ; conus_diffusive-transects.gpkg",
+          "s3://lynker-spatial/hydrofabric/v2.2/conus/reference/reference_flowpaths/vpuid=17/part-0.parquet (also reference_divides, reference_network)",
+          "s3://lynker-spatial/hydrofabric/v3.0/superconus/reference/cn/{divides,flowpaths,network}/vpuid=.. ; v3.0/superconus/community-nextgen/beta/{01,02,03N,03S,03W,06,14,15}_nextgen.gpkg",
+          "https://lynker-spatial.s3.amazonaws.com/hydrofabric/v2.2/hfv2.2-data_model.html",
+          "https://noaa-owp.github.io/hydrofabric/"
+        ],
+        "auth": "Unknown as of 2026-08-22: anonymous range GET on v2.2 and v3.0 objects -> HTTP 403 AccessDenied; listing allowed (OPEN_QUESTION: requester-pays or Lynker Data Service credentials)",
+        "rate_limits": "N/A (S3)",
+        "formats": ["GeoPackage", "GeoParquet (hive-partitioned by vpuid)"]
+      },
+      "cadence": "Versioned releases: v2.2 (CONUS), v2.3 (superconus), v3.0 (superconus, community-nextgen beta without VPU 17 yet)",
+      "latency": "N/A",
+      "spatial_resolution": "NHDPlusV2-derived reference fabric (NHDPlus2.1 lineage) aggregated to NextGen divides/flowpaths; attributes at 30 m/1 km grids",
+      "temporal_resolution": "N/A",
+      "historical_depth": "N/A",
+      "missing_data_semantics": "Unknown until objects are readable",
+      "quality_flags": "hf_source/hf_id lineage columns",
+      "units": "lengthkm, areasqkm, tot_drainage_areasqkm; geometry in m (EPSG:5070) per data model",
+      "licensing": "CONFLICT: s3://lynker-spatial/hydrofabric/v2.2/license.txt states 'Attribution-NonCommercial-ShareAlike 4.0 International' applying to all data under hydrofabric/v2.2/; NOAA-OWP hydrofabric docs state NextGen artifacts are 'publicly available through lynker-spatial under an ODbL license'; no license.txt under v2.3 or v3.0",
+      "limitations": [
+        "Not usable as an anonymous static load today (403 on objects).",
+        "Non-commercial clause in v2.2 license.txt would block commercial use of v2.2 products; ODbL (share-alike) would apply otherwise.",
+        "v3.0 community-nextgen beta GeoPackages exist only for VPUs 01, 02, 03N, 03S, 03W, 06, 14, 15 (no 17 / Pacific Northwest).",
+        "Python subsetter 'coming soon' per docs; R hfsubsetR is the supported tool."
+      ],
+      "evidence": [
+        {"claim": "Bucket prefixes hydrofabric/{bathymetry,modeling-fabric,tutorial,v2.2,v2.3,v3.0}; v2.2 keys hfv2.2-data_model.html, hydrolocations.html, license.txt, conus/{conus_diffusive-transects.gpkg, conus_nextgen.gpkg, conus_reference.gpkg, hydrolocations.gpkg, bathymetry/, reference/}", "url": "https://lynker-spatial.s3.amazonaws.com/?prefix=hydrofabric/v2.2/conus/&delimiter=/", "status": "FACT"},
+        {"claim": "reference_flowpaths hive partitions vpuid=01 ... vpuid=17, vpuid=18 (part-0.parquet); v3.0/superconus/reference/cn/{divides,flowpaths,network}/vpuid=..; community-nextgen/beta has 01,02,03N,03S,03W,06,14,15 _nextgen.gpkg", "url": "https://lynker-spatial.s3.amazonaws.com/?prefix=hydrofabric/v2.2/conus/reference/reference_flowpaths/&delimiter=/", "status": "FACT"},
+        {"claim": "Range GET on hydrofabric/v2.2/conus/conus_nextgen.gpkg, hydrolocations.gpkg, reference_flowpaths/vpuid=17/part-0.parquet and v3.0 beta 01_nextgen.gpkg all returned HTTP 403 AccessDenied (anonymous)", "url": "https://lynker-spatial.s3.amazonaws.com/hydrofabric/v2.2/conus/conus_nextgen.gpkg", "status": "FACT"},
+        {"claim": "license.txt: 'This license applies to all data found in the following directories and their subdirectories: s3://lynker-spatial/hydrofabric/v2.2/ Attribution-NonCommercial-ShareAlike 4.0 International'", "url": "https://lynker-spatial.s3.amazonaws.com/hydrofabric/v2.2/license.txt", "status": "FACT"},
+        {"claim": "NOAA-OWP hydrofabric site: 'publicly available through lynker-spatial under an ODbL license'; hfsubsetR::get_subset() subsets by XY, hydrofabric ID, indexed hydrolocation (NWIS gage, HUC12, NID) or NHDPlus COMID; 'A Python Implementation is coming soon!'", "url": "https://noaa-owp.github.io/hydrofabric/", "status": "FACT"},
+        {"claim": "v2.2 data model tables: divides, flowpaths, network, hydrolocations, lakes, flowpath-attributes, divide-attributes; columns id, toid, divide_id, hf_id, hf_source, hf_hydroseq, vpuid, hl_uri, hl_link, hl_reference, poi_id, mainstem, lengthkm, areasqkm, tot_drainage_areasqkm, hydroseq, order, type, ds_id, has_divide, has_flowline; geometry units 'm (EPSG:5070)'; attribute sources reference 'NHDPlus2.1'", "url": "https://lynker-spatial.s3.amazonaws.com/hydrofabric/v2.2/hfv2.2-data_model.html", "status": "FACT"},
+        {"claim": "Search summary: v2.2 geopackages per VPU at s3://nextgen-hydrofabric/{version}/nextgen_{VPU}.gpkg and s3://lynker-spatial/hydrofabric, under ODbL", "url": "https://noaa-owp.github.io/hydrofabric/articles/devcon2024-background.html", "status": "INFERENCE"},
+        {"claim": "NWPS gauge CONW1 reachId '24270512' equals the NHDPlusV2 COMID that NLDI hydrolocation returns for the same point, implying NWM/NWPS reach IDs are NHDPlusV2 COMIDs", "url": "https://api.water.noaa.gov/nwps/v1/gauges/CONW1", "status": "INFERENCE"}
+      ],
+      "relevance_to_cascade_oracle": "Would give the exact NWM v3/NextGen divides and flowpaths for joining NWM channel output; currently blocked (403) and license-uncertain. Fallback: build the COMID layer from NHDPlusV2 via NLDI/EPA NHDPlusV2 downloads and map NWM feature_id = COMID."
+    },
+    {
+      "name": "USGS 3D Elevation Program (3DEP): 1/3 arc-second and 1 m DEMs, lidar point clouds, TNM Access API",
+      "authority": "U.S. Geological Survey, National Geospatial Program",
+      "data_kind": "static",
+      "access": {
+        "mechanism": "Direct HTTPS/S3 GETs on prd-tnm (public), TNM Access API product search (bbox/datasets), dynamic 3DEPElevation ImageServer (WMS/WCS enabled), AWS usgs-lidar-public EPT point clouds",
+        "base_urls": [
+          "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/13/TIFF/current/{nXXwYYY}/USGS_13_{nXXwYYY}.tif (e.g. n49w122: 479,441,377 bytes, 2025-08-13)",
+          "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/{project}/TIFF/USGS_1M_10_x{XX}y{YYY}_{project}.tif (UTM zone 10 tiles)",
+          "https://prd-tnm.s3.amazonaws.com/?prefix=StagedProducts/Elevation/1m/Projects/&delimiter=/",
+          "https://tnmaccess.nationalmap.gov/api/v1/products?datasets=...&bbox=W,S,E,N&prodFormats=GeoTIFF&max=",
+          "https://tnmaccess.nationalmap.gov/api/v1/datasets",
+          "https://elevation.nationalmap.gov/arcgis/rest/services/3DEPElevation/ImageServer",
+          "s3://usgs-lidar-public (EPT, us-west-2) ; s3://usgs-lidar (requester pays, LAZ 1.4)",
+          "https://apps.nationalmap.gov/3depdem/"
+        ],
+        "auth": "None for prd-tnm, TNM API, ImageServer, usgs-lidar-public; AWS credentials + requester-pays for usgs-lidar",
+        "rate_limits": "Not published; TNM products endpoint returned HTTP 504 'Endpoint request timed out' twice on 2026-08-22",
+        "formats": ["GeoTIFF (Cloud Optimized per USGS)", "GeoPackage tile index", "XML FGDC metadata", "EPT/LAZ point clouds"]
+      },
+      "cadence": "Continuous ('Continuous' refreshCycle in TNM registry); ImageServer 'reflects all 3DEP DEM data published as of July 20, 2026'; 1-meter seamless (S1M) in production since mid-2025",
+      "latency": "N/A",
+      "spatial_resolution": "1/3 arc-second (~10 m; lat/long resolution 9.259e-05 deg), 1 m project DEMs (WA coverage by project), 1/9 arc-second legacy, lidar point clouds QL1/QL2",
+      "temporal_resolution": "N/A (acquisition year in project name, e.g. WA_KingCounty_2021_B21)",
+      "historical_depth": "1/3 arc-second 'current' directory only; 1 m by project (2013-2022+ for WA)",
+      "missing_data_semantics": "GeoTIFF nodata value per tile (check metadata); 1/3 arc-second seamless has full CONUS coverage; 1 m only where projects exist",
+      "quality_flags": "Project-level QL (QL1/QL2), 'There is no guarantee or warranty concerning the accuracy of the data' use constraint",
+      "units": "Elevation meters, NAVD88 (1/3 arc-sec: NAD83/GRS80 geographic; 1 m: NAD83 / UTM zone 10N meters)",
+      "licensing": "'available, free of charge and without use restrictions' (USGS public domain); usgs-lidar registry: 'US Government Public Domain'",
+      "limitations": [
+        "1/3 arc-second vertical datum is NAVD88 in meters; WA DNR/FEMA products in feet -> unit conversion and geoid consistency (GEOID12B vs GEOID18) are a source of decimeter-level differences (INFERENCE).",
+        "1 m tiles that cross UTM zones are delivered in both zones; western WA is zone 10, far eastern WA zone 11 (INFERENCE for zone 11).",
+        "Dynamic ImageServer is Web Mercator (3857); do not compute hypsometry from it, use source tiles."
+      ],
+      "evidence": [
+        {"claim": "Products: 1-meter (expanding), 1/9 arc-second (~25% CONUS), 1/3 arc-second (full US, ~10 m), 1 arc-second; 'S1M' seamless 1 m since mid-2025; ImageServer https://elevation.nationalmap.gov/arcgis/rest/services/3DEPElevation/ImageServer; AWS prd-tnm and usgs-lidar EPT; Cloud-optimized GeoTIFF with WMS/WCS; 'available, free of charge and without use restrictions'", "url": "https://www.usgs.gov/3d-elevation-program/about-3dep-products-services", "status": "FACT"},
+        {"claim": "n49w122 1/3 arc-second tile metadata: horizdn 'North American Datum of 1983', ellips GRS80, altdatum 'North American Vertical Datum of 1988', altunits meters, latres/longres 9.259259e-05 deg, pubdate 20250813; useconst: no guarantee or warranty", "url": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/13/TIFF/current/n49w122/USGS_13_n49w122.xml", "status": "FACT"},
+        {"claim": "1 m tile USGS_1M_10_x53y524_WA_KingCounty_2021_B21 metadata: gridsysn 'NAD83 / UTM zone 10N', utmzone 10, 'All bare earth elevation values are in meters and are referenced to the North American Vertical Datum of 1988 (NAVD88)', pubdate 20230303", "url": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/WA_KingCounty_2021_B21/metadata/USGS_1M_10_x53y524_WA_KingCounty_2021_B21.xml", "status": "FACT"},
+        {"claim": "WA 1 m projects on prd-tnm include WA_3_County_QL1_2017, WA_3_County_QL2_2017, WA_CentralWildfire_D22, WA_ColumbiaValley_2018_D19, WA_DNR_3DEP_Processing_2019_D20, WA_EasternCascades_2019_B19, WA_FEMAHQ_2018_D18, WA_GlacierPeak_2014, WA_KingCounty_2021_B21, WA_Mount_Adams_LiDAR_2016_D16, WA_MtBaker_2015, WA_Nisqually_TopoBathy_2020_D20, WA_NorthCentral_2021_B21, WA_NorthEast_B22, WA_Olympic_Peninsula_* (2013, 2017 1A/C1/C2/C3/B17), WA_Pasco_2020_D20, WA_PierceCounty_2020_A20, WA_ThurstonCounty_2021_B21, WA_Western_North_2016, WA_Western_South_2016", "url": "https://prd-tnm.s3.amazonaws.com/?prefix=StagedProducts/Elevation/1m/Projects/&delimiter=/", "status": "FACT"},
+        {"claim": "TNM datasets registry tags: 'National Elevation Dataset (NED) 1/3 arc-second', 'Digital Elevation Model (DEM) 1 meter', 'National Elevation Dataset (NED) 1/9 arc-second', 'Lidar Point Cloud (LPC)', 'Original Product Resolution (OPR) Digital Elevation Model (DEM)', 'Topobathymetric Lidar DEM'; elevation formats GeoTIFF, IMG; refreshCycle Continuous", "url": "https://tnmaccess.nationalmap.gov/api/v1/datasets", "status": "FACT"},
+        {"claim": "TNM /api/v1/products with datasets='National Elevation Dataset (NED) 1/3 arc-second Current' and a Skagit bbox returned {'message': 'Endpoint request timed out'} HTTP 504 on two attempts", "url": "https://tnmaccess.nationalmap.gov/api/v1/products", "status": "FACT"},
+        {"claim": "3DEPElevation ImageServer: 'Data available in this map service reflects all 3DEP DEM data published as of July 20, 2026'; WMS and WCS enabled; extent SR 102100", "url": "https://elevation.nationalmap.gov/arcgis/rest/services/3DEPElevation/ImageServer?f=pjson", "status": "FACT"},
+        {"claim": "AWS registry: buckets usgs-lidar-public (public) and usgs-lidar (Requester Pays), region us-west-2, Entwine Point Tiles + LAZ 1.4, 'US Government Public Domain', updated 'Periodically', docs https://github.com/hobu/usgs-lidar/", "url": "https://registry.opendata.aws/usgs-lidar/", "status": "FACT"}
+      ],
+      "relevance_to_cascade_oracle": "Canonical DEM for basin hypsometry (elevation bands for snow line / freezing level logic), slope, and valley-bottom masks. Load 1/3 arc-second tiles n47-n49 x w121-w123 for the six basins; use 1 m projects for floodplain-scale work."
+    },
+    {
+      "name": "Washington DNR / Washington Geological Survey Lidar Portal",
+      "authority": "Washington State Department of Natural Resources, Washington Geological Survey",
+      "data_kind": "static",
+      "access": {
+        "mechanism": "Web portal with area-of-interest and project-level downloads (DTM, DSM, hillshade, point cloud) and ArcGIS REST hillshade/image services; same collections also redistributed via USGS 3DEP, NOAA Digital Coast, OpenTopography, Puget Sound Lidar Consortium",
+        "base_urls": [
+          "https://lidarportal.dnr.wa.gov/",
+          "https://lidarportal.dnr.wa.gov/help.html",
+          "https://lidarportal.dnr.wa.gov/arcgis/rest/services/lidar (wadnr_hillshade MapServer with per-project layers, e.g. 'tacoma_pud_riffe_lake_2025', 'grays_harbor_county_refresh24_2025')",
+          "https://gis.dnr.wa.gov/site3/rest/services/Public_Lidar (returns 499 'Token Required')",
+          "https://www.dnr.wa.gov/lidar"
+        ],
+        "auth": "None for portal downloads and lidarportal ArcGIS; token required on gis.dnr.wa.gov Public_Lidar folder",
+        "rate_limits": "Not published; AOI downloads produce multiple small tiles per project",
+        "formats": ["GeoTIFF DTM/DSM/hillshade (INFERENCE: format not stated on pages read)", "LAZ point clouds (per third-party CRS notes)"]
+      },
+      "cadence": "Project-based; new collections added as flown (2025 projects present in hillshade service)",
+      "latency": "N/A",
+      "spatial_resolution": "Project dependent: 3 ft DEMs typical per help page example; QL1/QL2 lidar",
+      "temporal_resolution": "N/A",
+      "historical_depth": "Collections from early 2000s (older lower-quality) to 2025",
+      "missing_data_semantics": "Coverage gaps: DNR page states roughly 25-35% of the state flown (page text likely stale; USGS 3DEP WA 1 m projects suggest far greater coverage today: INFERENCE)",
+      "quality_flags": "Older collections 'poor quality'; project reports per collection",
+      "units": "Horizontal: NAD83(HARN) State Plane Washington North (EPSG:2926) or South (EPSG:2927), US survey feet; vertical: NAVD88 height (ftUS, EPSG:6360); geoid model (GEOID12B vs GEOID18) varies by project",
+      "licensing": "Not stated on portal/help pages read (OPEN_QUESTION); state-agency public data; identical collections are public domain when served by USGS 3DEP",
+      "limitations": [
+        "Feet-based State Plane CRS: must transform to meters/NAVD88 m before combining with 3DEP; 17 possible NAD83/NAVD88 transformation paths with decimeter-level ambiguity per UW notes.",
+        "No documented bulk/S3 API; AOI tool returns tiled fragments.",
+        "DNR REST image services are not a stable analytical source (MapServer hillshades only)."
+      ],
+      "evidence": [
+        {"claim": "DNR lidar page: portal http://lidarportal.dnr.wa.gov/ offers 'Digital Elevation Models (DEMs), hillshade derivatives, and point cloud data'; 'Roughly 25 to 35% of the state has been flown'; also available via Puget Sound Lidar Consortium, OpenTopography, USGS National Map, NOAA Data Access Viewer; contacts Abigail Gleason (Lidar Manager)", "url": "https://www.dnr.wa.gov/lidar", "status": "FACT"},
+        {"claim": "Help page: download 'full extent of the specified layer within a lidar project' or draw an AOI rectangle to list tiled data; 'Connect to the rest-end point for our lidar image services'; defines DTM ('bare earth'), DSM, hillshade, point cloud", "url": "https://lidarportal.dnr.wa.gov/help.html", "status": "FACT"},
+        {"claim": "lidarportal ArcGIS: folders 'lidar' and 'Utilities'; services lidar/wadnr_hillshade (MapServer, SR 3857, layers such as 'tacoma_pud_riffe_lake_2025', 'grays_harbor_county_refresh24_2025'), lidar/wadnr_hillshade_dev, lidar/tahoma_test, lidar/wadnr_composite_locator", "url": "https://lidarportal.dnr.wa.gov/arcgis/rest/services/lidar?f=json", "status": "FACT"},
+        {"claim": "gis.dnr.wa.gov/site3 has a Public_Lidar folder but GET returns {'error': {'code': 499, 'message': 'Token Required'}}", "url": "https://gis.dnr.wa.gov/site3/rest/services/Public_Lidar?f=json", "status": "FACT"},
+        {"claim": "UW cryosphere CRS notes: WA DNR products distributed in 'EPSG:2926 - NAD83(HARN) / Washington North (ftUS)' or 'EPSG:2927 - NAD83(HARN) / Washington South (ftUS)', vertical 'EPSG:6360 - NAVD88 height (ftUS)', geoid uncertain (2012 vs 2018); 'There are 17 different possible operations' to WGS84 UTM 10N", "url": "https://uw-cryo.github.io/3D_CRS_Transformation_Resources/readme-3/", "status": "FACT"},
+        {"claim": "Ecology CHAMP layer on a WA state server uses WKID 2927 (NAD83(HARN) / Washington South ftUS), illustrating the State Plane feet convention for WA agency data", "url": "https://gis.ecology.wa.gov/serverext/rest/services/Authoritative/SEA/MapServer/0", "status": "FACT"}
+      ],
+      "relevance_to_cascade_oracle": "Highest-resolution terrain for floodplain inundation depth grids, levee crest elevations, and channel migration context in the six basins; but prefer the same collections from USGS 3DEP 1 m (metric, NAVD88 m, public domain) to avoid feet/State Plane pitfalls, falling back to DNR only for collections not yet in 3DEP."
+    },
+    {
+      "name": "Hypsometry / zonal statistics tooling: exactextract and rasterstats",
+      "authority": "ISciences (exactextract, Apache-2.0); Matthew T. Perry (rasterstats, BSD-3-Clause)",
+      "data_kind": "derived",
+      "access": {
+        "mechanism": "Python packages (pip install exactextract / rasterstats); exactextract also CLI (GDAL) and R",
+        "base_urls": [
+          "https://isciences.github.io/exactextract/",
+          "https://isciences.github.io/exactextract/operations.html",
+          "https://pypi.org/project/exactextract/ (0.3.0)",
+          "https://pythonhosted.org/rasterstats/",
+          "https://pypi.org/project/rasterstats/ (0.21.0)"
+        ],
+        "auth": "N/A",
+        "rate_limits": "N/A",
+        "formats": ["GeoTIFF/any rasterio or GDAL raster; vector from geopandas/fiona/GDAL"]
+      },
+      "cadence": "Library releases",
+      "latency": "N/A",
+      "spatial_resolution": "Pixel-exact coverage fractions (exactextract) vs rasterized all_touched/center rules (rasterstats)",
+      "temporal_resolution": "N/A",
+      "historical_depth": "N/A",
+      "missing_data_semantics": "exactextract: default_value/default_weight for NODATA, min_coverage_frac threshold; rasterstats respects raster nodata",
+      "quality_flags": "N/A",
+      "units": "As input raster (NAVD88 m for 3DEP)",
+      "licensing": "exactextract Apache License 2.0; rasterstats BSD-3-Clause",
+      "limitations": [
+        "Hypsometric curves need elevation-band areas: use exactextract 'values'+'coverage' (or 'frac' on a binned raster) and weight by coverage; compute on an equal-area CRS (e.g. EPSG:5070/6933) or use coverage_weight=area_spherical_m2 on geographic rasters.",
+        "rasterstats percentile_X is unweighted by partial pixels; at HUC12 scale with 10 m pixels the bias is small but non-zero."
+      ],
+      "evidence": [
+        {"claim": "exactextract 'computes the fraction of each pixel that is covered by a polygon'; works with gdal, rasterio, fiona, geopandas, xarray via exact_extract(); Python, R and CLI interfaces", "url": "https://isciences.github.io/exactextract/", "status": "FACT"},
+        {"claim": "Operations: cell_id, center_x, center_y, coverage, unique, values, weights; count, mean, median, min, max, sum, stdev, variance, coefficient_of_variation, quantile; majority, minority, variety, frac; weighted_mean, weighted_sum, weighted_stdev, weighted_variance, weighted_frac; arguments coverage_weight (fraction default, none, area_cartesian, area_spherical_m2, area_spherical_km2), min_coverage_frac, default_value, default_weight", "url": "https://isciences.github.io/exactextract/operations.html", "status": "FACT"},
+        {"claim": "PyPI: exactextract 0.3.0 license Apache License 2.0; rasterstats 0.21.0 license BSD-3-Clause", "url": "https://pypi.org/pypi/exactextract/json", "status": "FACT"},
+        {"claim": "rasterstats zonal_stats(\"polygons.shp\", \"elevation.tif\", stats=\"count min mean max median\"); supports any rasterio raster and Point/LineString/Polygon/Multi* vectors", "url": "https://pythonhosted.org/rasterstats/", "status": "FACT"}
+      ],
+      "relevance_to_cascade_oracle": "Implements per-HUC12/catchment hypsometric curves and mean/median elevation used to translate freezing levels and snow levels into contributing-area fractions; exactextract preferred for exactness and speed."
+    },
+    {
+      "name": "FEMA National Flood Hazard Layer (NFHL)",
+      "authority": "Federal Emergency Management Agency (FEMA), Flood Map Service Center / Mapping Information Platform",
+      "data_kind": "static",
+      "access": {
+        "mechanism": "ArcGIS REST MapServer (query with pagination), OGC WFS, WMS; county/state GIS downloads from MSC 'Search All Products'; national metadata XML",
+        "base_urls": [
+          "https://hazards.fema.gov/arcgis/rest/services/public/NFHL/MapServer",
+          "https://hazards.fema.gov/arcgis/rest/services/public/NFHL/MapServer/28/query (Flood Hazard Zones)",
+          "https://hazards.fema.gov/arcgis/services/public/NFHL/MapServer/WFSServer",
+          "https://hazards.fema.gov/gis/nfhl/services/public/NFHLWMS/MapServer/WMSServer (WMS; INFERENCE from search summary)",
+          "https://hazards.fema.gov/femaportal/wps/portal/NFHLWMS",
+          "https://msc.fema.gov/portal/advanceSearch",
+          "https://hazards.fema.gov/filedownload/metadata/NFHL/NFHL_metadata.xml"
+        ],
+        "auth": "None (browser-like User-Agent recommended; www.fema.gov pages returned 403 to fetcher)",
+        "rate_limits": "Not published; maxRecordCount 2000 with supportsPagination true",
+        "formats": ["ArcGIS REST JSON/GeoJSON", "WFS GML", "WMS", "Shapefile/FileGDB county & state downloads", "KMZ"]
+      },
+      "cadence": "Monthly per metadata ('update: Monthly'); effective FIRM databases incorporated as they become effective; Preliminary & Pending NFHL maintained separately",
+      "latency": "N/A",
+      "spatial_resolution": "FIRM panel scale (1:6,000 to 1:24,000); base map hydrography/transport NSSDA radial accuracy 38 ft",
+      "temporal_resolution": "N/A",
+      "historical_depth": "Current effective only (LOMRs/LOMAs layers for revisions); no historical snapshots via service",
+      "missing_data_semantics": "Counties without digital effective FIRMs are absent: Skagit County (DFIRM_ID 53057C) has 0 Flood Hazard Zone polygons and 0 FIRM Panels; distinct WA DFIRM_IDs in layer 28 = 29 (53001C, 53009C, 53011C, 53015C, 53019C, 53025C, 53027C, 53029C, 53031C, 53033C, 53035C, 53037C, 53039C, 53045C, 53049C, 53053C, 53055C, 53059C, 53061C, 53063C, 53067C, 53073C, 53077C plus community-level 530015, 530016, 530102, 530104, 530254, 530317)",
+      "quality_flags": "STUDY_TYP, SOURCE_CIT, ZONE_SUBTY (e.g. floodway, 0.2 PCT), DUAL_ZONE, AR_REVERT; Topographic Low Confidence Areas layer 6",
+      "units": "STATIC_BFE in feet with V_DATUM (NAVD88 or NGVD29 per study); DEPTH with LEN_UNIT; coordinates NAD83 geographic (EPSG:4269)",
+      "licensing": "U.S. Government work; 'Acknowledgement of FEMA would be appreciated in products derived from these data'; hardcopy FIRM/FIS remain the official SFHA designation; no warranty",
+      "limitations": [
+        "Skagit County, the flagship basin, is not in NFHL (paper FIRMs ~40 years old; a 2009/2010 countywide DFIRM was produced but is not effective in NFHL).",
+        "V_DATUM varies by study; older WA studies can carry NGVD29 BFEs which must be shifted ~+1.1 m to compare with NAVD88 terrain.",
+        "The /gis/nfhl/rest/ path form returns 404 (WebSEAL); use /arcgis/rest/."
+      ],
+      "evidence": [
+        {"claim": "NFHL MapServer (currentVersion 11.1, document Version 2.9.0) layers: 0 NFHL Availability, 3 FIRM Panels, 1 LOMRs, 34 LOMAs, 22 Political Jurisdictions, 17 Profile Baselines, 20 Water Lines, 14 Cross-Sections, 16 Base Flood Elevations, 23 Levees, 29 Seclusion Boundaries, 15 Coastal Transects, 18 Transect Baselines, 24 General Structures, 7 River Mile Markers, 32 Water Areas, 5 PLSS, 19 Limit of Moderate Wave Action, 27 Flood Hazard Boundaries, 28 Flood Hazard Zones, 25 Primary Frontal Dunes, 4 Base Index, 6 Topographic Low Confidence Areas, 8 Datum Conversion Points, 9 Coastal Gages, 10 Gages, 11 Nodes, 12 High Water Marks, 13 Station Start Points, 26 Hydrologic Reaches, 30 Alluvial Fans, 31 Subbasins; SR WKID 4269; maxRecordCount 2000", "url": "https://hazards.fema.gov/arcgis/rest/services/public/NFHL/MapServer?f=json", "status": "FACT"},
+        {"claim": "Layer 28 'Flood Hazard Zones' fields: DFIRM_ID, FLD_AR_ID, STUDY_TYP, FLD_ZONE, ZONE_SUBTY, SFHA_TF, STATIC_BFE, V_DATUM, DEPTH, LEN_UNIT, VELOCITY, VEL_UNIT, AR_REVERT, AR_SUBTRV, BFE_REVERT, DEP_REVERT, DUAL_ZONE, SOURCE_CIT, GFID, GlobalID; supportsPagination true", "url": "https://hazards.fema.gov/arcgis/rest/services/public/NFHL/MapServer/28?f=json", "status": "FACT"},
+        {"claim": "Counts by DFIRM_ID (layer 28 polygons / layer 3 panels): 53057C Skagit 0/0; 53073C Whatcom 1,569/175; 53061C Snohomish 3,185/170; 53033C King 5,299/260; 53053C Pierce 7,273/285; distinct DFIRM_ID LIKE '53%' = 29 values with no 53057 entry", "url": "https://hazards.fema.gov/arcgis/rest/services/public/NFHL/MapServer/28/query", "status": "FACT"},
+        {"claim": "NFHL metadata: pubdate 20150130, update 'Monthly', horizontal datum NAD83, decimal degrees; use constraints: hardcopy FIRM/FIS are official; 'Acknowledgement of FEMA would be appreciated'; 'No warranty expressed or implied'", "url": "https://hazards.fema.gov/filedownload/metadata/NFHL/NFHL_metadata.xml", "status": "FACT"},
+        {"claim": "NFHLWMS page: WFS URL https://hazards.fema.gov/arcgis/services/public/NFHL/MapServer/WFSServer 'provides an OGC-compliant protocol for direct download of GIS data from the NFHL'; detailed flood maps visible beyond 1:50,000; Preliminary and Pending NFHL layers updated as data become available; base map NSSDA radial accuracy 38 feet", "url": "https://hazards.fema.gov/femaportal/wps/portal/NFHLWMS", "status": "FACT"},
+        {"claim": "MSC 'Search All Products' page supports State/County/Community selection and product ID (e.g. '51059C') for NFHL GIS downloads", "url": "https://msc.fema.gov/portal/advanceSearch", "status": "FACT"},
+        {"claim": "https://hazards.fema.gov/gis/nfhl/rest/services/public/NFHL/MapServer returns HTTP 404 'Access Manager WebSEAL server cannot find the resource'", "url": "https://hazards.fema.gov/gis/nfhl/rest/services/public/NFHL/MapServer", "status": "FACT"},
+        {"claim": "Search summary (Seattle Times/Maxwell and Skagit County pages): Skagit County flood maps not updated in ~40 years; FEMA produced a revised countywide DFIRM/FIS July 1, 2010 (original Dec 15, 2009)", "url": "https://www.skagitcounty.net/Departments/PlanningAndPermit/FEMAfloodstudy.htm", "status": "INFERENCE"}
+      ],
+      "relevance_to_cascade_oracle": "SFHA polygons, floodways, BFEs and cross-sections for exposure scoring in Nooksack, Snohomish, Cedar/Lake Washington, Green-Duwamish and Puyallup/White; Skagit requires an alternative floodplain source (county GIS, Ecology, or NWS inundation maps)."
+    },
+    {
+      "name": "USACE National Levee Database (NLD / NLD2 API)",
+      "authority": "U.S. Army Corps of Engineers, Levee Safety Program",
+      "data_kind": "static",
+      "access": {
+        "mechanism": "JSON REST API (NLD2 API 4.40.0, OpenAPI 3.1.0 embedded in developer page), ArcGIS FeatureServer/MapServer, OGC WMS/WFS, dataset downloads (csv/geojson/gpkg/shapefile/kml zips)",
+        "base_urls": [
+          "https://levees.sec.usace.army.mil/api-local/ (server base in OpenAPI)",
+          "https://levees.sec.usace.army.mil/api-local/leveed-areas ; /leveed-areas/{id} ; /leveed-areas-{systemId}.geojson ; /systems/query ; /system/{id}/detail ; /system/{id}/route ; /segments ; /centerlines ; /floodwalls ; /embankments-{segmentId}.geojson ; /geometries/query ; /coordinate-lookup ; /system-gage-overtopping ; /download/dataset/{csv|geojson|gpkg|shapefile|earth}.zip ; /test/hello",
+          "https://levees.sec.usace.army.mil/developer/",
+          "https://geospatial.sec.usace.army.mil/dls/rest/services/NLD/Public/FeatureServer",
+          "https://geospatial.sec.usace.army.mil/dls/rest/services/NLD/Public/MapServer",
+          "https://levees.sec.usace.army.mil/mapserver/public/ows (WMS/WFS)",
+          "https://levees.sec.usace.army.mil/data-services/services/"
+        ],
+        "auth": "None for public API/services; 'For more advanced features, you may need an NLD account and specific government clearance'",
+        "rate_limits": "Not published; FeatureServer maxRecordCount 2000",
+        "formats": ["JSON", "GeoJSON", "ArcGIS REST", "WMS/WFS", "CSV/GeoJSON/GPKG/Shapefile/KML zips"]
+      },
+      "cadence": "Per-levee updates as inspections/new information arrive ('Data Last Updated' per levee); leveed-area records show lastEditedDate values in 2024-2025",
+      "latency": "N/A",
+      "spatial_resolution": "Levee centerlines/alignments and leveed-area polygons; vertical reference in service: vcsWkid 6360 (NAVD88 ftUS)",
+      "temporal_resolution": "N/A",
+      "historical_depth": "Change-log endpoints exist (/change-log)",
+      "missing_data_semantics": "Quality varies; 'The amount and quality of data for each levee can vary'; USACE does not validate submitted data",
+      "quality_flags": "FEMA_ACCREDITATION_RATING, REHAB_PROGRAM_STATUS, LEVEED_AREA_METHOD, COMPUTED_TERRAIN_SOURCE/TERRAIN_SOURCE_YEAR, OVERTOPPING_ACE, WARNING_SYSTEM",
+      "units": "LEVEED_AREA_SQ_MI (sq mi); areaSquareMiles in JSON; heights in feet (NAVD88 ftUS VCS)",
+      "licensing": "'Data within the National Levee Database can be downloaded, shared, and used by anyone' (US Government work)",
+      "limitations": [
+        "JSON /leveed-areas ignores state=WA and returns nationwide records; filter client-side or use the FeatureServer STATES field.",
+        "Levee crest profiles may require authenticated endpoints.",
+        "339 WA leveed areas found via FeatureServer; coverage of non-federal/local levees depends on sponsor submissions."
+      ],
+      "evidence": [
+        {"claim": "Developer page embeds OpenAPI 3.1.0 'NLD2 API' version 4.40.0 with servers [{url: '/api-local/'}] and 155 paths including /leveed-areas, /leveed-areas-{systemId}.geojson, /systems/query, /system/{id}/detail, /system/{id}/route, /segments, /centerlines, /floodwalls, /download/dataset/geojson.zip, /geometries/query, /coordinate-lookup, /system-gage-overtopping, /test/hello; note about NLD account/government clearance for advanced features", "url": "https://levees.sec.usace.army.mil/developer/", "status": "FACT"},
+        {"claim": "GET https://levees.sec.usace.army.mil/api-local/leveed-areas returns JSON records (id, systemId, systemName, areaSquareMiles, people, buildings, propertyValue, femaAccreditationRating, floodSources, rpStatus, lastEditedDate); state=WA / stateCode=WA parameters did not filter; /api-local/systems -> 404", "url": "https://levees.sec.usace.army.mil/api-local/leveed-areas", "status": "FACT"},
+        {"claim": "Data services page: Feature Service https://geospatial.sec.usace.army.mil/dls/rest/services/NLD/Public/FeatureServer, Map Service .../MapServer, OGC WMS/WFS https://levees.sec.usace.army.mil/mapserver/public/ows, JSON API described at https://levees.sec.usace.army.mil/developer/, helpdesk NLD@usace.army.mil", "url": "https://levees.sec.usace.army.mil/data-services/services/", "status": "FACT"},
+        {"claim": "FeatureServer layers 0 Boreholes, 1 Crossings, 2 Levee Stations, 3 Piezometers, 4 Pump Stations, 5 Relief Wells, 6 Pipe Gates, 7 Alignment Lines, 8 Pipes, 9 Cross Sections, 10 Closure Structures, 11 Embankments, 12 Floodwalls, 13 FRM Lines, 14 Toe Drains, 15 System Routes, 16 Leveed Areas, 17 Berms; SR wkid 4269 with vcsWkid 105703/latestVcsWkid 6360; maxRecordCount 2000", "url": "https://geospatial.sec.usace.army.mil/dls/rest/services/NLD/Public/FeatureServer?f=json", "status": "FACT"},
+        {"claim": "Leveed Areas (layer 16) fields include SYSTEM_ID, SYSTEM_NAME, LEVEED_ID, STATES, COUNTIES, COMMUNITY_NAMES, SPONSORS, LEVEED_AREA_METHOD, COMPUTED_TERRAIN_SOURCE, TERRAIN_SOURCE_YEAR, EGRESS_NUMBER, WARNING_SYSTEM, OVERTOPPING_ACE, REHAB_PROGRAM_STATUS, LEVEED_AREA_SQ_MI, FEMA_ACCREDITATION_RATING, FLOOD_SOURCES, SEG_COUNT; count where STATES matches 'WA' = 339", "url": "https://geospatial.sec.usace.army.mil/dls/rest/services/NLD/Public/FeatureServer/16/query", "status": "FACT"},
+        {"claim": "About the data: ~6,300 levee systems; updates as new information is available; 'Data within the National Levee Database can be downloaded, shared, and used by anyone'; USACE not responsible for validating submitted data", "url": "https://levees.sec.usace.army.mil/about/about-the-data/", "status": "FACT"}
+      ],
+      "relevance_to_cascade_oracle": "Leveed areas and system routes for the Skagit (Mount Vernon/Burlington), Nooksack (Lynden/Ferndale), Snohomish, Green (Kent/Tukwila) and Puyallup (Orting/Sumner) valleys; join OVERTOPPING_ACE and system-gage-overtopping to forecast stages."
+    },
+    {
+      "name": "Washington Department of Ecology floodplain / river GIS (CHAMP, Channel Migration Zone catalog, Levee Inventory, Coastal Atlas)",
+      "authority": "Washington State Department of Ecology, Shorelands and Environmental Assistance Program (with UW, WDFW)",
+      "data_kind": "static",
+      "access": {
+        "mechanism": "Zipped FileGDB downloads from fortress.wa.gov, ArcGIS REST on gis.ecology.wa.gov, geo.wa.gov open data portal, Coastal Atlas web map",
+        "base_urls": [
+          "https://ecology.wa.gov/research-data/data-resources/geographic-information-systems-gis/data",
+          "https://fortress.wa.gov/ecy/gispublic/DataDownload/SEA_WAT_CHAMP.zip",
+          "https://fortress.wa.gov/ecy/gispublic/DataDownload/SEA_WAT_LeveeInventory.zip",
+          "https://fortress.wa.gov/ecy/gispublic/DataDownload/SEA_WAT_SMA_Jurisdiction.zip",
+          "https://gis.ecology.wa.gov/serverext/rest/services/Authoritative/SEA/MapServer/0 (CHAMP)",
+          "https://geo.wa.gov",
+          "https://apps.ecology.wa.gov/coastalatlasmap"
+        ],
+        "auth": "None",
+        "rate_limits": "Not published",
+        "formats": ["FileGDB (zip)", "ArcGIS REST JSON"]
+      },
+      "cadence": "Irregular; SMA jurisdiction current as of May 2019; CHAMP is a 2015 screening product (publication 1506003)",
+      "latency": "N/A",
+      "spatial_resolution": "Stream-network screening classes (Western WA), not site-specific CMZ delineations",
+      "temporal_resolution": "N/A",
+      "historical_depth": "N/A",
+      "missing_data_semantics": "CHAMP covers Western Washington (and much of Western Oregon) only; Channel Migration Zone Spatial Data Catalog indexes where local CMZ studies exist",
+      "quality_flags": "conf_class, eros_class, mig_class (nine classes from 'Confined with Low Erosion Potential' to 'Unconfined with High Erosion Potential')",
+      "units": "WKID 2927 (NAD83(HARN) / Washington South, US survey feet)",
+      "licensing": "Ecology copyright/conditions of use: free of charge, credit Ecology as data provider, BUT 'Commercial and political use of any Ecology Material are specifically prohibited' and derived works must be offered 'freely and openly to others under the terms stated here' (covers websites and 'linked database and map servers')",
+      "limitations": [
+        "Non-commercial clause is a legal risk for a commercial platform; seek written permission or rely on public-domain federal equivalents.",
+        "Screening-level only; not regulatory floodplain boundaries.",
+        "State Plane South feet CRS for all Ecology layers."
+      ],
+      "evidence": [
+        {"claim": "GIS data page lists CHAMP Stream Networks (SEA_WAT_CHAMP.zip), SMA Jurisdiction (SEA_WAT_SMA_Jurisdiction.zip, current May 2019), Washington State Levee Inventory (SEA_WAT_LeveeInventory.zip); portals geo.wa.gov and Coastal Atlas; 'Our GIS data, while available for free of charge, is covered by our Conditions of Use Statement'", "url": "https://ecology.wa.gov/research-data/data-resources/geographic-information-systems-gis/data", "status": "FACT"},
+        {"claim": "CHAMP layer: esriGeometryPolyline, WKID 2927, fields conf_class, eros_class, mig_class; copyright 'Washington Department of Ecology, Shorelands and Environmental Assistance Program, University of Washington, Washington Department of Fish and Wildlife'; screening tool, not a prediction of migration rates", "url": "https://gis.ecology.wa.gov/serverext/rest/services/Authoritative/SEA/MapServer/0", "status": "FACT"},
+        {"claim": "Copyright page: 'Unless otherwise identified, all content is the copyrighted property of Washington State Department of Ecology'; data may be used 'provided the Washington State Department of Ecology is credited as the data provider'; 'Commercial and political use of any Ecology Material are specifically prohibited'; applies to ecology.wa.gov, apps.ecy.wa.gov 'and the linked database and map servers'", "url": "https://ecology.wa.gov/about-us/accountability-transparency/website-information/copyright-information", "status": "FACT"},
+        {"claim": "Ecology Stream Channel Migration Zones program page and CHAMP publication 1506003 'Screening Tools for Identifying Migrating Stream Channels in Western Washington'", "url": "https://apps.ecology.wa.gov/publications/SummaryPages/1506003.html", "status": "INFERENCE"}
+      ],
+      "relevance_to_cascade_oracle": "Channel-migration and state levee inventory context for the Skagit (where FEMA NFHL is absent) and other basins; licensing must be cleared before use in a commercial product."
+    },
+    {
+      "name": "NWS National Water Prediction Service (NWPS) gauge & forecast-point metadata (API + all-gauges CSV)",
+      "authority": "NOAA National Weather Service / Office of Water Prediction",
+      "data_kind": "mixed",
+      "access": {
+        "mechanism": "REST/JSON API (OpenAPI 3.0 spec served as swagger.json) for gauge metadata, flood categories, crests, ratings, stage/flow; bulk CSV report of all gauges",
+        "base_urls": [
+          "https://api.water.noaa.gov/nwps/v1/",
+          "https://api.water.noaa.gov/nwps/v1/docs/ (spec: https://api.water.noaa.gov/nwps/v1/docs/swagger.json)",
+          "GET /nwps/v1/gauges?bbox.xmin=&bbox.ymin=&bbox.xmax=&bbox.ymax=&srid=&catfim=",
+          "GET /nwps/v1/gauges/{identifier} ; /gauges/{identifier}/ratings?limit&sort&onlyTenths ; /gauges/{identifier}/stageflow ; /gauges/{identifier}/stageflow/{observed|forecast}",
+          "GET /nwps/v1/products/stageflow/{identifier}/{pedts} ; /reaches/{reachId} ; /reaches/{reachId}/streamflow?series=",
+          "https://water.noaa.gov/resources/downloads/reports/nwps_all_gauges_report.csv",
+          "https://water.noaa.gov/about/api"
+        ],
+        "auth": "None",
+        "rate_limits": "Not published; 'This API is not supported 24/7 and may be modified without advance notice'",
+        "formats": ["JSON", "CSV (all-gauges report)"]
+      },
+      "cadence": "Metadata updated as NWS/NRLDB changes; observed/forecast status fields live",
+      "latency": "Live (status.observed.validTime 2026-08-22T08:00Z at fetch time)",
+      "spatial_resolution": "Point gauges (lat/lon), reachId links to NWM reaches",
+      "temporal_resolution": "N/A for metadata",
+      "historical_depth": "Crest history back to 1815 (Skagit near Concrete historic crest 69.3 ft, 510,000 cfs flagged preliminary 'O', olddatum false)",
+      "missing_data_semantics": "-9999 for undefined flood category flows/stages; empty strings for missing datum values; 'Forecasts are not available' text in forecast status",
+      "quality_flags": "crests.preliminary (O/R/P), crests.olddatum boolean, inService, forecastReliability, hydronotes",
+      "units": "Stage ft, flow cfs or kcfs (primaryUnit/secondaryUnit); datums.vertical.value = gauge zero elevation in ft in the named datum (e.g. CONW1 NGVD29 130 ft)",
+      "licensing": "U.S. Government work; some gauges require attribution (give data attribution TRUE with attribution wording, e.g. 'WA Department of Ecology')",
+      "limitations": [
+        "Gauge zero datums are mixed: WA CSV shows 126 NGVD29, 61 NAVD88, 98 blank; converting stage to elevation requires per-gauge datum handling.",
+        "bbox listing returned an empty set for a valid Skagit bbox; LID lookups work (SKIW1 'could not find gauge ID' for a non-existent LID).",
+        "Flood categories often undefined (-9999) for non-forecast points."
+      ],
+      "evidence": [
+        {"claim": "swagger.json 'National Water Prediction Service API' 1.0.0 paths: /nwps/v1/gauges (bbox.xmin, bbox.ymin, bbox.xmax, bbox.ymax, srid, catfim), /gauges/{identifier}, /gauges/{identifier}/ratings (limit, sort, onlyTenths), /gauges/{identifier}/stageflow, /gauges/{identifier}/stageflow/{product}, /products/stageflow/{identifier}/{pedts}, /reaches/{reachId}, /reaches/{reachId}/streamflow (series); gauge schema fields lid, usgsId, reachId, name, rfc, wfo, state, county, timeZone, latitude, longitude, pedts, status, flood, datums, inundation, upstreamLid, downstreamLid, inService, forecastReliability; gaugeDatums {vertical, horizontal, notes}", "url": "https://api.water.noaa.gov/nwps/v1/docs/swagger.json", "status": "FACT"},
+        {"claim": "GET /gauges/CONW1: usgsId 12194000, reachId 24270512, 'Skagit River near Concrete', NWRFC/SEW, lat 48.524444 lon -121.769722, pedts HGIRG/HGIFZ, flood categories action 24.5, minor 28, moderate 30, major 32.5 ft (flows -9999), datums.vertical NGVD29 value 130 with NGS text 'NGVD 29 is no longer supported by NGS'; crests list with olddatum flags (1932 crest olddatum true)", "url": "https://api.water.noaa.gov/nwps/v1/gauges/CONW1", "status": "FACT"},
+        {"claim": "GET /gauges/SKIW1 -> {code 5, message '[SKIW1] could not find gauge ID'}; GET /gauges?bbox.xmin=-122.6&bbox.ymin=48.3&bbox.xmax=-121.5&bbox.ymax=48.9 -> {'gauges': []} HTTP 200", "url": "https://api.water.noaa.gov/nwps/v1/gauges?bbox.xmin=-122.6&bbox.ymin=48.3&bbox.xmax=-121.5&bbox.ymax=48.9", "status": "FACT"},
+        {"claim": "All-gauges CSV: 12,886 rows; columns 'location name','nws shef id','usgs id','latitude','longitude','wfo','rfc','state','county','action stage','flood stage','moderate flood stage','major flood stage','flood stage unit','pedts','in service','forecast status','give data attribution','attribution wording','nrldb vertical datum name','nrldb vertical datum','navd88 vertical datum','ngvd29 vertical datum','msl vertical datum','other vertical datum','reach id'; WA rows 285 (200 with USGS id, 73 with flood stage); datum names NGVD29 126 / NAVD88 61 / blank 98", "url": "https://water.noaa.gov/resources/downloads/reports/nwps_all_gauges_report.csv", "status": "FACT"},
+        {"claim": "WA LID<->USGS for target basins (flood stage ft, datum name/value): CONW1 12194000 (28, NGVD29 130); MVEW1 12200500 (28, NGVD29 0); SRMW1 12181000; SAKW1 12189500; NKSW1 12213100 Nooksack at Ferndale (18, NAVD88 8.5); NRKW1 12210700 North Cedarville (146.5, NAVD88 4.39); NFNW1 12205000; NSSW1 12210000 (8, NAVD88 349.59); MROW1 12150800 Snohomish nr Monroe (15, NGVD29 13.25); SNAW1 12155500 Snohomish at Snohomish (25, NGVD29 -9.86); CRNW1 12149000 Snoqualmie nr Carnation (54, NAVD88 2.12); GLBW1 12134500 Skykomish nr Gold Bar (15, NAVD88 213.02); RNTW1 12119000 Cedar at Renton (13, NGVD29 15.2); LNDW1 12117500 (5.7, NGVD29 565.9); AUBW1 12113000 Green nr Auburn (-9999, NGVD29 0); HAHW1 12105900; PUYW1 12101500 Puyallup at Puyallup (26.2, NGVD29 0); ORTW1 12093500; FFXW1 12094000 Carbon nr Fairfax (13.5, NGVD29 1201.7); WRAW1 12100490 White at R St Auburn; MMDW1 12098500; ARLW1 12167400 Stillaguamish at Arlington (14, NAVD88 50.75)", "url": "https://water.noaa.gov/resources/downloads/reports/nwps_all_gauges_report.csv", "status": "FACT"},
+        {"claim": "API info page: NWPS API base https://api.water.noaa.gov/nwps/v1/, docs https://api.water.noaa.gov/nwps/v1/docs/, HEFS API https://api.water.noaa.gov/hefs/v1/; 'This API is not supported 24/7 and may be modified without advance notice'", "url": "https://water.noaa.gov/about/api", "status": "FACT"}
+      ],
+      "relevance_to_cascade_oracle": "Authoritative forecast-point registry (LID, USGS ID, reachId, flood categories, gauge-zero datum) for the six basins; the CSV is the fastest bulk seed, the API the per-gauge refresh."
+    },
+    {
+      "name": "USGS site metadata: legacy NWIS Site Service and new Water Data OGC API (monitoring-locations)",
+      "authority": "U.S. Geological Survey, Water Data for the Nation",
+      "data_kind": "static",
+      "access": {
+        "mechanism": "Legacy RDB/tab-delimited site service (decommission Q1 2027) and OGC API - Features collections (GeoJSON/JSON/JSON-LD/HTML) with X-Api-Key",
+        "base_urls": [
+          "https://waterservices.usgs.gov/nwis/site/?format=rdb&sites=12200500,12213100,12150800,12119000,12113000,12101500&siteOutput=expanded",
+          "https://waterservices.usgs.gov/docs/site-service/site-service-details/",
+          "https://api.waterdata.usgs.gov/ogcapi/v0/",
+          "https://api.waterdata.usgs.gov/ogcapi/v0/collections/monitoring-locations/items?id=USGS-12200500&f=json",
+          "https://api.waterdata.usgs.gov/ogcapi/v0/collections/monitoring-locations/queryables?f=json",
+          "https://api.waterdata.usgs.gov/signup",
+          "https://api.waterdata.usgs.gov/docs/ogcapi/keys/"
+        ],
+        "auth": "Legacy: none. OGC API: optional API key via 'X-Api-Key' header for higher limits",
+        "rate_limits": "OGC API exposes X-RateLimit-Limit / X-RateLimit-Remaining headers (example 1000); numeric tiers not published. Legacy: Cache-Control max-age=900",
+        "formats": ["RDB (tab-delimited)", "GeoJSON", "JSON", "JSON-LD", "HTML"]
+      },
+      "cadence": "Site metadata revised as surveyed (revision_created e.g. 2017-11-13 for 12200500)",
+      "latency": "N/A",
+      "spatial_resolution": "Point; horizontal accuracy code (e.g. 'Accurate to + or - 1 sec.'); altitude accuracy (0.01 ft for 12200500 via GNSS2 survey)",
+      "temporal_resolution": "N/A",
+      "historical_depth": "N/A",
+      "missing_data_semantics": "Empty alt_va/alt_datum_cd when gauge datum unsurveyed (e.g. 12113000 Green River near Auburn has no altitude in RDB); nulls in OGC JSON",
+      "quality_flags": "alt_meth_cd / altitude_method_name (X = GNSS2 survey grade, L = level), alt_acy_va, coord_meth_cd, coord_acy_cd, horizontal_positional_accuracy",
+      "units": "alt_va feet; dec_lat_va/dec_long_va decimal degrees NAD83 (dec_coord_datum_cd) with original lat/long in NAD27 (coord_datum_cd); drainage_area sq mi; OGC storageCrs CRS84",
+      "licensing": "USGS public domain",
+      "limitations": [
+        "Legacy WaterServices decommissioned Q1 2027; no intentional degradation before Aug 2026; NWISWeb Campaign 3 Nov 2026-Feb 2027.",
+        "hydrologic_unit_code in OGC API is HUC12 (171100070203) while legacy huc_cd is HUC8 (17110007); normalize.",
+        "Altitude datum is NAVD88 for these six sites today but NWPS may still report NGVD29 gauge zero for the same site."
+      ],
+      "evidence": [
+        {"claim": "RDB expanded output for six sites: 12101500 Puyallup at Puyallup alt 3.49 ft NAVD88 (acc .03, meth L), HUC 17110014, DA 948; 12113000 Green near Auburn no altitude, HUC 17110013, DA 399; 12119000 Cedar at Renton 18.77 NAVD88 (.06, X), HUC 17110012, DA 184; 12150800 Snohomish near Monroe 17.05 NAVD88 (.05, X), HUC 17110011, DA 1537; 12200500 Skagit near Mount Vernon 3.80 NAVD88 (.01, X), HUC 17110007, DA 3093; 12213100 Nooksack at Ferndale 8.50 NAVD88 (.14, X), HUC 17110004, DA 786; coord_datum_cd NAD27, dec_coord_datum_cd NAD83; response header Cache-Control max-age=900", "url": "https://waterservices.usgs.gov/nwis/site/?format=rdb&sites=12200500,12213100,12150800,12119000,12113000,12101500&siteOutput=expanded", "status": "FACT"},
+        {"claim": "Site service details: endpoint https://waterservices.usgs.gov/nwis/site/?<arguments>; filters sites, stateCd, huc, bBox, countyCd; siteType, siteStatus, hasDataTypeCd, siteOutput basic/expanded, seriesCatalogOutput; formats rdb, gm, ge, mapper; fields dec_lat_va, dec_long_va, dec_coord_datum_cd, alt_va, alt_datum_cd, alt_acy_va", "url": "https://waterservices.usgs.gov/docs/site-service/site-service-details/", "status": "FACT"},
+        {"claim": "'WaterServices will be decommissioned in the first quarter of 2027'; 'We will not begin any intentional degradation of these services before August 2026'; replacement https://api.waterdata.usgs.gov/ogcapi/", "url": "https://waterdata.usgs.gov/blog/api-waterservices-decom/", "status": "FACT"},
+        {"claim": "2026 API update blog: WaterServices decommission Winter 2027; NWISWeb Decommission Campaign 3; new collections /peaks, /continuous, /daily under https://api.waterdata.usgs.gov/ogcapi/v0/collections/", "url": "https://waterdata.usgs.gov/blog/api-updates-2026/", "status": "FACT"},
+        {"claim": "OGC monitoring-locations collection: crs CRS84/CRS83/CRS27, storageCrs CRS84; queryables include monitoring_location_number, site_type_code, hydrologic_unit_code, altitude, altitude_accuracy, altitude_method_code, vertical_datum, vertical_datum_name, horizontal_positional_accuracy, original_horizontal_datum, drainage_area, contributing_drainage_area; item USGS-12200500 shows hydrologic_unit_code '171100070203', altitude 3.8, vertical_datum 'NAVD88', altitude_method_name 'GNSS2 - Level 2 Quality Survey Grade Global Navigation Satellite System', original_horizontal_datum NAD27, drainage_area 3093.0", "url": "https://api.waterdata.usgs.gov/ogcapi/v0/collections/monitoring-locations/items?id=USGS-12200500&f=json", "status": "FACT"},
+        {"claim": "API keys: optional, 'Providing your own key means you can make more requests per hour before getting rate limited'; header 'X-Api-Key'; signup https://api.waterdata.usgs.gov/signup; response headers X-RateLimit-Limit (example 1000) and X-RateLimit-Remaining", "url": "https://api.waterdata.usgs.gov/docs/ogcapi/keys/", "status": "FACT"},
+        {"claim": "Search summary: NWISWeb Decommission Campaign 3 runs November 2026 through February 2027 and retires remaining NWISWeb pages and WaterServices", "url": "https://waterdata.usgs.gov/blog/nwisweb-decommission-summary/", "status": "INFERENCE"}
+      ],
+      "relevance_to_cascade_oracle": "Authoritative gauge coordinates (NAD83), gauge-datum elevations (NAVD88 ft) and HUC assignments for the gauge registry; build against the OGC API now and keep the legacy RDB only as a fallback until Q1 2027."
+    },
+    {
+      "name": "U.S. Census Bureau TIGER/Line shapefiles and TIGERweb services",
+      "authority": "U.S. Census Bureau, Geography Division",
+      "data_kind": "static",
+      "access": {
+        "mechanism": "HTTPS zip downloads by vintage/layer/state FIPS (WA = 53) and ArcGIS REST (TIGERweb)",
+        "base_urls": [
+          "https://www2.census.gov/geo/tiger/TIGER2025/PLACE/tl_2025_53_place.zip",
+          "https://www2.census.gov/geo/tiger/TIGER2025/TABBLOCK20/tl_2025_53_tabblock20.zip",
+          "https://www2.census.gov/geo/tiger/TIGER2025/TRACT/tl_2025_53_tract.zip",
+          "https://www2.census.gov/geo/tiger/TIGER2025/BG/tl_2025_53_bg.zip",
+          "https://www2.census.gov/geo/tiger/TIGER2025/COUNTY/tl_2025_us_county.zip (national only; state county file 404)",
+          "https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb/Places_CouSub_ConCity_SubMCD/MapServer",
+          "https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb/Tracts_Blocks/MapServer",
+          "https://www.census.gov/geographies/mapping-files/time-series/geo/tiger-line-file.html"
+        ],
+        "auth": "None",
+        "rate_limits": "Not published",
+        "formats": ["Shapefile (zip)", "ArcGIS REST JSON", "WMS (tigerWMS_* services)"]
+      },
+      "cadence": "Annual vintage; 2025 released September 23, 2025 with boundaries as of January 1, 2025",
+      "latency": "N/A",
+      "spatial_resolution": "Census blocks (TABBLOCK20), block groups, tracts, places; positional accuracy varies",
+      "temporal_resolution": "Annual",
+      "historical_depth": "Vintages back to 1992 on the Census site",
+      "missing_data_semantics": "No demographic attributes in shapefiles; join via GEOID to data.census.gov",
+      "quality_flags": "N/A",
+      "units": "GCS NAD83 degrees (.prj GCS_North_American_1983); TIGERweb services in WKID 102100",
+      "licensing": "U.S. Government work, no copyright (Title 17 U.S.C. 105 per technical documentation); TIGER/Line is a registered trademark",
+      "limitations": [
+        "Boundaries are for statistical purposes, not legal jurisdiction.",
+        "Block polygons (120 MB for WA) are large; pre-filter to the six basins."
+      ],
+      "evidence": [
+        {"claim": "TIGER2025 WA files exist: PLACE 2,855,604 bytes; TABBLOCK20 120,104,921; TRACT 9,867,667; BG 16,350,907; COUNTY state file 404 but tl_2025_us_county.zip 83,989,800; tl_2025_53_place.prj = GEOGCS['GCS_North_American_1983', D_North_American_1983, GRS_1980]", "url": "https://www2.census.gov/geo/tiger/TIGER2025/PLACE/tl_2025_53_place.zip", "status": "FACT"},
+        {"claim": "TIGER/Line page: vintages 2025-2021 (older to 1992); FTP archive //www2.census.gov/geo/tiger/TIGER2025/; 2025 released September 23, 2025 with boundaries as of January 1, 2025", "url": "https://www.census.gov/geographies/mapping-files/time-series/geo/tiger-line-file.html", "status": "FACT"},
+        {"claim": "TIGERweb services include Places_CouSub_ConCity_SubMCD (layers Incorporated Places / Census Designated Places per vintage ACS 2025, ACS 2024, Census 2020), Tracts_Blocks, State_County, Hydro, Transportation, tigerWMS_Census2020, tigerWMS_CurrentBlocks; SR 102100", "url": "https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb?f=json", "status": "FACT"},
+        {"claim": "2025 technical documentation TOC includes '3.3.3 Datum (GCS NAD 83)' and '3.3.5 Spatial Accuracy of Linear Features'", "url": "https://www2.census.gov/geo/pdfs/maps-data/data/tiger/tgrshp2025/TGRSHP2025_TechDoc_Ch1.pdf", "status": "FACT"},
+        {"claim": "Technical documentation legal disclaimer: 'Copyright protection is not available for any work of the United States Government (Title 17 U.S.C., Section 105)'; no warranty; boundaries for statistical purposes only", "url": "https://www2.census.gov/geo/pdfs/maps-data/data/tiger/tgrshp2025/TGRSHP2025_TechDoc_Ch1.pdf", "status": "INFERENCE"}
+      ],
+      "relevance_to_cascade_oracle": "Community polygons (places/CDPs such as Mount Vernon, Burlington, Lynden, Snohomish, Renton, Kent, Puyallup, Orting) and blocks for population-at-risk overlays with SFHA/leveed areas."
+    },
+    {
+      "name": "OpenStreetMap Washington extract (Geofabrik)",
+      "authority": "OpenStreetMap contributors; processed by Geofabrik GmbH",
+      "data_kind": "static",
+      "access": {
+        "mechanism": "HTTPS downloads of state extract (PBF, shapefile, GeoPackage) with MD5; daily rebuilds and monthly archives",
+        "base_urls": [
+          "https://download.geofabrik.de/north-america/us/washington.html",
+          "https://download.geofabrik.de/north-america/us/washington-latest.osm.pbf (344 MB)",
+          "https://download.geofabrik.de/north-america/us/washington-latest.osm.pbf.md5",
+          "https://download.geofabrik.de/north-america/us/washington-latest-free.shp.zip (685 MB)",
+          "https://download.geofabrik.de/north-america/us/washington-latest-free.gpkg.zip (701 MB)"
+        ],
+        "auth": "None",
+        "rate_limits": "Not published (a HEAD request timed out at 60 s during testing; downloads are large)",
+        "formats": ["OSM PBF", "Shapefile", "GeoPackage", "OSM bz2 (archives)"]
+      },
+      "cadence": "Daily ('Last Updated 8 hours ago'; data up to 2026-08-21T20:21:11Z); monthly snapshots back to 2014-01-01",
+      "latency": "~1 day",
+      "spatial_resolution": "Feature-level (roads, buildings, waterways, landuse)",
+      "temporal_resolution": "Daily",
+      "historical_depth": "Monthly archives since January 2014 (74 MB in 2014 vs 361 MB Aug 2026)",
+      "missing_data_semantics": "User names/IDs/changeset IDs stripped for GDPR; completeness varies by area",
+      "quality_flags": "N/A (crowdsourced)",
+      "units": "WGS84 lon/lat (EPSG:4326)",
+      "licensing": "ODbL 1.0 ('Data processed by Geofabrik GmbH and created by OpenStreetMap Contributors')",
+      "limitations": [
+        "ODbL share-alike applies to derived databases; attribution required.",
+        "Building completeness uneven outside cities."
+      ],
+      "evidence": [
+        {"claim": "washington-latest.osm.pbf 344 MB; washington-latest-free.shp.zip 685 MB; washington-latest-free.gpkg.zip 701 MB; data up to 2026-08-21T20:21:11Z; monthly archives from January 2014; ODbL 1.0; user/changeset IDs removed", "url": "https://download.geofabrik.de/north-america/us/washington.html", "status": "FACT"},
+        {"claim": "MD5 file returns 'f4c1f43cfb82d4faafbe0735a5db79d3  washington-latest.osm.pbf'", "url": "https://download.geofabrik.de/north-america/us/washington-latest.osm.pbf.md5", "status": "FACT"}
+      ],
+      "relevance_to_cascade_oracle": "Roads (evacuation/closure routes), bridges, waterways, and building footprints (with OSM tags) for the exposure layer; import with osm2pgsql into PostGIS."
+    },
+    {
+      "name": "Microsoft US Building Footprints",
+      "authority": "Microsoft (Bing Maps AI) via GitHub",
+      "data_kind": "derived",
+      "access": {
+        "mechanism": "Static GeoJSON zip per state from Azure blob",
+        "base_urls": [
+          "https://github.com/microsoft/USBuildingFootprints",
+          "https://minedbuildings.z5.web.core.windows.net/legacy/usbuildings-v2/Washington.geojson.zip"
+        ],
+        "auth": "None",
+        "rate_limits": "N/A",
+        "formats": ["GeoJSON (zip)"]
+      },
+      "cadence": "Static (v2 legacy); newer Global ML Building Footprints maintained separately",
+      "latency": "N/A",
+      "spatial_resolution": "Polygon footprints from imagery",
+      "temporal_resolution": "N/A",
+      "historical_depth": "N/A",
+      "missing_data_semantics": "No attributes beyond geometry (height absent in US v2)",
+      "quality_flags": "N/A",
+      "units": "EPSG:4326",
+      "licensing": "Open Data Commons Open Database License (ODbL)",
+      "limitations": [
+        "Static vintage; superseded for currency by Overture buildings (which ingest Microsoft ML footprints).",
+        "884 MiB unzipped for WA."
+      ],
+      "evidence": [
+        {"claim": "License ODbL; GeoJSON by state; Washington 3,128,258 buildings, 884.38 MiB unzipped; EPSG:4326; download pattern https://minedbuildings.z5.web.core.windows.net/legacy/usbuildings-v2/[StateName].geojson.zip", "url": "https://github.com/microsoft/USBuildingFootprints", "status": "FACT"}
+      ],
+      "relevance_to_cascade_oracle": "Bulk footprint count/area per SFHA or leveed area for exposure; consider Overture instead for a maintained source."
+    },
+    {
+      "name": "Overture Maps Foundation (buildings, places, divisions, base/water)",
+      "authority": "Overture Maps Foundation (members incl. Microsoft, Meta, TomTom, Esri)",
+      "data_kind": "derived",
+      "access": {
+        "mechanism": "Cloud-native GeoParquet on S3/Azure, partitioned by theme/type; overturemaps CLI; DuckDB SQL over parquet; STAC catalog",
+        "base_urls": [
+          "s3://overturemaps-us-west-2/release/2026-08-19.0/theme=buildings/type=building/",
+          "s3://overturemaps-us-west-2/release/2026-08-19.0/theme=places/type=place/",
+          "https://stac.overturemaps.org/catalog.json",
+          "https://docs.overturemaps.org/getting-data/",
+          "https://docs.overturemaps.org/attribution/"
+        ],
+        "auth": "None (public bucket)",
+        "rate_limits": "N/A (S3)",
+        "formats": ["GeoParquet", "GeoJSON/GeoJSONSeq via CLI"]
+      },
+      "cadence": "Monthly-ish releases named YYYY-MM-DD.N (latest seen 2026-08-19.0)",
+      "latency": "N/A",
+      "spatial_resolution": "Feature-level; buildings merge OSM, Microsoft ML, Google Open Buildings",
+      "temporal_resolution": "Per release",
+      "historical_depth": "Prior releases retained by release path",
+      "missing_data_semantics": "Height/class attributes optional; sources array per feature",
+      "quality_flags": "sources[].dataset and confidence fields (INFERENCE)",
+      "units": "WGS84 (EPSG:4326) GeoParquet",
+      "licensing": "Buildings: ODbL (OSM + Microsoft ML) and CC BY 4.0 (Google Open Buildings); Base: ODbL + ESA WorldCover CC BY 4.0; Divisions: ODbL + CC BY 4.0 (geoBoundaries, LINZ); Places: CDLA Permissive 2.0 (Meta, Microsoft, others), Apache 2.0 (Foursquare), CC0 (AllThePlaces); Transportation: ODbL; attribution 'Overture Maps Foundation, overturemaps.org' and '© OpenStreetMap contributors' where OSM used",
+      "limitations": [
+        "Mixed licenses per theme; buildings are ODbL share-alike.",
+        "Bbox extraction needed (CONUS parquet is large); use DuckDB spatial with bbox columns."
+      ],
+      "evidence": [
+        {"claim": "Getting data: S3 path s3://overturemaps-us-west-2/release/2026-08-19.0/theme=places/type=place/*; release naming YYYY-MM-DD.N; GeoParquet; CLI 'overturemaps download --bbox=... -f geojson --type=building'; STAC catalog https://stac.overturemaps.org/catalog.json", "url": "https://docs.overturemaps.org/getting-data/", "status": "FACT"},
+        {"claim": "Attribution page: Buildings ODbL (OSM, Microsoft ML footprints) and Google Open Buildings CC BY 4.0; Places CDLA Permissive 2.0 / Apache 2.0 / CC0; Divisions and Transportation ODbL; required attribution 'Overture Maps Foundation, overturemaps.org' and '© OpenStreetMap contributors, Overture Maps Foundation'", "url": "https://docs.overturemaps.org/attribution/", "status": "FACT"}
+      ],
+      "relevance_to_cascade_oracle": "Maintained building footprints and places (schools, hospitals, critical facilities) for exposure scoring; pull a Puget Sound bbox per release into PostGIS."
+    },
+    {
+      "name": "NGS datum tools (NCAT/VERTCON, VDatum) and NOAA CO-OPS tidal datums for NGVD29/NAVD88/MLLW reconciliation",
+      "authority": "NOAA National Geodetic Survey; NOAA CO-OPS",
+      "data_kind": "derived",
+      "access": {
+        "mechanism": "NCAT REST API (NADCON 5.0 + VERTCON 3.0) for point conversions; VDatum tutorial/tool for tidal datums; CO-OPS metadata API for station datum sheets",
+        "base_urls": [
+          "https://geodesy.noaa.gov/api/ncat/llh?lat=48.4448&lon=-122.3354&orthoHt=30.480&inDatum=NAD83(2011)&outDatum=NAD83(2011)&inVertDatum=NGVD29&outVertDatum=NAVD88",
+          "https://vdatum.noaa.gov/docs/datums.html",
+          "https://geodesy.noaa.gov/datums/newdatums/index.shtml",
+          "https://api.tidesandcurrents.noaa.gov/mdapi/prod/webapi/stations/9447130/datums.json?units=english (Seattle)",
+          "https://api.tidesandcurrents.noaa.gov/mdapi/prod/webapi/stations/9446484/datums.json?units=english (Tacoma)"
+        ],
+        "auth": "None",
+        "rate_limits": "Not published",
+        "formats": ["JSON"]
+      },
+      "cadence": "Static models (VERTCON 3.0); NSRS modernization (NATRF2022 etc.) pending",
+      "latency": "Instant",
+      "spatial_resolution": "Gridded VERTCON model; sigma 0.002-0.051 m at WA test points",
+      "temporal_resolution": "N/A",
+      "historical_depth": "N/A",
+      "missing_data_semantics": "NCAT refuses simultaneous ellipsoid + orthometric height conversion ('Tranformation of both ellipsoid and orthometric heights is not supported'); parentheses in datum names must be passed literally",
+      "quality_flags": "sigOrthoht per point",
+      "units": "meters (heightUnits 'm'); CO-OPS datums in feet above station datum",
+      "licensing": "U.S. Government public domain",
+      "limitations": [
+        "NGVD29-NAVD88 difference is 'not a simple offset and tilt' but a complex surface; apply per-gauge shifts, not one constant.",
+        "Modernized NSRS will replace NAD83/NAVD88 (coordinates change by up to 4 m); schema should store datum/epoch per elevation.",
+        "Tidal datums (MLLW/MHHW) needed for lower Skagit, Snohomish, Duwamish and Puyallup reaches where NWS uses MLLW-based gauges (INFERENCE)."
+      ],
+      "evidence": [
+        {"claim": "NCAT results (NAVD88 minus NGVD29, VERTCON 3.0): Mount Vernon 48.4448,-122.3354 -> +1.160 m (3.81 ft, sigma 0.004); Concrete 48.5244,-121.7697 -> +1.150 m (3.77 ft); Ferndale 48.8448,-122.5893 -> +1.199 m (3.93 ft, sigma 0.051); Monroe 47.8309,-122.0485 -> +1.113 m (3.65 ft); Renton 47.4826,-122.2035 -> +1.088 m (3.57 ft, sigma 0.008); Puyallup 47.2084,-122.3271 -> +1.067 m (3.50 ft)", "url": "https://geodesy.noaa.gov/api/ncat/llh?lat=48.4448&lon=-122.3354&orthoHt=30.480&inDatum=NAD83(2011)&outDatum=NAD83(2011)&inVertDatum=NGVD29&outVertDatum=NAVD88", "status": "FACT"},
+        {"claim": "Observed datum discrepancies NWPS (NGVD29 gauge zero) vs USGS (NAVD88 alt_va): Cedar at Renton 15.2 vs 18.77 ft (delta 3.57 ft = NCAT 3.57); Skagit near Mount Vernon 0 vs 3.80 ft (NCAT 3.81); Puyallup at Puyallup 0 vs 3.49 ft (NCAT 3.50); Snohomish near Monroe 13.25 vs 17.05 ft (3.80 vs NCAT 3.65); Nooksack at Ferndale both NAVD88 8.5 ft", "url": "https://water.noaa.gov/resources/downloads/reports/nwps_all_gauges_report.csv", "status": "INFERENCE"},
+        {"claim": "VDatum tutorial: NGVD29 fixed to reference tide gauges using normal orthometric heights; NAVD88 based on Father's Point/Rimouski with Helmert orthometric heights; 'The discrepancies between these two datums are not a simple offset and tilt, but a complex surface'", "url": "https://vdatum.noaa.gov/docs/datums.html", "status": "FACT"},
+        {"claim": "NGS new datums: NATRF2022, PATRF2022, CATRF2022, MATRF2022 replace NAD83; coordinates 'will change by as much as four meters'", "url": "https://geodesy.noaa.gov/datums/newdatums/index.shtml", "status": "FACT"},
+        {"claim": "CO-OPS Seattle 9447130 (epoch 1983-2001, feet above station datum): NAVD88 10.28, MLLW 7.94, MLW 10.77, MSL 14.58, MHW 18.43, MHHW 19.30 (so MLLW = NAVD88 - 2.34 ft); Tacoma 9446484: NAVD88 3.01, MLLW 0.62, MSL 7.46, MHHW 12.40; Cherry Point 9449424 lacks a NAVD88 entry in the API", "url": "https://api.tidesandcurrents.noaa.gov/mdapi/prod/webapi/stations/9447130/datums.json?units=english", "status": "FACT"},
+        {"claim": "NWPS gauge datum description text: 'NGVD 29 should not be used as Mean Sea Level. NGVD 29 is no longer supported by NGS.'", "url": "https://api.water.noaa.gov/nwps/v1/gauges/CONW1", "status": "FACT"}
+      ],
+      "relevance_to_cascade_oracle": "Defines the vertical-datum reconciliation rule set: store every elevation with (value, unit, vertical datum, source); convert NGVD29 gauge zeros to NAVD88 with per-site VERTCON shifts (+1.07 to +1.20 m in Puget Sound) before comparing stages to 3DEP terrain, FEMA BFEs, or levee crests. Horizontal: USGS/FEMA/WBD use NAD83 (treat as WGS84 at meter level), WA agencies use NAD83(HARN) State Plane feet, hydrofabric uses EPSG:5070."
+    }
+  ]
+}
