@@ -17,7 +17,7 @@ The cinematic web spike deploys automatically from GitHub so each push to `main`
 | Build | `npm ci --prefix apps/web && npm run build --prefix apps/web` |
 | Output | `apps/web/dist` |
 | API | Pages Function `functions/[[path]].js` — same fixture stub as `apps/web/dev/stub-api.mjs` |
-| Env | `NODE_VERSION=22`, `VITE_API_BASE=/` (same-origin) |
+| Trigger | GitHub Action `.github/workflows/deploy-preview.yml` POSTs Pages deploy hook `github-main` (secret `CF_PAGES_DEPLOY_HOOK`) |
 
 Do not point this hostname at jets/yachts/mail, or at Worker `papsukkal-site`.
 
