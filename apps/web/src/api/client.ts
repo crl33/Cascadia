@@ -1,7 +1,9 @@
 /**
  * Typed fetchers for the SPIKE API SPEC. Every response is parsed with its zod schema before it
  * reaches the app; an AbortSignal is passed through so TanStack Query can cancel stale requests.
- * VITE_API_BASE defaults to http://localhost:8000. No other module calls fetch.
+ * VITE_API_BASE overrides the backend origin. Unset: localhost:8000 in `vite`/`vitest`,
+ * same-origin (`''`) in `vite build` so Cloudflare Pages can serve the stub API next to the app.
+ * No other module calls fetch.
  */
 import type { ZodType } from 'zod';
 import {
@@ -10,7 +12,10 @@ import {
 } from '../contracts/schemas';
 import { lidOf } from '../app/deep-link';
 
-export const API_BASE: string = (import.meta.env.VITE_API_BASE as string | undefined)?.replace(/\/$/, '') ?? 'http://localhost:8000';
+const rawBase = import.meta.env.VITE_API_BASE as string | undefined;
+export const API_BASE: string = rawBase !== undefined && rawBase !== ''
+  ? rawBase.replace(/\/$/, '')
+  : (import.meta.env.PROD ? '' : 'http://localhost:8000');
 
 export class ApiError extends Error {
   constructor(readonly status: number, readonly path: string, detail: string) {

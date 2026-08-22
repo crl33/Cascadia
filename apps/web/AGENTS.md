@@ -11,7 +11,7 @@ not define. Nothing in this app computes a hydrologic quantity — it renders co
 |---|---|---|
 | `src/app/` | shell, deep-link parse/serialize, SceneView (ref-held container), SceneDataBridge (query → controller), error boundaries around panels only | everything except `cesium` |
 | `src/state/` | Zustand store: selection, band, motion setting, active layers, time (`now`), quality tier, flight state. **No Cesium types, no server data.** | nothing renderer-side |
-| `src/api/` | TanStack Query client, keys by entity id, typed fetchers with zod + AbortSignal. `VITE_API_BASE` (default `http://localhost:8000`). | contracts |
+| `src/api/` | TanStack Query client, keys by entity id, typed fetchers with zod + AbortSignal. `VITE_API_BASE` (dev default `http://localhost:8000`; production build is same-origin). | contracts |
 | `src/scene/` | `SceneController` (viewer lifecycle, layer registry, selection → framing, picking), `SemanticZoomController` + `bands.ts` (band math, hysteresis), `bridge.ts` (the ONLY store ↔ controller subscription) | cesium, camera, layers |
 | `src/camera/` | `CameraController` (initial Cascadia view, basin/forecast-point framing, durations, interrupt, reduced-motion cut + veil), pure `flight-math.ts` | cesium, design-system/motion |
 | `src/layers/` | `contract.ts` (SceneLayer), `basemap/` (keyless OSM + ellipsoid; registry hook for other providers), `basins/`, `rivers/` — each `style.ts` is the only place semantic state becomes presentation | cesium, contracts, design-system/tokens |

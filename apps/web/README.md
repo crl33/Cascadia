@@ -18,7 +18,8 @@ marker (or open <http://localhost:5173/?basin=basin:skagit&fp=MVEW1&motion=reduc
 
 ### Pointing at the real API
 
-`VITE_API_BASE` selects the backend (default `http://localhost:8000`). The FastAPI spike
+`VITE_API_BASE` selects the backend (default `http://localhost:8000` in dev, same-origin in
+production builds). The FastAPI spike
 implements the same SPIKE API SPEC, so `VITE_API_BASE=http://localhost:8000 npm run dev`
 works against either the stub or `apps/api`. The API must allow the origin
 (`CASCADE_CORS_ORIGINS`); the stub allows `http://localhost:5173` and `:4173` plus that env.

@@ -21,4 +21,6 @@ The cinematic web spike deploys automatically from GitHub so each push to `main`
 
 Do not point this hostname at jets/yachts/mail, or at Worker `papsukkal-site`.
 
+`cascadia.papsukkal.com` is a Worker custom domain on `cascadia-gateway` (`infra/gateway/`) that reverse-proxies Pages production. Wrangler OAuth can attach Worker custom domains; it cannot write zone DNS records directly. Deploy the gateway with `npx wrangler deploy` from `infra/gateway/` if the hostname is missing.
+
 When stub fixtures change, run `scripts/sync-pages-fixtures.sh` so `functions/fixtures/` stays in lockstep.
