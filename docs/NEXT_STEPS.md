@@ -118,8 +118,12 @@ Goal: `cascadia.papsukkal.com` shows live Skagit data with provenance, continuou
 
 1. Decide backend hosting and PostgreSQL hosting (owner decision; unblocks M1/M2).
 2. Register a USGS Water Data API key and an NWS API contact; put both in the worker environment.
-3. Copy NWM `nwm.20251201`–`nwm.20251222` channel/land outputs and the IEM AFOS Dec-2025 product
-   dumps into object storage (Event Zero evidence that may disappear).
+3. ~~Inventory the surviving NWM Dec-2025 outputs~~ **done 2026-08-24**: all 22 days survive
+   (25.44 TB total; scoped archive tiers FULL 2.30 TB / LEAN 1.10 TB) — see
+   `research/nwm-survival-inventory-2026-08-24.md`. Copy now blocked ONLY on an explicit owner cost approval (R2 free tier is 10 GB; LEAN ~$16.5/mo,
+   FULL ~$34/mo; owner directed free-tier mindfulness 2026-08-24). Mechanism when approved:
+   Cloudflare Worker copy pump (Super Slurper cannot read anonymous public buckets; local
+   relay measured at 1.5 MB/s). IEM AFOS product dumps still to archive (small, T2).
 4. Stand up PostGIS locally (Docker) and write the first Alembic migration from `DOMAIN_MODEL.md`.
 5. Port the spike's providers onto Procrastinate jobs; write the USGS OGC adapter with fixtures.
 6. Deploy the API + worker; wire the gateway; run the live Playwright suite against the domain.

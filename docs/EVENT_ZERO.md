@@ -338,6 +338,10 @@ of the research files (S52) unless cited otherwise.
 
 Ordered; each task names the `DOMAIN_MODEL.md` entities it writes and an acceptance criterion (AC).
 
+> T6 status 2026-08-24: survival inventory complete — all 22 days of `noaa-nwm-pds`
+> outputs survive with original December LastModified stamps (25.44 TB; scoped copy tiers
+> costed). See `research/nwm-survival-inventory-2026-08-24.md`.
+
 | # | Task | Entities | Acceptance criterion |
 |---|---|---|---|
 | T1 | Create the event: `id = event-zero-2025-12`, `start = 2025-12-03T00:00-08:00` (AR1 landfall, S6), `end = 2025-12-22T23:59-08:00` (state incident window, S23), `basins[]` = Skagit, Sauk, Baker, Nooksack, Stillaguamish, Snohomish/Skykomish/Snoqualmie, Cedar, Green, White/Puyallup/Carbon, Cowlitz, Chehalis, Skokomish, Elwha; `sources[]` = EZ + S-key | `HistoricalEvent` | Row exists; `summary` = §2 with labels preserved; every `sources[]` entry resolves |

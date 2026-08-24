@@ -12,7 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 from cascade_core.db import make_engine, make_session_factory
 from cascade_core.fetch import ArchivingFetcher, HostRateLimiter
 from cascade_core.models import JobRun
-from cascade_core.objectstore import LocalFilesystemStore
+from cascade_core.objectstore import store_from_settings
 from cascade_core.settings import Settings
 from cascade_core.timeutils import utcnow
 
@@ -31,7 +31,7 @@ class Runtime:
     def build(cls, settings: Settings, *, engine: AsyncEngine | None = None, fetcher: ArchivingFetcher | None = None, clock: Callable[[], datetime] = utcnow) -> Runtime:
         engine = engine or make_engine(settings.db_url)
         fetcher = fetcher or ArchivingFetcher(
-            store=LocalFilesystemStore(settings.raw_dir),
+            store=store_from_settings(settings),  # settings-selected backend: local | s3 (ADR-0004)
             user_agent=settings.user_agent,
             limiter=HostRateLimiter(min_interval_s=0.5, max_concurrency=2),
             clock=clock,

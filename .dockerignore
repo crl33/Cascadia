@@ -1,0 +1,17 @@
+# Allowlist build context for infra/Dockerfile: exclude everything, then
+# re-include only what the image COPYs. Keeps the context small (no v1/,
+# apps/web node_modules, .venv, data/, docs/) and the layer cache stable.
+*
+!packages
+!apps/api
+!apps/worker
+!tests/fixtures/geo
+!infra/docker-entrypoint.sh
+!infra/container-healthcheck.py
+
+# junk inside the re-included trees
+**/__pycache__
+**/*.pyc
+**/.pytest_cache
+**/*.egg-info
+**/.DS_Store

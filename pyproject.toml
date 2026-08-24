@@ -32,3 +32,4 @@ asyncio_default_fixture_loop_scope = "function"
 testpaths = ["tests", "packages/contracts/tests"]
 pythonpath = ["."]
 filterwarnings = ["error::DeprecationWarning:cascade_.*"]
+markers = ["pg: needs a live PostgreSQL/PostGIS — skipped unless CASCADE_TEST_PG_URL is set"]

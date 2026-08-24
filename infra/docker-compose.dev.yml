@@ -1,0 +1,68 @@
+# Cascadia Papsukkal — local dev parity: PostGIS + api + worker from the same
+# image Railway runs (infra/Dockerfile). Everything binds to 127.0.0.1 only.
+#
+#   docker compose -f infra/docker-compose.dev.yml up --build
+#
+# Host port 5433 matches CASCADE_TEST_PG_URL and the standalone verification
+# container (cascadia-pg) — stop that container first or the bind fails.
+# POSTGRES_PASSWORD defaults to the throwaway local value "dev"; override via
+# the environment or ../.env if you want a different local password.
+
+name: cascadia-dev
+
+services:
+  postgis:
+    image: postgis/postgis:18-3.6
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-dev}
+      POSTGRES_DB: cascadia
+    ports:
+      - "127.0.0.1:5433:5432"
+    volumes:
+      # postgres:18 images moved the volume mount up to /var/lib/postgresql
+      # (PGDATA lives at /var/lib/postgresql/18/docker inside it).
+      - pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d cascadia"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 10s
+
+  api:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile
+    command: ["api"]
+    env_file:
+      - path: ../.env
+        required: false
+    environment:
+      CASCADE_DB_URL: postgresql+psycopg://postgres:${POSTGRES_PASSWORD:-dev}@postgis:5432/cascadia
+      PORT: "8000"
+    ports:
+      - "127.0.0.1:8000:8000"
+    depends_on:
+      postgis:
+        condition: service_healthy
+
+  worker:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile
+    command: ["worker"]
+    env_file:
+      - path: ../.env
+        required: false
+    environment:
+      CASCADE_DB_URL: postgresql+psycopg://postgres:${POSTGRES_PASSWORD:-dev}@postgis:5432/cascadia
+      # Local Postgres is a direct connection — no pooler — so the queue may
+      # share it (Neon in production must use the DIRECT host here instead).
+      CASCADE_QUEUE_DB_URL: postgresql+psycopg://postgres:${POSTGRES_PASSWORD:-dev}@postgis:5432/cascadia
+    depends_on:
+      postgis:
+        condition: service_healthy
+
+volumes:
+  pgdata:

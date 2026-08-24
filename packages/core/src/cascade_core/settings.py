@@ -1,4 +1,14 @@
-"""Settings from the environment (12-factor). Defaults are local-dev only; nothing secret lives here."""
+"""Settings from the environment (12-factor). Defaults are local-dev only; nothing secret lives here.
+
+Secrets policy:
+- S3 credentials are NEVER stored in Settings. obstore reads the standard
+  ``AWS_ACCESS_KEY_ID`` / ``AWS_SECRET_ACCESS_KEY`` variables straight from the
+  process environment; Settings carries only the non-secret endpoint and bucket.
+- ``usgs_api_key`` is a secret: it is excluded from ``repr()`` and must never be
+  logged or serialized.
+- ``db_url`` / ``queue_db_url`` embed a password in production (Neon DSNs); they are
+  likewise excluded from ``repr()`` so a logged/raised Settings can never leak them.
+"""
 
 from __future__ import annotations
 
@@ -8,15 +18,39 @@ from pathlib import Path
 
 SEED_FILE = Path(__file__).resolve().parent / "seed" / "stations.json"
 
+_OBJECT_STORES = ("local", "s3")
+
 
 @dataclass(frozen=True)
 class Settings:
-    db_url: str = "sqlite+aiosqlite:///./data/cascade.db"
+    # Excluded from repr(): production DSNs embed a password (see module docstring).
+    db_url: str = field(default="sqlite+aiosqlite:///./data/cascade.db", repr=False)
     raw_dir: Path = Path("./data/raw")
     contact: str = "cascadia-papsukkal@example.invalid"
     cors_origins: tuple[str, ...] = ("http://localhost:5173",)
     geo_dir: Path = Path("./tests/fixtures/geo")
     seed_file: Path = field(default=SEED_FILE)
+    # Worker queue connection string. Exists because Neon's pooled hosts (PgBouncer,
+    # "-pooler" in the hostname) cannot carry LISTEN/NOTIFY, which the procrastinate
+    # queue depends on — so the queue must get the DIRECT connection string. None
+    # falls back to db_url (see ``effective_queue_db_url``), which is correct for
+    # local dev where db_url is already direct. Excluded from repr() like db_url.
+    queue_db_url: str | None = field(default=None, repr=False)
+    # Raw payload archive backend: "local" (filesystem) or "s3" (any S3-compatible
+    # store, e.g. Cloudflare R2).
+    object_store: str = "local"
+    # S3-compatible endpoint; R2 pattern: https://<account-id>.r2.cloudflarestorage.com
+    s3_endpoint: str | None = None
+    s3_bucket: str | None = None
+    # Not used by the legacy IV adapter; plumbing for the USGS OGC API migration.
+    # Secret: excluded from repr(); must never be logged.
+    usgs_api_key: str | None = field(default=None, repr=False)
+
+    def __post_init__(self) -> None:
+        if self.object_store not in _OBJECT_STORES:
+            raise ValueError(
+                f"object_store must be one of {'|'.join(_OBJECT_STORES)}, got {self.object_store!r}"
+            )
 
     @classmethod
     def from_env(cls, env: dict[str, str] | None = None) -> Settings:
@@ -29,7 +63,17 @@ class Settings:
             cors_origins=tuple(dict.fromkeys(("http://localhost:5173", *extra))),
             geo_dir=Path(e.get("CASCADE_GEO_DIR", str(cls.geo_dir))),
             seed_file=Path(e.get("CASCADE_SEED_FILE", str(SEED_FILE))),
+            queue_db_url=e.get("CASCADE_QUEUE_DB_URL") or None,
+            object_store=(e.get("CASCADE_OBJECT_STORE") or cls.object_store).strip(),
+            s3_endpoint=e.get("CASCADE_S3_ENDPOINT") or None,
+            s3_bucket=e.get("CASCADE_S3_BUCKET") or None,
+            usgs_api_key=e.get("CASCADE_USGS_API_KEY") or None,
         )
+
+    @property
+    def effective_queue_db_url(self) -> str:
+        """The queue's connection string: ``queue_db_url`` when set, else ``db_url``."""
+        return self.queue_db_url or self.db_url
 
     @property
     def user_agent(self) -> str:

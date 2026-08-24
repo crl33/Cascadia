@@ -3,7 +3,7 @@ name = "cascade-worker"
 version = "0.1.0"
 description = "Cascadia Papsukkal — the only writing process: seed, scheduled provider jobs, job-run health."
 requires-python = ">=3.12"
-dependencies = ["cascade-core", "cascade-providers-usgs", "cascade-providers-nwps", "sqlalchemy>=2.0", "httpx>=0.27"]
+dependencies = ["cascade-core", "cascade-providers-usgs", "cascade-providers-nwps", "sqlalchemy>=2.0", "httpx>=0.27", "procrastinate>=3.9"]
 
 [build-system]
 requires = ["hatchling"]

@@ -1,9 +1,24 @@
 # infra/ — run it the same way everywhere
 
-Planned contents (Phase 0): `docker-compose.yml` (postgis, seaweedfs, api, worker), Dockerfiles
-(single Python image, two entrypoints; static web build), `.env.example` (no secrets),
-migration job, runbooks (`RUNBOOK-ingestion.md`, `RUNBOOK-provider-outage.md`). Cloud-agnostic:
-PostgreSQL + S3 API are the only external contracts.
+One backend image, mode chosen by the container command; cloud-agnostic: PostgreSQL +
+S3 API are the only external contracts. Build context is always the REPO ROOT
+(`docker build -f infra/Dockerfile .` — the root `.dockerignore` allowlists what ships).
+
+| File | What it is |
+|---|---|
+| `Dockerfile` | `python:3.14-slim`, non-root user `cascade`. Layered for cache: pyprojects → third-party deps (extracted via tomllib) + prod-only runtime (psycopg, procrastinate, obstore, geoalchemy2, alembic — pinned here until package pyprojects declare them, M2) → sources → simple pip installs of the 7 local packages → geo fixtures + entrypoint. `HEALTHCHECK` probes `/system/health` in api mode only. |
+| `docker-entrypoint.sh` | Mode selector: `api` → uvicorn on `${PORT:-8000}`; `worker` → `python -m cascade_worker worker`; anything else exec'd verbatim (so `python -m cascade_worker seed` and Railway full-command start commands both work). Writes `/tmp/cascade-run-mode` for the healthcheck probe. |
+| `container-healthcheck.py` | Stdlib probe: GET `/system/health` when mode is api/uvicorn, exit 0 otherwise. Railway ignores it (uses its own Healthcheck Path). |
+| `docker-compose.dev.yml` | Local parity: `postgis` (postgis/postgis:18-3.6, host 127.0.0.1:5433, named volume at `/var/lib/postgresql` — the pg18 mount point), `api` (127.0.0.1:8000) and `worker` built from `Dockerfile`, env from `../.env` (optional) + in-network `CASCADE_DB_URL`, gated on postgis health. All ports loopback-only. Clashes with a standalone `cascadia-pg` on 5433 — stop one. |
+| `.env.example` | The environment contract (no secrets, placeholders only). Every variable the containers read; `POSTGRES_PASSWORD` is compose-dev-only. |
+| `RUNBOOK-deploy.md` | First-time Railway deploy: account → project → two services from `crl33/Cascadia` with `infra/Dockerfile` + custom start commands; per-service variables (secrets marked); Neon pooled vs DIRECT strings (queue needs DIRECT — PgBouncer can't carry LISTEN/NOTIFY); Cloudflare R2 dashboard steps (wrangler OAuth has no R2 scope); Railway CLI auth for the orchestrator (project token recommended). |
+| `gateway/` | Cloudflare Worker reverse-proxy for `cascadia.papsukkal.com` (see below). |
+
+Resolved (2026-08-24 verification): `python -m cascade_worker worker` landed with the
+procrastinate port (ADR-0003). The worker CLI now offers `seed | run-once | run | worker |
+apply-queue-schema | queue-status`, so the `worker` service starts cleanly on current source
+(verified live against the local PostGIS database; see
+docs/research/pg-migration-verification-2026-08-24.md).
 
 ## Preview site (Cloudflare Pages)
 
