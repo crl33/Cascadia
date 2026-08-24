@@ -18,7 +18,7 @@ from cascade_core.registry import (
     PRODUCT_USGS_IV,
 )
 from cascade_core.timeutils import parse_iso, utcnow
-from cascade_hydrology.assemble import basin_envelope, river_envelope
+from cascade_hydrology.assemble import basin_envelope, forecast_run_ref, river_envelope
 
 router = APIRouter()
 
@@ -164,6 +164,10 @@ async def forecast_runs_window(
     still holds: a reconstructed/backfilled run carries available_at = its retrieval time, so
     it is invisible at any historical as_of. The backfilled surface is the product identity
     plus available_at ≫ issued_at — both returned on every item; no flag is fabricated.
+
+    Every item carries its own ProvenanceRef, built like the envelope's (assemble.forecast_run_ref):
+    identity from the run's SourceProduct, freshness computed at read time against as_of, and the
+    raw_artifact_id of the stored bytes. No displayed crest borrows its origin from a neighbour.
     """
     window = _parse_window(start, end)
     if window is None:
@@ -193,6 +197,7 @@ async def forecast_runs_window(
                 "stage_datum": run.datum,  # per /runs/latest: the stage column only (ADR-0014)
                 "supersedes_run_id": None if run.supersedes_run_id is None else f"run:{run.supersedes_run_id}",
                 "points": [{"t": v.valid_time, "stage": v.stage, "flow": v.flow} for v in values],
+                "provenance": _dump(forecast_run_ref(run, products, now=k.as_of)),
             }
         )
     return {"lid": lid, "fp_id": fp.id, "start": window[0], "end": window[1], "items": items}

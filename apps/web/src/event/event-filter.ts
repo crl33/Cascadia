@@ -63,8 +63,8 @@ export function seriesIsBackfilled(series: StationSeries | null): boolean {
  * issued_at — ADR-0010: a backfilled row's knowledge time is its retrieval time).
  */
 export function runIsBackfilled(run: Pick<RunListItem, 'product_id' | 'issued_at' | 'provenance'>): boolean {
-  if (run.provenance?.quality?.includes(BACKFILLED)) return true;
+  if (run.provenance.quality?.includes(BACKFILLED)) return true;
   if (run.product_id === RECONSTRUCTED_PRODUCT) return true;
-  const retrieved = run.provenance?.retrieved_at;
+  const retrieved = run.provenance.retrieved_at;
   return retrieved != null && ms(retrieved) - ms(run.issued_at) > WEEK_MS;
 }

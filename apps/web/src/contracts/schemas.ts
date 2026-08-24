@@ -257,13 +257,13 @@ export const ForecastRunSchema = z.object({
  * every run issued inside the window, ascending, superseded runs included. Each item is the
  * /runs/latest body plus product identity and the supersedes chain.
  */
-export const RunListItemSchema = ForecastRunSchema.omit({ provenance: true }).extend({
+export const RunListItemSchema = ForecastRunSchema.extend({
   product_id: z.string(),
   supersedes_run_id: z.string().nullable(),
-  // Archived items carry product identity + the three timestamps instead of a full
-  // ProvenanceRef (deployed API contract, 2026-08-24); provenance stays optional so the
-  // stub/latest-run shape also validates. Backend per-item ProvenanceRef is a follow-up.
-  provenance: ProvenanceRefSchema.optional(),
+  // `provenance` is REQUIRED: every archived run answers where it came from on its own
+  // (docs/DATA_DOCTRINE.md). The API builds it per item from the run's SourceProduct
+  // (assemble.forecast_run_ref); the three item-level timestamps are the backfilled surface
+  // and stay optional because the stub fixtures state them inside the ref instead.
   product_label: z.string().nullable().optional(),
   available_at: iso.optional(),
   retrieved_at: iso.optional(),

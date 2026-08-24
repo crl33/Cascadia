@@ -42,7 +42,13 @@ from cascade_contracts.visualization import (
 )
 from cascade_core.freshness import compute_freshness
 from cascade_core.knowledge import Knowledge
-from cascade_core.models import Basin, ForecastPoint, SourceProduct, Threshold
+from cascade_core.models import (
+    Basin,
+    ForecastPoint,
+    ForecastRun,
+    SourceProduct,
+    Threshold,
+)
 from cascade_core.registry import (
     PRODUCT_NWPS_FORECAST,
     PRODUCT_NWPS_THRESHOLDS,
@@ -79,6 +85,28 @@ def _fresh(products: dict[str, SourceProduct], product_id: str, *, valid_time: d
         valid_time=valid_time,
         retrieved_at=retrieved_at,
         now=now,
+    )
+
+
+def forecast_run_ref(run: ForecastRun, products: dict[str, SourceProduct], *, now: datetime, valid_time: datetime | None = None) -> ProvenanceRef:
+    """The provenance record of one stored forecast run, wherever the run is displayed.
+
+    Identity comes from the run's own SourceProduct — a run reconstructed from archived FLS
+    text is not an NWPS forecast and must not claim to be one. Freshness is computed at read
+    time against the knowledge clock; `raw_artifact_id` points at the stored bytes the run was
+    parsed from. The `products` lookup cannot miss (ForecastRun.product_id is a FK into
+    source_product); the fallback keeps the ref constructible rather than guessing identity."""
+    product = products.get(run.product_id)
+    return ProvenanceRef(
+        source_id=product.source_id if product else SRC_NWPS,
+        source_kind=SourceKind.OFFICIAL_FORECAST,
+        product_id=run.product_id,
+        issued_at=run.issued_at,
+        valid_time=valid_time,
+        retrieved_at=run.retrieved_at,
+        freshness=_fresh(products, run.product_id, valid_time=run.issued_at, retrieved_at=run.retrieved_at, now=now),
+        label=product.label if product else f"{run.issuer} official river forecast via NOAA NWPS",
+        raw_artifact_id=str(run.raw_artifact_id),
     )
 
 
@@ -204,17 +232,7 @@ async def assess_point(k: Knowledge, fp: ForecastPoint, basin: Basin | None, pro
         series = [(v.valid_time, v.stage if fbasis == "stage" else v.flow) for v in values]
         crest = surfaces.forecast_crest(series, as_of=now)
         hazard = surfaces.hazard_category(crest, basis=fbasis, unit=funit, datum=fdatum, thresholds=tset)
-        refs[fkey] = ProvenanceRef(
-            source_id=SRC_NWPS,
-            source_kind=SourceKind.OFFICIAL_FORECAST,
-            product_id=PRODUCT_NWPS_FORECAST,
-            issued_at=run.issued_at,
-            valid_time=None if crest is None else crest.valid_time,
-            retrieved_at=run.retrieved_at,
-            freshness=_fresh(products, PRODUCT_NWPS_FORECAST, valid_time=run.issued_at, retrieved_at=run.retrieved_at, now=now),
-            label=f"{run.issuer} official river forecast via NOAA NWPS",
-            raw_artifact_id=str(run.raw_artifact_id),
-        )
+        refs[fkey] = forecast_run_ref(run, products, now=now, valid_time=None if crest is None else crest.valid_time)
         forecast_model = OfficialForecastSummary(
             prov=fkey,
             truth=TruthClass.AUTHORITATIVE_MODEL,

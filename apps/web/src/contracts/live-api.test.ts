@@ -14,6 +14,7 @@ import {
   GeoFeatureSchema,
   HealthSchema,
   RiverEnvelopeSchema,
+  RunsListSchema,
   SceneSummarySchema,
   SearchResultsSchema,
   StationSeriesSchema,
@@ -83,6 +84,37 @@ describe.skipIf(!base)('live API responses validate against the client zod schem
     const aubw1 = ForecastRunSchema.parse(rawAubw1);
     if (aubw1.points.some((p) => p.stage != null)) expect(aubw1.stage_unit).not.toBeNull();
     else expect(aubw1.stage_datum ?? null).toBeNull();
+  });
+  it('GET /forecast-points/{LID}/runs — every archived run answers its own provenance question', async () => {
+    // The Event Zero window: reconstructed December-2025 runs, where borrowed provenance would be
+    // easiest to miss and worst to have. Parsed with the STRICT RunListItemSchema, in which
+    // `provenance` is required — an item without one fails here rather than rendering unattributed.
+    const runs = RunsListSchema.parse(
+      await get('/forecast-points/MVEW1/runs?start=2025-12-03T08:00:00Z&end=2025-12-23T08:00:00Z'),
+    );
+    expect(runs.lid).toBe('MVEW1');
+    expect(runs.items.length).toBeGreaterThan(0);
+    // ascending by issuance, superseded runs retained (nothing is deleted from the record)
+    const issued = runs.items.map((r) => Date.parse(r.issued_at));
+    expect([...issued].sort((a, b) => a - b)).toEqual(issued);
+
+    for (const item of runs.items) {
+      const prov = item.provenance;
+      expect(prov.source_kind, item.run_id).toBe('OFFICIAL_FORECAST');
+      // identity is read from the run's OWN SourceProduct: a run reconstructed from archived WFO
+      // text must not inherit the identity of a live NWPS forecast sitting next to it in the list
+      expect(prov.product_id, item.run_id).toBe(item.product_id);
+      if (item.product_label != null) expect(prov.label, item.run_id).toBe(item.product_label);
+      // the stored bytes the crest was parsed from — a claim with nothing behind it fails here
+      expect(prov.raw_artifact_id ?? '', item.run_id).not.toBe('');
+      expect(prov.issued_at?.slice(0, 16), item.run_id).toBe(item.issued_at.slice(0, 16));
+      expect(prov.freshness.state, item.run_id).not.toBe('unknown');
+    }
+    // the backfilled surface, stated rather than flagged: issued in the past, retrieved long after
+    const reconstructed = runs.items.filter((r) => r.available_at != null && r.retrieved_at != null);
+    for (const item of reconstructed) {
+      expect(Date.parse(item.retrieved_at!), item.run_id).toBeGreaterThan(Date.parse(item.issued_at));
+    }
   });
   it('as_of before ingestion yields UNKNOWN with a reason, never a value', async () => {
     const env = RiverEnvelopeSchema.parse(await get('/forecast-points/MVEW1/state?as_of=2026-01-01T00:00:00Z'));

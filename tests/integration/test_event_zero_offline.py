@@ -20,7 +20,13 @@ from cascade_api.main import create_app
 from cascade_core.db import create_schema
 from cascade_core.models import ForecastRun, ForecastValue, Observation, RawArtifact, Station
 from cascade_core.objectstore import LocalFilesystemStore
-from cascade_core.registry import PRODUCT_NWPS_FORECAST, PRODUCT_USGS_IV
+from cascade_core.registry import (
+    PRODUCT_NWPS_FORECAST,
+    PRODUCT_NWS_FLS_CREST,
+    PRODUCT_USGS_IV,
+    SRC_NWPS,
+    SRC_NWS_AFOS,
+)
 from cascade_core.seed import seed_all
 from cascade_core.settings import Settings
 from cascade_providers_usgs.backfill import backfill_site
@@ -148,6 +154,22 @@ async def test_forecast_runs_window_api(runtime: Runtime) -> None:
         s.add(run2)
         await s.flush()
         s.add(ForecastValue(run_id=run2.id, valid_time=datetime(2025, 12, 12, 12, 0, tzinfo=UTC), stage=41.5, flow=None))
+        # a third run RECONSTRUCTED from archived WFO FLS text: a different product, source and
+        # artifact. Its provenance must name src:nws-afos — the whole reason identity is read from
+        # the run's SourceProduct instead of hardcoded (ADR-0010; docs/DATA_DOCTRINE.md §14).
+        fls_art = RawArtifact(sha256="1" * 64, object_key="test/ez-fls-fixture", product_id=PRODUCT_NWS_FLS_CREST,
+                              fetched_at=CLOCK, request_url="https://example.invalid/fls", bytes=1,
+                              http_status=200, content_type="text/plain")
+        s.add(fls_art)
+        await s.flush()
+        run3 = ForecastRun(product_id=PRODUCT_NWS_FLS_CREST, fp_id="fp:nwps:MVEW1",
+                           issued_at=datetime(2025, 12, 10, 23, 14, tzinfo=UTC), retrieved_at=CLOCK, available_at=CLOCK,
+                           issuer="NWRFC via KSEW", primary_variable="stage", unit="ft", stage_unit="ft",
+                           flow_unit=None, datum="NGVD29", raw_artifact_id=fls_art.id, supersedes_run_id=run2.id)
+        s.add(run3)
+        await s.flush()
+        s.add(ForecastValue(run_id=run3.id, valid_time=datetime(2025, 12, 12, 12, 0, tzinfo=UTC), stage=42.3, flow=None))
+        artifact_ids = {PRODUCT_NWPS_FORECAST: str(art.id), PRODUCT_NWS_FLS_CREST: str(fls_art.id)}
         await s.commit()
 
     app = create_app(rt.settings, engine=rt.engine)
@@ -155,8 +177,8 @@ async def test_forecast_runs_window_api(runtime: Runtime) -> None:
         r = await c.get("/forecast-points/MVEW1/runs", params={"start": "2025-12-01T00:00:00Z", "end": "2025-12-31T23:59:59Z"})
         assert r.status_code == 200
         body = r.json()
-        assert body["fp_id"] == "fp:nwps:MVEW1" and len(body["items"]) == 2
-        first, second = body["items"]
+        assert body["fp_id"] == "fp:nwps:MVEW1" and len(body["items"]) == 3
+        first, second, third = body["items"]
         # the forecast-evolution ordering: ascending issued_at (36.9 -> 41.5, the golden head)
         assert first["issued_at"].startswith("2025-12-09T17:01") and first["points"][0]["stage"] == 36.9
         assert second["issued_at"].startswith("2025-12-10T01:24") and second["points"][0]["stage"] == 41.5
@@ -164,6 +186,33 @@ async def test_forecast_runs_window_api(runtime: Runtime) -> None:
         # backfilled surface: issued_at is FACT (Dec 2025), available_at is retrieval (Aug 2026)
         assert first["issued_at"].startswith("2025-") and first["available_at"].startswith("2026-")
         assert first["product_label"] and first["issuer"] == "NWRFC via KSEW"
+
+        # every archived run answers the provenance question on its own (docs/DATA_DOCTRINE.md):
+        # identity from the run's own SourceProduct, both knowledge times, and the bytes it was parsed from
+        identity = {PRODUCT_NWPS_FORECAST: (SRC_NWPS, 86400), PRODUCT_NWS_FLS_CREST: (SRC_NWS_AFOS, 21600)}
+        for item in body["items"]:
+            prov = item["provenance"]
+            source_id, cadence = identity[item["product_id"]]
+            assert prov["source_id"] == source_id and prov["source_kind"] == "OFFICIAL_FORECAST"
+            assert prov["product_id"] == item["product_id"]
+            assert prov["label"] == item["product_label"]
+            assert prov["issued_at"][:16] == item["issued_at"][:16] and prov["retrieved_at"].startswith("2026-")
+            assert prov["raw_artifact_id"] == artifact_ids[item["product_id"]]  # the stored bytes, not a claim
+            assert prov["freshness"]["expected_cadence_seconds"] == cadence
+
+        # the reconstruction is never laundered into an NWPS forecast: a run parsed from archived
+        # WFO text names its own source and says "reconstructed" in the label it carries
+        assert third["product_id"] == PRODUCT_NWS_FLS_CREST
+        assert third["provenance"]["source_id"] == SRC_NWS_AFOS != first["provenance"]["source_id"]
+        assert "reconstructed" in third["provenance"]["label"]
+        assert third["provenance"]["raw_artifact_id"] != first["provenance"]["raw_artifact_id"]
+
+        # freshness is computed at READ time against the knowledge clock, not stored
+        r = await c.get("/forecast-points/MVEW1/runs",
+                        params={"start": "2025-12-01T00:00:00Z", "end": "2025-12-31T23:59:59Z", "as_of": "2026-08-24T12:00:00Z"})
+        assert r.status_code == 200
+        fresh = r.json()["items"][0]["provenance"]["freshness"]
+        assert fresh["state"] == "stale" and fresh["age_seconds"] > 86400 + 64800  # issued Dec 2025, read Aug 2026
 
         # knowledge honesty: at a December 2025 as_of the reconstructed runs are invisible
         r = await c.get("/forecast-points/MVEW1/runs",
