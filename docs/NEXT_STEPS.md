@@ -22,7 +22,7 @@ when a milestone closes; delete lines that stop being true.
 
 ### Not done (gaps, ranked by how much they block)
 
-1. **No deployed backend.** The production client calls a same-origin `/basins`, `/viz/...` API that
+1. ~~No deployed backend~~ **closed 2026-08-24** (Railway + Neon + R2 behind the Pages gateway). Was: The production client calls a same-origin `/basins`, `/viz/...` API that
    does not exist at `cascadia.papsukkal.com`; the deployed page can only show the non-WebGL /
    degraded states. The spike backend is SQLite + an in-process asyncio scheduler, not deployable
    as-is.
@@ -48,7 +48,7 @@ when a milestone closes; delete lines that stop being true.
 
 Each milestone has an exit test. Sizes are relative. Dependencies point at earlier milestones.
 
-### M1 — A real backend behind the deployed client (M)
+### M1 — A real backend behind the deployed client (M) — **DONE 2026-08-24** (see infra/CONTEXT.md; smoke-tested through cascadia.papsukkal.com)
 
 Goal: `cascadia.papsukkal.com` shows live Skagit data with provenance, continuously refreshed.
 

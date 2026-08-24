@@ -31,7 +31,7 @@ The cinematic web spike deploys automatically from GitHub so each push to `main`
 | Repo | `crl33/Cascadia`, production branch `main` |
 | Build | `npm ci --prefix apps/web && npm run build --prefix apps/web` |
 | Output | `apps/web/dist` |
-| API | Pages Function `functions/[[path]].js` — same fixture stub as `apps/web/dev/stub-api.mjs` |
+| API | Pages Function `functions/[[path]].js` — reverse proxy to `BACKEND_ORIGIN` (Pages secret, currently the Railway backend); fixture stub only when no origin is configured (previews) |
 | Trigger | GitHub Action `.github/workflows/deploy-preview.yml` POSTs Pages deploy hook `github-main` (secret `CF_PAGES_DEPLOY_HOOK`) |
 
 Do not point this hostname at jets/yachts/mail, or at Worker `papsukkal-site`.
@@ -39,3 +39,15 @@ Do not point this hostname at jets/yachts/mail, or at Worker `papsukkal-site`.
 `cascadia.papsukkal.com` is a Worker custom domain on `cascadia-gateway` (`infra/gateway/`) that reverse-proxies Pages production. Wrangler OAuth can attach Worker custom domains; it cannot write zone DNS records directly. Deploy the gateway with `npx wrangler deploy` from `infra/gateway/` if the hostname is missing.
 
 When stub fixtures change, run `scripts/sync-pages-fixtures.sh` so `functions/fixtures/` stays in lockstep.
+
+## Production backend (deployed 2026-08-24)
+
+| | |
+|---|---|
+| Compute | Railway project `affectionate-stillness` (rename in UI if desired), service `papsukkal-backend`, env `production` — ONE container running api + worker (`sh -c "python -m cascade_worker worker & exec uvicorn ..."`), built from `infra/Dockerfile` (`RAILWAY_DOCKERFILE_PATH`) |
+| Public URL | https://papsukkal-backend-production.up.railway.app (proxied same-origin via the Pages gateway at cascadia.papsukkal.com) |
+| Database | Neon `cascadia-papsukkal` (PG 18, PostGIS 3.6, `us-west-2`); API/worker use the pooled URL, the queue uses the DIRECT URL (`CASCADE_QUEUE_DB_URL`) |
+| Raw archive | R2 bucket `cascadia-raw` (`CASCADE_OBJECT_STORE=s3`), content-addressed sha256 keys |
+| Event Zero archive | R2 bucket `cascadia-event-zero` (`usgs_timeslices` copied; larger tiers pending owner cost approval) |
+| Secrets | Railway service variables + Pages secret `BACKEND_ORIGIN` + local `~/.config/cascadia-papsukkal/` (0600) — never in git |
+| Free-tier watchpoints | Neon compute-hours (15-min polling keeps the endpoint warm), Railway $5 Hobby/trial usage (single small container), R2 10 GB free (raw archive grows slowly; Event Zero tiers are paid) |
