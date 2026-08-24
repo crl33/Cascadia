@@ -1,6 +1,12 @@
 /**
- * Cloudflare Pages Function: same SPIKE API SPEC as apps/web/dev/stub-api.mjs, fixture-backed.
- * Invoked only for API paths listed in apps/web/public/_routes.json. Never calls a provider.
+ * Cloudflare Pages Function: same SPIKE API SPEC as apps/web/dev/stub-api.mjs.
+ * Invoked only for API paths listed in apps/web/public/_routes.json.
+ *
+ * Two modes:
+ *  - env.BACKEND_ORIGIN set (production): reverse-proxy the read-only API to the deployed
+ *    backend (Railway), preserving path + query. GET/OPTIONS only; everything else 405.
+ *  - no BACKEND_ORIGIN (previews, local `wrangler pages dev`): fixture-backed stub, so the
+ *    static preview keeps working with zero credentials. Never calls a provider either way.
  */
 import { isErrorResult, route } from '../apps/web/dev/stub-router.mjs';
 import basinLod from './fixtures/basins_seed_basin_lod.json';
@@ -23,7 +29,7 @@ function json(status, body) {
 }
 
 export async function onRequest(context) {
-  const { request } = context;
+  const { request, env } = context;
   if (request.method === 'OPTIONS') {
     return new Response(null, {
       status: 204,
@@ -32,17 +38,40 @@ export async function onRequest(context) {
   }
   if (request.method !== 'GET') return json(405, { detail: 'read-only API' });
 
-  let pathname;
+  let url;
   try {
-    pathname = decodeURIComponent(new URL(request.url).pathname);
+    url = new URL(request.url);
+    decodeURIComponent(url.pathname);
   } catch {
     return json(400, { detail: 'bad path' });
   }
-  if (pathname.length > 256) return json(414, { detail: 'path too long' });
+  if (url.pathname.length > 256) return json(414, { detail: 'path too long' });
 
+  const origin = (env && env.BACKEND_ORIGIN) || '';
+  if (origin) {
+    const upstream = new URL(origin);
+    upstream.pathname = url.pathname;
+    upstream.search = url.search;
+    try {
+      const resp = await fetch(upstream, {
+        method: 'GET',
+        headers: { Accept: 'application/json', 'User-Agent': 'CascadiaPapsukkal-gateway/0.1' },
+        signal: AbortSignal.timeout(20000),
+      });
+      const headers = new Headers(resp.headers);
+      for (const [k, v] of Object.entries(HEADERS)) headers.set(k, v);
+      headers.delete('Access-Control-Allow-Origin'); // same-origin via the gateway; CORS not needed
+      return new Response(resp.body, { status: resp.status, headers });
+    } catch (err) {
+      console.error('backend proxy failed', err && err.message);
+      return json(503, { detail: 'backend unavailable', source: 'gateway' });
+    }
+  }
+
+  // Fixture-backed stub (previews without a configured backend).
   let result;
   try {
-    result = route(fx, pathname, new URL(request.url).searchParams);
+    result = route(fx, decodeURIComponent(url.pathname), url.searchParams);
   } catch (err) {
     console.error(err);
     return json(500, { detail: 'stub error' });
