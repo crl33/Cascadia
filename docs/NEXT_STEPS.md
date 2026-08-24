@@ -66,7 +66,7 @@ when a milestone closes; delete lines that stop being true.
   boundary: as_of before first ingestion correctly renders all-UNKNOWN). Deferred within C1/C2:
   camera-pose capture on settle, vendor imagery tier, reaches/reservoir layers, perf harness.
 
-### P2 — Event Zero replay experience (M) — **DONE 2026-08-24 at seed scope, byte-verified**
+### P2 — Event Zero replay experience (M) — **CLOSED 2026-08-24, live and reconciled**
 - Backfill Dec 2025 point truth into production: USGS IV Dec 1–31 for the seed stations via
   the OGC API (keyed, 4000/h), NWPS thresholds snapshot, AFOS text products (archiver built)
   parsed to `OfficialAlert`s — EVENT_ZERO T2/T4/T5 at seed-station scope.
@@ -80,6 +80,14 @@ when a milestone closes; delete lines that stop being true.
   the 2026-08-22 draft table (3 rows disproven, 3 issuances added — EVENT_ZERO.md §8, dated
   correction). Remaining for full T2–T9: other 21 §3 sites unseeded (scripts re-run cleanly
   after seeding), SNOTEL/USACE backfills, OfficialAlert parsing, hindcast harness.
+
+> P2 close-out (2026-08-24): two follow-ups landed as one release — ADR-0014 (run bodies
+> declare units/datum per column: `stage_unit`/`flow_unit`/`stage_datum`, no flat `datum`) and
+> per-item `ProvenanceRef` on archived runs. A semantic review of the Event Zero freshness badge
+> found it measuring present-day currency (`read clock − valid_time`) while sitting beside a
+> December cursor; archived values now render `ARCHIVED · N before today` instead of `STALE`
+> (VISUAL_TRUTH_DOCTRINE §5.6). `/system/version` plus a stamped `CASCADE_GIT_REVISION` make the
+> deployed build checkable against the repository; HEAD and production were reconciled at close.
 
 ### P3 — Live intelligence surfaces v0 (M)
 - Forcing v0 from NBM QPF percentiles at basin scale (EXPERIMENTAL badge, documented method);
