@@ -1,0 +1,17 @@
+# Gitleaks config for Cascadia Papsukkal (CI job: gitleaks).
+# Real secrets live only in Railway/Cloudflare/Neon env stores and ~/.config on the
+# operator machine - never in this repo. Allowlist entries below are verified false
+# positives; add a comment with the verification date for every new entry.
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Verified false positives"
+paths = [
+  # Unit-test fixtures construct fake ProvenanceRef/artifact ids that pattern-match
+  # generic-api-key (verified fake, 2026-08-24).
+  '''apps/web/src/.*\.test\.tsx?$''',
+  # Test fixtures with sha256-like content-addressed keys (fake payloads).
+  '''tests/fixtures/.*''',
+]
