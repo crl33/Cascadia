@@ -40,7 +40,7 @@ describe('stub router', () => {
     const result = route(fx, '/forecast-points/MVEW1/runs', new URLSearchParams(EVENT_WINDOW));
     expect(isErrorResult(result)).toBe(false);
     const runs = RunsListSchema.parse(result);
-    expect(runs.count).toBe(9);
+    expect(runs.items.length).toBe(9);
     expect(runs.items[0]!.points[0]!.stage).toBe(36.9);
     expect(runs.items[8]!.points[0]!.stage).toBe(38.1);
     expect(runs.items[0]!.supersedes_run_id).toBeNull();
@@ -49,7 +49,7 @@ describe('stub router', () => {
       expect(Date.parse(runs.items[i]!.issued_at)).toBeGreaterThan(Date.parse(runs.items[i - 1]!.issued_at));
     }
     const early = RunsListSchema.parse(route(fx, '/forecast-points/MVEW1/runs', new URLSearchParams('start=2025-12-03T08:00:00Z&end=2025-12-10T00:00:00Z')));
-    expect(early.count).toBe(1);
+    expect(early.items.length).toBe(1);
   });
 
   it('rejects a lone start, a reversed window, and a missing window on the runs list', () => {

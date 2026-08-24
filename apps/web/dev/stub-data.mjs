@@ -297,5 +297,11 @@ export function buildRunsList(fx, lid, startMs, endMs) {
     const t = Date.parse(r.issued_at);
     return t >= startMs && t <= endMs;
   });
-  return { lid, items, count: items.length };
+  return {
+    lid,
+    fp_id: `fp:nwps:${lid}`,
+    start: new Date(startMs).toISOString().replace('.000Z', 'Z'),
+    end: new Date(endMs).toISOString().replace('.000Z', 'Z'),
+    items,
+  };
 }

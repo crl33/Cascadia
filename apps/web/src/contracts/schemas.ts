@@ -247,14 +247,23 @@ export const ForecastRunSchema = z.object({
  * every run issued inside the window, ascending, superseded runs included. Each item is the
  * /runs/latest body plus product identity and the supersedes chain.
  */
-export const RunListItemSchema = ForecastRunSchema.extend({
+export const RunListItemSchema = ForecastRunSchema.omit({ provenance: true }).extend({
   product_id: z.string(),
   supersedes_run_id: z.string().nullable(),
+  // Archived items carry product identity + the three timestamps instead of a full
+  // ProvenanceRef (deployed API contract, 2026-08-24); provenance stays optional so the
+  // stub/latest-run shape also validates. Backend per-item ProvenanceRef is a follow-up.
+  provenance: ProvenanceRefSchema.optional(),
+  product_label: z.string().nullable().optional(),
+  available_at: iso.optional(),
+  retrieved_at: iso.optional(),
 });
 export const RunsListSchema = z.object({
   lid: z.string(),
+  fp_id: z.string().optional(),
+  start: iso.optional(),
+  end: iso.optional(),
   items: z.array(RunListItemSchema),
-  count: z.number().int().nonnegative(),
 });
 export type SeriesVariable = z.infer<typeof SeriesVariableSchema>;
 export type SeriesPoint = z.infer<typeof SeriesPointSchema>;
