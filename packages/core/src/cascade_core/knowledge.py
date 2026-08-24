@@ -85,6 +85,20 @@ class Knowledge:
         )
         return (await self.session.execute(q)).scalar_one_or_none()
 
+    async def forecast_runs(self, fp_id: str, issued_from: datetime, issued_until: datetime) -> list[ForecastRun]:
+        """Known-at-T forecast runs with issued_at inside [issued_from, issued_until], ascending.
+
+        The Event Zero forecast-evolution read: select by ISSUED time, knowledge-filter by
+        available_at — a backfilled run (available_at ≫ issued_at) stays invisible at any T
+        before its retrieval (ADR-0010)."""
+        q = (
+            select(ForecastRun)
+            .where(ForecastRun.fp_id == fp_id, ForecastRun.available_at <= self.as_of)
+            .where(ForecastRun.issued_at >= to_utc(issued_from), ForecastRun.issued_at <= to_utc(issued_until))
+            .order_by(ForecastRun.issued_at, ForecastRun.id)
+        )
+        return list((await self.session.execute(q)).scalars().all())
+
     async def forecast_values(self, run_id: int) -> list[ForecastValue]:
         q = select(ForecastValue).where(ForecastValue.run_id == run_id).order_by(ForecastValue.valid_time)
         return list((await self.session.execute(q)).scalars().all())

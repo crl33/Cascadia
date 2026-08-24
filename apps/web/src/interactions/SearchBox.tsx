@@ -9,7 +9,7 @@
  */
 import { useEffect, useId, useMemo, useReducer, useRef, useState } from 'react';
 import { useSearch } from '../api/hooks';
-import type { SearchResult } from '../contracts/schemas';
+import { eventBootTimeline, eventById, eventSearchResults } from '../event/registry';
 import { useSceneStore } from '../state/store';
 import { createDebouncer, SEARCH_DEBOUNCE_MS } from './search-debounce';
 import {
@@ -17,8 +17,10 @@ import {
   flattenGroups,
   groupSearchResults,
   INITIAL_SEARCH_NAV,
+  MIN_QUERY_CHARS,
   optionDomId,
   searchNavReducer,
+  type ClientSearchResult,
 } from './search-reducer';
 
 /** True when the shortcut target is a place where "/" means typing, not "focus search". */
@@ -33,6 +35,7 @@ export function SearchBox() {
   const [debouncer] = useState(() => createDebouncer<string>(SEARCH_DEBOUNCE_MS, setDebouncedQuery));
   const selectBasin = useSceneStore((s) => s.selectBasin);
   const selectForecastPoint = useSceneStore((s) => s.selectForecastPoint);
+  const setTimeline = useSceneStore((s) => s.setTimeline);
   const results = useSearch(debouncedQuery);
   const listId = useId();
   const rootRef = useRef<HTMLElement>(null);
@@ -54,7 +57,12 @@ export function SearchBox() {
     return () => window.removeEventListener('keydown', onKeyDown);
   }, []);
 
-  const groups = useMemo(() => groupSearchResults(results.data?.items ?? []), [results.data]);
+  // Event replays are client config (event/registry): offered locally, no API change.
+  const eventEntries = useMemo(
+    () => (debouncedQuery.trim().length >= MIN_QUERY_CHARS ? eventSearchResults(debouncedQuery) : []),
+    [debouncedQuery],
+  );
+  const groups = useMemo(() => groupSearchResults([...eventEntries, ...(results.data?.items ?? [])]), [eventEntries, results.data]);
   const options = useMemo(() => flattenGroups(groups), [groups]);
   const optionKeys = useMemo(() => options.map((option) => option.key), [options]);
   const activeKey = effectiveActiveKey(nav, optionKeys);
@@ -65,8 +73,16 @@ export function SearchBox() {
     if (activeDomId !== undefined) document.getElementById(activeDomId)?.scrollIntoView({ block: 'nearest' });
   }, [activeDomId]);
 
-  const choose = (result: SearchResult) => {
-    if (result.kind === 'basin') selectBasin(result.id);
+  const choose = (result: ClientSearchResult) => {
+    if (result.kind === 'event') {
+      // Entering the event frames its default forecast point and anchors the timeline to the
+      // event window in EVENT time (queries carry no as_of — ADR-0010; see event/registry).
+      const event = eventById(result.id);
+      if (event) {
+        selectForecastPoint(event.defaultSel, event.defaultBasin);
+        setTimeline(eventBootTimeline(event, null));
+      }
+    } else if (result.kind === 'basin') selectBasin(result.id);
     else if (result.kind === 'forecast_point') selectForecastPoint(result.id, result.basin_id);
     else selectBasin(result.basin_id); // station: the contract carries no station framing yet, so fly to its basin
     debouncer.cancel();
@@ -170,7 +186,7 @@ export function SearchBox() {
                       <span className="search-name">{result.name}</span>
                       <span className="search-subtitle mono muted">
                         {result.id}
-                        {result.kind === 'basin' ? '' : ` · ${result.basin_id}`}
+                        {result.kind === 'basin' || result.kind === 'event' ? '' : ` · ${result.basin_id}`}
                       </span>
                     </li>
                   ))}

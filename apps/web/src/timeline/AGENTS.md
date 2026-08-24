@@ -15,3 +15,14 @@ truncated to the minute and sent to the server as `as_of`; freshness shown anywh
 the server-reported replayed freshness, never client-now math. May import `api/`, `state/`,
 `panels/format`, `design-system`. The full C5 (playback engine, forecast horizon `[T, T+120h]`,
 run picker) builds on this; see docs/CINEMATIC_ROADMAP.md §10.
+
+## Event mode (P2 Event Zero)
+
+`TimelineState.mode` gained `'event'`: the window becomes the archived event window
+(`event/registry`), the cursor is `at` in EVENT time (valid/issued time), and `asOf` stays
+null — event-mode queries carry NO `as_of` (ADR-0010: backfilled rows' knowledge time is the
+2026 retrieval; a knowledge-time replay inside the event would honestly render UNKNOWN).
+`TimelineController.scrubEvent` reuses the rAF coalescing and clamps to the event window; it
+aborts nothing, because event queries are keyed by the whole window, not the cursor. The bar
+shows an EVENT REPLAY chip; NOW exits to live. TimelineBar may additionally import
+`event/registry` (descriptors only).

@@ -66,15 +66,20 @@ when a milestone closes; delete lines that stop being true.
   boundary: as_of before first ingestion correctly renders all-UNKNOWN). Deferred within C1/C2:
   camera-pose capture on settle, vendor imagery tier, reaches/reservoir layers, perf harness.
 
-### P2 — Event Zero replay experience (M)
+### P2 — Event Zero replay experience (M) — **DONE 2026-08-24 at seed scope, byte-verified**
 - Backfill Dec 2025 point truth into production: USGS IV Dec 1–31 for the seed stations via
   the OGC API (keyed, 4000/h), NWPS thresholds snapshot, AFOS text products (archiver built)
   parsed to `OfficialAlert`s — EVENT_ZERO T2/T4/T5 at seed-station scope.
 - Frontend: an Event Zero mode — fly the Skagit, scrub Dec 3–22, watch observed stages,
   official forecast evolution (MVEW1 36.9→41.5→42.3→39.1→38.3→38.1 vs 37.73 observed) and
   alerts replay with knowledge-time honesty (`as_of` = the scrub position).
-- Exit: the MVEW1 forecast-evolution table reproduces on screen from stored rows with zero
-  look-ahead violations.
+- Exit met: 34,940 December observations backfilled (all six §3 peaks exact; MVEW1
+  37.73 ft @ 08:15Z, quality approved+backfilled); 123 FLS/FLW forecast runs parsed from
+  the IEM byte record with supersedes chains; look-ahead audit zero violations; the client
+  event mode (?event=event-zero-2025-12) replays the evolution. Byte verification CORRECTED
+  the 2026-08-22 draft table (3 rows disproven, 3 issuances added — EVENT_ZERO.md §8, dated
+  correction). Remaining for full T2–T9: other 21 §3 sites unseeded (scripts re-run cleanly
+  after seeding), SNOTEL/USACE backfills, OfficialAlert parsing, hindcast harness.
 
 ### P3 — Live intelligence surfaces v0 (M)
 - Forcing v0 from NBM QPF percentiles at basin scale (EXPERIMENTAL badge, documented method);

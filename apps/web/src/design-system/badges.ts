@@ -44,3 +44,9 @@ export const FRESHNESS_BADGE: Record<FreshnessState, BadgeDescriptor> = {
   partial: { label: 'PARTIAL', glyph: '◐', tone: 'muted', pattern: 'dotted' },
   unknown: { label: 'UNKNOWN', glyph: '?', tone: 'neutral', pattern: 'dotted' },
 };
+
+/**
+ * Backfilled archive values (ADR-0010): retrieved long after the historical instant; never
+ * styled as live. Word + glyph, never colour alone.
+ */
+export const BACKFILLED_BADGE: BadgeDescriptor = { label: 'BACKFILLED', glyph: '⧗', tone: 'amber-watch', pattern: 'dashed' };

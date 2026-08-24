@@ -4,6 +4,7 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from './api/hooks';
 import { App } from './app/App';
 import { parseDeepLink } from './app/deep-link';
+import { eventById, eventBootTimeline } from './event/registry';
 import { useSceneStore } from './state/store';
 import { anchorForBoot, truncateToMinute, windowEndingAt } from './timeline/window';
 import './design-system/tokens.css';
@@ -21,18 +22,22 @@ const camEntityId = link.cam !== null && link.cam.anchor.kind === 'entity' ? lin
 const basinId = link.basinId ?? (camEntityId?.startsWith('basin:') ? camEntityId : null);
 const forecastPointId = link.forecastPointId ?? (camEntityId?.startsWith('fp:nwps:') ? camEntityId : null);
 
-// Replay knowledge time is minute-aligned (timeline/window.ts); the window anchors at now,
-// or at as_of when it predates the live 72 h window.
-const asOf = link.asOf === null ? null : truncateToMinute(link.asOf);
+// Event replay boots on the event window with the EVENT-time cursor (deep-link `at`, clamped);
+// otherwise the knowledge-time window anchors at now, or at as_of when it predates the live
+// 72 h window. Both replay knowledge times are minute-aligned (timeline/window.ts).
+const event = link.eventId !== null ? eventById(link.eventId) : null;
+const asOf = event !== null || link.asOf === null ? null : truncateToMinute(link.asOf);
 const window72h = windowEndingAt(anchorForBoot(asOf, new Date().toISOString()));
 
 useSceneStore.setState({
-  selectedBasinId: basinId,
-  selectedForecastPointId: forecastPointId,
+  selectedBasinId: event !== null ? basinId ?? event.defaultBasin : basinId,
+  selectedForecastPointId: event !== null ? forecastPointId ?? event.defaultSel : forecastPointId,
   motionSetting: link.motion ?? 'system',
   altitudeBand: link.band ?? 'orbital',
   systemReducedMotion: reducedMotionQuery.matches,
-  timeline: { mode: asOf === null ? 'now' : 'past', asOf, window: window72h },
+  timeline: event !== null
+    ? eventBootTimeline(event, link.at)
+    : { mode: asOf === null ? 'now' : 'past', asOf, window: window72h, eventId: null, at: null },
 });
 reducedMotionQuery.addEventListener('change', (e) => useSceneStore.getState().setSystemReducedMotion(e.matches));
 

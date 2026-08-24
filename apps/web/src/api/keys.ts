@@ -27,5 +27,9 @@ export const keys = {
   search: (q: string) => ['search', q] as const,
   stationSeries: (stationId: string, variable: 'stage' | 'flow', asOf: string | null) => ['series', stationId, variable, asOfSegment(asOf)] as const,
   latestRun: (forecastPointId: string, asOf: string | null) => ['run', forecastPointId, 'latest', asOfSegment(asOf)] as const,
+  // Archived event-window queries (P2 Event Zero): keyed by the whole window; no asOf segment —
+  // event mode carries no knowledge time, so knowledge-time scrubs never abort these.
+  seriesWindow: (stationId: string, variable: 'stage' | 'flow', start: string, end: string) => ['series-window', stationId, variable, { start, end }] as const,
+  runs: (forecastPointId: string, start: string, end: string) => ['runs', forecastPointId, { start, end }] as const,
   health: () => ['system', 'health'] as const,
 };

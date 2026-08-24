@@ -257,3 +257,135 @@ index-CL8_FG0r.js) and driven in a real browser against the live backend:
 - Credit line reads "CesiumJS (renderer) (c) OpenStreetMap contributors" - ion logo gone.
 CI on 40b0cb1: backend, backend-pg, web, e2e-stub green; gitleaks flagged a unit-test
 fixture string (false positive) - allowlisted via .gitleaks.toml in 1f6e4b3.
+
+
+## P2 Event Zero seed-station slice — adversarial verification (2026-08-24)
+
+End-to-end verification of the P2 slice (three builders: USGS OGC December backfill; AFOS
+FLW/FLS crest parser + loader; Event Zero client experience). Everything below ran against a
+**freshly created** database `cascadia_p2v` on the local `cascadia-pg` container (:5433) —
+migrate → seed → both December backfills executed live in this pass (IEM AFOS + USGS OGC,
+anonymous: no `CASCADE_USGS_API_KEY` in the environment, polite degrade confirmed). Nothing
+was inherited from the builders' own runs.
+
+### Suites and gates (all green)
+
+| Gate | Command | Result |
+|---|---|---|
+| Offline | `python -m pytest -q` | **99 passed, 8 skipped**, 28.5 s (was 69 pre-P2) |
+| pg-marked | `CASCADE_TEST_PG_URL=…5433/postgres python -m pytest -q -m pg` | **8 passed**, 99 deselected, 15.0 s (3 new Event Zero pg tests; each creates+drops its own scratch DB via the real Alembic chain) |
+| Types | `npx tsc -p tsconfig.json --noEmit` | clean |
+| Lint | `npm run lint` | clean |
+| Unit (web) | `npx vitest run` | **120 passed, 8 skipped** (128) |
+| E2E | `npm run e2e` (fresh servers, :8000/:4173 verified free first) | **15/15 passed**, 1.9 m — includes the 3 new `event-zero.spec.ts` tests (deep-link entry, zero-look-ahead scrub with superseded marking, NOW exit) |
+| Import contracts | `lint-imports` | 3 kept, 0 broken |
+| Secrets sweep | grep over all new P2 files | none (only the test literal `"not-a-real-key"`) |
+
+### The December backfills, run for real
+
+```
+export CASCADE_DB_URL=postgresql+psycopg://postgres:dev@127.0.0.1:5433/cascadia_p2v
+bash scripts/migrate.sh && python -m cascade_worker seed   # 4 sources, 4 products, 6 fps
+python scripts/backfill_event_zero_usgs.py                 # live OGC, anonymous
+python scripts/backfill_event_zero_fls.py                  # live IEM AFOS
+python -m cascade_worker run-once                          # live current data on top
+```
+
+- USGS: **34,940 rows written**, `skipped_absent=[]`, `errors=[]`. Partition routing:
+  `observation_y2025m12` = 34,930, `observation_y2026m01` = 10 (the 2026-01-01T00:00Z
+  boundary rows from the end-INCLUSIVE OGC interval — correctly routed and flagged).
+- FLS/FLW: 502 products fetched+archived, 772 LID segments, **123 runs written** (+123
+  values), 573 segments skipped across 37 unseeded LIDs (CONW1 et al., re-runnable), 73
+  segments honestly stored as nothing (no parseable Forecast crest), 3 refused
+  (all-zero H-VTEC crest time). `job_run` rows recorded for both jobs, `ok=true`.
+- Idempotency (adversarial re-run, MVEW1 Dec 12): `rows_written: 0, skipped_identical: 194`.
+- CRNW1 ESTIMATED qualifiers: 25 rows, quality `["provisional","estimated","backfilled"]`
+  at `revision_seq 0` — a fresh run writes the mapped vocabulary directly; the builder's
+  two-shape state (verbatim + revision row) was an artifact of their incremental local DB
+  and is not reproduced on a clean run.
+
+### GOLDEN 1 — MVEW1 December observed peak (exact)
+
+SQL over `cascadia_p2v` (per-site max in the December window) reproduces EVENT_ZERO §3
+for all six seeded sites exactly:
+
+```
+12100490 WRAW1 117.07 ft / 12,000 cfs     12149000 CRNW1  60.76 ft / 89,700 cfs
+12113000 AUBW1  68.67 ft / 12,100 cfs     12200500 MVEW1  37.73 ft / 133,000 cfs
+12119000 RNTW1  18.25 ft / 12,400 cfs     12213100 NKSW1  22.42 ft / 44,300 cfs
+```
+
+MVEW1 crest row: `value 37.73, valid_time 2025-12-12T08:15:00Z, quality
+["approved","backfilled"], qualifier_raw "Approved", available_at 2026-08-24T13:03:13Z,
+revision_seq 0`. Flow peak 133,000 cfs at 08:00Z (plateau 08:00/09:00Z per the builder's
+honest note). The series API over the valid-time window returns the same 37.73 @ 08:15Z
+with quality flags intact and freshness honestly `stale`.
+
+### GOLDEN 2 — MVEW1 forecast evolution: the byte record, not the draft table
+
+The stored chain (SQL and `GET /forecast-points/MVEW1/runs?start=2025-12-09…end=2025-12-13`,
+identical) is **13 runs**:
+
+```
+12-09T17:01Z 36.9 | 12-10T01:24Z 41.5 | 12-10T08:54Z 41.5 | 12-10T16:47Z 41.5
+12-10T19:01Z 41.5 | 12-10T23:14Z 42.3 | 12-11T02:21Z 42.1 | 12-11T06:47Z 41.3
+12-11T10:04Z 39.7 | 12-11T18:17Z 39.1 | 12-12T01:12Z 38.3 | 12-12T08:50Z 38.1
+12-12T16:27Z 27.4 (post-crest fall statement)
+```
+
+This does NOT equal the 9-row table in the 2026-08-22 draft of EVENT_ZERO §8 — and the
+**bytes win**. Verified independently this session against live IEM (listings + product
+text, not the builders' fixtures): (1) the Dec 10 KSEW FLSSEW listing contains 08:54Z and
+no 09:24Z product; (2) the Dec 11 listing contains 02:21Z and no 01:15Z product (01:15
+is the observed-stage citation inside the 02:21Z product); (3) `202512111004` reads
+"rise to a crest of 39.7 feet" in the MVEW1 segment — not 39.1; (4) the 16:47Z/19:01Z
+(41.5 ft) and 06:47Z (41.3 ft) issuances exist and were omitted. Six of the draft's nine
+rows are byte-confirmed (17:01/36.9, 01:24/41.5, 23:14/42.3, 18:17/39.1, 01:12/38.3,
+08:50/38.1). One fixture (`202512100854`) was diffed byte-identical against a live IEM
+re-fetch. **EVENT_ZERO.md §8 has been corrected in this pass** (dated, cited: the 12-row
+byte table; T3 AC "6 runs" → 12 issuances; T8 "six rows" → twelve). The full December
+chain is 31 runs; `supersedes_run_id` chains 30/31 (only the first run is unchained).
+Crest-time bins come from H-VTEC (12:00Z/18:00Z bins) — bins, not fabricated precise times.
+
+### Look-ahead audit (T = 2025-12-10T12:00Z; TESTING.md §7 spirit)
+
+- Latest run with `issued_at <= T`: run 12, issued 2025-12-10T08:54Z, **crest 41.5 ft** —
+  the correct answer at that clock; every 42.x/39.x run has `issued_at > T`. PASS.
+- Retrieval-time honesty: **0** of 34,940 December observation rows and **0** of 123 FLS
+  runs have `available_at < 2026-08-24`; min available_at 2026-08-24T13:03:03Z (obs),
+  13:03:43Z (runs). **0** December rows missing the `backfilled` quality flag. PASS.
+- Consequence, verified at the API: any December `as_of` sees UNKNOWN (below).
+
+### as_of interaction (uvicorn on :8001 over cascadia_p2v, live run-once data on top)
+
+| Probe | Result |
+|---|---|
+| `/system/health` | ok; both providers healthy; all products `current` after run-once (thresholds 24, forecast 222, IV 3,430 rows) |
+| series, valid window Dec 12, no `as_of` | 49 points, max **37.73 @ 08:15Z**, quality `["approved","backfilled"]`, provenance freshness honestly `stale` |
+| series, same window, `as_of=2026-08-20` | **0 points** — no December leak before the backfill existed |
+| series, `as_of=2025-12-12T12:00Z` | **0 points** — the platform did not exist then |
+| `/forecast-points/MVEW1/runs`, `as_of=2026-08-20` | **items: 0** — reconstructed runs invisible pre-retrieval |
+| state, `as_of` = now−1h (12:06Z) | observed **null**, mode `past` — correct: this scratch DB's first ingestion was 13:05Z; honest knowledge boundary, same shape production showed on 2026-08-24 |
+| state, `as_of=2026-08-24T13:06:30Z` (after first ingestion) | observed **10.63 ft valid 12:45Z**, category `none` — replay of current data intact |
+| state, no `as_of` | identical live document |
+
+### Verdict and deferrals
+
+The P2 slice holds under adversarial replay: append-only, provenance-complete
+(`raw_artifact_id` on every run/observation; one artifact per OGC page and per AFOS
+product), knowledge-time honest (available_at = retrieval, never historical), and the
+golden crest + evolution reproduce the byte record exactly. Deferred / open:
+
+1. **Neon production run not performed** — no production `DATABASE_URL` was supplied to
+   this verifier either. Both scripts are idempotent and take `--db-url`/env; run them
+   against Neon to promote (local verification complete).
+2. CONW1 and the other §3 sites remain unseeded; 573 FLS segments and the CONW1 IV series
+   await seeding + re-run (scripts skip-and-report, zero rework).
+3. The FLS `(product, fp, issued_at)` unique key would drop a same-minute FLW+FLS crest
+   collision (zero in this corpus for seeded LIDs) — design note if PIL scope widens.
+4. No canary for `src:nws-afos` (static archive backfill, not a live cadence) — conscious
+   deviation, endorsed.
+5. `run-once` wrote 3,430 IV rows (not 3,432): two sensors published 2 fewer points in the
+   72 h window at fetch time — live-data variance, not a defect.
+6. EVENT_ZERO §5 timeline rows citing the three corrected §8 issuance times (if any beyond
+   #47/#63 references) were not audited row-by-row; §5 was out of P2 scope.

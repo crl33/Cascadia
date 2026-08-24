@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { CameraPose } from '../state/store';
 import { parseCam, parseDeepLink, serializeCam, serializeDeepLink, type DeepLink } from './deep-link';
 
-const EMPTY: DeepLink = { basinId: null, forecastPointId: null, motion: null, band: null, asOf: null, cam: null };
+const EMPTY: DeepLink = { basinId: null, forecastPointId: null, motion: null, band: null, asOf: null, eventId: null, at: null, cam: null };
 
 describe('deep link', () => {
   it('round-trips selection, basin context, motion and band', () => {
@@ -47,6 +47,37 @@ describe('deep link', () => {
   it('normalizes as_of to a UTC instant', () => {
     expect(parseDeepLink('?as_of=2025-12-12T08:15Z').asOf).toBe('2025-12-12T08:15:00Z');
     expect(parseDeepLink('?as_of=2025-12-12T08:15:30.500Z').asOf).toBe('2025-12-12T08:15:30.500Z');
+  });
+});
+
+describe('event deep links (P2 Event Zero)', () => {
+  it('round-trips event and at, composing with sel/basin', () => {
+    const link: DeepLink = {
+      ...EMPTY, basinId: 'basin:skagit', forecastPointId: 'fp:nwps:MVEW1',
+      eventId: 'event-zero-2025-12', at: '2025-12-12T09:00:00Z',
+    };
+    const qs = serializeDeepLink(link);
+    expect(qs).toContain('event=event-zero-2025-12');
+    expect(qs).toContain('at=2025-12-12T09%3A00%3A00Z');
+    expect(qs).not.toContain('as_of=');
+    expect(parseDeepLink(qs)).toEqual(link);
+  });
+
+  it('event and as_of are mutually exclusive: event wins, as_of dropped (ADR-0010 honesty)', () => {
+    const parsed = parseDeepLink('?event=event-zero-2025-12&as_of=2026-08-22T06:00:00Z&at=2025-12-10T00:00:00Z');
+    expect(parsed.eventId).toBe('event-zero-2025-12');
+    expect(parsed.asOf).toBeNull();
+    expect(parsed.at).toBe('2025-12-10T00:00:00Z');
+    const qs = serializeDeepLink({ ...EMPTY, eventId: 'event-zero-2025-12', at: '2025-12-10T00:00:00Z', asOf: '2026-08-22T06:00:00Z' });
+    expect(qs).toContain('event=');
+    expect(qs).not.toContain('as_of');
+  });
+
+  it('rejects unknown event ids and drops at without an event', () => {
+    expect(parseDeepLink('?event=event-unknown').eventId).toBeNull();
+    expect(parseDeepLink('?event=event-unknown&at=2025-12-10T00:00:00Z').at).toBeNull();
+    expect(parseDeepLink('?at=2025-12-10T00:00:00Z')).toEqual(EMPTY);
+    expect(parseDeepLink('?event=event-zero-2025-12&at=nonsense').at).toBeNull();
   });
 });
 

@@ -13,3 +13,5 @@
 .timeline-scrubber:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
 .timeline-readout { font-size: 11.5px; color: var(--text-secondary); white-space: nowrap; }
 .timeline-now:disabled { opacity: 0.5; cursor: default; }
+.timeline-chip-event { color: var(--glacier); }
+.timeline-bar[data-mode='event'] .timeline-scrubber { accent-color: var(--glacier); }

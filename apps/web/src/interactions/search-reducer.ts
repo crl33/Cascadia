@@ -6,13 +6,16 @@
  * by entity kind in a fixed order; keyboard movement walks the flattened group order.
  */
 import type { SearchResult } from '../contracts/schemas';
+import type { EventSearchResult } from '../event/registry';
 
 export const MIN_QUERY_CHARS = 2;
 
-export type SearchKind = SearchResult['kind'];
+/** Server results plus client-side synthetic entries (event replays are client config). */
+export type ClientSearchResult = SearchResult | EventSearchResult;
+export type SearchKind = ClientSearchResult['kind'];
 export interface SearchOption {
   readonly key: string;
-  readonly result: SearchResult;
+  readonly result: ClientSearchResult;
 }
 export interface SearchGroup {
   readonly kind: SearchKind;
@@ -20,14 +23,14 @@ export interface SearchGroup {
   readonly options: readonly SearchOption[];
 }
 
-const GROUP_ORDER: readonly SearchKind[] = ['basin', 'forecast_point', 'station'];
-const GROUP_LABEL: Record<SearchKind, string> = { basin: 'Basins', forecast_point: 'Forecast points', station: 'Stations' };
+const GROUP_ORDER: readonly SearchKind[] = ['event', 'basin', 'forecast_point', 'station'];
+const GROUP_LABEL: Record<SearchKind, string> = { event: 'Event replays', basin: 'Basins', forecast_point: 'Forecast points', station: 'Stations' };
 
-export const optionKey = (result: SearchResult): string => `${result.kind}:${result.id}`;
+export const optionKey = (result: ClientSearchResult): string => `${result.kind}:${result.id}`;
 export const optionDomId = (listId: string, key: string): string => `${listId}-option-${key}`;
 
 /** Group results by kind in the canonical order, dropping empty groups, keeping API order within a group. */
-export function groupSearchResults(items: readonly SearchResult[]): SearchGroup[] {
+export function groupSearchResults(items: readonly ClientSearchResult[]): SearchGroup[] {
   return GROUP_ORDER.flatMap((kind) => {
     const options = items.filter((result) => result.kind === kind).map((result) => ({ key: optionKey(result), result }));
     return options.length > 0 ? [{ kind, label: GROUP_LABEL[kind], options }] : [];

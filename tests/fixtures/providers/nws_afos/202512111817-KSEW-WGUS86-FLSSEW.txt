@@ -1,0 +1,163 @@
+007 
+WGUS86 KSEW 111817
+FLSSEW
+
+Flood Statement
+National Weather Service Seattle WA
+1017 AM PST Thu Dec 11 2025
+
+...The Flood Warning continues for the following rivers in 
+Washington...
+
+  Skagit River Near Mt. Vernon affecting Skagit County.
+
+  Skagit River Near Concrete affecting Skagit County.
+
+  Issaquah Creek Near Issaquah affecting King County.
+
+.Rain continues today but not at a rate high enough to exacerbate 
+ongoing flooding.
+
+PRECAUTIONARY/PREPAREDNESS ACTIONS...
+
+Motorists should not attempt to drive around barricades or drive 
+cars through flooded areas.
+
+Turn around, don't drown when encountering flooded roads. Most flood 
+deaths occur in vehicles.
+
+Caution is urged when walking near riverbanks.
+
+Even 6 inches of fast-moving flood water can knock you off your feet 
+and a depth of 2 feet will float your car. Never try to walk, swim, 
+or drive through such swift water. If you come upon flood waters, 
+stop, turn around and go another way.
+
+Additional information is available at www.weather.gov.
+
+The next statement will be issued by this evening at 830 PM PST.
+
+&&
+
+WAC033-120430-
+/O.EXT.KSEW.FL.W.0056.000000T0000Z-251212T0930Z/
+/ISSW1.2.ER.251211T0230Z.251211T1545Z.251212T0030Z.NR/
+1017 AM PST Thu Dec 11 2025
+
+...FLOOD WARNING NOW IN EFFECT UNTIL JUST AFTER MIDNIGHT TONIGHT...
+
+* WHAT...Moderate flooding is occurring and minor flooding is 
+  forecast. This approaches the flood of record.
+
+* WHERE...Issaquah Creek near Issaquah.
+
+* WHEN...Until just after midnight tonight.
+
+* IMPACTS...At 2,300.0 cfs, Issaquah Creek will cause major flooding 
+  in most of the valley. Deep and swift flood waters will inundate 
+  residential and business areas and numerous roads. Flooding will 
+  occur all along the river including headwaters...tributaries...and 
+  other streams within and near the Issaquah Creek Basin.
+
+* ADDITIONAL DETAILS...
+  - At 8:15 AM PST Thursday the flow was 2,440.0 cfs.
+  - Flood flow is 2,000.0 cfs.
+  - Recent Activity...The maximum river flow in the 24 hours
+    ending at 8:15 AM PST Thursday was 2,470.0 cfs.
+  - Forecast...The river is cresting now at around 2470 cfs then
+    will begin to fall below flood stage this evening.
+  - Flood History...This crest compares to a previous crest of
+    2,420.0 cfs on 02/08/1996.
+  - http://www.weather.gov/safety/flood
+
+&&
+
+LAT...LON 4745 12207 4751 12208 4756 12213 4760 12203
+      4753 12198 4747 12197
+
+
+$$
+
+WAC057-120430-
+/O.EXT.KSEW.FL.W.0042.000000T0000Z-251213T2143Z/
+/MVEW1.3.ER.251211T0112Z.251212T1800Z.251213T0943Z.NR/
+1017 AM PST Thu Dec 11 2025
+
+...FLOOD WARNING NOW IN EFFECT UNTIL EARLY SATURDAY AFTERNOON...
+
+* WHAT...Major flooding is occurring and major flooding is forecast. 
+  This approaches the flood of record.
+
+* WHERE...Skagit River near Mt. Vernon.
+
+* WHEN...Until early Saturday afternoon.
+
+* IMPACTS...At 36.0 feet, the Skagit River will cause severe near 
+  record flooding from Sedro Woolley downstream through Mount Vernon 
+  to the mouth. Deep and swift flood waters will inundate and 
+  possibly damage many roads...farmlands and residential areas. 
+  Levees may be damaged.  Flood areas will also include headwaters...
+  tributaries...and other streams in the Skagit basin. This level 
+  for this location corresponds to a Phase 1 flood in the Skagit 
+  County flood system.
+
+* ADDITIONAL DETAILS...
+  - At 1:15 AM PST Thursday the stage was 29.5 feet.
+  - Flood stage is 28.0 feet.
+  - Recent Activity...The maximum river stage in the 24 hours
+    ending at 1:15 AM PST Thursday was 29.5 feet.
+  - Forecast...The river is expected to rise to a crest of 39.1
+    feet late tomorrow morning. It will then fall below flood
+    stage early Saturday morning.
+  - Flood History...This crest compares to a previous crest of
+    37.4 feet on 11/25/1990.
+  - http://www.weather.gov/safety/flood
+
+&&
+
+LAT...LON 4846 12227 4840 12230 4830 12235 4837 12250
+      4845 12240 4853 12227
+
+
+$$
+
+WAC057-120430-
+/O.EXT.KSEW.FL.W.0035.000000T0000Z-251213T0324Z/
+/CONW1.3.ER.251209T1254Z.251211T1800Z.251212T1524Z.NO/
+1017 AM PST Thu Dec 11 2025
+
+...FLOOD WARNING NOW IN EFFECT UNTIL TOMORROW EVENING...
+
+* WHAT...Major flooding is occurring and major flooding is forecast.
+
+* WHERE...Skagit River near Concrete.
+
+* WHEN...Until tomorrow evening.
+
+* IMPACTS...At 40.0 feet, the Skagit River will cause severe near 
+  record flooding from Rockport downstream through Sedro Woolley. 
+  Deep and swift flood waters will inundate and damage roads...farms 
+  and business and residential areas...especially Cape Horn...
+  Hamilton...and Thunderbird. Cockreham Island...the Nookachamps and 
+  the Sterling areas will be inundated. Levees east of Sedro Woolley 
+  may be damaged. This level at this location on the Skagit 
+  corresponds to a Phase 1 flood in the Skagit County flood system.
+
+* ADDITIONAL DETAILS...
+  - At 10:00 AM PST Thursday the stage was 41.4 feet.
+  - Flood stage is 28.0 feet.
+  - Recent Activity...The maximum river stage in the 24 hours
+    ending at 10:00 AM PST Thursday was 41.4 feet.
+  - Forecast...The river is cresting now at around 41.1 feet, It
+    will then fall below flood stage tomorrow morning.
+  - http://www.weather.gov/safety/flood
+
+&&
+
+LAT...LON 4845 12163 4848 12185 4846 12227 4853 12227
+      4856 12185 4850 12160
+
+
+$$
+
+JBB

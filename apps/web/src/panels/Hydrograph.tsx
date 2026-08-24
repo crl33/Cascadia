@@ -8,8 +8,13 @@
  * or datums. A missing series renders an explicit empty state with its reason — never a flat
  * fake line. No entrance animation: the reduced-motion path is identical to the full one.
  */
-import { useLatestRun, useStationSeries } from '../api/hooks';
-import type { ProvenanceRef, RiverVisualizationState } from '../contracts/schemas';
+import { useLatestRun, useRunsList, useSeriesWindow, useStationSeries } from '../api/hooks';
+import type { ForecastRun, ProvenanceRef, RiverVisualizationState, RunListItem } from '../contracts/schemas';
+import { Badge } from '../design-system/Badge';
+import { BACKFILLED_BADGE } from '../design-system/badges';
+import { currentRunAt, filterSeriesAt, runIsBackfilled, seriesIsBackfilled } from '../event/event-filter';
+import { eventById } from '../event/registry';
+import { useSceneStore } from '../state/store';
 import { ProvenanceLine } from './ProvenanceLine';
 import { formatNumber, formatUtc } from './format';
 import {
@@ -23,6 +28,9 @@ const WIDTH = 384;
 const HEIGHT = 208;
 const MARGIN = { top: 14, right: 10, bottom: 24, left: 46 } as const;
 const DOT_SERIES_MAX_POINTS = 8;
+
+/** Archived runs-list items (event mode) carry product identity; live /runs/latest bodies do not. */
+const isArchivedRun = (run: ForecastRun | RunListItem): run is RunListItem => 'product_id' in run;
 
 interface PlottedPoint {
   t: number;
@@ -46,8 +54,15 @@ interface HydrographProps {
 
 export function Hydrograph({ item, refs }: HydrographProps) {
   const basisChoice = resolveBasis(item);
-  const seriesQuery = useStationSeries(item.station_id ?? null, basisChoice.basis);
-  const runQuery = useLatestRun(item.id);
+  const timeline = useSceneStore((s) => s.timeline);
+  const event = timeline.mode === 'event' && timeline.eventId !== null ? eventById(timeline.eventId) : null;
+  // Live/past mode reads the as_of-keyed hooks; event mode fetches the archived window ONCE
+  // (no as_of — ADR-0010) and the EVENT-time cursor filters client-side. Hook order is fixed;
+  // the unused pair is disabled via null arguments.
+  const seriesQuery = useStationSeries(event === null ? item.station_id ?? null : null, basisChoice.basis);
+  const runQuery = useLatestRun(event === null ? item.id : null);
+  const windowSeriesQuery = useSeriesWindow(event !== null ? item.station_id ?? null : null, basisChoice.basis, event?.window ?? null);
+  const runsQuery = useRunsList(event !== null ? item.id : null, event?.window ?? null);
   const basis = basisChoice.basis;
 
   if (basis == null) {
@@ -59,7 +74,7 @@ export function Hydrograph({ item, refs }: HydrographProps) {
     );
   }
 
-  if (seriesQuery.isLoading || runQuery.isLoading) {
+  if (event === null ? seriesQuery.isLoading || runQuery.isLoading : windowSeriesQuery.isLoading || runsQuery.isLoading) {
     return (
       <div className="row hydrograph" data-testid="hydrograph">
         <div className="row-head"><span className="row-title">Hydrograph</span></div>
@@ -68,8 +83,8 @@ export function Hydrograph({ item, refs }: HydrographProps) {
     );
   }
 
-  const series = seriesQuery.data ?? null;
-  const run = runQuery.data ?? null;
+  const series = event !== null ? filterSeriesAt(windowSeriesQuery.data ?? null, timeline.at) : seriesQuery.data ?? null;
+  const run = event !== null ? currentRunAt(runsQuery.data?.items ?? [], timeline.at) : runQuery.data ?? null;
   const thresholds = item.thresholds;
 
   const axisUnit =
@@ -82,7 +97,12 @@ export function Hydrograph({ item, refs }: HydrographProps) {
   const forecastChoice = forecastSeriesFor(run, basis, axisUnit, axisDatum);
   const forecastPoints = forecastChoice.points ?? [];
   const overlay = thresholdOverlay(thresholds, basis, axisUnit, axisDatum);
-  const crest = crestMarker(item.official_forecast, basis, axisUnit, axisDatum);
+  // In event mode the LIVE official_forecast summary (issued now, not during the event) must
+  // not stretch the chart to the present: the replay-selected run's crest point is the marker.
+  const replayCrest = event !== null ? forecastPoints.find((p) => p.v != null && Number.isFinite(p.v) && Number.isFinite(p.t)) ?? null : null;
+  const crest = event !== null
+    ? { marker: replayCrest === null ? null : { t: replayCrest.t, v: replayCrest.v! }, reason: null }
+    : crestMarker(item.official_forecast, basis, axisUnit, axisDatum);
 
   const observedValid = observedPoints.filter(isPlotted);
   const forecastValid = forecastPoints.filter(isPlotted);
@@ -97,10 +117,16 @@ export function Hydrograph({ item, refs }: HydrographProps) {
 
   const seriesReason =
     item.station_id == null ? 'This point carries no station id; an observed series cannot be requested.'
-    : seriesQuery.isError ? `Observed series unavailable: ${seriesQuery.error.message}`
+    : event === null && seriesQuery.isError ? `Observed series unavailable: ${seriesQuery.error.message}`
+    : event !== null && windowSeriesQuery.isError ? `Archived series unavailable: ${windowSeriesQuery.error.message}`
+    : event !== null && windowSeriesQuery.data && series && series.points.length === 0 ? 'No observation at or before this event time.'
     : series && series.points.length === 0 ? 'The observed series response contains no points.'
     : null;
-  const runReason = runQuery.isError ? `Official forecast run unavailable: ${runQuery.error.message}` : forecastChoice.reason;
+  const runReason =
+    event === null && runQuery.isError ? `Official forecast run unavailable: ${runQuery.error.message}`
+    : event !== null && runsQuery.isError ? `Archived forecast runs unavailable: ${runsQuery.error.message}`
+    : event !== null && runsQuery.data && run === null ? 'No forecast issued at or before this event time.'
+    : forecastChoice.reason;
 
   if (!vDomain || !tDomain) {
     return (
@@ -204,6 +230,9 @@ export function Hydrograph({ item, refs }: HydrographProps) {
           <p className="value-line">
             <svg className="hg-swatch" viewBox="0 0 18 6" aria-hidden="true"><line className="hg-swatch-observed" x1="0" y1="3" x2="18" y2="3" /></svg>
             <span>observed {basis}</span>
+            {seriesIsBackfilled(series) ? (
+              <Badge badge={BACKFILLED_BADGE} title="Backfilled from the archive; available_at is the retrieval time, not the historical instant (ADR-0010)." testId="hydrograph-backfilled" />
+            ) : null}
             <ProvenanceLine provKey="series:observed" prov={series.provenance} truth="observation" testId="hydrograph-observed-badge" />
           </p>
         ) : null}
@@ -211,6 +240,9 @@ export function Hydrograph({ item, refs }: HydrographProps) {
           <p className="value-line">
             <svg className="hg-swatch" viewBox="0 0 18 6" aria-hidden="true"><line className="hg-swatch-forecast" x1="0" y1="3" x2="18" y2="3" /></svg>
             <span>{run.issuer} · issued {formatUtc(run.issued_at)}</span>
+            {isArchivedRun(run) && runIsBackfilled(run) ? (
+              <Badge badge={BACKFILLED_BADGE} title="Reconstructed from archived NWS text; the knowledge time is the retrieval, not the issuance (ADR-0010)." testId="hydrograph-forecast-backfilled" />
+            ) : null}
             <ProvenanceLine provKey={`run:${run.run_id}`} prov={run.provenance} truth="authoritative_model" testId="hydrograph-forecast-badge" />
           </p>
         ) : null}

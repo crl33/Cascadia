@@ -15,15 +15,25 @@ export type EntityId = string;
 export type LayerId = 'basemap' | 'basins' | 'rivers';
 export type QualityTier = 'ultra' | 'high' | 'balanced' | 'low';
 export type FlightState = 'idle' | 'flying' | 'settled';
-export type TimelineMode = 'now' | 'past';
+export type TimelineMode = 'now' | 'past' | 'event';
 
-/** Knowledge-time state (C5 core, P1 scope): 'now' streams live; 'past' replays `asOf`. */
+/**
+ * Knowledge-time state (C5 core, P1 scope) plus event replay (P2 Event Zero): 'now' streams
+ * live; 'past' replays knowledge time `asOf`; 'event' replays an archived event window in
+ * EVENT time — `at` is a valid/issued-time cursor, `asOf` stays null and queries carry NO
+ * as_of (ADR-0010: a backfilled row's knowledge time is its 2026 retrieval, so a
+ * knowledge-time replay inside the event would honestly render UNKNOWN).
+ */
 export interface TimelineState {
   mode: TimelineMode;
-  /** ISO 8601 UTC knowledge time, minute-aligned; null exactly when mode is 'now'. */
+  /** ISO 8601 UTC knowledge time, minute-aligned; non-null exactly when mode is 'past'. */
   asOf: string | null;
-  /** The scrubbable [T−72h, T] window, minute-aligned ISO strings. */
+  /** The scrubbable window: [T−72h, T] live/past, or the event window in event mode. */
   window: TimelineWindow;
+  /** The event being replayed (event/registry id); non-null exactly when mode is 'event'. */
+  eventId: string | null;
+  /** EVENT-time cursor, minute-aligned; non-null exactly when mode is 'event'. */
+  at: string | null;
 }
 
 /**
@@ -77,7 +87,7 @@ export const DEFAULT_STATE: SceneState = {
   systemReducedMotion: false,
   activeLayers: ['basemap', 'basins', 'rivers'],
   time: { valid: 'now' },
-  timeline: { mode: 'now', asOf: null, window: windowEndingAt(new Date().toISOString()) },
+  timeline: { mode: 'now', asOf: null, window: windowEndingAt(new Date().toISOString()), eventId: null, at: null },
   cameraPose: null,
   qualityTier: 'balanced',
   flightState: 'idle',

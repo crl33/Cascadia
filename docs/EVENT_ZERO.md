@@ -196,7 +196,7 @@ basin / fp (forecast point) / county / state.
 | 33 | 2025-12-10 | Dec 9 evening | declaration | county | Snohomish County countywide emergency (Lewis County declared Dec 9 AM) | S24 | OPEN (time) |
 | 34 | 12-10T06:23Z | Dec 9 22:23 | warning | fp | Nooksack at N Cedarville NEW moderate 148.4 ft | S4 | 06:23Z |
 | 35 | 12-10T07:35Z | Dec 9 23:35 | warning | fp | Cedar nr Landsburg NEW MAJOR 9.0 ft; Elwha "approaches the flood of record" | S4 | 07:35Z |
-| 36 | 12-10T09:24Z | Dec 10 01:24 | forecast_crest | fp | MV 41.5 ft; Concrete 47.7 ft (previous 47.6 ft 12/13/1921 cited) | S4 | 09:24Z |
+| 36 | 12-10T08:54Z | Dec 10 00:54 | forecast_crest | fp | MV 41.5 ft; Concrete 47.7 ft (previous 47.6 ft 12/13/1921 cited) (corrected 2026-08-24: transmitted 08:54Z, not 09:24Z; §8) | S4 | 08:54Z |
 | 37 | 12-10T10:17Z | Dec 10 02:17 | forecast_crest | fp | Snohomish 33.7 ft; Monroe 26.3 ft (above 25.3 record) | S4 | 10:17Z |
 | 38 | 2025-12-10 | Dec 10 morning | note | basin | NOAA NWC: "Locally catastrophic flooding impacts are possible along Skagit and Snohomish Rivers… Major and/or record flooding is expected" | S53 | OPEN (time) |
 | 39 | 12-10T16:10Z | Dec 10 08:10 | warning | fp | Cedar at Renton NEW MAJOR 16.3 ft | S4 | 16:10Z |
@@ -211,7 +211,7 @@ basin / fp (forecast point) / county / state.
 | 48 | 12-10T23:30Z | Dec 10 15:30 | note | state | State EOC Level 1 per HeraldNet (Governor's letter says Level 1 on Dec 9 — conflict, §9) | S19,S25 | 23:30Z |
 | 49 | 12-11T00:15Z | Dec 10 16:15 | crest_observed | fp | Skykomish nr Gold Bar 24.01 ft / 115,000 cfs | S2 | valid+~15 min (backfilled) |
 | 50 | 12-11T01:00Z | Dec 10 17:00 | evacuation | county | **Skagit County Level 3 GO**, Mount Vernon; entire 100-yr floodplain; forecasts Concrete 46.13 ft, MV 42.13 ft; shelters listed | S27,S28 | 01:00Z |
-| 51 | 12-11T01:15Z | Dec 10 17:15 | forecast_crest | fp | MV 42.1 ft; Concrete 46.1 ft | S4 | 01:15Z |
+| 51 | 12-11T02:21Z | Dec 10 18:21 | forecast_crest | fp | MV 42.1 ft; Concrete 46.1 ft (corrected 2026-08-24: transmitted 02:21Z; 01:15Z was the observed-stage citation; §8) | S4 | 02:21Z |
 | 52 | 12-11T01:29Z | Dec 10 17:29 | warning | basin | Areal FW: Skagit "high probability of overflowing at Sterling" (through 04:15 Sat) | S4,S5 | 01:29Z |
 | 53 | 12-11T01:32Z | Dec 10 17:32 | forecast_crest | fp | Cedarville MAJOR 150 ft "approaching record" | S4 | 01:32Z |
 | 54 | 12-11T01:45Z | Dec 10 17:45 | crest_observed | fp | Snoqualmie nr Snoqualmie Falls 19.95 ft / 70,000 cfs | S2 | valid+~15 min (backfilled) |
@@ -223,7 +223,7 @@ basin / fp (forecast point) / county / state.
 | 60 | 12-11T06:24Z | Dec 10 22:24 | forecast_crest | fp | Snohomish 33.4 ft; Monroe 24.9 ft | S4 | 06:24Z |
 | 61 | 12-11T06:32Z | Dec 10 22:32 | forecast_crest | fp | Ferndale 22.3 ft; Cedarville 149.3 ft | S4 | 06:32Z |
 | 62 | 12-11T06:50Z | Dec 10 22:50 | forecast_crest | fp | Cedar at Renton 17.5 ft "approaches the flood of record" | S4 | 06:50Z |
-| 63 | 12-11T10:04Z | Dec 11 02:04 | forecast_crest | fp | **MV revised down to 39.1 ft** late Fri AM; Concrete "cresting now" 41.1 ft | S4 | 10:04Z |
+| 63 | 12-11T10:04Z | Dec 11 02:04 | forecast_crest | fp | **MV revised down to 39.7 ft** late Fri AM; Concrete "cresting now" 41.1 ft (corrected 2026-08-24: bytes read 39.7, not 39.1; §8) | S4 | 10:04Z |
 | 64 | 12-11T10:07Z | Dec 11 02:07 | forecast_crest | fp | Arlington 20.9 ft late morning; Snohomish 33.6 ft | S4 | 10:07Z |
 | 65 | 12-11T10:23Z | Dec 11 02:23 | forecast_crest | fp | Cedarville MAJOR 150.3 ft (prior crest 149.6 ft 10/17/2003 cited) | S4 | 10:23Z |
 | 66 | 12-11T11:00Z | Dec 11 03:00 | crest_observed | fp | Nooksack at N Cedarville 150.44 ft / 67,300 cfs (NWPS 150.49 ft, 11:00Z) | S2,S3 | valid+~15 min (backfilled) |
@@ -346,25 +346,37 @@ Ordered; each task names the `DOMAIN_MODEL.md` entities it writes and an accepta
 |---|---|---|---|
 | T1 | Create the event: `id = event-zero-2025-12`, `start = 2025-12-03T00:00-08:00` (AR1 landfall, S6), `end = 2025-12-22T23:59-08:00` (state incident window, S23), `basins[]` = Skagit, Sauk, Baker, Nooksack, Stillaguamish, Snohomish/Skykomish/Snoqualmie, Cedar, Green, White/Puyallup/Carbon, Cowlitz, Chehalis, Skokomish, Elwha; `sources[]` = EZ + S-key | `HistoricalEvent` | Row exists; `summary` = §2 with labels preserved; every `sources[]` entry resolves |
 | T2 | Ingest NWS text products Dec 1–22 from IEM AFOS for PILs ESFSEW, FFASEW, FLWSEW, FLSSEW, FFWSEW, AFDSEW, PNSSEW (and VTEC JSON); store raw; parse headers and VTEC | `RawArtifact`, `OfficialAlert` | Product count per PIL matches the IEM listing; every `OfficialAlert.issued_at` = header time in UTC; the rows for #6, #25, #47, #56, #103, #107 in §5 are reproduced byte-exact from raw text |
-| T3 | Parse per-forecast-point segments of FLW/FLS into forecast runs: crest value, crest time bin, category wording, observed stage cited; chain `supersedes_run_id` per LID | `ForecastRun`, `ForecastValue` | The MVEW1 chain equals the forecast-evolution dataset below (6 runs, issuance times exact); no run without a `raw_artifact_id`; look-ahead audit (below) passes at every T |
+| T3 | Parse per-forecast-point segments of FLW/FLS into forecast runs: crest value, crest time bin, category wording, observed stage cited; chain `supersedes_run_id` per LID | `ForecastRun`, `ForecastValue` | The MVEW1 chain equals the forecast-evolution dataset below (12 issuances 12-09T17:01Z..12-12T08:50Z, times byte-exact); no run without a `raw_artifact_id`; look-ahead audit (below) passes at every T |
 | T4 | Seed the timeline from §5; each entry's `ref` points to the `RawArtifact`/`Observation` row that is its evidence; entries with OPEN `available_at` carry `backfilled=true` and a `text` suffix "(time unverified)" | `EventTimelineEntry` | 115 rows; every row has `source_url`; count of `backfilled=true` rows reported in the hindcast report |
 | T5 | Backfill point observations Dec 1–31: USGS IV (the 27 sites of §3 plus 12150400, 12106700 and the reservoir gauges); SNOTEL daily+hourly WTEQ/PREC/TOBS/SMS for all WA sites; USACE CWMS HHD/MMD series; NWPS thresholds snapshot | `Observation` (with `revision_of`), `Threshold`, `RawArtifact` | Peak of each stored series equals §3 within 0.01 ft / 1 % flow; every row has `available_at` per §7 rule and `backfilled=true`; qualifier `A`/`P` preserved in `qualifier_raw`; Harts Pass daily values stored on the PST day boundary |
 | T6 | Archive grids Dec 1–22 (priority order): NWM v3.0 AnA + short/medium range (rollover risk), MRMS Pass2 1H + RQI, HRRR, NBM v4.3, GFS, GEFS, SNODAS, Stage IV (EOL); record S3 `LastModified`; compute basin aggregates | `GridProduct`, `DerivedFeature` | Every cycle in the window indexed; `issued_at`/`available_at` populated from object stamps where present (count reported); basin 24-h QPE for Dec 9–11 reproduces the ordering of the PNS totals (#71) to rank correlation ≥ 0.8 |
 | T7 | Resolve outcome ledger conflicts (§3 notes a–e) by re-fetching NWPS crest tables and USGS approved data; record each as two rows (USGS vs NWPS), never a merged value | `Observation`, note rows | Each conflict has both rows and a `note` `EventTimelineEntry`; none silently reconciled |
-| T8 | Build the forecast-evolution dataset (below) for MVEW1, CONW1, SNAW1, MROW1, NRKW1, RNTW1, ARLW1, TOLW1 as a view over `ForecastRun`/`ForecastValue` vs the observed crest | view | MVEW1 view returns the six rows below; TOLW1 shows the 9,867-cfs MAJOR forecast vs 6,540 cfs observed |
+| T8 | Build the forecast-evolution dataset (below) for MVEW1, CONW1, SNAW1, MROW1, NRKW1, RNTW1, ARLW1, TOLW1 as a view over `ForecastRun`/`ForecastValue` vs the observed crest | view | MVEW1 view returns the twelve rows below; TOLW1 shows the 9,867-cfs MAJOR forecast vs 6,540 cfs observed |
 | T9 | Hindcast harness runs at clock times T = {#3, #6, #9, #25, #30, #47, #56, #63, #87} of §5 (each a real issuance instant) with `as_known_at(T)`; metrics per `TESTING.md` §7 | `HindcastRun` | Report committed with the look-ahead audit output (zero violations), lead-time table per basin, and the §9 list carried forward |
 
 Forecast-evolution dataset — Skagit nr Mount Vernon (observed crest 37.73 ft at 2025-12-12T08:15Z; error =
-forecast − observed, arithmetic on FACT values from S4/S4b):
+forecast − observed, arithmetic on FACT values from S4/S4b and the archived product bytes).
+
+**Corrected 2026-08-24** against the IEM AFOS byte record (T3 backfill; byte-exact copies in
+`tests/fixtures/providers/nws_afos/`, spot-checked byte-identical against a live IEM re-fetch 2026-08-24). The
+2026-08-22 draft listed 9 issuances, of which three disagreed with the bytes: no KSEW FLW/FLS exists at
+12-10T09:24Z (the 41.5 ft re-issuance was transmitted 08:54Z, product `202512100854-KSEW-WGUS86-FLSSEW`);
+"12-11T01:15Z" is the observed-stage citation time *inside* the 02:21Z product (`202512110221`, MND "621 PM PST
+Wed Dec 10"); and the 10:04Z FLS forecasts "a crest of 39.7 feet", not 39.1 (`202512111004`). The draft also
+omitted the 41.5 ft re-issuances of 16:47Z/19:01Z and the 41.3 ft issuance of 06:47Z. All 12 rows below are FACT
+from the byte record (`202512091701-KSEW-WGUS46-FLWSEW` … `202512120850-KSEW-WGUS86-FLSSEW`):
 
 | Issued (UTC) | Issued (PST) | Product | Forecast crest | Forecast crest time | Observed stage cited | Error (ft) |
 |---|---|---|---|---|---|---|
 | 12-09T17:01Z | Dec 9 09:01 | FLW NEW FL.W.0042 | 36.9 ft | early Fri Dec 12 | 25.3 ft | −0.83 |
 | 12-10T01:24Z | Dec 9 17:24 | FLS | 41.5 ft | early Fri | — | +3.77 |
-| 12-10T09:24Z | Dec 10 01:24 | FLS | 41.5 ft | — | — | +3.77 |
+| 12-10T08:54Z | Dec 10 00:54 | FLS | 41.5 ft | early Fri morning | 26.1 ft at 00:15 | +3.77 |
+| 12-10T16:47Z | Dec 10 08:47 | FLS | 41.5 ft | early Fri morning | 26.5 ft at 08:15 | +3.77 |
+| 12-10T19:01Z | Dec 10 11:01 | FLS | 41.5 ft | early Fri morning | 26.8 ft at 10:15 | +3.77 |
 | 12-10T23:14Z | Dec 10 15:14 | FLS | 42.3 ft | Fri AM | — | +4.57 |
-| 12-11T01:15Z | Dec 10 17:15 | FLS | 42.1 ft | — | — | +4.37 |
-| 12-11T10:04Z | Dec 11 02:04 | FLS | 39.1 ft | late Fri AM | — | +1.37 |
+| 12-11T02:21Z | Dec 10 18:21 | FLS | 42.1 ft | late Fri morning | 28.0 ft at 17:15 | +4.37 |
+| 12-11T06:47Z | Dec 10 22:47 | FLS | 41.3 ft | late Fri morning | 29.0 ft at 22:15 | +3.57 |
+| 12-11T10:04Z | Dec 11 02:04 | FLS | 39.7 ft | late Fri morning ("late tomorrow morning") | 29.5 ft at 01:15 | +1.97 |
 | 12-11T18:17Z | Dec 11 10:17 | FLS EXT | 39.1 ft | early Sat (text) | 29.5 ft at 01:15 | +1.37 |
 | 12-12T01:12Z | Dec 11 17:12 | FLS EXT | 38.3 ft (press: 38.26) | late tonight | 35.8 ft at 16:15 | +0.57 |
 | 12-12T08:50Z | Dec 12 00:50 | FLS EXT | 38.1 ft | early this morning | 37.7 ft at 00:15 | +0.37 |

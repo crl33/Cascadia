@@ -4,10 +4,28 @@
  */
 import {
   buildBasins, buildGeometry, buildBasinState, buildVizBasins, buildVizRivers, buildRiverState,
-  buildRunsLatest, buildSeries, buildSceneSummary, buildSearch, buildHealth,
+  buildRunsLatest, buildRunsList, buildSeries, buildSeriesWindow, buildSceneSummary, buildSearch, buildHealth,
 } from './stub-data.mjs';
 
 const BAND_RE = /^(orbital|state|basin|river)$/;
+const MAX_WINDOW_MS = 45 * 24 * 3_600_000;
+
+/**
+ * start=&end= absolute window (P2 Event Zero): null when absent, {error} when malformed —
+ * both-or-neither, ISO-8601, end after start, span ≤ 45 days (mirrors the API validation).
+ */
+function parseWindow(params) {
+  const start = params.get('start');
+  const end = params.get('end');
+  if (start === null && end === null) return null;
+  if (start === null || end === null) return { error: 'start and end must be given together' };
+  const startMs = Date.parse(start);
+  const endMs = Date.parse(end);
+  if (!Number.isFinite(startMs) || !Number.isFinite(endMs)) return { error: 'start/end must be ISO-8601 instants' };
+  if (endMs <= startMs) return { error: 'end must be after start' };
+  if (endMs - startMs > MAX_WINDOW_MS) return { error: 'window must be 45 days or shorter' };
+  return { startMs, endMs };
+}
 
 export function route(fx, pathname, params) {
   const asOf = params.get('as_of');
@@ -27,9 +45,22 @@ export function route(fx, pathname, params) {
   }
   if ((m = pathname.match(/^\/forecast-points\/([A-Z0-9]+)\/state$/))) return buildRiverState(fx, m[1], asOf) ?? { status: 404, body: { detail: `unknown forecast point ${m[1]}` } };
   if ((m = pathname.match(/^\/forecast-points\/([A-Z0-9]+)\/runs\/latest$/))) return buildRunsLatest(fx, m[1]) ?? { status: 404, body: { detail: `no forecast run for ${m[1]} in the stub fixtures` } };
+  if ((m = pathname.match(/^\/forecast-points\/([A-Z0-9]+)\/runs$/))) {
+    const window = parseWindow(params);
+    if (window === null) return { status: 400, body: { detail: 'start and end are required' } };
+    if (window.error) return { status: 400, body: { detail: window.error } };
+    return buildRunsList(fx, m[1], window.startMs, window.endMs)
+      ?? { status: 404, body: { detail: `no archived forecast runs for ${m[1]} in the stub fixtures` } };
+  }
   if ((m = pathname.match(/^\/stations\/([^/]+)\/series$/))) {
     const variable = params.get('variable') ?? 'stage';
     if (!/^(stage|flow)$/.test(variable)) return { status: 400, body: { detail: 'variable must be stage|flow' } };
+    const window = parseWindow(params);
+    if (window && window.error) return { status: 400, body: { detail: window.error } };
+    if (window) {
+      return buildSeriesWindow(fx, m[1], variable, window.startMs, window.endMs)
+        ?? { status: 404, body: { detail: `no archived series for ${m[1]} in the stub fixtures` } };
+    }
     return buildSeries(fx, m[1], variable) ?? { status: 404, body: { detail: `no series for ${m[1]} in the stub fixtures` } };
   }
   if (pathname === '/scene/summary') {

@@ -103,3 +103,11 @@ body { background: var(--canvas); color: var(--text-primary); font-family: var(-
 }
 .replay-banner strong { letter-spacing: 0.08em; }
 .replay-banner .mono { color: var(--text-primary); }
+
+/* Event replay (P2 Event Zero): the event banner shares the replay-banner shell; the
+   forecast-evolution table scrolls inside its panel; superseded rows dim (the printed word
+   SUPERSEDED is the meaning — colour is never the only carrier). */
+.replay-banner.event-banner { border-color: var(--glacier); color: var(--glacier); }
+.evolution-table-wrap { overflow-x: auto; }
+.evolution-table th, .evolution-table td { white-space: nowrap; padding-right: 10px; }
+.evolution-superseded td { color: var(--text-muted); }

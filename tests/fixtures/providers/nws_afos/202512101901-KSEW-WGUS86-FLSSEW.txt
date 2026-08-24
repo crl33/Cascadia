@@ -1,0 +1,277 @@
+640 
+WGUS86 KSEW 101901
+FLSSEW
+
+Flood Statement
+National Weather Service Seattle WA
+1101 AM PST Wed Dec 10 2025
+
+...The Flood Warning is extended for the following rivers in 
+Washington...
+
+  South Fork Stillaguamish River Near Jordan Rd. Bridge affecting 
+  Snohomish County.
+
+  Samish River At Burlington affecting Skagit County.
+
+  Skagit River Near Mt. Vernon affecting Skagit County.
+
+  North Fork Stillaguamish River Near Arlington affecting Snohomish 
+  County.
+
+...The Flood Warning continues for the following rivers in 
+Washington...
+
+  Skagit River Near Concrete affecting Skagit County.
+
+  Stillaguamish River At Arlington affecting Snohomish County.
+
+.Phase 2 of this atmospheric river flood event is well underway with 
+moderate to heavy rain back over the region driving rivers back up 
+with new flooding.
+
+PRECAUTIONARY/PREPAREDNESS ACTIONS...
+
+Motorists should not attempt to drive around barricades or drive 
+cars through flooded areas.
+
+Caution is urged when walking near riverbanks.
+
+Even 6 inches of fast-moving flood water can knock you off your feet 
+and a depth of 2 feet will float your car. Never try to walk, swim, 
+or drive through such swift water. If you come upon flood waters, 
+stop, turn around and go another way.
+
+Turn around, don't drown when encountering flooded roads. Most flood 
+deaths occur in vehicles.
+
+Additional information is available at www.weather.gov.
+
+The next statement will be issued by this evening at 715 PM PST.
+
+&&
+
+WAC061-110315-
+/O.EXT.KSEW.FL.W.0026.000000T0000Z-251212T0044Z/
+/SSFW1.2.ER.251209T0543Z.251211T0600Z.251211T1544Z.UU/
+1101 AM PST Wed Dec 10 2025
+
+...FLOOD WARNING NOW IN EFFECT UNTIL TOMORROW AFTERNOON...
+
+* WHAT...Moderate flooding is forecast.
+
+* WHERE...South Fork Stillaguamish River near Jordan Rd. Bridge.
+
+* WHEN...Until tomorrow afternoon.
+
+* IMPACTS...At 212.5 feet, the South Fork Stillaguamish River will 
+  cause flooding in Granite Falls downstream to the Blue Spruce area 
+  and Jordan Road.  A stage of 16 feet corresponds to Phase 3 in the 
+  Snohomish County Flood Warning System.
+
+* ADDITIONAL DETAILS...
+  - At 10:30 AM PST Wednesday the stage was 210.5 feet.
+  - Flood stage is 211.0 feet.
+  - Forecast...The river is expected to rise above flood stage
+    late this morning to a crest of 212.6 feet late this evening.
+    It will then fall below flood stage tomorrow morning.
+  - http://www.weather.gov/safety/flood
+
+&&
+
+LAT...LON 4806 12191 4808 12204 4816 12211 4824 12214
+      4816 12202 4815 12192
+
+
+$$
+
+WAC057-110315-
+/O.EXT.KSEW.FL.W.0050.251210T2010Z-251212T0303Z/
+/SMRW1.1.ER.251210T2010Z.251211T0600Z.251211T1803Z.NO/
+1101 AM PST Wed Dec 10 2025
+
+...FLOOD WARNING NOW IN EFFECT UNTIL TOMORROW EVENING...
+
+* WHAT...Minor flooding is forecast.
+
+* WHERE...Samish River at Burlington.
+
+* WHEN...Until tomorrow evening.
+
+* IMPACTS...At 4,500.0 cfs, the Samish River will spill over its 
+  banks causing flood waters from west of Interstate 5 down to 
+  Samish Bay, flooding Sam Bell Rd., Farm To Market Rd., Allen Rd. 
+  near the town of Allen, and also Thomas Rd. and Green Rd. Some 
+  residences, businesses, and farmland along the river will also be 
+  flooded.
+
+* ADDITIONAL DETAILS...
+  - At 10:00 AM PST Wednesday the flow was 2,040.0 cfs.
+  - Flood flow is 3,000.0 cfs.
+  - Forecast...The river is expected to rise above flood stage
+    this afternoon to a crest of 6,810 cfs late this evening. It
+    will then fall below flood stage late tomorrow morning.
+  - http://www.weather.gov/safety/flood
+
+&&
+
+LAT...LON 4851 12233 4850 12241 4856 12248 4858 12244
+      4853 12238 4856 12234
+
+
+$$
+
+WAC057-110315-
+/O.EXT.KSEW.FL.W.0042.251210T2142Z-251213T2225Z/
+/MVEW1.3.ER.251210T2142Z.251212T1200Z.251213T1025Z.NR/
+1101 AM PST Wed Dec 10 2025
+
+...FLOOD WARNING NOW IN EFFECT UNTIL EARLY SATURDAY AFTERNOON...
+
+* WHAT...Major flooding is forecast. This approaches the flood of 
+  record.
+
+* WHERE...Skagit River near Mt. Vernon.
+
+* WHEN...Until early Saturday afternoon.
+
+* IMPACTS...At 36.0 feet, the Skagit River will cause severe near 
+  record flooding from Sedro Woolley downstream through Mount Vernon 
+  to the mouth. Deep and swift flood waters will inundate and 
+  possibly damage many roads...farmlands and residential areas. 
+  Levees may be damaged.  Flood areas will also include headwaters...
+  tributaries...and other streams in the Skagit basin. This level 
+  for this location corresponds to a Phase 1 flood in the Skagit 
+  County flood system.
+
+* ADDITIONAL DETAILS...
+  - At 10:15 AM PST Wednesday the stage was 26.8 feet.
+  - Flood stage is 28.0 feet.
+  - Forecast...The river is expected to rise above flood stage
+    this afternoon to a crest of 41.5 feet early Friday morning.
+    It will then fall below flood stage early Saturday morning.
+  - http://www.weather.gov/safety/flood
+
+&&
+
+LAT...LON 4846 12227 4840 12230 4830 12235 4837 12250
+      4845 12240 4853 12227
+
+
+$$
+
+WAC061-110315-
+/O.EXT.KSEW.FL.W.0051.251210T2201Z-251212T0242Z/
+/ARGW1.2.ER.251210T2201Z.251211T0600Z.251211T1742Z.NO/
+1101 AM PST Wed Dec 10 2025
+
+...FLOOD WARNING NOW IN EFFECT FROM THIS AFTERNOON TO TOMORROW 
+EVENING...
+
+* WHAT...Moderate flooding is forecast.
+
+* WHERE...North Fork Stillaguamish River near Arlington.
+
+* WHEN...From this afternoon to tomorrow evening.
+
+* IMPACTS...At 14.0 feet, the North Fork Stillaguamish River will 
+  cause flooding in the Cicero and Swede Heaven areas...Oso Loop 
+  Road...and SR 530.  Flood waters will also cause riverbank 
+  erosion. A stage of 14 feet corresponds to Phase 3 in the 
+  Snohomish County Flood Warning System.
+
+* ADDITIONAL DETAILS...
+  - At 10:15 AM PST Wednesday the stage was 11.8 feet.
+  - Flood stage is 13.0 feet.
+  - Forecast...The river is expected to rise above flood stage
+    this afternoon to a crest of 14.6 feet late this evening. It
+    will then fall below flood stage late tomorrow morning.
+  - http://www.weather.gov/safety/flood
+
+&&
+
+LAT...LON 4822 12164 4822 12191 4816 12211 4824 12214
+      4833 12193 4833 12164
+
+
+$$
+
+WAC057-110315-
+/O.CON.KSEW.FL.W.0035.000000T0000Z-251213T0247Z/
+/CONW1.3.ER.251209T1254Z.251211T1200Z.251212T1447Z.NO/
+1101 AM PST Wed Dec 10 2025
+
+...FLOOD WARNING REMAINS IN EFFECT UNTIL FRIDAY EVENING...
+
+* WHAT...Minor flooding is occurring and major flooding is forecast.
+
+* WHERE...Skagit River near Concrete.
+
+* WHEN...Until Friday evening.
+
+* IMPACTS...At 40.0 feet, the Skagit River will cause severe near 
+  record flooding from Rockport downstream through Sedro Woolley. 
+  Deep and swift flood waters will inundate and damage roads...farms 
+  and business and residential areas...especially Cape Horn...
+  Hamilton...and Thunderbird. Cockreham Island...the Nookachamps and 
+  the Sterling areas will be inundated. Levees east of Sedro Woolley 
+  may be damaged. This level at this location on the Skagit 
+  corresponds to a Phase 1 flood in the Skagit County flood system.
+
+* ADDITIONAL DETAILS...
+  - At 10:45 AM PST Wednesday the stage was 28.3 feet.
+  - Flood stage is 28.0 feet.
+  - Recent Activity...The maximum river stage in the 24 hours
+    ending at 10:45 AM PST Wednesday was 28.3 feet.
+  - Forecast...The river is expected to rise to a crest of 47.3
+    feet late tonight. It will then fall below flood stage Friday
+    morning.
+  - http://www.weather.gov/safety/flood
+
+&&
+
+LAT...LON 4845 12163 4848 12185 4846 12227 4853 12227
+      4856 12185 4850 12160
+
+
+$$
+
+WAC061-110315-
+/O.CON.KSEW.FL.W.0033.000000T0000Z-251212T1254Z/
+/ARLW1.3.ER.251209T0556Z.251211T0600Z.251212T0054Z.NO/
+1101 AM PST Wed Dec 10 2025
+
+...FLOOD WARNING REMAINS IN EFFECT UNTIL EARLY FRIDAY MORNING...
+
+* WHAT...Major flooding is forecast.
+
+* WHERE...Stillaguamish River at Arlington.
+
+* WHEN...Until early Friday morning.
+
+* IMPACTS...At 20.0 feet, the Stillaguamish River will cause near 
+  record major flooding. Deep and swift flood waters will inundate 
+  many roads including Highway 530 east of Arlington and at Island 
+  Crossing and most valley roads downstream of I-5 to Stanwood. 
+  Levees are subject to overtopping and damage.  Flooding will occur 
+  all along the river including headwaters...tributaries...and other 
+  streams within and near the Stillaguamish River Basin. This stage 
+  corresponds to Phase 4 in Snohomish County flood program.
+
+* ADDITIONAL DETAILS...
+  - At 10:40 AM PST Wednesday the stage was 13.7 feet.
+  - Flood stage is 14.0 feet.
+  - Forecast...The river is expected to rise above flood stage
+    late this morning to a crest of 20.8 feet late this evening.
+    It will then fall below flood stage tomorrow afternoon.
+  - http://www.weather.gov/safety/flood
+
+&&
+
+LAT...LON 4816 12211 4817 12223 4816 12237 4826 12240
+      4823 12224 4824 12214
+
+
+$$
+
+JBB

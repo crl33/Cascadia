@@ -1,0 +1,157 @@
+227 
+WGUS86 KSEW 160055
+FLSSEW
+
+Flood Statement
+National Weather Service Seattle WA
+455 PM PST Mon Dec 15 2025
+
+...The Flood Warning continues for the following rivers in 
+Washington...
+
+  Cedar River At Renton affecting King County.
+
+  Green River Near Auburn affecting King County.
+
+...The Flood Warning is extended for the following rivers in 
+Washington...
+
+  Cedar River Near Landsburg affecting King County.
+
+PRECAUTIONARY/PREPAREDNESS ACTIONS...
+
+Turn around, don't drown when encountering flooded roads. Most flood 
+deaths occur in vehicles.
+
+Motorists should not attempt to drive around barricades or drive 
+cars through flooded areas.
+
+Even 6 inches of fast-moving flood water can knock you off your feet 
+and a depth of 2 feet will float your car. Never try to walk, swim, 
+or drive through such swift water. If you come upon flood waters, 
+stop, turn around and go another way.
+
+Additional information is available at www.weather.gov.
+
+The next statement will be issued by late tonight at 100 AM PST.
+
+&&
+
+WAC033-160900-
+/O.EXT.KSEW.FL.W.0053.000000T0000Z-251219T0751Z/
+/RNTW1.1.ER.251217T1413Z.000000T0000Z.251218T2251Z.NO/
+455 PM PST Mon Dec 15 2025
+
+...FLOOD WARNING NOW IN EFFECT UNTIL LATE THURSDAY EVENING...
+
+* WHAT...Minor flooding is occurring and minor flooding is forecast.
+
+* WHERE...Cedar River at Renton.
+
+* WHEN...Until late Thursday evening.
+
+* IMPACTS...At 13.0 feet, the Cedar River will cause minor flooding 
+  along the river in Renton.
+
+* ADDITIONAL DETAILS...
+  - At 4:15 PM PST Monday the stage was 13.7 feet.
+  - Flood stage is 13.0 feet.
+  - Recent Activity...The maximum river stage in the 24 hours
+    ending at 4:15 PM PST Monday was 14.3 feet.
+  - Forecast...The river is expected to rise. It will then fall
+    below flood stage early Thursday afternoon to 14.3 feet late
+    tonight. Additional rises are possible thereafter.
+  - Flood History...This crest compares to a previous crest of
+    14.1 feet on 12/04/1975.
+  - http://www.weather.gov/safety/flood
+
+&&
+
+LAT...LON 4736 12209 4743 12222 4750 12229 4756 12214
+      4751 12210 4745 12196
+
+
+$$
+
+WAC033-160900-
+/O.EXT.KSEW.FL.W.0049.000000T0000Z-251217T0515Z/
+/LNDW1.1.ER.251210T1525Z.251212T0000Z.251216T2015Z.NO/
+455 PM PST Mon Dec 15 2025
+
+...FLOOD WARNING NOW IN EFFECT UNTIL LATE TOMORROW EVENING...
+
+* WHAT...Minor flooding is occurring and minor flooding is forecast.
+
+* WHERE...Cedar River near Landsburg.
+
+* WHEN...Until late tomorrow evening.
+
+* IMPACTS...At 5.7 feet, the Cedar River will cause flooding from 
+  Landsburg downstream through Maplewood. Swift waters will flood 
+  roads and some residential areas, especially in Maple Valley. 
+  Flooding threatens Beyers Road. A stage of 5.7 feet on the Cedar 
+  River corresponds roughly to a phase 4 flood in the King County 
+  flood system.
+
+* ADDITIONAL DETAILS...
+  - At 4:15 PM PST Monday the stage was 5.8 feet.
+  - Flood stage is 5.7 feet.
+  - Recent Activity...The maximum river stage in the 24 hours
+    ending at 4:15 PM PST Monday was 6.1 feet.
+  - Forecast...The river is expected to fall below flood stage
+    early tomorrow afternoon and continue falling to 5.0 feet
+    Thursday afternoon.
+  - Flood History...This crest compares to a previous crest of
+    6.0 feet on 11/07/2006.
+  - http://www.weather.gov/safety/flood
+
+&&
+
+LAT...LON 4735 12179 4733 12202 4738 12213 4747 12202
+      4744 12195 4745 12182
+
+
+$$
+
+WAC033-160900-
+/O.CON.KSEW.FL.W.0039.000000T0000Z-000000T0000Z/
+/AUBW1.1.ER.251209T1446Z.251213T1630Z.000000T0000Z.NO/
+455 PM PST Mon Dec 15 2025
+
+...FLOOD WARNING REMAINS IN EFFECT UNTIL FURTHER NOTICE...
+
+* WHAT...Minor flooding is occurring and minor flooding is forecast.
+
+* WHERE...Green River near Auburn.
+
+* WHEN...Until further notice.
+
+* IMPACTS...At 10,000.0 cfs, the Green River will flood low areas of 
+  the middle Green River valley with water over SE Green Valley Rd.  
+  Some flooding is possible at a few low spots along the banks of 
+  the Green River in Auburn, including near Issac Evans Park in 
+  lower Mill Creek basin between Auburn and Kent due to backwater. A 
+  flow of 9000 cfs feet on the Green River corresponds to a phase 3 
+  flood in the King County flood system.
+
+* ADDITIONAL DETAILS...
+  - At 3:45 PM PST Monday the flow was 10,100.0 cfs.
+  - Flood flow is 9,000.0 cfs.
+  - Recent Activity...The maximum river flow in the 24 hours
+    ending at 3:45 PM PST Monday was 10,200.0 cfs.
+  - Forecast...The river is expected to remain in minor flood
+    stage rising to a crest of 9,657.1 cfs late Wednesday
+    evening.
+  - Flood History...This crest compares to a previous crest of
+    10,100.0 cfs on 02/22/2012.
+  - http://www.weather.gov/safety/flood
+
+&&
+
+LAT...LON 4724 12188 4723 12212 4723 12231 4753 12238
+      4753 12208 4753 12192
+
+
+$$
+
+33

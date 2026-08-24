@@ -1,8 +1,10 @@
 /**
- * TimelineController (C5 core at P1 scope): turns scrub intent into knowledge-time state.
- * Owns the rAF coalescing — any number of scrub calls collapse to at most ONE store `asOf`
- * commit per animation frame — and aborts in-flight requests keyed to a superseded asOf
- * (their AbortSignal fires via TanStack cancelQueries). Plain TS; React renders TimelineBar,
+ * TimelineController (C5 core at P1 scope, plus P2 event replay): turns scrub intent into
+ * timeline state. Owns the rAF coalescing — any number of scrub calls collapse to at most ONE
+ * store commit per animation frame — and, for knowledge-time scrubs, aborts in-flight requests
+ * keyed to a superseded asOf (their AbortSignal fires via TanStack cancelQueries). Event-mode
+ * scrubs commit the EVENT-time cursor `at` instead and abort nothing: event queries are keyed
+ * by the whole archived window, never by the cursor. Plain TS; React renders TimelineBar,
  * this class decides. The scheduler and clock are injectable so tests are deterministic.
  */
 import type { QueryClient } from '@tanstack/react-query';
@@ -37,11 +39,16 @@ export class TimelineController {
     if (this.frameHandle === null) this.frameHandle = this.scheduler.request(this.flush);
   }
 
-  /** Back to live: mode 'now', window re-anchored at now, replay requests aborted. */
+  /** Event-mode scrub: same coalescing; the flush commits the EVENT-time cursor instead. */
+  scrubEvent(iso: string): void {
+    this.scrub(iso);
+  }
+
+  /** Back to live: mode 'now' (exits knowledge-time AND event replay), replay requests aborted. */
   snapToNow(): void {
     this.cancelPendingFrame();
     this.pendingIso = null;
-    this.store.getState().setTimeline({ mode: 'now', asOf: null, window: windowEndingAt(this.nowIso()) });
+    this.store.getState().setTimeline({ mode: 'now', asOf: null, window: windowEndingAt(this.nowIso()), eventId: null, at: null });
     this.abortSuperseded(null);
   }
 
@@ -56,9 +63,16 @@ export class TimelineController {
     this.pendingIso = null;
     if (iso === null) return;
     const state = this.store.getState();
-    const asOf = clampToWindow(truncateToMinute(iso), state.timeline.window);
-    if (asOf === state.timeline.asOf) return;
-    state.setTimeline({ mode: 'past', asOf, window: state.timeline.window });
+    const timeline = state.timeline;
+    if (timeline.mode === 'event') {
+      const at = clampToWindow(truncateToMinute(iso), timeline.window);
+      if (at === timeline.at) return;
+      state.setTimeline({ ...timeline, at });
+      return; // no aborts: event-mode queries are keyed by the archived window, not the cursor
+    }
+    const asOf = clampToWindow(truncateToMinute(iso), timeline.window);
+    if (asOf === timeline.asOf) return;
+    state.setTimeline({ mode: 'past', asOf, window: timeline.window, eventId: null, at: null });
     this.abortSuperseded(asOf);
   };
 

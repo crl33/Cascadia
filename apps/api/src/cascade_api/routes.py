@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import re
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, Request
@@ -45,6 +45,25 @@ def get_as_of(as_of: Annotated[str | None, Query(description="knowledge time, IS
 
 Session = Annotated[AsyncSession, Depends(get_session)]
 AsOf = Annotated[datetime, Depends(get_as_of)]
+
+WINDOW_MAX = timedelta(days=45)
+
+
+def _parse_window(start: str | None, end: str | None) -> tuple[datetime, datetime] | None:
+    """An explicit time window (both bounds or neither), length-capped (vibesec addendum §3)."""
+    if start is None and end is None:
+        return None
+    if start is None or end is None:
+        raise HTTPException(status_code=422, detail="start and end must be given together")
+    try:
+        lo, hi = parse_iso(start), parse_iso(end)
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=f"window: {e}") from e
+    if hi <= lo:
+        raise HTTPException(status_code=422, detail="end must be after start")
+    if hi - lo > WINDOW_MAX:
+        raise HTTPException(status_code=422, detail=f"window longer than {WINDOW_MAX.days} days")
+    return lo, hi
 
 
 def _dump(model) -> dict:
@@ -120,6 +139,52 @@ async def latest_run(session: Session, as_of: AsOf, lid: Annotated[str, Path(pat
     }
 
 
+@router.get("/forecast-points/{lid}/runs")
+async def forecast_runs_window(
+    session: Session,
+    as_of: AsOf,
+    lid: Annotated[str, Path(pattern=LID)],
+    start: Annotated[str, Query(description="issued_at window start, ISO-8601 with offset")],
+    end: Annotated[str, Query(description="issued_at window end, ISO-8601 with offset")],
+) -> dict:
+    """Forecast-run evolution: every run known at as_of whose issued_at falls in [start, end].
+
+    Event Zero selects runs by ISSUED time with as_of omitted (= now). Knowledge-time replay
+    still holds: a reconstructed/backfilled run carries available_at = its retrieval time, so
+    it is invisible at any historical as_of. The backfilled surface is the product identity
+    plus available_at ≫ issued_at — both returned on every item; no flag is fabricated.
+    """
+    window = _parse_window(start, end)
+    if window is None:
+        raise HTTPException(status_code=422, detail="start and end are required")
+    k = as_known_at(session, as_of)
+    fp = await k.forecast_point_by_lid(lid)
+    if fp is None:
+        raise HTTPException(status_code=404, detail="unknown forecast point")
+    products = await k.products()
+    items = []
+    for run in await k.forecast_runs(fp.id, window[0], window[1]):
+        values = await k.forecast_values(run.id)
+        product = products.get(run.product_id)
+        items.append(
+            {
+                "run_id": f"run:{run.id}",
+                "product_id": run.product_id,
+                "product_label": product.label if product else None,
+                "issued_at": run.issued_at,
+                "available_at": run.available_at,
+                "retrieved_at": run.retrieved_at,
+                "issuer": run.issuer,
+                "primary": run.primary_variable,
+                "unit": run.unit,
+                "datum": run.datum,
+                "supersedes_run_id": None if run.supersedes_run_id is None else f"run:{run.supersedes_run_id}",
+                "points": [{"t": v.valid_time, "stage": v.stage, "flow": v.flow} for v in values],
+            }
+        )
+    return {"lid": lid, "fp_id": fp.id, "start": window[0], "end": window[1], "items": items}
+
+
 @router.get("/stations/{station_id:path}/series")
 async def station_series(
     session: Session,
@@ -127,16 +192,22 @@ async def station_series(
     station_id: Annotated[str, Path()],
     variable: Literal["stage", "flow"] = "stage",
     hours: Annotated[int, Query(ge=1, le=720)] = 72,
+    start: Annotated[str | None, Query(description="valid_time window start, ISO-8601 with offset; requires end, overrides hours (Event Zero: select event data by VALID time under today's knowledge)")] = None,
+    end: Annotated[str | None, Query(description="valid_time window end, ISO-8601 with offset")] = None,
 ) -> dict:
     if not re.match(STATION_ID, station_id):
         raise HTTPException(status_code=422, detail="station_id must look like station:usgs:12200500")
+    window = _parse_window(start, end)
     k = as_known_at(session, as_of)
     station = await k.station(station_id)
     if station is None:
         raise HTTPException(status_code=404, detail="unknown station")
-    from datetime import timedelta
-
-    rows = await k.observations(station_id, variable, since=as_of - timedelta(hours=hours))
+    if window is None:
+        rows = await k.observations(station_id, variable, since=as_of - timedelta(hours=hours))
+    else:
+        # Valid-time selection; as_of semantics preserved: Knowledge still filters
+        # available_at <= as_of, so backfilled rows stay invisible at historical as_of.
+        rows = await k.observations(station_id, variable, since=window[0], until=window[1])
     products = await k.products()
     p = products[PRODUCT_USGS_IV]
     last = rows[-1] if rows else None

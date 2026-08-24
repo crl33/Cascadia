@@ -1,0 +1,72 @@
+097 
+WGUS46 KSEW 091736
+FLWSEW
+
+BULLETIN - IMMEDIATE BROADCAST REQUESTED
+Flood Warning
+National Weather Service Seattle WA
+936 AM PST Tue Dec 9 2025
+
+...Forecast flooding changed from Minor to Moderate severity for the 
+following rivers in Washington...
+
+  Green River Near Auburn affecting King County.
+
+PRECAUTIONARY/PREPAREDNESS ACTIONS...
+
+Turn around, don't drown when encountering flooded roads. Most flood 
+deaths occur in vehicles.
+
+Motorists should not attempt to drive around barricades or drive 
+cars through flooded areas.
+
+Additional information is available at www.weather.gov.
+
+The next statement will be issued by this afternoon at 545 PM PST.
+
+&&
+
+WAC033-100145-
+/O.CON.KSEW.FL.W.0039.000000T0000Z-000000T0000Z/
+/AUBW1.2.ER.251209T1446Z.251210T0000Z.000000T0000Z.NO/
+936 AM PST Tue Dec 9 2025
+
+...FLOOD WARNING REMAINS IN EFFECT UNTIL FURTHER NOTICE...
+
+* WHAT...Minor flooding is occurring and moderate flooding is 
+  forecast.
+
+* WHERE...Green River near Auburn.
+
+* WHEN...Until further notice.
+
+* IMPACTS...At 12,000.0 cfs, the Green River will inundate low areas 
+  from the middle Green River valley downstream to Auburn...with  
+  water over several roads including SE Green Valley Rd and West 
+  Valley Rd.  Levees from Auburn down through Tukwilla may exhibit 
+  seeapage and may weaken due to saturation.  A flow of 12000 cfs on 
+  the Green River corresponds to a phase 4 flood in the King County 
+  flood system.
+
+* ADDITIONAL DETAILS...
+  - At 8:45 AM PST Tuesday the flow was 9,820.0 cfs.
+  - Flood flow is 9,000.0 cfs.
+  - Recent Activity...The maximum river flow in the 24 hours
+    ending at 8:45 AM PST Tuesday was 9,820.0 cfs.
+  - Forecast...The river will rise to 12,828.6 cfs late this
+    afternoon. It will then fall late tomorrow morning. It will
+    rise to 12,118.1 cfs late Thursday evening. It will then fall
+    again but remain above flood stage.
+  - Flood History...This crest compares to a previous crest of
+    12,800.0 cfs on 12/29/1945.
+  - http://www.weather.gov/safety/flood
+
+&&
+
+LAT...LON 4724 12188 4723 12212 4723 12231 4753 12238
+      4753 12208 4753 12192
+
+
+$$
+
+33

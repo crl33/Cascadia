@@ -1,0 +1,137 @@
+provider: nws-afos (KSEW FLW/FLS via IEM AFOS archive)
+captured:
+- file: 202512091701-KSEW-WGUS46-FLWSEW.txt
+  url: https://mesonet.agron.iastate.edu/api/1/nwstext/202512091701-KSEW-WGUS46-FLWSEW
+  issued_at: '2025-12-09T17:01:00Z'  # IEM AFOS listing 'entered' == R2 manifest issued_at (FACT)
+  captured_at: '2026-08-24T12:40:00+00:00'
+  http_status: 200
+  content_type: text/plain
+  bytes: 3648
+  sha256: b96422e8d9b43066e389badc6c350833cc35650b8bd51d41d4a47e3d43284a49
+  notes: MVEW1 chain 1/12: FLW NEW FL.W.0042, crest 36.9 ft (mentions 28.4/26.1/36.9); ARLW1 EXT segment.
+- file: 202512100124-KSEW-WGUS86-FLSSEW.txt
+  url: https://mesonet.agron.iastate.edu/api/1/nwstext/202512100124-KSEW-WGUS86-FLSSEW
+  issued_at: '2025-12-10T01:24:00Z'  # IEM AFOS listing 'entered' == R2 manifest issued_at (FACT)
+  captured_at: '2026-08-24T12:40:00+00:00'
+  http_status: 200
+  content_type: text/plain
+  bytes: 2826
+  sha256: 4247ba683d90c036037c5ef75aad52fe36728c1c502841fd8595d55e387ad3f7
+  notes: MVEW1 chain 2/12: crest 41.5 ft; CONW1 'a crest of 47.4 feet' with 45.7 ft Flood History that must NOT count.
+- file: 202512100854-KSEW-WGUS86-FLSSEW.txt
+  url: https://mesonet.agron.iastate.edu/api/1/nwstext/202512100854-KSEW-WGUS86-FLSSEW
+  issued_at: '2025-12-10T08:54:00Z'  # IEM AFOS listing 'entered' == R2 manifest issued_at (FACT)
+  captured_at: '2026-08-24T12:40:00+00:00'
+  http_status: 200
+  content_type: text/plain
+  bytes: 3996
+  sha256: c9af5f2c15a35a3bf58b02a37caca6d425093ace390f82ef9937bdc291311199
+  notes: MVEW1 chain 3/12: crest 41.5 ft at 12:54 AM PST (EVENT_ZERO §8 wrote 09:24Z; the archive has 08:54Z).
+- file: 202512101647-KSEW-WGUS86-FLSSEW.txt
+  url: https://mesonet.agron.iastate.edu/api/1/nwstext/202512101647-KSEW-WGUS86-FLSSEW
+  issued_at: '2025-12-10T16:47:00Z'  # IEM AFOS listing 'entered' == R2 manifest issued_at (FACT)
+  captured_at: '2026-08-24T12:40:00+00:00'
+  http_status: 200
+  content_type: text/plain
+  bytes: 3858
+  sha256: b29a2a6d59f8cf0fde000efeb124cb759ed65eb269510cd02f1cebaa218b650a
+  notes: MVEW1 chain 4/12: crest 41.5 ft (issuance omitted by EVENT_ZERO §8).
+- file: 202512101901-KSEW-WGUS86-FLSSEW.txt
+  url: https://mesonet.agron.iastate.edu/api/1/nwstext/202512101901-KSEW-WGUS86-FLSSEW
+  issued_at: '2025-12-10T19:01:00Z'  # IEM AFOS listing 'entered' == R2 manifest issued_at (FACT)
+  captured_at: '2026-08-24T12:40:00+00:00'
+  http_status: 200
+  content_type: text/plain
+  bytes: 8694
+  sha256: f439a99e5ecf838cb80efe1e0662b978711a4fd8b6663e34e81e69021633c0b2
+  notes: MVEW1 chain 5/12: crest 41.5 ft (issuance omitted by EVENT_ZERO §8).
+- file: 202512102314-KSEW-WGUS86-FLSSEW.txt
+  url: https://mesonet.agron.iastate.edu/api/1/nwstext/202512102314-KSEW-WGUS86-FLSSEW
+  issued_at: '2025-12-10T23:14:00Z'  # IEM AFOS listing 'entered' == R2 manifest issued_at (FACT)
+  captured_at: '2026-08-24T12:40:00+00:00'
+  http_status: 200
+  content_type: text/plain
+  bytes: 4068
+  sha256: 18a54a44c45548e397acf710aac92681223d53f7d9272b9ffc5d2455e241c977
+  notes: MVEW1 chain 6/12: crest 42.3 ft.
+- file: 202512110221-KSEW-WGUS86-FLSSEW.txt
+  url: https://mesonet.agron.iastate.edu/api/1/nwstext/202512110221-KSEW-WGUS86-FLSSEW
+  issued_at: '2025-12-11T02:21:00Z'  # IEM AFOS listing 'entered' == R2 manifest issued_at (FACT)
+  captured_at: '2026-08-24T12:40:00+00:00'
+  http_status: 200
+  content_type: text/plain
+  bytes: 2801
+  sha256: f902cc6ddfd8662f1c624a1a3508b8d3d66d3ffc9b771ec3ac58510fe1b2b7cc
+  notes: MVEW1 chain 7/12: crest 42.1 ft, observed 28.0 ft at 5:15 PM PST (=01:15Z, the time §8 mistook for the issuance).
+- file: 202512110647-KSEW-WGUS86-FLSSEW.txt
+  url: https://mesonet.agron.iastate.edu/api/1/nwstext/202512110647-KSEW-WGUS86-FLSSEW
+  issued_at: '2025-12-11T06:47:00Z'  # IEM AFOS listing 'entered' == R2 manifest issued_at (FACT)
+  captured_at: '2026-08-24T12:40:00+00:00'
+  http_status: 200
+  content_type: text/plain
+  bytes: 2899
+  sha256: 9c177dc3be77abdf6a0968a002b26aa776050cc59f41f20ea65ceac947599525
+  notes: MVEW1 chain 8/12: crest 41.3 ft (issuance omitted by EVENT_ZERO §8).
+- file: 202512111004-KSEW-WGUS86-FLSSEW.txt
+  url: https://mesonet.agron.iastate.edu/api/1/nwstext/202512111004-KSEW-WGUS86-FLSSEW
+  issued_at: '2025-12-11T10:04:00Z'  # IEM AFOS listing 'entered' == R2 manifest issued_at (FACT)
+  captured_at: '2026-08-24T12:40:00+00:00'
+  http_status: 200
+  content_type: text/plain
+  bytes: 4025
+  sha256: b4ed468547489ecfd5451048b68e8ef95aec563df5c20af4320d69a9b463ced0
+  notes: MVEW1 chain 9/12: crest 39.7 ft in the byte record (§8 wrote 39.1).
+- file: 202512111817-KSEW-WGUS86-FLSSEW.txt
+  url: https://mesonet.agron.iastate.edu/api/1/nwstext/202512111817-KSEW-WGUS86-FLSSEW
+  issued_at: '2025-12-11T18:17:00Z'  # IEM AFOS listing 'entered' == R2 manifest issued_at (FACT)
+  captured_at: '2026-08-24T12:40:00+00:00'
+  http_status: 200
+  content_type: text/plain
+  bytes: 5279
+  sha256: 23dac6ed3ffe865ac3f2449bd609b975c2314d25710c626bcc1983113e4cffbe
+  notes: MVEW1 chain 10/12: crest 39.1 ft; ISSW1 'cresting now at around 2470 cfs' matches nothing -> crest UNKNOWN.
+- file: 202512120112-KSEW-WGUS86-FLSSEW.txt
+  url: https://mesonet.agron.iastate.edu/api/1/nwstext/202512120112-KSEW-WGUS86-FLSSEW
+  issued_at: '2025-12-12T01:12:00Z'  # IEM AFOS listing 'entered' == R2 manifest issued_at (FACT)
+  captured_at: '2026-08-24T12:40:00+00:00'
+  http_status: 200
+  content_type: text/plain
+  bytes: 6245
+  sha256: 718f74fe8e4141c233bcab253d85f27152765af499fb3c90d24df9ad1e1b1c7d
+  notes: MVEW1 chain 11/12: crest 38.3 ft, observed 35.8 ft.
+- file: 202512120850-KSEW-WGUS86-FLSSEW.txt
+  url: https://mesonet.agron.iastate.edu/api/1/nwstext/202512120850-KSEW-WGUS86-FLSSEW
+  issued_at: '2025-12-12T08:50:00Z'  # IEM AFOS listing 'entered' == R2 manifest issued_at (FACT)
+  captured_at: '2026-08-24T12:40:00+00:00'
+  http_status: 200
+  content_type: text/plain
+  bytes: 2414
+  sha256: 193428c255ab9ed579e0ef32f8920742bb504a1594be7561df46dd8c71c60d5a
+  notes: MVEW1 chain 12/12: crest 38.1 ft, observed 37.7 ft; falling limb 24.1 ft must not win the max.
+- file: 202512091736-KSEW-WGUS46-FLWSEW.txt
+  url: https://mesonet.agron.iastate.edu/api/1/nwstext/202512091736-KSEW-WGUS46-FLWSEW
+  issued_at: '2025-12-09T17:36:00Z'  # IEM AFOS listing 'entered' == R2 manifest issued_at (FACT)
+  captured_at: '2026-08-24T12:40:00+00:00'
+  http_status: 200
+  content_type: text/plain
+  bytes: 2124
+  sha256: 794d343788e620ad7519029aaf04643f365935f9508df492ec0f4132240d20e0
+  notes: Flow-defined crest: AUBW1 (Green) 'rise to 12,828.6 cfs' -> flow run in cfs, no datum.
+- file: 202512160055-KSEW-WGUS86-FLSSEW.txt
+  url: https://mesonet.agron.iastate.edu/api/1/nwstext/202512160055-KSEW-WGUS86-FLSSEW
+  issued_at: '2025-12-16T00:55:00Z'  # IEM AFOS listing 'entered' == R2 manifest issued_at (FACT)
+  captured_at: '2026-08-24T12:40:00+00:00'
+  http_status: 200
+  content_type: text/plain
+  bytes: 4770
+  sha256: 1519043540a058ac11e551163ab2259c6f8fcdd083506bf2deae71ec3942a668
+  notes: RNTW1 crest 14.3 ft but H-VTEC crest time 000000T0000Z -> no run (a run with zero values is refusable).
+derived:
+- file: truncated.txt
+  derived_from: 202512091701-KSEW-WGUS46-FLWSEW.txt
+  sha256: 7fd74c8c92c9959b6dbcac45051c1a431cb524a9e1adacf041551ec14add3532
+  notes: First 120 bytes only (cut inside the MND header) -> parses with zero segments; never a fabricated crest.
+- file: malformed_no_wmo.txt
+  derived_from: (synthetic)
+  sha256: 418c9ce224f4191fd44cc83dcad58903cec396814db53bb8587690145e0b43ae
+  notes: No WMO heading line -> AfosParseError.

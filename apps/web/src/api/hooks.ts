@@ -107,6 +107,24 @@ export const useLatestRun = (forecastPointId: string | null) => {
   });
 };
 
+/** Archived observed series over an absolute event window; fetched once (an archive never goes stale). */
+export const useSeriesWindow = (stationId: string | null, variable: SeriesVariable | null, window: readonly [string, string] | null) =>
+  useQuery({
+    queryKey: keys.seriesWindow(stationId ?? '', variable ?? 'stage', window?.[0] ?? '', window?.[1] ?? ''),
+    queryFn: ({ signal }) => api.seriesWindow(stationId!, variable!, window![0], window![1], signal),
+    enabled: stationId !== null && variable !== null && window !== null,
+    staleTime: Infinity,
+  });
+
+/** Every forecast run issued inside the event window (superseded included); fetched once. */
+export const useRunsList = (forecastPointId: string | null, window: readonly [string, string] | null) =>
+  useQuery({
+    queryKey: keys.runs(forecastPointId ?? '', window?.[0] ?? '', window?.[1] ?? ''),
+    queryFn: ({ signal }) => api.runs(forecastPointId!, window![0], window![1], signal),
+    enabled: forecastPointId !== null && window !== null,
+    staleTime: Infinity,
+  });
+
 export const useSearch = (q: string) =>
   useQuery({
     queryKey: keys.search(q),

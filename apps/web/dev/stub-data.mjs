@@ -271,3 +271,31 @@ export function buildHealth(fx, now = new Date()) {
     freshness,
   };
 }
+
+/* ---- Event Zero archived-window endpoints (P2) ----
+   Backed by `event_zero_mvew1` in dev/fixtures/mvew1-samples.json (FACT values from
+   docs/EVENT_ZERO.md — see the fixture _note). Guarded: an fx bundled before this extension
+   404s honestly instead of fabricating. */
+const eventZero = (fx) => fx.samples?.event_zero_mvew1 ?? null;
+
+/** GET /stations/{id}/series?start=&end= — the archived series, filtered by valid time. */
+export function buildSeriesWindow(fx, stationId, variable, startMs, endMs) {
+  const ev = eventZero(fx);
+  if (!ev || stationId !== ev.series.station_id || variable !== ev.series.variable) return null;
+  const points = ev.series.points.filter((p) => {
+    const t = Date.parse(p.t);
+    return t >= startMs && t <= endMs;
+  });
+  return { ...ev.series, points };
+}
+
+/** GET /forecast-points/{lid}/runs?start=&end= — every run issued in the window, ascending. */
+export function buildRunsList(fx, lid, startMs, endMs) {
+  const ev = eventZero(fx);
+  if (!ev || lid !== ev.lid) return null;
+  const items = ev.runs.filter((r) => {
+    const t = Date.parse(r.issued_at);
+    return t >= startMs && t <= endMs;
+  });
+  return { lid, items, count: items.length };
+}

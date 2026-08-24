@@ -1,0 +1,218 @@
+719 
+WGUS86 KSEW 120112
+FLSSEW
+
+Flood Statement
+National Weather Service Seattle WA
+512 PM PST Thu Dec 11 2025
+
+...The Flood Warning is extended for the following rivers in 
+Washington...
+
+  Samish River At Burlington affecting Skagit County.
+
+...The Flood Warning continues for the following rivers in 
+Washington...
+
+  Skagit River Near Mt. Vernon affecting Skagit County.
+
+  Skagit River Near Concrete affecting Skagit County.
+
+  Stillaguamish River At Arlington affecting Snohomish County.
+
+...The Flood Warning is cancelled for the following rivers in 
+Washington...
+
+  North Fork Stillaguamish River Near Arlington affecting Snohomish 
+  County.
+
+.Only showers are left from this flood event allowing rivers to 
+level off or recede.
+
+PRECAUTIONARY/PREPAREDNESS ACTIONS...
+
+Motorists should not attempt to drive around barricades or drive 
+cars through flooded areas.
+
+Be especially cautious at night when it is harder to recognize the 
+dangers of flooding.
+
+Turn around, don't drown when encountering flooded roads. Most flood 
+deaths occur in vehicles.
+
+Caution is urged when walking near riverbanks.
+
+Even 6 inches of fast-moving flood water can knock you off your feet 
+and a depth of 2 feet will float your car. Never try to walk, swim, 
+or drive through such swift water. If you come upon flood waters, 
+stop, turn around and go another way.
+
+Additional information is available at www.weather.gov.
+
+The next statement will be issued by this evening at 615 PM PST.
+
+&&
+
+WAC061-120215-
+/O.CAN.KSEW.FL.W.0051.000000T0000Z-251212T0112Z/
+/ARGW1.2.ER.251211T0119Z.251211T1245Z.251211T1822Z.NO/
+512 PM PST Thu Dec 11 2025
+
+...FLOOD WARNING IS CANCELLED...
+
+The Flood Warning is cancelled for
+  the North Fork Stillaguamish River Near Arlington.
+
+* ADDITIONAL DETAILS...
+  - At 4:15 PM PST Thursday the stage was 9.4 feet.
+  - Forecast...The river is expected to continue to fall.
+  - http://www.weather.gov/safety/flood
+
+&&
+
+LAT...LON 4822 12164 4822 12191 4816 12211 4824 12214
+      4833 12193 4833 12164
+
+
+$$
+
+WAC057-120700-
+/O.EXT.KSEW.FL.W.0050.000000T0000Z-251212T0653Z/
+/SMRW1.1.ER.251210T2230Z.251211T0830Z.251211T2153Z.NO/
+512 PM PST Thu Dec 11 2025
+
+...FLOOD WARNING NOW IN EFFECT UNTIL LATE THIS EVENING...
+
+* WHAT...No flooding is currently forecast.
+
+* WHERE...Samish River at Burlington.
+
+* WHEN...Until late this evening.
+
+* ADDITIONAL DETAILS...
+  - At 4:00 PM PST Thursday the flow was 2,820.0 cfs.
+  - Flood flow is 3,000.0 cfs.
+  - Forecast...The river fell below flood stage around 3 p.m. and
+    will continue to fall. Flooding will continue until the flood
+    wave moves completely out of the area.
+  - http://www.weather.gov/safety/flood
+
+&&
+
+LAT...LON 4851 12233 4850 12241 4856 12248 4858 12244
+      4853 12238 4856 12234
+
+
+$$
+
+WAC057-120915-
+/O.EXT.KSEW.FL.W.0042.000000T0000Z-251213T2108Z/
+/MVEW1.3.ER.251211T0112Z.251212T1200Z.251213T0908Z.NR/
+512 PM PST Thu Dec 11 2025
+
+...FLOOD WARNING NOW IN EFFECT UNTIL EARLY SATURDAY AFTERNOON...
+
+* WHAT...Major flooding is occurring and major flooding is forecast. 
+  This approaches the flood of record.
+
+* WHERE...Skagit River near Mt. Vernon.
+
+* WHEN...Until early Saturday afternoon.
+
+* IMPACTS...At 36.0 feet, the Skagit River will cause severe near 
+  record flooding from Sedro Woolley downstream through Mount Vernon 
+  to the mouth. Deep and swift flood waters will inundate and 
+  possibly damage many roads...farmlands and residential areas. 
+  Levees may be damaged.  Flood areas will also include headwaters...
+  tributaries...and other streams in the Skagit basin. This level 
+  for this location corresponds to a Phase 1 flood in the Skagit 
+  County flood system.
+
+* ADDITIONAL DETAILS...
+  - At 4:15 PM PST Thursday the stage was 35.8 feet.
+  - Flood stage is 28.0 feet.
+  - Recent Activity...The maximum river stage in the 24 hours
+    ending at 4:15 PM PST Thursday was 35.8 feet.
+  - Forecast...The river is expected to rise to a crest of 38.3
+    feet late tonight. It will then fall below flood stage early
+    Saturday morning.
+  - http://www.weather.gov/safety/flood
+
+&&
+
+LAT...LON 4846 12227 4840 12230 4830 12235 4837 12250
+      4845 12240 4853 12227
+
+
+$$
+
+WAC057-120915-
+/O.EXT.KSEW.FL.W.0035.000000T0000Z-251213T0225Z/
+/CONW1.3.ER.251209T1254Z.251211T1800Z.251212T1425Z.NO/
+512 PM PST Thu Dec 11 2025
+
+...FLOOD WARNING NOW IN EFFECT UNTIL TOMORROW EVENING...
+
+* WHAT...Major flooding is occurring and major flooding is forecast.
+
+* WHERE...Skagit River near Concrete.
+
+* WHEN...Until tomorrow evening.
+
+* IMPACTS...At 32.5 feet, the Skagit River will cause flooding from 
+  Rockport downstream through Sedro Woolley. Flood waters will 
+  inundate low areas near the river...roads...and several 
+  residential areas mainly Cape Horn...Hamilton and Thunderbird. 
+  Some water will flow onto Cockreham Island and into the 
+  Nookachamps and Sterling areas. Flooding will also occur in 
+  headwaters...tributaries...and other streams within the Skagit 
+  Basin. This level for this location corresponds to a Phase 2 flood 
+  in the Skagit County flood system.
+
+* ADDITIONAL DETAILS...
+  - At 4:45 PM PST Thursday the stage was 36.1 feet.
+  - Flood stage is 28.0 feet.
+  - Recent Activity...The maximum river stage in the 24 hours
+    ending at 4:45 PM PST Thursday was 41.1 feet.
+  - Forecast...The river crested and is expected to fall below
+    flood stage Friday morning.
+  - http://www.weather.gov/safety/flood
+
+&&
+
+LAT...LON 4845 12163 4848 12185 4846 12227 4853 12227
+      4856 12185 4850 12160
+
+
+$$
+
+WAC061-120915-
+/O.EXT.KSEW.FL.W.0033.000000T0000Z-251212T1122Z/
+/ARLW1.3.ER.251209T0556Z.251211T1305Z.251211T2322Z.NO/
+512 PM PST Thu Dec 11 2025
+
+...FLOOD WARNING NOW IN EFFECT UNTIL LATE TONIGHT...
+
+* WHAT...No flooding is currently forecast.
+
+* WHERE...Stillaguamish River at Arlington.
+
+* WHEN...Until late tonight.
+
+* ADDITIONAL DETAILS...
+  - At 4:55 PM PST Thursday the stage was 12.6 feet.
+  - Flood stage is 14.0 feet.
+  - Forecast...The river fell below flood stage this evening will
+    continue to fall. Flooding will continue until the flood wave
+    moves completely out of the area.
+  - http://www.weather.gov/safety/flood
+
+&&
+
+LAT...LON 4816 12211 4817 12223 4816 12237 4826 12240
+      4823 12224 4824 12214
+
+
+$$
+
+JBB

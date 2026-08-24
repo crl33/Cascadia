@@ -1,0 +1,79 @@
+426 
+WGUS86 KSEW 120850
+FLSSEW
+
+Flood Statement
+National Weather Service Seattle WA
+1250 AM PST Fri Dec 12 2025
+
+...The Flood Warning is extended for the following rivers in 
+Washington...
+
+  Skagit River Near Mt. Vernon affecting Skagit County.
+
+PRECAUTIONARY/PREPAREDNESS ACTIONS...
+
+Be especially cautious at night when it is harder to recognize the 
+dangers of flooding.
+
+Turn around, don't drown when encountering flooded roads. Most flood 
+deaths occur in vehicles.
+
+Even 6 inches of fast-moving flood water can knock you off your feet 
+and a depth of 2 feet will float your car. Never try to walk, swim, 
+or drive through such swift water. If you come upon flood waters, 
+stop, turn around and go another way.
+
+Caution is urged when walking near riverbanks.
+
+Motorists should not attempt to drive around barricades or drive 
+cars through flooded areas.
+
+Additional information is available at www.weather.gov.
+
+The next statement will be issued by this morning at 900 AM PST.
+
+&&
+
+WAC057-121700-
+/O.EXT.KSEW.FL.W.0042.000000T0000Z-251213T2205Z/
+/MVEW1.3.ER.251211T0112Z.251212T1200Z.251213T1005Z.NR/
+1250 AM PST Fri Dec 12 2025
+
+...FLOOD WARNING NOW IN EFFECT UNTIL EARLY TOMORROW AFTERNOON...
+
+* WHAT...Major flooding is occurring and major flooding is forecast. 
+  This approaches the flood of record.
+
+* WHERE...Skagit River near Mt. Vernon.
+
+* WHEN...Until early tomorrow afternoon.
+
+* IMPACTS...At 36.0 feet, the Skagit River will cause severe near 
+  record flooding from Sedro Woolley downstream through Mount Vernon 
+  to the mouth. Deep and swift flood waters will inundate and 
+  possibly damage many roads...farmlands and residential areas. 
+  Levees may be damaged.  Flood areas will also include headwaters...
+  tributaries...and other streams in the Skagit basin. This level 
+  for this location corresponds to a Phase 1 flood in the Skagit 
+  County flood system.
+
+* ADDITIONAL DETAILS...
+  - At 12:15 AM PST Friday the stage was 37.7 feet.
+  - Flood stage is 28.0 feet.
+  - Recent Activity...The maximum river stage in the 24 hours
+    ending at 12:15 AM PST Friday was 37.7 feet.
+  - Forecast...The river will rise to 38.1 feet early this
+    morning. It will then fall below flood stage just after
+    midnight tonight to 24.1 feet late Sunday morning.
+  - http://www.weather.gov/safety/flood
+
+&&
+
+LAT...LON 4846 12227 4840 12230 4830 12235 4837 12250
+      4845 12240 4853 12227
+
+
+$$
+
+45

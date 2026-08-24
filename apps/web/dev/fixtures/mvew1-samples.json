@@ -213,7 +213,7 @@
     }
   },
   "aubw1_stageflow": {
-    "_note": "AUBW1 NWRFC forecast: the issued time, point count (40), primary 'River Discharge' in kcfs and the crest 0.31083 kcfs (310.83 cfs) are real 2026-08-22 captures. The per-point values and valid times were NOT captured; the three non-crest points are stub placeholders below the crest \u2014 this block is NOT a provider payload. pedts was not captured and is omitted.",
+    "_note": "AUBW1 NWRFC forecast: the issued time, point count (40), primary 'River Discharge' in kcfs and the crest 0.31083 kcfs (310.83 cfs) are real 2026-08-22 captures. The per-point values and valid times were NOT captured; the three non-crest points are stub placeholders below the crest — this block is NOT a provider payload. pedts was not captured and is omitted.",
     "issued": "2026-08-21T15:15:00Z",
     "primary": "River Discharge",
     "units": "kcfs",
@@ -246,5 +246,399 @@
       "unit_of_measure": "ft^3/s",
       "approval_status": "Provisional"
     }
-  ]
+  ],
+  "event_zero_mvew1": {
+    "_note": "Event Zero dev-stub subset for MVEW1 (P2). Every numeric value and issuance time is FACT from docs/EVENT_ZERO.md (§3 outcome, §5 timeline, §8 forecast-evolution golden table); this is NOT the full 15-min series (6 documented stage points only) and each runs entry carries exactly the crest ForecastValue. Crest time bin 2025-12-12T12:00:00Z is the FLW H-VTEC crest field (verified via IEM); later runs’ bins were not re-verified and REUSE that bin here — builder B’s parser supplies real per-run bins in production. retrieved_at/available_at are the 2026-08 retrieval (ADR-0010), hence quality \"backfilled\".",
+    "lid": "MVEW1",
+    "series": {
+      "station_id": "station:usgs:12200500",
+      "variable": "stage",
+      "unit": "ft",
+      "datum": "NGVD29",
+      "points": [
+        {
+          "t": "2025-12-09T16:15:00Z",
+          "v": 25.3,
+          "quality": [
+            "approved",
+            "backfilled"
+          ]
+        },
+        {
+          "t": "2025-12-11T09:15:00Z",
+          "v": 29.5,
+          "quality": [
+            "approved",
+            "backfilled"
+          ]
+        },
+        {
+          "t": "2025-12-12T00:15:00Z",
+          "v": 35.8,
+          "quality": [
+            "approved",
+            "backfilled"
+          ]
+        },
+        {
+          "t": "2025-12-12T08:15:00Z",
+          "v": 37.73,
+          "quality": [
+            "approved",
+            "backfilled"
+          ]
+        },
+        {
+          "t": "2025-12-18T04:15:00Z",
+          "v": 30.92,
+          "quality": [
+            "approved",
+            "backfilled"
+          ]
+        },
+        {
+          "t": "2025-12-21T09:15:00Z",
+          "v": 24.05,
+          "quality": [
+            "approved",
+            "backfilled"
+          ]
+        }
+      ],
+      "provenance": {
+        "source_id": "src:usgs-nwis-iv",
+        "source_kind": "OBSERVED",
+        "product_id": "product:usgs-iv",
+        "valid_time": "2025-12-21T09:15:00Z",
+        "retrieved_at": "2026-08-24T12:00:00Z",
+        "freshness": {
+          "state": "stale",
+          "age_seconds": null,
+          "expected_cadence_seconds": 900
+        },
+        "quality": [
+          "approved",
+          "backfilled"
+        ],
+        "label": "USGS instantaneous values Dec 2025 (approved; backfilled 2026-08 via the OGC API) — dev stub: 6 documented points, not the 15-min series"
+      }
+    },
+    "runs": [
+      {
+        "run_id": "run:afos:MVEW1:2025-12-09T17:01:00Z",
+        "product_id": "product:nws-fls-crest",
+        "issued_at": "2025-12-09T17:01:00Z",
+        "issuer": "NWRFC via KSEW",
+        "primary": "stage",
+        "unit": "ft",
+        "datum": "NGVD29",
+        "supersedes_run_id": null,
+        "points": [
+          {
+            "t": "2025-12-12T12:00:00Z",
+            "stage": 36.9,
+            "flow": null
+          }
+        ],
+        "provenance": {
+          "source_id": "src:nws-afos",
+          "source_kind": "OFFICIAL_FORECAST",
+          "product_id": "product:nws-fls-crest",
+          "issued_at": "2025-12-09T17:01:00Z",
+          "valid_time": "2025-12-12T12:00:00Z",
+          "retrieved_at": "2026-08-24T12:00:00Z",
+          "freshness": {
+            "state": "stale",
+            "age_seconds": null,
+            "expected_cadence_seconds": 21600
+          },
+          "quality": [
+            "backfilled",
+            "reconstructed"
+          ],
+          "label": "NWRFC crest via WFO FLW/FLS text (reconstructed; 6-hourly hydrograph lost) — dev stub"
+        }
+      },
+      {
+        "run_id": "run:afos:MVEW1:2025-12-10T01:24:00Z",
+        "product_id": "product:nws-fls-crest",
+        "issued_at": "2025-12-10T01:24:00Z",
+        "issuer": "NWRFC via KSEW",
+        "primary": "stage",
+        "unit": "ft",
+        "datum": "NGVD29",
+        "supersedes_run_id": "run:afos:MVEW1:2025-12-09T17:01:00Z",
+        "points": [
+          {
+            "t": "2025-12-12T12:00:00Z",
+            "stage": 41.5,
+            "flow": null
+          }
+        ],
+        "provenance": {
+          "source_id": "src:nws-afos",
+          "source_kind": "OFFICIAL_FORECAST",
+          "product_id": "product:nws-fls-crest",
+          "issued_at": "2025-12-10T01:24:00Z",
+          "valid_time": "2025-12-12T12:00:00Z",
+          "retrieved_at": "2026-08-24T12:00:00Z",
+          "freshness": {
+            "state": "stale",
+            "age_seconds": null,
+            "expected_cadence_seconds": 21600
+          },
+          "quality": [
+            "backfilled",
+            "reconstructed"
+          ],
+          "label": "NWRFC crest via WFO FLW/FLS text (reconstructed; 6-hourly hydrograph lost) — dev stub"
+        }
+      },
+      {
+        "run_id": "run:afos:MVEW1:2025-12-10T09:24:00Z",
+        "product_id": "product:nws-fls-crest",
+        "issued_at": "2025-12-10T09:24:00Z",
+        "issuer": "NWRFC via KSEW",
+        "primary": "stage",
+        "unit": "ft",
+        "datum": "NGVD29",
+        "supersedes_run_id": "run:afos:MVEW1:2025-12-10T01:24:00Z",
+        "points": [
+          {
+            "t": "2025-12-12T12:00:00Z",
+            "stage": 41.5,
+            "flow": null
+          }
+        ],
+        "provenance": {
+          "source_id": "src:nws-afos",
+          "source_kind": "OFFICIAL_FORECAST",
+          "product_id": "product:nws-fls-crest",
+          "issued_at": "2025-12-10T09:24:00Z",
+          "valid_time": "2025-12-12T12:00:00Z",
+          "retrieved_at": "2026-08-24T12:00:00Z",
+          "freshness": {
+            "state": "stale",
+            "age_seconds": null,
+            "expected_cadence_seconds": 21600
+          },
+          "quality": [
+            "backfilled",
+            "reconstructed"
+          ],
+          "label": "NWRFC crest via WFO FLW/FLS text (reconstructed; 6-hourly hydrograph lost) — dev stub"
+        }
+      },
+      {
+        "run_id": "run:afos:MVEW1:2025-12-10T23:14:00Z",
+        "product_id": "product:nws-fls-crest",
+        "issued_at": "2025-12-10T23:14:00Z",
+        "issuer": "NWRFC via KSEW",
+        "primary": "stage",
+        "unit": "ft",
+        "datum": "NGVD29",
+        "supersedes_run_id": "run:afos:MVEW1:2025-12-10T09:24:00Z",
+        "points": [
+          {
+            "t": "2025-12-12T12:00:00Z",
+            "stage": 42.3,
+            "flow": null
+          }
+        ],
+        "provenance": {
+          "source_id": "src:nws-afos",
+          "source_kind": "OFFICIAL_FORECAST",
+          "product_id": "product:nws-fls-crest",
+          "issued_at": "2025-12-10T23:14:00Z",
+          "valid_time": "2025-12-12T12:00:00Z",
+          "retrieved_at": "2026-08-24T12:00:00Z",
+          "freshness": {
+            "state": "stale",
+            "age_seconds": null,
+            "expected_cadence_seconds": 21600
+          },
+          "quality": [
+            "backfilled",
+            "reconstructed"
+          ],
+          "label": "NWRFC crest via WFO FLW/FLS text (reconstructed; 6-hourly hydrograph lost) — dev stub"
+        }
+      },
+      {
+        "run_id": "run:afos:MVEW1:2025-12-11T01:15:00Z",
+        "product_id": "product:nws-fls-crest",
+        "issued_at": "2025-12-11T01:15:00Z",
+        "issuer": "NWRFC via KSEW",
+        "primary": "stage",
+        "unit": "ft",
+        "datum": "NGVD29",
+        "supersedes_run_id": "run:afos:MVEW1:2025-12-10T23:14:00Z",
+        "points": [
+          {
+            "t": "2025-12-12T12:00:00Z",
+            "stage": 42.1,
+            "flow": null
+          }
+        ],
+        "provenance": {
+          "source_id": "src:nws-afos",
+          "source_kind": "OFFICIAL_FORECAST",
+          "product_id": "product:nws-fls-crest",
+          "issued_at": "2025-12-11T01:15:00Z",
+          "valid_time": "2025-12-12T12:00:00Z",
+          "retrieved_at": "2026-08-24T12:00:00Z",
+          "freshness": {
+            "state": "stale",
+            "age_seconds": null,
+            "expected_cadence_seconds": 21600
+          },
+          "quality": [
+            "backfilled",
+            "reconstructed"
+          ],
+          "label": "NWRFC crest via WFO FLW/FLS text (reconstructed; 6-hourly hydrograph lost) — dev stub"
+        }
+      },
+      {
+        "run_id": "run:afos:MVEW1:2025-12-11T10:04:00Z",
+        "product_id": "product:nws-fls-crest",
+        "issued_at": "2025-12-11T10:04:00Z",
+        "issuer": "NWRFC via KSEW",
+        "primary": "stage",
+        "unit": "ft",
+        "datum": "NGVD29",
+        "supersedes_run_id": "run:afos:MVEW1:2025-12-11T01:15:00Z",
+        "points": [
+          {
+            "t": "2025-12-12T12:00:00Z",
+            "stage": 39.1,
+            "flow": null
+          }
+        ],
+        "provenance": {
+          "source_id": "src:nws-afos",
+          "source_kind": "OFFICIAL_FORECAST",
+          "product_id": "product:nws-fls-crest",
+          "issued_at": "2025-12-11T10:04:00Z",
+          "valid_time": "2025-12-12T12:00:00Z",
+          "retrieved_at": "2026-08-24T12:00:00Z",
+          "freshness": {
+            "state": "stale",
+            "age_seconds": null,
+            "expected_cadence_seconds": 21600
+          },
+          "quality": [
+            "backfilled",
+            "reconstructed"
+          ],
+          "label": "NWRFC crest via WFO FLW/FLS text (reconstructed; 6-hourly hydrograph lost) — dev stub"
+        }
+      },
+      {
+        "run_id": "run:afos:MVEW1:2025-12-11T18:17:00Z",
+        "product_id": "product:nws-fls-crest",
+        "issued_at": "2025-12-11T18:17:00Z",
+        "issuer": "NWRFC via KSEW",
+        "primary": "stage",
+        "unit": "ft",
+        "datum": "NGVD29",
+        "supersedes_run_id": "run:afos:MVEW1:2025-12-11T10:04:00Z",
+        "points": [
+          {
+            "t": "2025-12-12T12:00:00Z",
+            "stage": 39.1,
+            "flow": null
+          }
+        ],
+        "provenance": {
+          "source_id": "src:nws-afos",
+          "source_kind": "OFFICIAL_FORECAST",
+          "product_id": "product:nws-fls-crest",
+          "issued_at": "2025-12-11T18:17:00Z",
+          "valid_time": "2025-12-12T12:00:00Z",
+          "retrieved_at": "2026-08-24T12:00:00Z",
+          "freshness": {
+            "state": "stale",
+            "age_seconds": null,
+            "expected_cadence_seconds": 21600
+          },
+          "quality": [
+            "backfilled",
+            "reconstructed"
+          ],
+          "label": "NWRFC crest via WFO FLW/FLS text (reconstructed; 6-hourly hydrograph lost) — dev stub"
+        }
+      },
+      {
+        "run_id": "run:afos:MVEW1:2025-12-12T01:12:00Z",
+        "product_id": "product:nws-fls-crest",
+        "issued_at": "2025-12-12T01:12:00Z",
+        "issuer": "NWRFC via KSEW",
+        "primary": "stage",
+        "unit": "ft",
+        "datum": "NGVD29",
+        "supersedes_run_id": "run:afos:MVEW1:2025-12-11T18:17:00Z",
+        "points": [
+          {
+            "t": "2025-12-12T12:00:00Z",
+            "stage": 38.3,
+            "flow": null
+          }
+        ],
+        "provenance": {
+          "source_id": "src:nws-afos",
+          "source_kind": "OFFICIAL_FORECAST",
+          "product_id": "product:nws-fls-crest",
+          "issued_at": "2025-12-12T01:12:00Z",
+          "valid_time": "2025-12-12T12:00:00Z",
+          "retrieved_at": "2026-08-24T12:00:00Z",
+          "freshness": {
+            "state": "stale",
+            "age_seconds": null,
+            "expected_cadence_seconds": 21600
+          },
+          "quality": [
+            "backfilled",
+            "reconstructed"
+          ],
+          "label": "NWRFC crest via WFO FLW/FLS text (reconstructed; 6-hourly hydrograph lost) — dev stub"
+        }
+      },
+      {
+        "run_id": "run:afos:MVEW1:2025-12-12T08:50:00Z",
+        "product_id": "product:nws-fls-crest",
+        "issued_at": "2025-12-12T08:50:00Z",
+        "issuer": "NWRFC via KSEW",
+        "primary": "stage",
+        "unit": "ft",
+        "datum": "NGVD29",
+        "supersedes_run_id": "run:afos:MVEW1:2025-12-12T01:12:00Z",
+        "points": [
+          {
+            "t": "2025-12-12T12:00:00Z",
+            "stage": 38.1,
+            "flow": null
+          }
+        ],
+        "provenance": {
+          "source_id": "src:nws-afos",
+          "source_kind": "OFFICIAL_FORECAST",
+          "product_id": "product:nws-fls-crest",
+          "issued_at": "2025-12-12T08:50:00Z",
+          "valid_time": "2025-12-12T12:00:00Z",
+          "retrieved_at": "2026-08-24T12:00:00Z",
+          "freshness": {
+            "state": "stale",
+            "age_seconds": null,
+            "expected_cadence_seconds": 21600
+          },
+          "quality": [
+            "backfilled",
+            "reconstructed"
+          ],
+          "label": "NWRFC crest via WFO FLW/FLS text (reconstructed; 6-hourly hydrograph lost) — dev stub"
+        }
+      }
+    ]
+  }
 }

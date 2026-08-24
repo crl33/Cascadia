@@ -9,9 +9,9 @@
 import type { ZodType } from 'zod';
 import {
   BasinEnvelopeSchema, BasinListSchema, ForecastRunSchema, GeoFeatureSchema, HealthSchema, RiverEnvelopeSchema,
-  SearchResultsSchema, StationSeriesSchema,
+  RunsListSchema, SearchResultsSchema, StationSeriesSchema,
   type BasinEnvelope, type BasinList, type ForecastRun, type GeoFeature, type Health, type RiverEnvelope,
-  type SearchResults, type SeriesVariable, type StationSeries,
+  type RunsList, type SearchResults, type SeriesVariable, type StationSeries,
 } from '../contracts/schemas';
 import { lidOf } from '../app/deep-link';
 
@@ -58,6 +58,12 @@ export const api = {
     getJson(withAsOf(`/stations/${enc(stationId)}/series?variable=${variable}`, asOf), StationSeriesSchema, signal),
   latestRun: (forecastPointId: string, asOf: string | null, signal?: AbortSignal): Promise<ForecastRun> =>
     getJson(withAsOf(`/forecast-points/${enc(lidOf(forecastPointId))}/runs/latest`, asOf), ForecastRunSchema, signal),
+  /** Observed series over an absolute valid-time window (event replay; no as_of — see event/registry). */
+  seriesWindow: (stationId: string, variable: SeriesVariable, start: string, end: string, signal?: AbortSignal): Promise<StationSeries> =>
+    getJson(`/stations/${enc(stationId)}/series?variable=${variable}&start=${enc(start)}&end=${enc(end)}`, StationSeriesSchema, signal),
+  /** Every forecast run issued inside the window, ascending; superseded runs included. */
+  runs: (forecastPointId: string, start: string, end: string, signal?: AbortSignal): Promise<RunsList> =>
+    getJson(`/forecast-points/${enc(lidOf(forecastPointId))}/runs?start=${enc(start)}&end=${enc(end)}`, RunsListSchema, signal),
   search: (q: string, signal?: AbortSignal): Promise<SearchResults> => getJson(`/search?q=${enc(q)}`, SearchResultsSchema, signal),
   health: (signal?: AbortSignal): Promise<Health> => getJson('/system/health', HealthSchema, signal),
 };

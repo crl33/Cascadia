@@ -1,7 +1,8 @@
 /**
- * Mirrors selection, motion, knowledge time and (when captured) the camera pose into the URL
- * (replaceState, trailing-debounced so a scrub rewrites the URL at most every 200 ms), so a
- * reload reproduces the view (docs/CAMERA_SYSTEM.md §7).
+ * Mirrors selection, motion, replay time (knowledge as_of, or event id + EVENT-time cursor)
+ * and (when captured) the camera pose into the URL (replaceState, trailing-debounced so a
+ * scrub rewrites the URL at most every 200 ms), so a reload reproduces the view
+ * (docs/CAMERA_SYSTEM.md §7).
  */
 import { useEffect } from 'react';
 import { shallow } from 'zustand/shallow';
@@ -22,6 +23,8 @@ export function UrlSync() {
         motion: s.motionSetting,
         band: null,
         asOf: s.timeline.asOf,
+        eventId: s.timeline.eventId,
+        at: s.timeline.at,
         cam: s.cameraPose,
       });
       const next = `${window.location.pathname}${qs}`;
@@ -33,7 +36,7 @@ export function UrlSync() {
     };
     write();
     const unsubscribe = useSceneStore.subscribe(
-      (s) => [s.selectedBasinId, s.selectedForecastPointId, s.motionSetting, s.timeline.asOf, s.cameraPose] as const,
+      (s) => [s.selectedBasinId, s.selectedForecastPointId, s.motionSetting, s.timeline.asOf, s.timeline.eventId, s.timeline.at, s.cameraPose] as const,
       schedule,
       { equalityFn: shallow },
     );

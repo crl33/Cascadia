@@ -1,0 +1,125 @@
+029 
+WGUS86 KSEW 111004
+FLSSEW
+
+Flood Statement
+National Weather Service Seattle WA
+204 AM PST Thu Dec 11 2025
+
+...The Flood Warning continues for the following rivers in 
+Washington...
+
+  Skagit River Near Mt. Vernon affecting Skagit County.
+
+  Skagit River Near Concrete affecting Skagit County.
+
+PRECAUTIONARY/PREPAREDNESS ACTIONS...
+
+Motorists should not attempt to drive around barricades or drive 
+cars through flooded areas.
+
+Caution is urged when walking near riverbanks.
+
+Turn around, don't drown when encountering flooded roads. Most flood 
+deaths occur in vehicles.
+
+Even 6 inches of fast-moving flood water can knock you off your feet 
+and a depth of 2 feet will float your car. Never try to walk, swim, 
+or drive through such swift water. If you come upon flood waters, 
+stop, turn around and go another way.
+
+Be especially cautious at night when it is harder to recognize the 
+dangers of flooding.
+
+Additional information is available at www.weather.gov.
+
+The next statement will be issued by this morning at 1015 AM PST.
+
+&&
+
+WAC057-111815-
+/O.EXT.KSEW.FL.W.0042.000000T0000Z-251213T2202Z/
+/MVEW1.3.ER.251211T0112Z.251212T1800Z.251213T1002Z.NR/
+204 AM PST Thu Dec 11 2025
+
+...FLOOD WARNING NOW IN EFFECT UNTIL EARLY SATURDAY AFTERNOON...
+
+* WHAT...Minor flooding is occurring and major flooding is forecast. 
+  This approaches the flood of record.
+
+* WHERE...Skagit River near Mt. Vernon.
+
+* WHEN...Until early Saturday afternoon.
+
+* IMPACTS...At 36.0 feet, the Skagit River will cause severe near 
+  record flooding from Sedro Woolley downstream through Mount Vernon 
+  to the mouth. Deep and swift flood waters will inundate and 
+  possibly damage many roads...farmlands and residential areas. 
+  Levees may be damaged.  Flood areas will also include headwaters...
+  tributaries...and other streams in the Skagit basin. This level 
+  for this location corresponds to a Phase 1 flood in the Skagit 
+  County flood system.
+
+* ADDITIONAL DETAILS...
+  - At 1:15 AM PST Thursday the stage was 29.5 feet.
+  - Flood stage is 28.0 feet.
+  - Recent Activity...The maximum river stage in the 24 hours
+    ending at 1:15 AM PST Thursday was 29.5 feet.
+  - Forecast...The river is expected to rise to a crest of 39.7
+    feet late tomorrow morning. It will then fall below flood
+    stage early Saturday morning.
+  - Flood History...This crest compares to a previous crest of
+    37.4 feet on 11/25/1990.
+  - http://www.weather.gov/safety/flood
+
+&&
+
+LAT...LON 4846 12227 4840 12230 4830 12235 4837 12250
+      4845 12240 4853 12227
+
+
+$$
+
+WAC057-111815-
+/O.EXT.KSEW.FL.W.0035.000000T0000Z-251213T0343Z/
+/CONW1.3.ER.251209T1254Z.251211T1800Z.251212T1543Z.NO/
+204 AM PST Thu Dec 11 2025
+
+...FLOOD WARNING NOW IN EFFECT UNTIL TOMORROW EVENING...
+
+* WHAT...Major flooding is occurring and major flooding is forecast.
+
+* WHERE...Skagit River near Concrete.
+
+* WHEN...Until tomorrow evening.
+
+* IMPACTS...At 40.0 feet, the Skagit River will cause severe near 
+  record flooding from Rockport downstream through Sedro Woolley. 
+  Deep and swift flood waters will inundate and damage roads...farms 
+  and business and residential areas...especially Cape Horn...
+  Hamilton...and Thunderbird. Cockreham Island...the Nookachamps and 
+  the Sterling areas will be inundated. Levees east of Sedro Woolley 
+  may be damaged. This level at this location on the Skagit 
+  corresponds to a Phase 1 flood in the Skagit County flood system.
+
+* ADDITIONAL DETAILS...
+  - At 1:45 AM PST Thursday the stage was 38.4 feet.
+  - Flood stage is 28.0 feet.
+  - Recent Activity...The maximum river stage in the 24 hours
+    ending at 1:45 AM PST Thursday was 38.4 feet.
+  - Forecast...The river is expected to rise to a crest of 42.6
+    feet late this morning. It will then fall below flood stage
+    tomorrow morning.
+  - Flood History...This crest compares to a previous crest of
+    42.2 feet on 10/21/2003.
+  - http://www.weather.gov/safety/flood
+
+&&
+
+LAT...LON 4845 12163 4848 12185 4846 12227 4853 12227
+      4856 12185 4850 12160
+
+
+$$
+
+27

@@ -6,6 +6,8 @@ import { ReplayBanner } from './ReplayBanner';
 import { SceneView } from './SceneView';
 import { TopStrip } from './TopStrip';
 import { UrlSync } from './UrlSync';
+import { EventBanner } from '../event/EventBanner';
+import { ForecastEvolution } from '../event/ForecastEvolution';
 import { BasinPanel } from '../panels/BasinPanel';
 import { RiverPanel } from '../panels/RiverPanel';
 import { resolveMotion } from '../design-system/motion';
@@ -25,9 +27,11 @@ export function App() {
       <SceneView />
       <TopStrip />
       <ReplayBanner />
+      <EventBanner />
       <aside className="panels" aria-label="Intelligence panels">
         <ErrorBoundary name="Basin panel"><BasinPanel /></ErrorBoundary>
         <ErrorBoundary name="River panel"><RiverPanel /></ErrorBoundary>
+        <ErrorBoundary name="Forecast evolution"><ForecastEvolution /></ErrorBoundary>
       </aside>
       <ErrorBoundary name="Timeline"><TimelineBar controller={timelineController} /></ErrorBoundary>
       <footer className="disclaimer" data-testid="disclaimer">

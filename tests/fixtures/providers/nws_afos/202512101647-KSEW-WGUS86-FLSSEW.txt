@@ -1,0 +1,137 @@
+705 
+WGUS86 KSEW 101647
+FLSSEW
+
+Flood Statement
+National Weather Service Seattle WA
+847 AM PST Wed Dec 10 2025
+
+...The Flood Warning is extended for the following rivers in 
+Washington...
+
+  Skagit River Near Concrete affecting Skagit County.
+
+  Skagit River Near Mt. Vernon affecting Skagit County.
+
+...The Flood Warning continues for the following rivers in 
+Washington...
+
+  Stillaguamish River At Arlington affecting Snohomish County.
+
+PRECAUTIONARY/PREPAREDNESS ACTIONS...
+
+Motorists should not attempt to drive around barricades or drive 
+cars through flooded areas.
+
+Turn around, don't drown when encountering flooded roads. Most flood 
+deaths occur in vehicles.
+
+Additional information is available at www.weather.gov.
+
+The next statement will be issued by this afternoon at 500 PM PST.
+
+&&
+
+WAC057-110100-
+/O.EXT.KSEW.FL.W.0035.000000T0000Z-251213T0247Z/
+/CONW1.3.ER.251209T1254Z.251211T1200Z.251212T1447Z.NO/
+847 AM PST Wed Dec 10 2025
+
+...FLOOD WARNING NOW IN EFFECT UNTIL FRIDAY EVENING...
+
+* WHAT...Major flooding is forecast.
+
+* WHERE...Skagit River near Concrete.
+
+* WHEN...Until Friday evening.
+
+* ADDITIONAL DETAILS...
+  - At 8:30 AM PST Wednesday the stage was 27.3 feet.
+  - Flood stage is 28.0 feet.
+  - Forecast...The river is expected to rise above flood stage
+    late this morning to a crest of 47.3 feet late tonight. It
+    will then fall below flood stage Friday morning.
+  - Flood History...This crest compares to a previous crest of
+    45.7 feet on 12/30/1917.
+  - http://www.weather.gov/safety/flood
+
+&&
+
+LAT...LON 4845 12163 4848 12185 4846 12227 4853 12227
+      4856 12185 4850 12160
+
+
+$$
+
+WAC061-110100-
+/O.EXT.KSEW.FL.W.0033.000000T0000Z-251212T1254Z/
+/ARLW1.3.ER.251209T0556Z.251211T0600Z.251212T0054Z.NO/
+847 AM PST Wed Dec 10 2025
+
+...FLOOD WARNING NOW IN EFFECT UNTIL EARLY FRIDAY MORNING...
+
+* WHAT...Major flooding is forecast.
+
+* WHERE...Stillaguamish River at Arlington.
+
+* WHEN...Until early Friday morning.
+
+* IMPACTS...At 20.0 feet, the Stillaguamish River will cause near 
+  record major flooding. Deep and swift flood waters will inundate 
+  many roads including Highway 530 east of Arlington and at Island 
+  Crossing and most valley roads downstream of I-5 to Stanwood. 
+  Levees are subject to overtopping and damage.  Flooding will occur 
+  all along the river including headwaters...tributaries...and other 
+  streams within and near the Stillaguamish River Basin. This stage 
+  corresponds to Phase 4 in Snohomish County flood program.
+
+* ADDITIONAL DETAILS...
+  - At 8:25 AM PST Wednesday the stage was 11.3 feet.
+  - Flood stage is 14.0 feet.
+  - Forecast...The river is expected to rise above flood stage
+    late this morning to a crest of 20.8 feet late this evening.
+    It will then fall below flood stage tomorrow afternoon.
+  - Flood History...This crest compares to a previous crest of
+    20.8 feet on 10/21/2003.
+  - http://www.weather.gov/safety/flood
+
+&&
+
+LAT...LON 4816 12211 4817 12223 4816 12237 4826 12240
+      4823 12224 4824 12214
+
+
+$$
+
+WAC057-110100-
+/O.EXT.KSEW.FL.W.0042.251210T2146Z-251213T2225Z/
+/MVEW1.3.ER.251210T2146Z.251212T1200Z.251213T1025Z.NR/
+847 AM PST Wed Dec 10 2025
+
+...FLOOD WARNING NOW IN EFFECT FROM THIS AFTERNOON TO EARLY SATURDAY 
+AFTERNOON...
+
+* WHAT...Major flooding is forecast. This approaches the flood of 
+  record.
+
+* WHERE...Skagit River near Mt. Vernon.
+
+* WHEN...From this afternoon to early Saturday afternoon.
+
+* ADDITIONAL DETAILS...
+  - At 8:15 AM PST Wednesday the stage was 26.5 feet.
+  - Flood stage is 28.0 feet.
+  - Forecast...The river is expected to rise above flood stage
+    this afternoon to a crest of 41.5 feet early Friday morning.
+    It will then fall below flood stage early Saturday morning.
+  - http://www.weather.gov/safety/flood
+
+&&
+
+LAT...LON 4846 12227 4840 12230 4830 12235 4837 12250
+      4845 12240 4853 12227
+
+
+$$
+
+33

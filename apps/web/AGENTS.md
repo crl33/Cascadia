@@ -19,6 +19,7 @@ not define. Nothing in this app computes a hydrologic quantity — it renders co
 | `src/interactions/` | SearchBox (semantic events only) | api, state |
 | `src/timeline/` | TimelineController (rAF-coalesced knowledge-time commits, replay aborts), TimelineBar scrub UI, pure 72 h window math | api, state, panels/format, design-system |
 | `src/design-system/` | `tokens.css`/`tokens.ts`, `motion.ts` (the only durations/easings), `badges.ts` (source_kind → word + glyph + tone), `ProvenancePopover` + `provenance-record.ts` (per-value inspector v1; rows carry `inspector-*` testids) | contracts types |
+| `src/event/` | Event Zero replay (P2): event registry (window/default-framing config citing docs/EVENT_ZERO.md), EVENT-time cursor filters, EventBanner, ForecastEvolution table. Event mode fetches archived windows ONCE (no `as_of` — ADR-0010) and filters client-side | api, state, contracts, panels (format/math/ProvenanceLine), design-system, timeline/window |
 | `dev/` | fixture-backed stub API (`stub-api.mjs` server, `stub-router.mjs` shared router, `stub-data.mjs` pure builders, `stub-load.mjs` Node fs loader) | Node only for load/server; router is edge-safe |
 
 ESLint enforces: `panels/`, `state/`, `api/`, `interactions/`, `app/`, `timeline/` never import `cesium`.

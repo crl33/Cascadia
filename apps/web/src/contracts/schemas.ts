@@ -242,10 +242,26 @@ export const ForecastRunSchema = z.object({
   points: z.array(ForecastRunPointSchema),
   provenance: ProvenanceRefSchema,
 });
+/**
+ * Archived forecast-run list (P2 Event Zero): GET /forecast-points/{lid}/runs?start=&end= —
+ * every run issued inside the window, ascending, superseded runs included. Each item is the
+ * /runs/latest body plus product identity and the supersedes chain.
+ */
+export const RunListItemSchema = ForecastRunSchema.extend({
+  product_id: z.string(),
+  supersedes_run_id: z.string().nullable(),
+});
+export const RunsListSchema = z.object({
+  lid: z.string(),
+  items: z.array(RunListItemSchema),
+  count: z.number().int().nonnegative(),
+});
 export type SeriesVariable = z.infer<typeof SeriesVariableSchema>;
 export type SeriesPoint = z.infer<typeof SeriesPointSchema>;
 export type StationSeries = z.infer<typeof StationSeriesSchema>;
 export type ForecastRun = z.infer<typeof ForecastRunSchema>;
+export type RunListItem = z.infer<typeof RunListItemSchema>;
+export type RunsList = z.infer<typeof RunsListSchema>;
 
 /* ---- compile-time drift check: zod-inferred types must be assignable to the generated ones ---- */
 type Assignable<T extends U, U> = T;

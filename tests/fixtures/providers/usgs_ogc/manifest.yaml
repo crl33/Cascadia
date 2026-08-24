@@ -1,0 +1,41 @@
+provider: usgs-ogc-continuous
+captured:
+- file: day_12200500.json
+  url: https://api.waterdata.usgs.gov/ogcapi/v0/collections/continuous/items?monitoring_location_id=USGS-12200500&parameter_code=00065%2C00060&datetime=2025-12-12T00%3A00%3A00Z%2F2025-12-13T00%3A00%3A00Z&f=json&limit=10000
+  captured_at: '2026-08-24T12:32:56.798420+00:00'
+  http_status: 200
+  content_type: application/json; charset=utf-8
+  bytes: 162983
+  sha256: 8485ce568abd89549db534459cdf0139bced41808d89caca8ccaadc039286ff3
+  notes: 'REAL capture: site 12200500 (MVEW1), stage 00065 + flow 00060, full UTC
+    day 2025-12-12 (contains the record crest 37.73 ft @ 08:15Z and peak flow @ 09:00Z).
+    One page, limit=10000.'
+- file: paged_12200500_p1.json
+  url: https://api.waterdata.usgs.gov/ogcapi/v0/collections/continuous/items?monitoring_location_id=USGS-12200500&parameter_code=00065%2C00060&datetime=2025-12-12T00%3A00%3A00Z%2F2025-12-13T00%3A00%3A00Z&f=json&limit=120
+  captured_at: '2026-08-24T12:32:56.906765+00:00'
+  http_status: 200
+  content_type: application/json; charset=utf-8
+  bytes: 101778
+  sha256: 25a0434b19e613986e89d1205f8316fd9ae5fd20a6377edb669f11c578411868
+  notes: 'REAL capture: same request at limit=120 so numberReturned == limit and a
+    rel=next link is present.'
+- file: paged_12200500_p2.json
+  url: https://api.waterdata.usgs.gov/ogcapi/v0/collections/continuous/items?cursor=OWYyZmIyZWMyZGU0NDM5OWEyMzEyYjEwM2U4ZjIwNGJ8MjAyNS0xMi0xMiAwNTozMDowMCswMDowMA&monitoring_location_id=USGS-12200500&parameter_code=00065,00060&datetime=2025-12-12T00%3A00%3A00Z%2F2025-12-13T00%3A00%3A00Z&limit=120&f=json
+  captured_at: '2026-08-24T12:32:56.977494+00:00'
+  http_status: 200
+  content_type: application/json; charset=utf-8
+  bytes: 63499
+  sha256: aa64f96f57d029e989f7486f167884b144db349264657a2e5b75dcac294666bd
+  notes: 'REAL capture: the page fetched by following page 1''s rel=next link verbatim.'
+derived:
+- file: derived_missing_field.json
+  derived_from: day_12200500.json
+  sha256: 02a6d10ddcf540cbcd9e07090ff1b9e63f47777c49dc46174c22e9289a88bca0
+  notes: First 3 features; unit_of_measure removed from features[1] -> ParseError.
+- file: derived_edge_cases.json
+  derived_from: day_12200500.json
+  sha256: 4bbbf1b5ae92c7321dd9106583e0499d0c6bd537f32af640e6e9a65ab0b88946
+  notes: 'Handcrafted on the real schema: value ''n/a'' (unparseable), negative flow
+    (out_of_range), Provisional+qualifier [''Ice''], null value, statistic_id 00003
+    (non-instantaneous, skipped), plain Approved. Plus Provisional+qualifier [''ESTIMATED'']
+    (the caps spelling observed live) -> ''estimated''.'

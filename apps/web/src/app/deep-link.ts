@@ -1,12 +1,18 @@
 /**
  * Deep-link grammar (docs/CAMERA_SYSTEM.md §7, spike subset — the scope lives in the query
- * until path routing lands): `?sel=<EntityId>&basin=<id>&as_of=<iso>&cam=<v1>&motion=…&band=…`.
- * `sel` is the primary selection (full namespaced EntityId); `basin` carries the basin context
- * when the primary is a forecast point (and is the legacy primary key); `cam` is the compact
- * camera target `1~<anchor>~<rangeM>~<headingDeg>~<pitchDeg>[~<mode>]`. Pure parse/serialize;
- * stable ids only (never labels); unknown keys ignored; invalid values dropped rather than
- * guessed; an unknown cam version falls back to sel. Load is always a cut.
+ * until path routing lands): `?sel=<EntityId>&basin=<id>&as_of=<iso>&event=<id>&at=<iso>
+ * &cam=<v1>&motion=…&band=…`. `sel` is the primary selection (full namespaced EntityId);
+ * `basin` carries the basin context when the primary is a forecast point (and is the legacy
+ * primary key); `cam` is the compact camera target
+ * `1~<anchor>~<rangeM>~<headingDeg>~<pitchDeg>[~<mode>]`. `event` (validated against
+ * event/registry) enters event replay with EVENT-time cursor `at`; event and as_of are
+ * mutually exclusive — event wins and as_of is dropped, because backfilled archive rows carry
+ * available_at = retrieval time (ADR-0010) and a knowledge-time replay inside the event would
+ * honestly render UNKNOWN. Pure parse/serialize; stable ids only (never labels); unknown keys
+ * ignored; invalid values dropped rather than guessed; an unknown cam version falls back to
+ * sel. Load is always a cut.
  */
+import { isEventId } from '../event/registry';
 import type { CameraPose } from '../state/store';
 import type { MotionSetting } from '../design-system/motion';
 import { BANDS, type Band } from '../scene/bands';
@@ -16,8 +22,12 @@ export interface DeepLink {
   forecastPointId: string | null;   // full id, e.g. fp:nwps:MVEW1
   motion: MotionSetting | null;
   band: Band | null;
-  /** ISO 8601 UTC knowledge time for replay; null means live now. */
+  /** ISO 8601 UTC knowledge time for replay; null means live now (and always null with an event). */
   asOf: string | null;
+  /** Event replay id (event/registry); null outside event mode. */
+  eventId: string | null;
+  /** EVENT-time cursor for event replay; only meaningful beside eventId. */
+  at: string | null;
   cam: CameraPose | null;
 }
 
@@ -85,6 +95,8 @@ export function parseDeepLink(search: string): DeepLink {
   const motion = params.get('motion');
   const band = params.get('band');
   const camRaw = params.get('cam');
+  const eventRaw = params.get('event');
+  const eventId = eventRaw !== null && isEventId(eventRaw) ? eventRaw : null;
 
   let basinId: string | null = null;
   let forecastPointId: string | null = null;
@@ -106,7 +118,10 @@ export function parseDeepLink(search: string): DeepLink {
     forecastPointId,
     motion: motion && (MOTIONS as readonly string[]).includes(motion) ? (motion as MotionSetting) : null,
     band: band && (BANDS as readonly string[]).includes(band) ? (band as Band) : null,
-    asOf: parseAsOf(params.get('as_of')),
+    // event wins over as_of: a knowledge-time replay inside a backfilled event is honestly UNKNOWN.
+    asOf: eventId !== null ? null : parseAsOf(params.get('as_of')),
+    eventId,
+    at: eventId !== null ? parseAsOf(params.get('at')) : null,
     cam: camRaw ? parseCam(camRaw) : null,
   };
 }
@@ -116,7 +131,12 @@ export function serializeDeepLink(link: DeepLink): string {
   const sel = link.forecastPointId ?? link.basinId;
   if (sel) params.set('sel', sel);
   if (link.forecastPointId && link.basinId) params.set('basin', link.basinId);
-  if (link.asOf) params.set('as_of', link.asOf);
+  if (link.eventId) {
+    params.set('event', link.eventId);
+    if (link.at) params.set('at', link.at);
+  } else if (link.asOf) {
+    params.set('as_of', link.asOf);
+  }
   if (link.cam) params.set('cam', serializeCam(link.cam));
   if (link.motion && link.motion !== 'system') params.set('motion', link.motion);
   if (link.band) params.set('band', link.band);
