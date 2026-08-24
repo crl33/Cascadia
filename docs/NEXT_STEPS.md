@@ -54,12 +54,17 @@ when a milestone closes; delete lines that stop being true.
 > unless required for functionality actively being built. Execution order: **P1 → P2 → P3**
 > below, then the remaining M-milestones as originally sequenced.
 
-### P1 — Cinematic client C1/C2 on the live backend (M)
+### P1 — Cinematic client C1/C2 on the live backend (M) — **DONE 2026-08-24, verified live**
 - Hydrograph panel (observed + official forecast + thresholds with datum), layer inspector
   with per-value provenance, search, deep links; band boundaries fixed from telemetry;
   remove the Cesium ion logo credit (ion-free attribution).
 - Timeline/replay controls driving `as_of` across every query (the API already honors it).
-- Exit: CINEMATIC_ROADMAP C1+C2 exit criteria against cascadia.papsukkal.com.
+- Exit met (P1 scope): timeline/replay via as_of with honest AS-OF banner and URL round-trip,
+  hydrograph with basis/unit/datum discipline, per-value provenance popover, keyboard
+  search-to-flight, deep links (?sel=&as_of=&cam=), ion credit replaced with honest
+  attribution. Verified in-browser against production 2026-08-24 (incl. the knowledge-time
+  boundary: as_of before first ingestion correctly renders all-UNKNOWN). Deferred within C1/C2:
+  camera-pose capture on settle, vendor imagery tier, reaches/reservoir layers, perf harness.
 
 ### P2 — Event Zero replay experience (M)
 - Backfill Dec 2025 point truth into production: USGS IV Dec 1–31 for the seed stations via

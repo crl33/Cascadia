@@ -236,3 +236,24 @@ noted. Nothing outside `apps/web`, `tests/e2e` and this file was touched (plus
 - `CASCADE_LIVE_API_BASE=https://cascadia.papsukkal.com npx vitest run src/contracts/live-api.test.ts --testTimeout=30000`
   → **8/8 passed** (53 s). At the default 5 s testTimeout 3 tests time out on remote latency
   (~1.5–3 s/request, /scene/summary iterates 4 bands) — a timeout note, not a contract failure.
+
+
+## P1 client — live production verification (orchestrator, 2026-08-24)
+
+Deployed as 40b0cb1 (+1f6e4b3 gitleaks allowlist) to cascadia.papsukkal.com (bundle
+index-CL8_FG0r.js) and driven in a real browser against the live backend:
+- Deep link ?sel=fp:nwps:MVEW1 boots into the MVEW1 panel: observed 10.63 ft NGVD29 /
+  6,730 cfs, provisional, OBSERVED + CURRENT (age 28 min, cadence 15 min), category NONE
+  with the official-threshold explanation, hydrograph with labeled threshold lines
+  (23.5/28/30/32 ft NGVD29) and forecast register boundary.
+- Provenance popover from the OBSERVED badge: all fields incl. METHOD none (untransformed),
+  replayed freshness, RAW ARTIFACT id.
+- Timeline scrub to 2026-08-23 12:12 UTC: AS OF banner + ?as_of= in URL; panel renders
+  all-UNKNOWN — correct, production's first ingestion was 2026-08-24 10:24 UTC (honest
+  knowledge time at the boundary). Scrub to 11:12 UTC: the observation known then, with
+  age computed against the replay clock. Snap-to-now drops banner and URL param.
+- Search "skag": grouped results (basin / forecast point / station); Enter flies to the
+  basin (band BASIN settled), URL ?sel=basin:skagit; basin panel shows the honest surfaces.
+- Credit line reads "CesiumJS (renderer) (c) OpenStreetMap contributors" - ion logo gone.
+CI on 40b0cb1: backend, backend-pg, web, e2e-stub green; gitleaks flagged a unit-test
+fixture string (false positive) - allowlisted via .gitleaks.toml in 1f6e4b3.
