@@ -141,6 +141,11 @@ jobs:
       - name: Install Chromium (download skipped on cache hit)
         run: npx playwright install --with-deps chromium
       - name: Playwright E2E against the fixture stub (build + stub-api + vite preview)
+        # VITE_API_BASE must point at the stub for this job: since b6a34f4 a production
+        # build defaults to a same-origin API, and vite preview has no proxy, so an
+        # unconfigured build has no data path (caught by this job's first run).
+        env:
+          VITE_API_BASE: http://localhost:8000
         run: npm run e2e
 
   gitleaks:
