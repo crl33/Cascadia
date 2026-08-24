@@ -4,7 +4,7 @@
  * and hover, band → layer visibility, and disposal. Geography (basin bboxes, forecast-point
  * locations) arrives through setGeography/setData — the controller never fetches.
  */
-import { Clock, ClockRange, ClockStep, Entity, JulianDate, ScreenSpaceEventHandler, ScreenSpaceEventType, Viewer } from 'cesium';
+import { Clock, ClockRange, ClockStep, Credit, CreditDisplay, Entity, JulianDate, ScreenSpaceEventHandler, ScreenSpaceEventType, Viewer } from 'cesium';
 import 'cesium/Build/Cesium/Widgets/widgets.css';
 import { CameraController } from '../camera/CameraController';
 import type { FlightReason } from '../camera/types';
@@ -15,6 +15,7 @@ import type { LayerHit, LayerId, SceneHandle, SceneLayer, SelectionState } from 
 import { BasinsLayer, type BasinsLayerData } from '../layers/basins/BasinsLayer';
 import { osmKeyless, type BasemapProvider } from '../layers/basemap/BasemapProvider';
 import { RiversLayer } from '../layers/rivers/RiversLayer';
+import { CESIUM_RENDERER_CREDIT_HTML } from './credits';
 import { SemanticZoomController } from './SemanticZoomController';
 import type { Band } from './bands';
 
@@ -32,6 +33,7 @@ export class SceneController {
   readonly basemap: BasemapProvider;
 
   private readonly handle: SceneHandle;
+  private readonly creditsContainer: HTMLElement;
   private readonly layers = new Map<LayerId, SceneLayer>();
   private readonly intents = new Map<LayerId, boolean>();
   private readonly basins = new Map<string, BasinListItem>();
@@ -53,6 +55,14 @@ export class SceneController {
     credits.className = 'scene-credits';
     credits.setAttribute('data-testid', 'scene-credits');
     container.appendChild(credits);
+    // Attribution honesty (docs/research/spike-report-2026-08-22.md gap 7): this viewer is
+    // ion-free, so Cesium's default ion logo credit would misattribute an app that never calls
+    // ion. Replace it through the supported CreditDisplay.cesiumCredit API with a text credit
+    // for the renderer — assigned before the Viewer is constructed so the ion default is never
+    // built. The basemap credit (OSM) still renders on screen in this container; hiding credits
+    // with CSS is forbidden because it would suppress that required attribution too.
+    CreditDisplay.cesiumCredit = new Credit(CESIUM_RENDERER_CREDIT_HTML, true);
+    this.creditsContainer = credits;
     this.viewer = new Viewer(container, {
       creditContainer: credits,
       baseLayer: this.basemap.createImagery(),
@@ -169,6 +179,7 @@ export class SceneController {
     this.layers.forEach((layer) => layer.dispose());
     this.camera.dispose();
     this.viewer.destroy();
+    this.creditsContainer.remove(); // the credits div is ours, not the Viewer's; remove it so a remount cannot leave orphan attribution strips
   }
 
   private setSelection(selection: SelectionState): void {

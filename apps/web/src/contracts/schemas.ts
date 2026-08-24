@@ -219,6 +219,34 @@ export type SearchResults = z.infer<typeof SearchResultsSchema>;
 export type SearchResult = SearchResults['items'][number];
 export type Health = z.infer<typeof HealthSchema>;
 
+/* ---- station series and forecast runs (P1 endpoints; parsed like the other spike endpoints —
+        no generated JSON Schema exists for them yet) ---- */
+export const SeriesVariableSchema = z.enum(['stage', 'flow']);
+export const SeriesPointSchema = z.object({ t: iso, v: z.number().nullable(), quality: z.array(z.string()).optional() });
+export const StationSeriesSchema = z.object({
+  station_id: z.string(),
+  variable: SeriesVariableSchema,
+  unit: z.string(),
+  datum: z.string().nullable().optional(),
+  points: z.array(SeriesPointSchema),
+  provenance: ProvenanceRefSchema,
+});
+export const ForecastRunPointSchema = z.object({ t: iso, stage: z.number().nullable().optional(), flow: z.number().nullable().optional() });
+export const ForecastRunSchema = z.object({
+  run_id: z.string(),
+  issued_at: iso,
+  issuer: z.string(),
+  primary: SeriesVariableSchema,
+  unit: z.string(),
+  datum: z.string().nullable().optional(),
+  points: z.array(ForecastRunPointSchema),
+  provenance: ProvenanceRefSchema,
+});
+export type SeriesVariable = z.infer<typeof SeriesVariableSchema>;
+export type SeriesPoint = z.infer<typeof SeriesPointSchema>;
+export type StationSeries = z.infer<typeof StationSeriesSchema>;
+export type ForecastRun = z.infer<typeof ForecastRunSchema>;
+
 /* ---- compile-time drift check: zod-inferred types must be assignable to the generated ones ---- */
 type Assignable<T extends U, U> = T;
 export type _DriftEnvelope = Assignable<ContractEnvelope, Generated.ContractEnvelope>;

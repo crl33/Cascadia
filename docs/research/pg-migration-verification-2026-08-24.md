@@ -187,3 +187,52 @@ executed by the orchestrator with credentials. Railway start command switched to
 supervised `all` mode. Known follow-ups: e2e-stub CI job is CI-verified-only; action major
 tags unverified against github.com; gitleaks-action needs a license only if the repo moves
 to an org.
+
+## P1 web-client integration gates — 2026-08-24 (integrator pass)
+
+Integration and gating of the four P1 builder workstreams in `apps/web` (timeline/replay,
+hydrograph + provenance popover, search-to-flight + attribution, contract-first E2E specs).
+All gates ran on the assembled tree after integration fixes; commands from `apps/web` unless
+noted. Nothing outside `apps/web`, `tests/e2e` and this file was touched (plus
+`scripts/sync-pages-fixtures.sh` run for `functions/fixtures`).
+
+### Integration changes
+
+- Spec-contract testids wired: `timeline` (bar cluster, was `timeline-bar`), `snap-to-now`
+  (was `timeline-now`), `as-of-banner` (was `replay-banner`; copy now leads with
+  "AS OF <knowledge time UTC>"), `hydrograph-axis-unit`, `hydrograph-threshold-line`,
+  `hydrograph-threshold-label` (labels now carry value + unit, + datum on stage basis),
+  `hydrograph-series-observed`/`-forecast` (were `hydrograph-observed`/`-forecast`),
+  `hydrograph-register-boundary`, `inspector-*` row testids on the provenance popover
+  (`inspector-source|kind|truth|product|method|issued|valid|retrieved|freshness|quality|raw-artifact`)
+  and `inspector-close`.
+- Popover SOURCE row now reads `source_id · product_id — label` (spec contract); its unit
+  test updated accordingly.
+- `npm run e2e` now builds with `VITE_API_BASE=http://localhost:8000`: the production-build
+  default became same-origin for Cloudflare Pages, which silently pointed the E2E preview at
+  :4173 (every API call 404 → 11/12 specs failed). Root cause, not a flake.
+- Two pre-P1 specs (`skagit-flight`, `search`) asserted the legacy `?basin=` URL grammar;
+  updated 3 assertions to the canonical `?sel=` serialization (unit tests had already migrated).
+- AGENTS.md updates: `api/` may-import now blesses `state` (asOf keying, established by the
+  timeline workstream), `panels/` row reflects Hydrograph + popover (LayerInspector deleted),
+  timeline AGENTS.md records the e2e testid contract. README "does not do" list updated.
+
+### Gates (in order, all green)
+
+| Gate | Command | Result |
+|---|---|---|
+| Types | `npx tsc --noEmit` | clean |
+| Lint | `npm run lint` (boundary rule incl.) | clean |
+| Unit | `npx vitest run` | 16 files passed, 1 skipped (live-gated); 97 tests passed, 8 skipped |
+| Build | `npm run build` | clean; `index-*.js` 4,490 kB (gzip 1,217 kB), CSS 36 kB (gzip 8 kB) — single-chunk spike layout unchanged, under the 2.5 MB shell+scene brotli target (PERFORMANCE §2); shell-only 250 kB budget unmeasurable until the scene chunk is split (documented deferral in vite.config.ts) |
+| Doctor | `npx react-doctor@latest --verbose` | 90/100 before AND after (2 pre-existing warnings: js-combine-iterations in search-reducer.ts, unused-export in BasemapProvider.ts) |
+| E2E (stub) | `npm run e2e` | **12/12 passed** (skagit-flight 4, timeline-scrub 3, hydrograph 2, provenance 2, search 1), 1.5 m, SwiftShader renderer ready |
+
+### Live smoke (real backend, https://cascadia.papsukkal.com)
+
+- `curl` probes all HTTP 200: `/system/health` (status ok, both providers healthy),
+  `/search?q=skag`, `/forecast-points/MVEW1/state?as_of=2026-08-22T06:00:00Z`,
+  `/forecast-points/AUBW1/runs/latest`, `/stations/station:usgs:12113000/series?variable=flow`.
+- `CASCADE_LIVE_API_BASE=https://cascadia.papsukkal.com npx vitest run src/contracts/live-api.test.ts --testTimeout=30000`
+  → **8/8 passed** (53 s). At the default 5 s testTimeout 3 tests time out on remote latency
+  (~1.5–3 s/request, /scene/summary iterates 4 bands) — a timeout note, not a contract failure.

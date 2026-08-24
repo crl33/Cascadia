@@ -1,0 +1,15 @@
+/* Timeline chrome. Colours only via tokens.css variables; no animation — time is data. */
+.timeline-bar {
+  position: absolute; left: 12px; right: 12px; bottom: 44px; z-index: 5;
+  display: flex; align-items: center; gap: 10px; padding: 8px 12px;
+  background: var(--glass); border: 1px solid var(--stroke); border-radius: var(--radius); backdrop-filter: blur(10px);
+}
+.timeline-chip { font-size: 11px; letter-spacing: 0.06em; border: 1px solid currentColor; border-radius: 999px; padding: 2px 10px; white-space: nowrap; }
+.timeline-chip-now { color: var(--cyan); }
+.timeline-chip-past { color: var(--amber-watch); }
+.timeline-edge { font-size: 10.5px; color: var(--text-muted); white-space: nowrap; }
+.timeline-scrubber { flex: 1; min-width: 120px; accent-color: var(--cyan); }
+.timeline-bar[data-mode='past'] .timeline-scrubber { accent-color: var(--amber-watch); }
+.timeline-scrubber:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
+.timeline-readout { font-size: 11.5px; color: var(--text-secondary); white-space: nowrap; }
+.timeline-now:disabled { opacity: 0.5; cursor: default; }

@@ -84,5 +84,167 @@
       "qualifier": null,
       "last_modified": "2026-08-22T08:25:13.392038+00:00"
     }
+  ],
+  "aubw1_state": {
+    "_note": "AUBW1 Green River near Auburn (USGS 12113000, reach:nwm:23977634): the FLOW-basis seed point for the dev stub. Real 2026-08-22 captures: official NWPS flood categories in flow cfs 6000/9000/12000/14000 (stage -9999), observed 297 cfs provisional at 2026-08-22T07:45Z, NWRFC forecast issued 2026-08-21T15:15Z with crest 310.83 cfs, headroom to action 5703 cfs (docs/research/v1-live-verification-2026-08-22.json, nwps-usgs-awdb-samples-2026-08-22.json, spike-report-2026-08-22.md section 1). crest_valid_time is a stub choice (not captured); topology upstream/downstream were not captured and are left empty.",
+    "item": {
+      "id": "fp:nwps:AUBW1",
+      "name": "Green River near Auburn",
+      "station_id": "station:usgs:12113000",
+      "reach_id": "reach:nwm:23977634",
+      "basin_id": "basin:green-duwamish",
+      "observed": {
+        "prov": "usgs-iv-12113000",
+        "truth": "observation",
+        "stage": null,
+        "flow": {
+          "value": 297,
+          "unit": "cfs"
+        },
+        "valid_time": "2026-08-22T07:45:00Z"
+      },
+      "observed_category": "none",
+      "observed_category_reason": "Observed flow 297 cfs is below action flow 6000 cfs (official NWPS).",
+      "trend": null,
+      "headroom": {
+        "basis": "flow",
+        "to_category": "action",
+        "value": {
+          "value": 5703,
+          "unit": "cfs"
+        },
+        "time_to_threshold_h": null,
+        "prov": "cascade-headroom-aubw1",
+        "reason": "time_to_threshold requires a rising trend"
+      },
+      "official_forecast": {
+        "prov": "nwps-forecast-aubw1",
+        "truth": "authoritative_model",
+        "issued_at": "2026-08-21T15:15:00Z",
+        "issuer": "NWRFC",
+        "crest": {
+          "value": 310.83,
+          "unit": "cfs"
+        },
+        "crest_valid_time": "2026-08-22T12:00:00Z",
+        "category": "none",
+        "points": 40
+      },
+      "thresholds": {
+        "basis": "flow",
+        "unit": "cfs",
+        "datum": null,
+        "action": 6000,
+        "minor": 9000,
+        "moderate": 12000,
+        "major": 14000,
+        "prov": "nwps-thresholds-aubw1"
+      },
+      "topology": {
+        "upstream": [],
+        "downstream": []
+      },
+      "regulation": {
+        "class": "regulated",
+        "regulated_by": [
+          "reservoir:howard-hanson"
+        ]
+      },
+      "location": [
+        -122.2017,
+        47.3081
+      ],
+      "flow_visual_intensity": null
+    },
+    "provenance_refs": {
+      "usgs-iv-12113000": {
+        "source_id": "src:usgs-nwis-iv",
+        "source_kind": "OBSERVED",
+        "product_id": "product:usgs-iv-00060",
+        "valid_time": "2026-08-22T07:45:00Z",
+        "retrieved_at": "2026-08-22T08:26:43Z",
+        "freshness": {
+          "state": "current",
+          "age_seconds": 4500,
+          "expected_cadence_seconds": 900
+        },
+        "quality": [
+          "provisional"
+        ],
+        "label": "USGS instantaneous values (provisional)"
+      },
+      "cascade-headroom-aubw1": {
+        "source_id": "src:cascade",
+        "source_kind": "DERIVED",
+        "method_id": "method:flow-headroom@1.0.0",
+        "valid_time": "2026-08-22T07:45:00Z",
+        "freshness": {
+          "state": "current",
+          "age_seconds": 4500
+        },
+        "label": "Cascade flow headroom to official action flow"
+      },
+      "nwps-forecast-aubw1": {
+        "source_id": "src:nwps-v1",
+        "source_kind": "OFFICIAL_FORECAST",
+        "product_id": "product:nwps-stageflow-forecast",
+        "issued_at": "2026-08-21T15:15:00Z",
+        "valid_time": "2026-08-22T12:00:00Z",
+        "retrieved_at": "2026-08-22T08:26:43Z",
+        "freshness": {
+          "state": "current",
+          "age_seconds": 63900,
+          "expected_cadence_seconds": 86400
+        },
+        "label": "NWRFC official river forecast via NOAA NWPS"
+      },
+      "nwps-thresholds-aubw1": {
+        "source_id": "src:nwps-v1",
+        "source_kind": "OFFICIAL_FORECAST",
+        "product_id": "product:nwps-gauge-flood-categories",
+        "retrieved_at": "2026-08-22T08:26:43Z",
+        "freshness": {
+          "state": "current",
+          "age_seconds": 2700,
+          "expected_cadence_seconds": 21600
+        },
+        "label": "Official NWS flood categories (NWPS)"
+      }
+    }
+  },
+  "aubw1_stageflow": {
+    "_note": "AUBW1 NWRFC forecast: the issued time, point count (40), primary 'River Discharge' in kcfs and the crest 0.31083 kcfs (310.83 cfs) are real 2026-08-22 captures. The per-point values and valid times were NOT captured; the three non-crest points are stub placeholders below the crest \u2014 this block is NOT a provider payload. pedts was not captured and is omitted.",
+    "issued": "2026-08-21T15:15:00Z",
+    "primary": "River Discharge",
+    "units": "kcfs",
+    "data": [
+      {
+        "validTime": "2026-08-21T18:00:00Z",
+        "primary": 0.297
+      },
+      {
+        "validTime": "2026-08-22T00:00:00Z",
+        "primary": 0.3
+      },
+      {
+        "validTime": "2026-08-22T06:00:00Z",
+        "primary": 0.305
+      },
+      {
+        "validTime": "2026-08-22T12:00:00Z",
+        "primary": 0.31083
+      }
+    ]
+  },
+  "aubw1_usgs_latest": [
+    {
+      "_note": "Real USGS IV capture 2026-08-22 (00:45 PDT = 07:45Z); only the fields the stub reads are kept.",
+      "monitoring_location_id": "USGS-12113000",
+      "parameter_code": "00060",
+      "time": "2026-08-22T07:45:00+00:00",
+      "value": "297",
+      "unit_of_measure": "ft^3/s",
+      "approval_status": "Provisional"
+    }
   ]
 }

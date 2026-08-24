@@ -11,16 +11,17 @@ not define. Nothing in this app computes a hydrologic quantity — it renders co
 |---|---|---|
 | `src/app/` | shell, deep-link parse/serialize, SceneView (ref-held container), SceneDataBridge (query → controller), error boundaries around panels only | everything except `cesium` |
 | `src/state/` | Zustand store: selection, band, motion setting, active layers, time (`now`), quality tier, flight state. **No Cesium types, no server data.** | nothing renderer-side |
-| `src/api/` | TanStack Query client, keys by entity id, typed fetchers with zod + AbortSignal. `VITE_API_BASE` (dev default `http://localhost:8000`; production build is same-origin). | contracts |
+| `src/api/` | TanStack Query client, keys by entity id + `{asOf}` segment, typed fetchers with zod + AbortSignal forwarding `as_of`. `VITE_API_BASE` (dev default `http://localhost:8000`; production build is same-origin; `npm run e2e` builds against the stub origin). | contracts, state (asOf keying only) |
 | `src/scene/` | `SceneController` (viewer lifecycle, layer registry, selection → framing, picking), `SemanticZoomController` + `bands.ts` (band math, hysteresis), `bridge.ts` (the ONLY store ↔ controller subscription) | cesium, camera, layers |
 | `src/camera/` | `CameraController` (initial Cascadia view, basin/forecast-point framing, durations, interrupt, reduced-motion cut + veil), pure `flight-math.ts` | cesium, design-system/motion |
 | `src/layers/` | `contract.ts` (SceneLayer), `basemap/` (keyless OSM + ellipsoid; registry hook for other providers), `basins/`, `rivers/` — each `style.ts` is the only place semantic state becomes presentation | cesium, contracts, design-system/tokens |
-| `src/panels/` | BasinPanel, RiverPanel, LayerInspector, formatting. Every scientific value shows its source-kind badge + freshness. | api, state, design-system, contracts |
+| `src/panels/` | BasinPanel, RiverPanel, Hydrograph (hand-rolled SVG + pure `hydrograph-math.ts`), ProvenanceLine, formatting. Every scientific value shows its source-kind badge + freshness; the badge opens the per-value provenance popover (`design-system/ProvenancePopover`, testid `layer-inspector`). | api, state, design-system, contracts |
 | `src/interactions/` | SearchBox (semantic events only) | api, state |
-| `src/design-system/` | `tokens.css`/`tokens.ts`, `motion.ts` (the only durations/easings), `badges.ts` (source_kind → word + glyph + tone) | contracts types |
+| `src/timeline/` | TimelineController (rAF-coalesced knowledge-time commits, replay aborts), TimelineBar scrub UI, pure 72 h window math | api, state, panels/format, design-system |
+| `src/design-system/` | `tokens.css`/`tokens.ts`, `motion.ts` (the only durations/easings), `badges.ts` (source_kind → word + glyph + tone), `ProvenancePopover` + `provenance-record.ts` (per-value inspector v1; rows carry `inspector-*` testids) | contracts types |
 | `dev/` | fixture-backed stub API (`stub-api.mjs` server, `stub-router.mjs` shared router, `stub-data.mjs` pure builders, `stub-load.mjs` Node fs loader) | Node only for load/server; router is edge-safe |
 
-ESLint enforces: `panels/`, `state/`, `api/`, `interactions/`, `app/` never import `cesium`.
+ESLint enforces: `panels/`, `state/`, `api/`, `interactions/`, `app/`, `timeline/` never import `cesium`.
 
 ## Rules (react-quality skill, enforced by review)
 

@@ -1,14 +1,17 @@
 /**
  * Typed fetchers for the SPIKE API SPEC. Every response is parsed with its zod schema before it
  * reaches the app; an AbortSignal is passed through so TanStack Query can cancel stale requests.
- * VITE_API_BASE overrides the backend origin. Unset: localhost:8000 in `vite`/`vitest`,
- * same-origin (`''`) in `vite build` so Cloudflare Pages can serve the stub API next to the app.
- * No other module calls fetch.
+ * Every time-dependent endpoint forwards the knowledge time as `?as_of=` — the backend is a pure
+ * function of as_of; the client never recomputes science. VITE_API_BASE overrides the backend
+ * origin. Unset: localhost:8000 in `vite`/`vitest`, same-origin (`''`) in `vite build` so
+ * Cloudflare Pages can serve the stub API next to the app. No other module calls fetch.
  */
 import type { ZodType } from 'zod';
 import {
-  BasinEnvelopeSchema, BasinListSchema, GeoFeatureSchema, HealthSchema, RiverEnvelopeSchema, SearchResultsSchema,
-  type BasinEnvelope, type BasinList, type GeoFeature, type Health, type RiverEnvelope, type SearchResults,
+  BasinEnvelopeSchema, BasinListSchema, ForecastRunSchema, GeoFeatureSchema, HealthSchema, RiverEnvelopeSchema,
+  SearchResultsSchema, StationSeriesSchema,
+  type BasinEnvelope, type BasinList, type ForecastRun, type GeoFeature, type Health, type RiverEnvelope,
+  type SearchResults, type SeriesVariable, type StationSeries,
 } from '../contracts/schemas';
 import { lidOf } from '../app/deep-link';
 
@@ -35,17 +38,26 @@ async function getJson<T>(path: string, schema: ZodType<T>, signal?: AbortSignal
 
 const enc = encodeURIComponent;
 
+/** Appends the knowledge time to a time-dependent path; live ('now') requests carry no as_of. */
+const withAsOf = (path: string, asOf: string | null): string =>
+  asOf === null ? path : `${path}${path.includes('?') ? '&' : '?'}as_of=${enc(asOf)}`;
+
 export const api = {
   basins: (signal?: AbortSignal): Promise<BasinList> => getJson('/basins', BasinListSchema, signal),
   geometry: (basinId: string, lod: 'state' | 'basin', signal?: AbortSignal): Promise<GeoFeature> =>
     getJson(`/basins/${enc(basinId)}/geometry?lod=${lod}`, GeoFeatureSchema, signal),
-  basinState: (basinId: string, signal?: AbortSignal): Promise<BasinEnvelope> =>
-    getJson(`/basins/${enc(basinId)}/state`, BasinEnvelopeSchema, signal),
-  vizBasins: (signal?: AbortSignal): Promise<BasinEnvelope> => getJson('/viz/basins', BasinEnvelopeSchema, signal),
-  vizRivers: (basinId: string, signal?: AbortSignal): Promise<RiverEnvelope> =>
-    getJson(`/viz/rivers?basin=${enc(basinId)}`, RiverEnvelopeSchema, signal),
-  riverState: (forecastPointId: string, signal?: AbortSignal): Promise<RiverEnvelope> =>
-    getJson(`/forecast-points/${enc(lidOf(forecastPointId))}/state`, RiverEnvelopeSchema, signal),
+  basinState: (basinId: string, asOf: string | null, signal?: AbortSignal): Promise<BasinEnvelope> =>
+    getJson(withAsOf(`/basins/${enc(basinId)}/state`, asOf), BasinEnvelopeSchema, signal),
+  vizBasins: (asOf: string | null, signal?: AbortSignal): Promise<BasinEnvelope> =>
+    getJson(withAsOf('/viz/basins', asOf), BasinEnvelopeSchema, signal),
+  vizRivers: (basinId: string, asOf: string | null, signal?: AbortSignal): Promise<RiverEnvelope> =>
+    getJson(withAsOf(`/viz/rivers?basin=${enc(basinId)}`, asOf), RiverEnvelopeSchema, signal),
+  riverState: (forecastPointId: string, asOf: string | null, signal?: AbortSignal): Promise<RiverEnvelope> =>
+    getJson(withAsOf(`/forecast-points/${enc(lidOf(forecastPointId))}/state`, asOf), RiverEnvelopeSchema, signal),
+  stationSeries: (stationId: string, variable: SeriesVariable, asOf: string | null, signal?: AbortSignal): Promise<StationSeries> =>
+    getJson(withAsOf(`/stations/${enc(stationId)}/series?variable=${variable}`, asOf), StationSeriesSchema, signal),
+  latestRun: (forecastPointId: string, asOf: string | null, signal?: AbortSignal): Promise<ForecastRun> =>
+    getJson(withAsOf(`/forecast-points/${enc(lidOf(forecastPointId))}/runs/latest`, asOf), ForecastRunSchema, signal),
   search: (q: string, signal?: AbortSignal): Promise<SearchResults> => getJson(`/search?q=${enc(q)}`, SearchResultsSchema, signal),
   health: (signal?: AbortSignal): Promise<Health> => getJson('/system/health', HealthSchema, signal),
 };

@@ -1,23 +1,100 @@
 import { describe, expect, it } from 'vitest';
-import { parseDeepLink, serializeDeepLink, type DeepLink } from './deep-link';
+import type { CameraPose } from '../state/store';
+import { parseCam, parseDeepLink, serializeCam, serializeDeepLink, type DeepLink } from './deep-link';
+
+const EMPTY: DeepLink = { basinId: null, forecastPointId: null, motion: null, band: null, asOf: null, cam: null };
 
 describe('deep link', () => {
-  it('round-trips basin, forecast point, motion and band', () => {
-    const link: DeepLink = { basinId: 'basin:skagit', forecastPointId: 'fp:nwps:MVEW1', motion: 'reduced', band: 'river' };
+  it('round-trips selection, basin context, motion and band', () => {
+    const link: DeepLink = { ...EMPTY, basinId: 'basin:skagit', forecastPointId: 'fp:nwps:MVEW1', motion: 'reduced', band: 'river' };
     const qs = serializeDeepLink(link);
-    expect(qs).toBe('?basin=basin%3Askagit&fp=MVEW1&motion=reduced&band=river');
+    expect(qs).toContain('sel=fp%3Anwps%3AMVEW1');
+    expect(qs).toContain('basin=basin%3Askagit');
     expect(parseDeepLink(qs)).toEqual(link);
   });
-  it('serializes nothing for the empty state and omits the system motion default', () => {
-    const empty: DeepLink = { basinId: null, forecastPointId: null, motion: null, band: null };
-    expect(serializeDeepLink(empty)).toBe('');
-    expect(serializeDeepLink({ ...empty, motion: 'system' })).toBe('');
-    expect(parseDeepLink('')).toEqual(empty);
+
+  it('round-trips as_of and an entity-anchored camera', () => {
+    const link: DeepLink = {
+      ...EMPTY,
+      basinId: 'basin:skagit',
+      forecastPointId: 'fp:nwps:MVEW1',
+      asOf: '2025-12-12T08:15:00Z',
+      cam: { anchor: { kind: 'entity', id: 'fp:nwps:MVEW1' }, rangeM: 18000, headingDeg: 205, pitchDeg: -32, mode: 'free' },
+    };
+    expect(parseDeepLink(serializeDeepLink(link))).toEqual(link);
   });
+
+  it('serializes nothing for the empty state and omits the system motion default', () => {
+    expect(serializeDeepLink(EMPTY)).toBe('');
+    expect(serializeDeepLink({ ...EMPTY, motion: 'system' })).toBe('');
+    expect(parseDeepLink('')).toEqual(EMPTY);
+  });
+
   it('drops invalid values instead of guessing', () => {
-    expect(parseDeepLink('?basin=Skagit&fp=mvew1&motion=fast&band=space')).toEqual({
-      basinId: null, forecastPointId: 'fp:nwps:MVEW1', motion: null, band: null,
+    expect(parseDeepLink('?basin=Skagit&fp=mvew1&motion=fast&band=space&as_of=yesterday&cam=nonsense')).toEqual({
+      ...EMPTY, forecastPointId: 'fp:nwps:MVEW1',
     });
+    expect(parseDeepLink('?as_of=2026-13-99T99:99:00Z').asOf).toBeNull();
+  });
+
+  it('parses legacy basin/fp keys and full-id sel values', () => {
+    expect(parseDeepLink('?basin=basin%3Askagit&fp=MVEW1')).toEqual({ ...EMPTY, basinId: 'basin:skagit', forecastPointId: 'fp:nwps:MVEW1' });
     expect(parseDeepLink('?fp=fp:nwps:MVEW1').forecastPointId).toBe('fp:nwps:MVEW1');
+    expect(parseDeepLink('?sel=basin:skagit').basinId).toBe('basin:skagit');
+    expect(parseDeepLink('?sel=fp:nwps:mvew1').forecastPointId).toBe('fp:nwps:MVEW1');
+  });
+
+  it('normalizes as_of to a UTC instant', () => {
+    expect(parseDeepLink('?as_of=2025-12-12T08:15Z').asOf).toBe('2025-12-12T08:15:00Z');
+    expect(parseDeepLink('?as_of=2025-12-12T08:15:30.500Z').asOf).toBe('2025-12-12T08:15:30.500Z');
+  });
+});
+
+describe('cam grammar v1 (docs/CAMERA_SYSTEM.md §7)', () => {
+  it('parses the documented example', () => {
+    expect(parseCam('1~e:fp:nwps:MVEW1~18000~205~-32')).toEqual({
+      anchor: { kind: 'entity', id: 'fp:nwps:MVEW1' }, rangeM: 18000, headingDeg: 205, pitchDeg: -32, mode: 'free',
+    });
+    expect(parseCam('1~e:basin:skagit~95000~180~-40~orbit')?.mode).toBe('orbit');
+  });
+
+  it('round-trips within 1% of range and 1 degree', () => {
+    const poses: CameraPose[] = [
+      { anchor: { kind: 'entity', id: 'basin:skagit' }, rangeM: 95234, headingDeg: 212.6, pitchDeg: -41.4, mode: 'orbit' },
+      { anchor: { kind: 'geo', lat: 48.4453, lon: -122.3342 }, rangeM: 1_512_345, headingDeg: 359.7, pitchDeg: -54.9, mode: 'free' },
+      { anchor: { kind: 'geo', lat: -0.00004, lon: 0.00004 }, rangeM: 8_042, headingDeg: -0.2, pitchDeg: -89.6, mode: 'follow' },
+    ];
+    for (const pose of poses) {
+      const round = parseCam(serializeCam(pose));
+      expect(round).not.toBeNull();
+      expect(Math.abs(round!.rangeM - pose.rangeM) / pose.rangeM).toBeLessThan(0.01);
+      expect(Math.abs(round!.headingDeg - pose.headingDeg)).toBeLessThanOrEqual(1);
+      expect(Math.abs(round!.pitchDeg - pose.pitchDeg)).toBeLessThanOrEqual(1);
+      expect(round!.mode).toBe(pose.mode);
+      if (pose.anchor.kind === 'geo' && round!.anchor.kind === 'geo') {
+        expect(Math.abs(round!.anchor.lat - pose.anchor.lat)).toBeLessThanOrEqual(1e-4);
+        expect(Math.abs(round!.anchor.lon - pose.anchor.lon)).toBeLessThanOrEqual(1e-4);
+      } else {
+        expect(round!.anchor).toEqual(pose.anchor);
+      }
+    }
+  });
+
+  it('keeps 3 significant figures on range and integer degrees', () => {
+    expect(serializeCam({ anchor: { kind: 'entity', id: 'basin:skagit' }, rangeM: 95234, headingDeg: 212.6, pitchDeg: -41.4, mode: 'free' }))
+      .toBe('1~e:basin:skagit~95200~213~-41');
+  });
+
+  it('falls back to sel on unknown versions and rejects malformed parts', () => {
+    expect(parseCam('2~e:basin:skagit~1000~0~-45')).toBeNull();
+    expect(parseCam('1~e:basin:skagit~1000~0')).toBeNull();                 // missing pitch
+    expect(parseCam('1~x:whatever~1000~0~-45')).toBeNull();                 // bad anchor kind
+    expect(parseCam('1~g:99,-200~1000~0~-45')).toBeNull();                  // out-of-range lon
+    expect(parseCam('1~e:basin:skagit~-5~0~-45')).toBeNull();               // negative range
+    expect(parseCam('1~e:basin:skagit~1000~0.5~-45')).toBeNull();           // non-integer degrees
+    expect(parseCam('1~e:basin:skagit~1000~0~-45~fly')).toBeNull();         // fly is never encoded
+    const link = parseDeepLink('?sel=basin%3Askagit&cam=2~e%3Abasin%3Askagit~1000~0~-45');
+    expect(link.cam).toBeNull();
+    expect(link.basinId).toBe('basin:skagit');                              // sel still frames
   });
 });

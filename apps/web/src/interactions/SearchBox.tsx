@@ -1,58 +1,184 @@
 /**
- * SearchBox: GET /search?q= → pick a result → store selection (the bridge turns that into a
- * camera flight). Semantic events only; no renderer imports.
+ * SearchBox: keyboard-first search-to-flight (docs/CINEMATIC_ROADMAP.md §6 C1,
+ * docs/SEMANTIC_ZOOM.md §9). "/" or Cmd/Ctrl+K focuses the input; keystrokes are debounced
+ * before GET /search?q=; results are grouped by entity kind with name + id subtitle. Enter or
+ * click runs the normal selection pipeline (store selection → scene bridge → camera flight;
+ * the reduced-motion cut is owned by the CameraController). Escape closes, then clears.
+ * Combobox pattern: DOM focus stays on the input, aria-activedescendant tracks the highlight.
+ * Semantic events only; no renderer imports (interactions/ may import api and state only).
  */
-import { useDeferredValue, useId, useState } from 'react';
+import { useEffect, useId, useMemo, useReducer, useRef, useState } from 'react';
 import { useSearch } from '../api/hooks';
 import type { SearchResult } from '../contracts/schemas';
 import { useSceneStore } from '../state/store';
+import { createDebouncer, SEARCH_DEBOUNCE_MS } from './search-debounce';
+import {
+  effectiveActiveKey,
+  flattenGroups,
+  groupSearchResults,
+  INITIAL_SEARCH_NAV,
+  optionDomId,
+  searchNavReducer,
+} from './search-reducer';
+
+/** True when the shortcut target is a place where "/" means typing, not "focus search". */
+const isTypingElsewhere = (target: EventTarget | null, searchInput: HTMLInputElement | null): boolean => {
+  if (!(target instanceof HTMLElement) || target === searchInput) return false;
+  return target.isContentEditable || target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT';
+};
 
 export function SearchBox() {
-  const [text, setText] = useState('');
-  const deferred = useDeferredValue(text);
-  const results = useSearch(deferred);
+  const [nav, dispatch] = useReducer(searchNavReducer, INITIAL_SEARCH_NAV);
+  const [debouncedQuery, setDebouncedQuery] = useState('');
+  const [debouncer] = useState(() => createDebouncer<string>(SEARCH_DEBOUNCE_MS, setDebouncedQuery));
   const selectBasin = useSceneStore((s) => s.selectBasin);
   const selectForecastPoint = useSceneStore((s) => s.selectForecastPoint);
+  const results = useSearch(debouncedQuery);
   const listId = useId();
+  const rootRef = useRef<HTMLElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => () => debouncer.cancel(), [debouncer]);
+
+  // Keyboard-first entry: "/" (outside editable fields) or Cmd/Ctrl+K from anywhere.
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      const commandK = (event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k';
+      const slash = event.key === '/' && !event.metaKey && !event.ctrlKey && !event.altKey && !isTypingElsewhere(event.target, inputRef.current);
+      if (!commandK && !slash) return;
+      event.preventDefault();
+      inputRef.current?.focus();
+      inputRef.current?.select();
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, []);
+
+  const groups = useMemo(() => groupSearchResults(results.data?.items ?? []), [results.data]);
+  const options = useMemo(() => flattenGroups(groups), [groups]);
+  const optionKeys = useMemo(() => options.map((option) => option.key), [options]);
+  const activeKey = effectiveActiveKey(nav, optionKeys);
+  const activeDomId = activeKey === null ? undefined : optionDomId(listId, activeKey);
+
+  // Keep the keyboard highlight visible inside the scrolling popup.
+  useEffect(() => {
+    if (activeDomId !== undefined) document.getElementById(activeDomId)?.scrollIntoView({ block: 'nearest' });
+  }, [activeDomId]);
 
   const choose = (result: SearchResult) => {
     if (result.kind === 'basin') selectBasin(result.id);
     else if (result.kind === 'forecast_point') selectForecastPoint(result.id, result.basin_id);
-    else selectBasin(result.basin_id);
-    setText('');
+    else selectBasin(result.basin_id); // station: the contract carries no station framing yet, so fly to its basin
+    debouncer.cancel();
+    setDebouncedQuery('');
+    dispatch({ type: 'selected' });
   };
 
-  const items = results.data?.items ?? [];
-  const open = text.trim().length >= 2;
+  const onChange = (value: string) => {
+    dispatch({ type: 'input-changed', query: value });
+    debouncer.push(value);
+  };
+
+  const onKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    switch (event.key) {
+      case 'ArrowDown':
+        event.preventDefault();
+        dispatch({ type: 'move', delta: 1, optionKeys });
+        break;
+      case 'ArrowUp':
+        event.preventDefault();
+        dispatch({ type: 'move', delta: -1, optionKeys });
+        break;
+      case 'Enter': {
+        if (!nav.open) break;
+        const active = options.find((option) => option.key === activeKey);
+        if (active) {
+          event.preventDefault();
+          choose(active.result);
+        }
+        break;
+      }
+      case 'Escape':
+        event.preventDefault();
+        if (!nav.open) {
+          debouncer.cancel();
+          setDebouncedQuery('');
+        }
+        dispatch({ type: 'escape' });
+        break;
+      default:
+        break;
+    }
+  };
+
+  const onBlur = (event: React.FocusEvent<HTMLElement>) => {
+    if (rootRef.current?.contains(event.relatedTarget as Node | null)) return;
+    dispatch({ type: 'close' });
+  };
+
+  // Results shown for a superseded query stay visible, but the strip says a search is running.
+  const stale = debouncedQuery.trim() !== nav.query.trim();
+  let status: { text: string; tone: 'muted' | 'error' } | null = null;
+  if (results.isError) status = { text: `search unavailable: ${results.error.message}`, tone: 'error' };
+  else if (results.isLoading || stale) status = { text: 'searching…', tone: 'muted' };
+  else if (results.data && options.length === 0) status = { text: 'no matches', tone: 'muted' };
 
   return (
-    <search className="search">
+    <search className="search" ref={rootRef} onBlur={onBlur}>
       <input
+        ref={inputRef}
         className="search-input"
         data-testid="search-input"
         type="search"
+        role="combobox"
         placeholder="Search basins, forecast points, stations"
         aria-label="Search"
+        aria-keyshortcuts="/ Meta+K Control+K"
+        aria-expanded={nav.open}
         aria-controls={listId}
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-        onKeyDown={(e) => { if (e.key === 'Enter' && items[0]) choose(items[0]); if (e.key === 'Escape') setText(''); }}
+        aria-autocomplete="list"
+        aria-activedescendant={activeDomId}
+        autoComplete="off"
+        spellCheck={false}
+        value={nav.query}
+        onChange={(event) => onChange(event.target.value)}
+        onKeyDown={onKeyDown}
       />
-      {open ? (
-        <ul className="search-results" id={listId} aria-label="Search results" data-testid="search-results">
-          {results.isPending ? <li className="muted">searching…</li> : null}
-          {results.isError ? <li className="error">search unavailable: {results.error.message}</li> : null}
-          {results.data && items.length === 0 ? <li className="muted">no matches</li> : null}
-          {items.map((r) => (
-            <li key={`${r.kind}:${r.id}`}>
-              <button type="button" className="search-result" data-testid="search-result" onClick={() => choose(r)}>
-                <span className="search-kind">{r.kind.replace('_', ' ')}</span>
-                <span>{r.name}</span>
-                <span className="mono muted">{r.id}</span>
-              </button>
-            </li>
-          ))}
-        </ul>
+      {nav.query === '' ? <kbd className="search-kbd" aria-hidden="true">/</kbd> : null}
+      {nav.open ? (
+        <div className="search-results" data-testid="search-results">
+          {status ? <div className={`search-status ${status.tone}`} role="status">{status.text}</div> : null}
+          <ul role="listbox" id={listId} aria-label="Search results">
+            {groups.map((group) => (
+              <li key={group.kind} role="presentation">
+                <div className="search-group-label" id={`${listId}-group-${group.kind}`} role="presentation">
+                  {group.label}
+                </div>
+                <ul role="group" aria-labelledby={`${listId}-group-${group.kind}`}>
+                  {group.options.map(({ key, result }) => (
+                    <li
+                      key={key}
+                      id={optionDomId(listId, key)}
+                      role="option"
+                      aria-selected={key === activeKey}
+                      className="search-result"
+                      data-testid="search-result"
+                      onMouseDown={(event) => event.preventDefault()}
+                      onClick={() => choose(result)}
+                      onMouseEnter={() => dispatch({ type: 'hover', key })}
+                    >
+                      <span className="search-name">{result.name}</span>
+                      <span className="search-subtitle mono muted">
+                        {result.id}
+                        {result.kind === 'basin' ? '' : ` · ${result.basin_id}`}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </li>
+            ))}
+          </ul>
+        </div>
       ) : null}
     </search>
   );

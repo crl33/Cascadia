@@ -10,11 +10,13 @@ import { describe, expect, it } from 'vitest';
 import {
   BasinEnvelopeSchema,
   BasinListSchema,
+  ForecastRunSchema,
   GeoFeatureSchema,
   HealthSchema,
   RiverEnvelopeSchema,
   SceneSummarySchema,
   SearchResultsSchema,
+  StationSeriesSchema,
 } from './schemas';
 
 const base = process.env['CASCADE_LIVE_API_BASE']?.replace(/\/$/, '');
@@ -65,6 +67,14 @@ describe.skipIf(!base)('live API responses validate against the client zod schem
     const results = SearchResultsSchema.parse(await get('/search?q=ska'));
     expect(results.items.some((r) => r.id === 'basin:skagit')).toBe(true);
     HealthSchema.parse(await get('/system/health'));
+  });
+  it('GET /stations/{id}/series and /forecast-points/{LID}/runs/latest', async () => {
+    const stage = StationSeriesSchema.parse(await get('/stations/station:usgs:12200500/series?variable=stage'));
+    expect(stage.variable).toBe('stage');
+    expect(stage.points.length).toBeGreaterThan(0);
+    const run = ForecastRunSchema.parse(await get('/forecast-points/MVEW1/runs/latest'));
+    expect(run.provenance.source_kind).toBe('OFFICIAL_FORECAST');
+    expect(run.points.length).toBeGreaterThan(0);
   });
   it('as_of before ingestion yields UNKNOWN with a reason, never a value', async () => {
     const env = RiverEnvelopeSchema.parse(await get('/forecast-points/MVEW1/state?as_of=2026-01-01T00:00:00Z'));

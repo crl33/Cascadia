@@ -1,15 +1,16 @@
 /**
  * BasinPanel: renders one BasinVisualizationState — name, regulation class, the four surfaces
  * (state + reason + source-kind badge + freshness), official alerts and drivers with honest empty
- * states. It computes nothing; UNKNOWN is shown as UNKNOWN with its reason.
+ * states. It computes nothing; UNKNOWN is shown as UNKNOWN with its reason. Every value's badge
+ * opens the per-value provenance popover (inspector v1), including alert and driver rows.
  */
-import { useState } from 'react';
+import type { ReactNode } from 'react';
 import { useBasinState } from '../api/hooks';
 import { useSceneStore } from '../state/store';
 import { Badge } from '../design-system/Badge';
 import { CATEGORY_BADGE } from '../design-system/badges';
+import { ProvenancePopover } from '../design-system/ProvenancePopover';
 import type { BasinVisualizationState, ProvenanceRef, TruthClass } from '../contracts/schemas';
-import { LayerInspector } from './LayerInspector';
 import { ProvenanceLine } from './ProvenanceLine';
 import { formatUtc, words } from './format';
 
@@ -18,13 +19,13 @@ interface SurfaceRowProps {
   state: string;
   reason: string | null | undefined;
   provKey: string;
-  refs: Record<string, ProvenanceRef>;
-  onInspect: (key: string) => void;
+  refs: Record<string, ProvenanceRef | undefined>;
+  truth: TruthClass | null;
   testId: string;
-  extra?: React.ReactNode;
+  extra?: ReactNode;
 }
 
-function SurfaceRow({ title, state, reason, provKey, refs, onInspect, testId, extra }: SurfaceRowProps) {
+function SurfaceRow({ title, state, reason, provKey, refs, truth, testId, extra }: SurfaceRowProps) {
   return (
     <div className="row" data-testid={testId}>
       <div className="row-head">
@@ -33,7 +34,7 @@ function SurfaceRow({ title, state, reason, provKey, refs, onInspect, testId, ex
       </div>
       {extra}
       {reason ? <p className="reason">{reason}</p> : null}
-      <ProvenanceLine provKey={provKey} prov={refs[provKey]} onInspect={onInspect} testId={`${testId}-badge`} />
+      <ProvenanceLine provKey={provKey} prov={refs[provKey]} truth={truth} testId={`${testId}-badge`} />
     </div>
   );
 }
@@ -41,7 +42,6 @@ function SurfaceRow({ title, state, reason, provKey, refs, onInspect, testId, ex
 export function BasinPanel() {
   const selectedBasinId = useSceneStore((s) => s.selectedBasinId);
   const query = useBasinState(selectedBasinId);
-  const [inspected, setInspected] = useState<{ key: string; truth: TruthClass | null } | null>(null);
 
   if (!selectedBasinId) return null;
   if (query.isPending) return <section className="panel" data-testid="basin-panel"><p className="muted">Loading basin state…</p></section>;
@@ -53,7 +53,6 @@ export function BasinPanel() {
 
   const { susceptibility, forcing, hazard, agreement } = item.surfaces;
   const hazardProv = hazard.official_prov ?? hazard.prov;
-  const inspect = (truth: TruthClass | null) => (key: string) => setInspected({ key, truth });
 
   return (
     <section className="panel" data-testid="basin-panel" aria-label="Basin panel">
@@ -63,15 +62,15 @@ export function BasinPanel() {
         <p className="muted">regulation: <span className="mono">{words(item.regulation_class)}</span> · valid {formatUtc(query.data.time.valid)} ({query.data.time.mode})</p>
       </header>
 
-      <SurfaceRow title="Basin susceptibility" state={susceptibility.state} reason={susceptibility.reason} provKey={susceptibility.prov} refs={refs} onInspect={inspect(susceptibility.truth)} testId="surface-susceptibility" />
-      <SurfaceRow title={`Meteorological forcing${forcing.horizon_h ? ` · ${forcing.horizon_h} h` : ''}`} state={forcing.state} reason={forcing.reason} provKey={forcing.prov} refs={refs} onInspect={inspect(forcing.truth)} testId="surface-forcing" />
+      <SurfaceRow title="Basin susceptibility" state={susceptibility.state} reason={susceptibility.reason} provKey={susceptibility.prov} refs={refs} truth={susceptibility.truth} testId="surface-susceptibility" />
+      <SurfaceRow title={`Meteorological forcing${forcing.horizon_h ? ` · ${forcing.horizon_h} h` : ''}`} state={forcing.state} reason={forcing.reason} provKey={forcing.prov} refs={refs} truth={forcing.truth} testId="surface-forcing" />
       <SurfaceRow
         title={`Flood hazard · ${hazard.horizon_h} h`}
         state={hazard.official_category}
         reason={hazard.reason}
         provKey={hazardProv}
         refs={refs}
-        onInspect={inspect(hazard.truth)}
+        truth={hazard.truth}
         testId="surface-hazard"
         extra={
           <p className="value-line">
@@ -86,7 +85,7 @@ export function BasinPanel() {
           <span className={`state-word state-${agreement.state}`}>{agreement.state.toUpperCase()}</span>
         </div>
         {agreement.prov && agreement.prov.length > 0 ? (
-          agreement.prov.map((key) => <ProvenanceLine key={key} provKey={key} prov={refs[key]} onInspect={inspect(null)} />)
+          agreement.prov.map((key) => <ProvenanceLine key={key} provKey={key} prov={refs[key]} truth={null} />)
         ) : (
           <p className="reason">Agreement not computed: no second model ingested in the spike (UNKNOWN, not "agree").</p>
         )}
@@ -95,7 +94,14 @@ export function BasinPanel() {
       <div className="row">
         <div className="row-head"><span className="row-title">Official alerts</span></div>
         {item.official_alerts && item.official_alerts.length > 0 ? (
-          <ul>{item.official_alerts.map((a) => <li key={a.id} className="mono">{a.issuer}: {a.event} {a.severity ?? ''} (onset {formatUtc(a.onset)})</li>)}</ul>
+          <ul>
+            {item.official_alerts.map((a) => (
+              <li key={a.id} className="mono">
+                {a.issuer}: {a.event} {a.severity ?? ''} (onset {formatUtc(a.onset)}){' '}
+                <ProvenancePopover provKey={a.prov} prov={refs[a.prov]} truth={null} />
+              </li>
+            ))}
+          </ul>
         ) : (
           <p className="reason" data-testid="alerts-empty">No official alerts in this document. Watches and warnings are issued by the National Weather Service; none were ingested for this basin.</p>
         )}
@@ -103,13 +109,19 @@ export function BasinPanel() {
       <div className="row">
         <div className="row-head"><span className="row-title">Headline drivers</span></div>
         {item.headline_drivers && item.headline_drivers.length > 0 ? (
-          <ul>{item.headline_drivers.map((d) => <li key={d.feature} className="mono">#{d.rank} {d.feature} {d.value ?? '—'} {d.unit ?? ''} ({words(d.direction)})</li>)}</ul>
+          <ul>
+            {item.headline_drivers.map((d) => (
+              <li key={d.feature} className="mono">
+                #{d.rank} {d.feature} {d.value ?? '—'} {d.unit ?? ''} ({words(d.direction)}){' '}
+                <ProvenancePopover provKey={d.prov} prov={refs[d.prov]} truth={null} />
+              </li>
+            ))}
+          </ul>
         ) : (
           <p className="reason" data-testid="drivers-empty">No headline drivers: the explanation engine is not part of the spike.</p>
         )}
       </div>
       {item.outlet_forecast_point_id ? <p className="muted">outlet forecast point: <span className="mono">{item.outlet_forecast_point_id}</span></p> : null}
-      {inspected ? <LayerInspector provKey={inspected.key} prov={refs[inspected.key]} truth={inspected.truth} onClose={() => setInspected(null)} /> : null}
     </section>
   );
 }

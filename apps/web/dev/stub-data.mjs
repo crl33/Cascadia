@@ -113,21 +113,43 @@ export function unknownRiverItem(point) {
   };
 }
 
+/**
+ * AUBW1 (flow-basis) fixture extension: item + provenance refs + samples live in
+ * dev/fixtures/mvew1-samples.json (`aubw1_*` keys) so the Pages Function bundle picks them up
+ * without a code change there. Guarded: an fx bundled before the extension falls back to the
+ * honest UNKNOWN item.
+ */
+const aubw1State = (fx) => fx.samples?.aubw1_state ?? null;
+
+/** Resolve one seed point's RiverVisualizationState item and the provenance refs it may use. */
+function riverItemFor(fx, point) {
+  const env = fx.riverEnvelope;
+  const fixtureItem = env.items.find((i) => i.id === point.id);
+  if (fixtureItem) return { item: fixtureItem, refs: env.provenance_refs };
+  const aub = aubw1State(fx);
+  if (aub && aub.item.id === point.id) return { item: aub.item, refs: { ...env.provenance_refs, ...aub.provenance_refs } };
+  return { item: unknownRiverItem(point), refs: env.provenance_refs };
+}
+
 export function buildRiverState(fx, lid, asOf = null) {
   const env = fx.riverEnvelope;
   const point = SEED_POINTS.find((p) => p.lid === lid);
   if (!point) return null;
-  const fixtureItem = env.items.find((i) => i.id === point.id);
-  const item = fixtureItem ?? unknownRiverItem(point);
-  return { ...env, as_of: asOf ?? env.as_of, items: [item], provenance_refs: pruneRefs([item], env.provenance_refs) };
+  const { item, refs } = riverItemFor(fx, point);
+  return { ...env, as_of: asOf ?? env.as_of, items: [item], provenance_refs: pruneRefs([item], refs) };
 }
 
 export function buildVizRivers(fx, basinId, asOf = null) {
   const env = fx.riverEnvelope;
-  const fixtureById = new Map(env.items.map((i) => [i.id, i]));
   const items = [];
-  for (const p of SEED_POINTS) if (p.basin_id === basinId) items.push(fixtureById.get(p.id) ?? unknownRiverItem(p));
-  return { ...env, as_of: asOf ?? env.as_of, items, provenance_refs: pruneRefs(items, env.provenance_refs) };
+  const refs = { ...env.provenance_refs };
+  for (const p of SEED_POINTS) {
+    if (p.basin_id !== basinId) continue;
+    const resolved = riverItemFor(fx, p);
+    items.push(resolved.item);
+    Object.assign(refs, resolved.refs);
+  }
+  return { ...env, as_of: asOf ?? env.as_of, items, provenance_refs: pruneRefs(items, refs) };
 }
 
 function pruneRefs(items, refs) {
@@ -170,29 +192,55 @@ export function buildSearch(fx, q) {
   return { items: items.slice(0, 20) };
 }
 
-/** Official NWRFC forecast run for MVEW1 from the live-capture subset (4 of 31 points; stated in the label). */
+/** Official NWRFC forecast runs from the live-capture subsets (partial point counts stated in the labels). */
 export function buildRunsLatest(fx, lid) {
-  if (lid !== 'MVEW1') return null;
-  const sf = fx.samples.mvew1_stageflow;
-  const ref = fx.riverEnvelope.provenance_refs['nwps-forecast-mvew1'];
-  return {
-    run_id: `run:nwps:MVEW1:${sf.issued}`, issued_at: sf.issued, issuer: 'NWRFC', primary: 'stage', unit: 'ft', datum: 'NGVD29',
-    points: sf.data.map((d) => ({ t: d.validTime, stage: d.primary, flow: d.secondary == null ? null : Math.round(d.secondary * 1000) })),
-    provenance: { ...ref, label: `${ref.label} — dev stub: first ${sf.data.length} of 31 points (kcfs converted to cfs)` },
-  };
+  if (lid === 'MVEW1') {
+    const sf = fx.samples.mvew1_stageflow;
+    const ref = fx.riverEnvelope.provenance_refs['nwps-forecast-mvew1'];
+    return {
+      run_id: `run:nwps:MVEW1:${sf.issued}`, issued_at: sf.issued, issuer: 'NWRFC', primary: 'stage', unit: 'ft', datum: 'NGVD29',
+      points: sf.data.map((d) => ({ t: d.validTime, stage: d.primary, flow: d.secondary == null ? null : Math.round(d.secondary * 1000) })),
+      provenance: { ...ref, label: `${ref.label} — dev stub: first ${sf.data.length} of 31 points (kcfs converted to cfs)` },
+    };
+  }
+  const aub = aubw1State(fx);
+  if (lid === 'AUBW1' && aub && fx.samples.aubw1_stageflow) {
+    // Flow-primary point; the flat `datum` rides along for stage values (spike-report-2026-08-22.md
+    // finding 3) — the primary values here are flow in cfs (kcfs × 1000, 2 decimals kept).
+    const sf = fx.samples.aubw1_stageflow;
+    const ref = aub.provenance_refs['nwps-forecast-aubw1'];
+    return {
+      run_id: `run:nwps:AUBW1:${sf.issued}`, issued_at: sf.issued, issuer: 'NWRFC', primary: 'flow', unit: 'cfs', datum: 'NGVD29',
+      points: sf.data.map((d) => ({ t: d.validTime, stage: null, flow: Math.round(d.primary * 1000 * 100) / 100 })),
+      provenance: { ...ref, label: `${ref.label} — dev stub: first ${sf.data.length} of 40 points (kcfs converted to cfs)` },
+    };
+  }
+  return null;
 }
 
-/** USGS IV latest values for 12200500 from the live-capture subset; one point per variable. */
+/** USGS IV latest values from the live-capture subsets; one point per variable per station. */
 export function buildSeries(fx, stationId, variable) {
-  if (stationId !== 'station:usgs:12200500') return null;
-  const code = variable === 'flow' ? '00060' : '00065';
-  const rows = fx.samples.usgs_latest.filter((r) => r.parameter_code === code);
-  const ref = fx.riverEnvelope.provenance_refs['usgs-iv-12200500'];
-  return {
-    station_id: stationId, variable, unit: variable === 'flow' ? 'cfs' : 'ft', datum: variable === 'flow' ? null : 'NGVD29',
-    points: rows.map((r) => ({ t: new Date(r.time).toISOString(), v: Number(r.value), quality: [r.approval_status.toLowerCase()] })),
-    provenance: { ...ref, label: `${ref.label} — dev stub: latest value only` },
-  };
+  if (stationId === 'station:usgs:12200500') {
+    const code = variable === 'flow' ? '00060' : '00065';
+    const rows = fx.samples.usgs_latest.filter((r) => r.parameter_code === code);
+    const ref = fx.riverEnvelope.provenance_refs['usgs-iv-12200500'];
+    return {
+      station_id: stationId, variable, unit: variable === 'flow' ? 'cfs' : 'ft', datum: variable === 'flow' ? null : 'NGVD29',
+      points: rows.map((r) => ({ t: new Date(r.time).toISOString(), v: Number(r.value), quality: [r.approval_status.toLowerCase()] })),
+      provenance: { ...ref, label: `${ref.label} — dev stub: latest value only` },
+    };
+  }
+  const aub = aubw1State(fx);
+  if (stationId === 'station:usgs:12113000' && variable === 'flow' && aub && fx.samples.aubw1_usgs_latest) {
+    const rows = fx.samples.aubw1_usgs_latest.filter((r) => r.parameter_code === '00060');
+    const ref = aub.provenance_refs['usgs-iv-12113000'];
+    return {
+      station_id: stationId, variable, unit: 'cfs', datum: null,
+      points: rows.map((r) => ({ t: new Date(r.time).toISOString(), v: Number(r.value), quality: [r.approval_status.toLowerCase()] })),
+      provenance: { ...ref, label: `${ref.label} — dev stub: latest value only` },
+    };
+  }
+  return null;
 }
 
 const SECONDS = (a, b) => Math.max(0, Math.round((a.getTime() - b.getTime()) / 1000));

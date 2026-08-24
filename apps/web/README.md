@@ -50,7 +50,8 @@ imagery and the suite still passes (no pixel comparisons).
 
 ## What it does not do (spike)
 
-No hydrographs, timeline, snow/soil/weather layers, SSE, or quality-tier degradation beyond
-the store field. Susceptibility, forcing and agreement are UNKNOWN with reasons from the
+No snow/soil/weather layers, SSE, or quality-tier degradation beyond the store field
+(P1 added the hydrograph panel, the 72 h knowledge-time timeline with replay, and the
+per-value provenance popover). Susceptibility, forcing and agreement are UNKNOWN with reasons from the
 contract. This client is not an official alert authority; official forecasts and warnings
 come from the National Weather Service.

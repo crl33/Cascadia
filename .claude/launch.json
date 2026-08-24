@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "web-dev",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "apps/web", "run", "dev"],
+      "port": 5173
+    },
+    {
+      "name": "stub-api",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "apps/web", "run", "stub"],
+      "port": 8000
+    }
+  ]
+}

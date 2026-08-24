@@ -40,7 +40,7 @@ test('search Skagit → basin selected → BasinPanel shows Skagit with an OFFIC
   await expect(page.getByTestId('surface-forcing-state')).toHaveText('UNKNOWN');
   await expect(page.getByTestId('surface-susceptibility-badge')).toContainText('EXPERIMENTAL');
   await expect(page.getByTestId('hazard-category')).toContainText('NONE');
-  await expect(page).toHaveURL(/basin=basin%3Askagit/);
+  await expect(page).toHaveURL(/sel=basin%3Askagit/);
 
   if (renderer === 'ready') {
     await expect(page.getByTestId('flight-state')).toHaveAttribute('data-flight-state', 'settled', { timeout: 15_000 });
@@ -67,7 +67,7 @@ test('deep link ?basin=basin:skagit&fp=MVEW1&motion=reduced → RiverPanel shows
   await expect(page.getByTestId('trend-badge')).toContainText('DERIVED');
   await expect(page.getByTestId('headroom-badge')).toContainText('DERIVED');
   await expect(page.getByTestId('basin-panel-name')).toHaveText('Skagit');
-  await expect(page).toHaveURL(/basin=basin%3Askagit&fp=MVEW1&motion=reduced/);
+  await expect(page).toHaveURL(/sel=fp%3Anwps%3AMVEW1&basin=basin%3Askagit&motion=reduced/);
 
   // Badge → inspector shows the provenance lines.
   await page.getByTestId('observed-badge').click();

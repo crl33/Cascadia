@@ -5,7 +5,7 @@ import tseslint from 'typescript-eslint';
 import reactHooks from 'eslint-plugin-react-hooks';
 
 const rendererBoundary = {
-  files: ['src/panels/**', 'src/state/**', 'src/api/**', 'src/interactions/**', 'src/app/**'],
+  files: ['src/panels/**', 'src/state/**', 'src/api/**', 'src/interactions/**', 'src/app/**', 'src/timeline/**'],
   rules: {
     'no-restricted-imports': [
       'error',

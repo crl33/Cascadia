@@ -1,0 +1,29 @@
+/* Hydrograph chart. Colours via tokens.css variables only; no animation (the reduced-motion
+   path is the only path). Threshold tones mirror CATEGORY_BADGE: action amber-watch, minor
+   amber-elevated, moderate/major flood-red — red stays earned by official categories. */
+.hydrograph-svg { display: block; width: 100%; height: auto; margin-top: 6px; }
+.hg-frame { stroke: var(--stroke); fill: none; }
+.hg-grid { stroke: var(--stroke); stroke-opacity: 0.55; }
+.hg-axis-text { fill: var(--text-muted); font-family: var(--font-mono); font-size: 9px; font-variant-numeric: tabular-nums; }
+.hg-axis-unit { fill: var(--text-secondary); font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.04em; }
+.hg-observed { stroke: var(--cyan); stroke-width: 1.8; fill: none; }
+.hg-observed-dot { fill: var(--cyan); }
+.hg-forecast { stroke: var(--glacier); stroke-width: 1.6; stroke-dasharray: 5 4; fill: none; opacity: 0.95; }
+.hg-forecast-dot { fill: var(--glacier); }
+.hg-boundary { stroke: var(--text-muted); stroke-dasharray: 2 3; }
+.hg-boundary-text { fill: var(--text-muted); font-family: var(--font-mono); font-size: 8px; }
+.hg-threshold { stroke-dasharray: 6 3; stroke-width: 1; }
+.hg-threshold-text { font-family: var(--font-mono); font-size: 9px; font-variant-numeric: tabular-nums; }
+.hg-th-action { stroke: var(--amber-watch); }
+.hg-th-action-text { fill: var(--amber-watch); }
+.hg-th-minor { stroke: var(--amber-elevated); }
+.hg-th-minor-text { fill: var(--amber-elevated); }
+.hg-th-moderate, .hg-th-major { stroke: var(--flood-red); }
+.hg-th-moderate-text, .hg-th-major-text { fill: var(--flood-red); }
+.hg-crest-marker { fill: var(--glacier); }
+.hg-crest-text { fill: var(--glacier); font-family: var(--font-mono); font-size: 9px; font-variant-numeric: tabular-nums; }
+.hg-hit { fill: transparent; stroke: none; pointer-events: all; }
+.hg-swatch { width: 18px; height: 6px; flex: none; }
+.hg-swatch-observed { stroke: var(--cyan); stroke-width: 2; }
+.hg-swatch-forecast { stroke: var(--glacier); stroke-width: 2; stroke-dasharray: 4 3; }
+.hg-legend { margin-top: 4px; }

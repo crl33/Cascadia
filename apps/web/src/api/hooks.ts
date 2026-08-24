@@ -1,10 +1,13 @@
 /**
  * The query layer: TanStack Query hooks over api/client.ts. Components and the scene bridge use
- * these and never fetch directly. staleTime follows product cadence (observations 15 min,
- * geography effectively static).
+ * these and never fetch directly. Every time-dependent hook reads the knowledge time from the
+ * store, keys on it and forwards it — replay is a cache dimension, not a refetch. staleTime
+ * follows product cadence (observations 15 min, geography effectively static); a replayed
+ * (as_of) document is a pure function of the database at that instant, so it never goes stale.
  */
 import { QueryClient, useQueries, useQuery, type UseQueryResult } from '@tanstack/react-query';
-import type { GeoFeature } from '../contracts/schemas';
+import type { GeoFeature, SeriesVariable } from '../contracts/schemas';
+import { useSceneStore } from '../state/store';
 import { api } from './client';
 import { keys } from './keys';
 
@@ -13,6 +16,11 @@ const MINUTE_MS = 60_000;
 export const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false, staleTime: 5 * MINUTE_MS } },
 });
+
+/** The knowledge time every time-dependent query is keyed by (null while live). */
+const useAsOf = (): string | null => useSceneStore((s) => s.timeline.asOf);
+
+const timeDependentStale = (asOf: string | null): number => (asOf === null ? 15 * MINUTE_MS : Infinity);
 
 export const useBasins = () =>
   useQuery({ queryKey: keys.basins(), queryFn: ({ signal }) => api.basins(signal), staleTime: Infinity });
@@ -38,32 +46,66 @@ export const useBasinGeometries = (basinIds: readonly string[], lod: 'state' | '
     combine: combineFeatures,
   });
 
-export const useBasinState = (basinId: string | null) =>
-  useQuery({
-    queryKey: keys.basinState(basinId ?? ''),
-    queryFn: ({ signal }) => api.basinState(basinId!, signal),
+export const useBasinState = (basinId: string | null) => {
+  const asOf = useAsOf();
+  return useQuery({
+    queryKey: keys.basinState(basinId ?? '', asOf),
+    queryFn: ({ signal }) => api.basinState(basinId!, asOf, signal),
     enabled: basinId !== null,
-    staleTime: 15 * MINUTE_MS,
+    staleTime: timeDependentStale(asOf),
   });
+};
 
-export const useVizBasins = () =>
-  useQuery({ queryKey: keys.vizBasins(), queryFn: ({ signal }) => api.vizBasins(signal), staleTime: 15 * MINUTE_MS });
+export const useVizBasins = () => {
+  const asOf = useAsOf();
+  return useQuery({
+    queryKey: keys.vizBasins(asOf),
+    queryFn: ({ signal }) => api.vizBasins(asOf, signal),
+    staleTime: timeDependentStale(asOf),
+  });
+};
 
-export const useVizRivers = (basinId: string | null) =>
-  useQuery({
-    queryKey: keys.vizRivers(basinId ?? ''),
-    queryFn: ({ signal }) => api.vizRivers(basinId!, signal),
+export const useVizRivers = (basinId: string | null) => {
+  const asOf = useAsOf();
+  return useQuery({
+    queryKey: keys.vizRivers(basinId ?? '', asOf),
+    queryFn: ({ signal }) => api.vizRivers(basinId!, asOf, signal),
     enabled: basinId !== null,
-    staleTime: 15 * MINUTE_MS,
+    staleTime: timeDependentStale(asOf),
   });
+};
 
-export const useRiverState = (forecastPointId: string | null) =>
-  useQuery({
-    queryKey: keys.riverState(forecastPointId ?? ''),
-    queryFn: ({ signal }) => api.riverState(forecastPointId!, signal),
+export const useRiverState = (forecastPointId: string | null) => {
+  const asOf = useAsOf();
+  return useQuery({
+    queryKey: keys.riverState(forecastPointId ?? '', asOf),
+    queryFn: ({ signal }) => api.riverState(forecastPointId!, asOf, signal),
     enabled: forecastPointId !== null,
-    staleTime: 15 * MINUTE_MS,
+    staleTime: timeDependentStale(asOf),
   });
+};
+
+/** Observed series for a station on the charted basis; disabled until both are known. */
+export const useStationSeries = (stationId: string | null, variable: SeriesVariable | null) => {
+  const asOf = useAsOf();
+  return useQuery({
+    queryKey: keys.stationSeries(stationId ?? '', variable ?? 'stage', asOf),
+    queryFn: ({ signal }) => api.stationSeries(stationId!, variable!, asOf, signal),
+    enabled: stationId !== null && variable !== null,
+    staleTime: timeDependentStale(asOf),
+  });
+};
+
+/** Latest official forecast run for a forecast point — 'latest' is relative to the knowledge time. */
+export const useLatestRun = (forecastPointId: string | null) => {
+  const asOf = useAsOf();
+  return useQuery({
+    queryKey: keys.latestRun(forecastPointId ?? '', asOf),
+    queryFn: ({ signal }) => api.latestRun(forecastPointId!, asOf, signal),
+    enabled: forecastPointId !== null,
+    staleTime: timeDependentStale(asOf),
+  });
+};
 
 export const useSearch = (q: string) =>
   useQuery({

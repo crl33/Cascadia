@@ -1,22 +1,22 @@
 /**
  * RiverPanel: renders one RiverVisualizationState — observed stage/flow (unit + datum, quality,
- * freshness), observed category with reason, trend, headroom with basis, official forecast,
- * thresholds table with basis/unit/datum, topology and regulation. Every value is badged.
+ * freshness), observed category with reason, the hydrograph (observed series + official
+ * forecast run + thresholds + crest), trend, headroom with basis, official forecast summary,
+ * thresholds table with basis/unit/datum, topology and regulation. Every value is badged;
+ * every badge opens the per-value provenance popover (inspector v1).
  */
-import { useState } from 'react';
 import { useRiverState } from '../api/hooks';
 import { useSceneStore } from '../state/store';
 import { Badge } from '../design-system/Badge';
 import { CATEGORY_BADGE } from '../design-system/badges';
-import type { ProvenanceRef, TruthClass } from '../contracts/schemas';
-import { LayerInspector } from './LayerInspector';
+import type { ProvenanceRef } from '../contracts/schemas';
+import { Hydrograph } from './Hydrograph';
 import { ProvenanceLine } from './ProvenanceLine';
 import { formatNumber, formatQuantity, formatUtc, words } from './format';
 
 export function RiverPanel() {
   const forecastPointId = useSceneStore((s) => s.selectedForecastPointId);
   const query = useRiverState(forecastPointId);
-  const [inspected, setInspected] = useState<{ key: string; truth: TruthClass | null } | null>(null);
 
   if (!forecastPointId) return null;
   if (query.isPending) return <section className="panel" data-testid="river-panel"><p className="muted">Loading forecast point…</p></section>;
@@ -25,7 +25,6 @@ export function RiverPanel() {
   const item = query.data.items[0];
   const refs: Record<string, ProvenanceRef> = query.data.provenance_refs;
   if (!item) return <section className="panel" data-testid="river-panel"><p className="muted">No forecast point item in the document.</p></section>;
-  const inspect = (truth: TruthClass | null) => (key: string) => setInspected({ key, truth });
   const observedQuality = item.observed ? refs[item.observed.prov]?.quality ?? [] : [];
   const { observed, trend, headroom, official_forecast: forecast, thresholds } = item;
 
@@ -44,7 +43,7 @@ export function RiverPanel() {
             <p className="value-line">stage <span className="mono value" data-testid="observed-stage">{formatQuantity(observed.stage)}</span></p>
             <p className="value-line">flow <span className="mono value" data-testid="observed-flow">{formatQuantity(observed.flow, 0)}</span></p>
             {observedQuality.length ? <p className="muted">quality: <span className="mono">{observedQuality.join(', ')}</span></p> : null}
-            <ProvenanceLine provKey={observed.prov} prov={refs[observed.prov]} onInspect={inspect(observed.truth)} testId="observed-badge" />
+            <ProvenanceLine provKey={observed.prov} prov={refs[observed.prov]} truth={observed.truth} testId="observed-badge" />
           </>
         ) : (
           <p className="reason">No observation in this document (UNKNOWN).</p>
@@ -53,12 +52,14 @@ export function RiverPanel() {
         {item.observed_category_reason ? <p className="reason">{item.observed_category_reason}</p> : null}
       </div>
 
+      <Hydrograph item={item} refs={refs} />
+
       <div className="row" data-testid="trend">
         <div className="row-head"><span className="row-title">Trend</span></div>
         {trend ? (
           <>
             <p className="value-line">{trend.direction.toUpperCase()} · {trend.rate ? <span className="mono">{formatQuantity(trend.rate)}</span> : 'rate unknown'} over {trend.window_h} h</p>
-            <ProvenanceLine provKey={trend.prov} prov={refs[trend.prov]} onInspect={inspect(trend.truth)} testId="trend-badge" />
+            <ProvenanceLine provKey={trend.prov} prov={refs[trend.prov]} truth={trend.truth} testId="trend-badge" />
           </>
         ) : <p className="reason">Trend not available (UNKNOWN).</p>}
       </div>
@@ -72,7 +73,7 @@ export function RiverPanel() {
               {' · '}time to threshold: <span className="mono">{headroom.time_to_threshold_h == null ? 'UNKNOWN' : `${formatNumber(headroom.time_to_threshold_h)} h`}</span>
             </p>
             {headroom.reason ? <p className="reason">{headroom.reason}</p> : null}
-            <ProvenanceLine provKey={headroom.prov} prov={refs[headroom.prov]} onInspect={inspect('cascade_derived')} testId="headroom-badge" />
+            <ProvenanceLine provKey={headroom.prov} prov={refs[headroom.prov]} truth="cascade_derived" testId="headroom-badge" />
           </>
         ) : <p className="reason">Headroom not available: requires official thresholds on the same basis and datum.</p>}
       </div>
@@ -83,7 +84,7 @@ export function RiverPanel() {
           <>
             <p className="value-line">{forecast.issuer} · issued {formatUtc(forecast.issued_at)} · {forecast.points} points</p>
             <p className="value-line">crest <span className="mono value" data-testid="forecast-crest">{formatQuantity(forecast.crest)}</span> at {formatUtc(forecast.crest_valid_time)} · category <Badge badge={CATEGORY_BADGE[forecast.category]} /></p>
-            <ProvenanceLine provKey={forecast.prov} prov={refs[forecast.prov]} onInspect={inspect(forecast.truth)} testId="forecast-badge" />
+            <ProvenanceLine provKey={forecast.prov} prov={refs[forecast.prov]} truth={forecast.truth} testId="forecast-badge" />
           </>
         ) : <p className="reason">No official forecast in this document (UNKNOWN). Official forecasts come from NWRFC via NWPS.</p>}
       </div>
@@ -102,7 +103,7 @@ export function RiverPanel() {
                 <td className="mono" data-testid="threshold-major">{formatNumber(thresholds.major)}</td>
               </tr></tbody>
             </table>
-            <ProvenanceLine provKey={thresholds.prov} prov={refs[thresholds.prov]} onInspect={inspect('authoritative_model')} testId="thresholds-badge" />
+            <ProvenanceLine provKey={thresholds.prov} prov={refs[thresholds.prov]} truth="authoritative_model" testId="thresholds-badge" />
           </>
         ) : <p className="reason">No official NWPS thresholds in this document; categories are UNKNOWN (configured values are never used).</p>}
       </div>
@@ -112,8 +113,6 @@ export function RiverPanel() {
         <p className="value-line mono">upstream: {item.topology?.upstream?.length ? item.topology.upstream.join(', ') : '—'} · downstream: {item.topology?.downstream?.length ? item.topology.downstream.join(', ') : '—'}</p>
         <p className="value-line">regulation <span className="mono">{words(item.regulation?.class)}</span>{item.regulation?.regulated_by?.length ? <span className="mono"> · by {item.regulation.regulated_by.join(', ')}</span> : null}</p>
       </div>
-
-      {inspected ? <LayerInspector provKey={inspected.key} prov={refs[inspected.key]} truth={inspected.truth} onClose={() => setInspected(null)} /> : null}
     </section>
   );
 }
