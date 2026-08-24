@@ -201,6 +201,13 @@ curl -s https://cascadia.papsukkal.com/system/version   # revision must equal $S
 ```
 
 The web client reconciles by content: `npm run build` is deterministic, so the `index-*.js`
-hash served by Pages equals the hash a local build of the same revision produces. Compare
-`curl -s https://cascadia.papsukkal.com/ | grep -o 'index-[A-Za-z0-9_-]*\.js'` against
-`apps/web/dist/assets/`.
+hash served by Pages equals the hash a local build of the same revision produces — **provided the
+build environment matches production**. `VITE_API_BASE` is baked into the bundle, and
+`npm run e2e` sets it to the stub, so a `dist/` left over from a test run has a different hash for
+a legitimate reason. Reconcile with a clean production-env build:
+
+```bash
+cd apps/web && unset VITE_API_BASE && rm -rf dist && npm run build
+ls dist/assets/ | grep -o 'index-[A-Za-z0-9_-]*\.js'
+curl -s https://cascadia.papsukkal.com/ | grep -o 'index-[A-Za-z0-9_-]*\.js'   # must be equal
+```
