@@ -181,3 +181,26 @@ production start command is:
 Diagnosis pattern for "build green, deploy FAILED, no runtime logs": the container command
 never executed - check the start command against the entrypoint contract before suspecting
 the registry or the healthcheck.
+
+## Reconciling production with the repository
+
+`railway up` uploads the working directory, not a git revision, so a deployed build has no
+identity of its own and a dirty tree deploys silently. Two rules keep production checkable:
+
+1. **Deploy only from a clean tree whose HEAD is pushed.** `git status --short` empty and
+   `git rev-parse HEAD` equal to `git rev-parse origin/main` before deploying.
+2. **Stamp the revision.** Set the Railway variable `CASCADE_GIT_REVISION` to that SHA in the
+   same step as the deploy. `GET /system/version` then returns `{revision, contract_version}`,
+   and an unstamped build answers `"unknown"` — a visible defect rather than a silent one.
+
+```bash
+SHA=$(git rev-parse HEAD)          # clean tree, pushed
+# set CASCADE_GIT_REVISION=$SHA on the service (Railway dashboard or the GraphQL variable upsert)
+railway up --service papsukkal-backend --detach
+curl -s https://cascadia.papsukkal.com/system/version   # revision must equal $SHA
+```
+
+The web client reconciles by content: `npm run build` is deterministic, so the `index-*.js`
+hash served by Pages equals the hash a local build of the same revision produces. Compare
+`curl -s https://cascadia.papsukkal.com/ | grep -o 'index-[A-Za-z0-9_-]*\.js'` against
+`apps/web/dist/assets/`.

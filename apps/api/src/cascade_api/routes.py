@@ -10,6 +10,7 @@ from fastapi import APIRouter, Depends, HTTPException, Path, Query, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from cascade_contracts import SceneSummary
+from cascade_contracts.common import CONTRACT_VERSION
 from cascade_core.freshness import compute_freshness
 from cascade_core.knowledge import Knowledge, as_known_at
 from cascade_core.registry import (
@@ -291,6 +292,22 @@ def _provider_state(k: Knowledge, last, last_ok) -> dict:
     else:
         state = "down"
     return {"state": state, "last_success_at": last_ok.started_at if last_ok else None, "last_error": None if last.ok else last.error}
+
+
+@router.get("/system/version")
+async def version(request: Request) -> dict:
+    """What this running build is, so a deployment can be checked against the repository.
+
+    `revision` is stamped from the deploying revision (env CASCADE_GIT_REVISION) and is UNKNOWN
+    when a build was deployed without one — which is itself the answer worth having: an
+    unidentifiable build is exactly the state this endpoint exists to make visible. No secrets,
+    no environment dump; identity only.
+    """
+    settings = request.app.state.settings
+    return {
+        "revision": settings.git_revision or "unknown",
+        "contract_version": CONTRACT_VERSION,
+    }
 
 
 @router.get("/system/health")

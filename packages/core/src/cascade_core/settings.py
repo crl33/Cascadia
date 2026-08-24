@@ -45,6 +45,9 @@ class Settings:
     # Not used by the legacy IV adapter; plumbing for the USGS OGC API migration.
     # Secret: excluded from repr(); must never be logged.
     usgs_api_key: str | None = field(default=None, repr=False)
+    #: Git revision this process was built from, stamped at deploy time. Reconciliation only:
+    #: a running build with no identity cannot be checked against the repository (RUNBOOK-deploy).
+    git_revision: str | None = None
 
     def __post_init__(self) -> None:
         if self.object_store not in _OBJECT_STORES:
@@ -68,6 +71,7 @@ class Settings:
             s3_endpoint=e.get("CASCADE_S3_ENDPOINT") or None,
             s3_bucket=e.get("CASCADE_S3_BUCKET") or None,
             usgs_api_key=e.get("CASCADE_USGS_API_KEY") or None,
+            git_revision=e.get("CASCADE_GIT_REVISION") or None,
         )
 
     @property

@@ -27,6 +27,7 @@ from cascade_core.registry import (
     SRC_NWPS,
     SRC_NWS_AFOS,
 )
+from cascade_contracts.common import CONTRACT_VERSION
 from cascade_core.seed import seed_all
 from cascade_core.settings import Settings
 from cascade_providers_usgs.backfill import backfill_site
@@ -225,3 +226,24 @@ async def test_forecast_runs_window_api(runtime: Runtime) -> None:
         assert (await c.get("/forecast-points/MVEW1/runs", params={"start": "2025-12-01T00:00:00Z"})).status_code == 422
         assert (await c.get("/forecast-points/MVEW1/runs", params={"start": "2025-10-01T00:00:00Z", "end": "2025-12-31T00:00:00Z"})).status_code == 422
         assert (await c.get("/forecast-points/ZZZW9/runs", params={"start": "2025-12-01T00:00:00Z", "end": "2025-12-31T00:00:00Z"})).status_code == 404
+
+
+async def test_system_version_reports_the_deployed_revision(runtime: Runtime) -> None:
+    """A running build states which revision it is, or admits it does not know.
+
+    Production must be checkable against the repository (RUNBOOK-deploy §reconciliation); a build
+    deployed without a stamp answers "unknown", which is the honest answer and a visible defect
+    rather than a silent one.
+    """
+    from dataclasses import replace
+
+    app = create_app(replace(runtime.settings, git_revision="df3a4fd413019c3cc432df59f20587153b3e8035"), engine=runtime.engine)
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test") as c:
+        body = (await c.get("/system/version")).json()
+        assert body["revision"] == "df3a4fd413019c3cc432df59f20587153b3e8035"
+        assert body["contract_version"] == CONTRACT_VERSION
+        assert "usgs_api_key" not in str(body).lower() and len(body) == 2  # identity only, never an env dump
+
+    unstamped = create_app(replace(runtime.settings, git_revision=None), engine=runtime.engine)
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=unstamped), base_url="http://test") as c:
+        assert (await c.get("/system/version")).json()["revision"] == "unknown"
