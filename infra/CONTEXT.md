@@ -50,4 +50,5 @@ When stub fixtures change, run `scripts/sync-pages-fixtures.sh` so `functions/fi
 | Raw archive | R2 bucket `cascadia-raw` (`CASCADE_OBJECT_STORE=s3`), content-addressed sha256 keys |
 | Event Zero archive | R2 bucket `cascadia-event-zero` (`usgs_timeslices` copied; larger tiers pending owner cost approval) |
 | Secrets | Railway service variables + Pages secret `BACKEND_ORIGIN` + local `~/.config/cascadia-papsukkal/` (0600) — never in git |
+| R2 retention | `cascadia-raw` carries lifecycle rule `expire-nbm-90d`: objects under `nbm/` expire after 90 days (added 2026-08-24 for P3). NBM raw GRIB subsets are re-derivable from NOMADS/AWS within their own retention and the basin aggregates are stored separately, so the archive stays bounded at ~1.2 GB instead of growing ~400 MB/month forever. Observation and forecast raw payloads are NOT expired — they are the provenance of stored values. |
 | Free-tier watchpoints | Neon compute-hours (15-min polling keeps the endpoint warm), Railway $5 Hobby/trial usage (single small container), R2 10 GB free (raw archive grows slowly; Event Zero tiers are paid) |
