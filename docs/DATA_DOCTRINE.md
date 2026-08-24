@@ -77,6 +77,12 @@ falling behind). Both are computed at read time from stored timestamps; nothing 
 Stale values are displayed with their age and a STALE mark; they are never hidden and never
 shown as current.
 
+The clock matters at the point of display. `age = read clock − valid_time`, so a deliberately
+archived value (a backfilled December 2025 observation, a forecast run reconstructed from stored
+text) computes as `stale` with an age of months — true of *today*, and meaningless as a fault. The
+presentation rule is VISUAL_TRUTH_DOCTRINE §5.6: such values are marked ARCHIVED and their age is
+stated as "N before today", never as staleness and never as an age at a replayed instant.
+
 ## 6. Units
 
 - Storage: values are stored in the **provider's native unit** with `unit` recorded

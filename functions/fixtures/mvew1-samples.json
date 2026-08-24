@@ -213,7 +213,7 @@
     }
   },
   "aubw1_stageflow": {
-    "_note": "AUBW1 NWRFC forecast: the issued time, point count (40), primary 'River Discharge' in kcfs and the crest 0.31083 kcfs (310.83 cfs) are real 2026-08-22 captures. The per-point values and valid times were NOT captured; the three non-crest points are stub placeholders below the crest — this block is NOT a provider payload. pedts was not captured and is omitted.",
+    "_note": "AUBW1 NWRFC forecast: the issued time, point count (40), primary 'River Discharge' in kcfs and the crest 0.31083 kcfs (310.83 cfs) are real 2026-08-22 captures. The per-point values and valid times were NOT captured; the three non-crest points are stub placeholders below the crest \u2014 this block is NOT a provider payload. pedts was not captured and is omitted.",
     "issued": "2026-08-21T15:15:00Z",
     "primary": "River Discharge",
     "units": "kcfs",
@@ -248,7 +248,7 @@
     }
   ],
   "event_zero_mvew1": {
-    "_note": "Event Zero dev-stub subset for MVEW1 (P2). Every numeric value and issuance time is FACT from docs/EVENT_ZERO.md (§3 outcome, §5 timeline, §8 forecast-evolution golden table); this is NOT the full 15-min series (6 documented stage points only) and each runs entry carries exactly the crest ForecastValue. Crest time bin 2025-12-12T12:00:00Z is the FLW H-VTEC crest field (verified via IEM); later runs’ bins were not re-verified and REUSE that bin here — builder B’s parser supplies real per-run bins in production. retrieved_at/available_at are the 2026-08 retrieval (ADR-0010), hence quality \"backfilled\".",
+    "_note": "Event Zero dev-stub subset for MVEW1 (P2). Every numeric value and issuance time is FACT from docs/EVENT_ZERO.md (\u00a73 outcome, \u00a75 timeline, \u00a78 forecast-evolution golden table); this is NOT the full 15-min series (6 documented stage points only) and each runs entry carries exactly the crest ForecastValue. Crest time bin 2025-12-12T12:00:00Z is the FLW H-VTEC crest field (verified via IEM); later runs\u2019 bins were not re-verified and REUSE that bin here \u2014 builder B\u2019s parser supplies real per-run bins in production. retrieved_at/available_at are the 2026-08 retrieval (ADR-0010), hence quality \"backfilled\".",
     "lid": "MVEW1",
     "series": {
       "station_id": "station:usgs:12200500",
@@ -313,14 +313,14 @@
         "retrieved_at": "2026-08-24T12:00:00Z",
         "freshness": {
           "state": "stale",
-          "age_seconds": null,
+          "age_seconds": 21264300,
           "expected_cadence_seconds": 900
         },
         "quality": [
           "approved",
           "backfilled"
         ],
-        "label": "USGS instantaneous values Dec 2025 (approved; backfilled 2026-08 via the OGC API) — dev stub: 6 documented points, not the 15-min series"
+        "label": "USGS instantaneous values Dec 2025 (approved; backfilled 2026-08 via the OGC API) \u2014 dev stub: 6 documented points, not the 15-min series"
       }
     },
     "runs": [
@@ -351,14 +351,14 @@
           "retrieved_at": "2026-08-24T12:00:00Z",
           "freshness": {
             "state": "stale",
-            "age_seconds": null,
+            "age_seconds": 22273140,
             "expected_cadence_seconds": 21600
           },
           "quality": [
             "backfilled",
             "reconstructed"
           ],
-          "label": "NWRFC crest via WFO FLW/FLS text (reconstructed; 6-hourly hydrograph lost) — dev stub"
+          "label": "NWRFC crest via WFO FLW/FLS text (reconstructed; 6-hourly hydrograph lost) \u2014 dev stub"
         }
       },
       {
@@ -388,14 +388,14 @@
           "retrieved_at": "2026-08-24T12:00:00Z",
           "freshness": {
             "state": "stale",
-            "age_seconds": null,
+            "age_seconds": 22242960,
             "expected_cadence_seconds": 21600
           },
           "quality": [
             "backfilled",
             "reconstructed"
           ],
-          "label": "NWRFC crest via WFO FLW/FLS text (reconstructed; 6-hourly hydrograph lost) — dev stub"
+          "label": "NWRFC crest via WFO FLW/FLS text (reconstructed; 6-hourly hydrograph lost) \u2014 dev stub"
         }
       },
       {
@@ -425,14 +425,14 @@
           "retrieved_at": "2026-08-24T12:00:00Z",
           "freshness": {
             "state": "stale",
-            "age_seconds": null,
+            "age_seconds": 22214160,
             "expected_cadence_seconds": 21600
           },
           "quality": [
             "backfilled",
             "reconstructed"
           ],
-          "label": "NWRFC crest via WFO FLW/FLS text (reconstructed; 6-hourly hydrograph lost) — dev stub"
+          "label": "NWRFC crest via WFO FLW/FLS text (reconstructed; 6-hourly hydrograph lost) \u2014 dev stub"
         }
       },
       {
@@ -462,14 +462,14 @@
           "retrieved_at": "2026-08-24T12:00:00Z",
           "freshness": {
             "state": "stale",
-            "age_seconds": null,
+            "age_seconds": 22164360,
             "expected_cadence_seconds": 21600
           },
           "quality": [
             "backfilled",
             "reconstructed"
           ],
-          "label": "NWRFC crest via WFO FLW/FLS text (reconstructed; 6-hourly hydrograph lost) — dev stub"
+          "label": "NWRFC crest via WFO FLW/FLS text (reconstructed; 6-hourly hydrograph lost) \u2014 dev stub"
         }
       },
       {
@@ -499,14 +499,14 @@
           "retrieved_at": "2026-08-24T12:00:00Z",
           "freshness": {
             "state": "stale",
-            "age_seconds": null,
+            "age_seconds": 22157100,
             "expected_cadence_seconds": 21600
           },
           "quality": [
             "backfilled",
             "reconstructed"
           ],
-          "label": "NWRFC crest via WFO FLW/FLS text (reconstructed; 6-hourly hydrograph lost) — dev stub"
+          "label": "NWRFC crest via WFO FLW/FLS text (reconstructed; 6-hourly hydrograph lost) \u2014 dev stub"
         }
       },
       {
@@ -536,14 +536,14 @@
           "retrieved_at": "2026-08-24T12:00:00Z",
           "freshness": {
             "state": "stale",
-            "age_seconds": null,
+            "age_seconds": 22125360,
             "expected_cadence_seconds": 21600
           },
           "quality": [
             "backfilled",
             "reconstructed"
           ],
-          "label": "NWRFC crest via WFO FLW/FLS text (reconstructed; 6-hourly hydrograph lost) — dev stub"
+          "label": "NWRFC crest via WFO FLW/FLS text (reconstructed; 6-hourly hydrograph lost) \u2014 dev stub"
         }
       },
       {
@@ -573,14 +573,14 @@
           "retrieved_at": "2026-08-24T12:00:00Z",
           "freshness": {
             "state": "stale",
-            "age_seconds": null,
+            "age_seconds": 22095780,
             "expected_cadence_seconds": 21600
           },
           "quality": [
             "backfilled",
             "reconstructed"
           ],
-          "label": "NWRFC crest via WFO FLW/FLS text (reconstructed; 6-hourly hydrograph lost) — dev stub"
+          "label": "NWRFC crest via WFO FLW/FLS text (reconstructed; 6-hourly hydrograph lost) \u2014 dev stub"
         }
       },
       {
@@ -610,14 +610,14 @@
           "retrieved_at": "2026-08-24T12:00:00Z",
           "freshness": {
             "state": "stale",
-            "age_seconds": null,
+            "age_seconds": 22070880,
             "expected_cadence_seconds": 21600
           },
           "quality": [
             "backfilled",
             "reconstructed"
           ],
-          "label": "NWRFC crest via WFO FLW/FLS text (reconstructed; 6-hourly hydrograph lost) — dev stub"
+          "label": "NWRFC crest via WFO FLW/FLS text (reconstructed; 6-hourly hydrograph lost) \u2014 dev stub"
         }
       },
       {
@@ -647,14 +647,14 @@
           "retrieved_at": "2026-08-24T12:00:00Z",
           "freshness": {
             "state": "stale",
-            "age_seconds": null,
+            "age_seconds": 22043400,
             "expected_cadence_seconds": 21600
           },
           "quality": [
             "backfilled",
             "reconstructed"
           ],
-          "label": "NWRFC crest via WFO FLW/FLS text (reconstructed; 6-hourly hydrograph lost) — dev stub"
+          "label": "NWRFC crest via WFO FLW/FLS text (reconstructed; 6-hourly hydrograph lost) \u2014 dev stub"
         }
       }
     ]

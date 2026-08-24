@@ -17,7 +17,7 @@ export function EventBanner() {
       <strong>EVENT REPLAY — {event?.label ?? timeline.eventId}</strong>
       {' · event time '}
       <span className="mono">{formatUtc(timeline.at)}</span>
-      {' — reconstructed from archived data retrieved 2026-08; forecast issuance times are exact, retrieval knowledge times are not historical.'}
+      {' — a retrospective reconstruction selected by event time, not a knowledge-time replay: archived data retrieved 2026-08, forecast issuance times exact, retrieval knowledge times not historical. Ages are measured from today, never from the event time.'}
     </div>
   );
 }

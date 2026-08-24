@@ -50,3 +50,12 @@ export const FRESHNESS_BADGE: Record<FreshnessState, BadgeDescriptor> = {
  * styled as live. Word + glyph, never colour alone.
  */
 export const BACKFILLED_BADGE: BadgeDescriptor = { label: 'BACKFILLED', glyph: '⧗', tone: 'amber-watch', pattern: 'dashed' };
+
+/**
+ * Occupies the freshness slot for an ARCHIVED value instead of CURRENT/STALE. A record of a past
+ * instant is not a live feed that has fallen behind: `stale` is a fault word (DATA_DOCTRINE §5 —
+ * ingestion is late), while an archive is old on purpose. Rendering STALE beside a December 2025
+ * crest invites reading the age as the value's age *at the event time*, which it is not: the age
+ * is always measured from the read clock (VISUAL_TRUTH_DOCTRINE §5.6).
+ */
+export const ARCHIVED_BADGE: BadgeDescriptor = { label: 'ARCHIVED', glyph: '▤', tone: 'muted', pattern: 'dashed' };

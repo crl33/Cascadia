@@ -304,6 +304,36 @@ removal; never a blank basin that reads as "no snow". The same applies to every 
 - **No stale state masquerades as live.** Anything not current is marked, everywhere it
   appears: map, panel, timeline, export.
 
+### 5.6 Archive age is not staleness
+
+`freshness.age_seconds` is always `read clock − valid_time` (DATA_DOCTRINE §5). The read clock is
+`as_of` when a knowledge time is requested and *now* otherwise. Three different quantities are
+easy to confuse and only the first is what the field holds:
+
+| Quantity | Definition | Where it appears |
+|---|---|---|
+| **currency / archive age** | `read clock − valid_time` | `freshness.age_seconds` — the only one the contract carries |
+| knowledge/ingestion age | `read clock − retrieved_at` | drives `degraded`; never displayed as the value's age |
+| age at a replayed instant | `replay cursor − valid_time` | **not computed anywhere**; never displayed |
+
+For a live reading, currency is the useful reading of that number and `stale` is a fault word: the
+feed has fallen behind its cadence. For a record of a past instant it is not a fault at all — an
+archive is old on purpose — and the same arithmetic yields an alarming `STALE · age 253.5 d`.
+
+**Rule.** A value whose own provenance says it is archived (quality `backfilled`, or retrieved more
+than a week after the instant it describes) takes the `ARCHIVED` badge in the freshness slot and
+states its age as *"N before today"*. Never `STALE`, and never a bare `age N` — beside an Event
+Zero cursor reading December 2025 a bare age reads as the value's age *at that moment*, which the
+system does not compute and must not imply. The inspector keeps the server's own state word
+visible with the clock it was measured against; the record is explained, never rewritten.
+
+The test is per value, not per app mode: a December observation is an archive value wherever it is
+shown, and a live reading stays live inside Event Zero, where some panel rows are still live.
+
+Event Zero is a **retrospective reconstruction selected by event time, not a knowledge-time
+replay** — a strict `as_of` replay of December 2025 would correctly show nothing, since every row
+was retrieved in 2026 (ADR-0010). The event banner says so, and says which clock ages use.
+
 ## 6. Layer inspector specification
 
 Every element of class A–E is inspectable (click, keyboard focus, or layer list). The inspector

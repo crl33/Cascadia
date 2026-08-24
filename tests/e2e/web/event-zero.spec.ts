@@ -39,7 +39,10 @@ test('deep link enters Event Zero: event banner, event-anchored window, no as_of
   const banner = page.getByTestId('event-banner');
   await expect(banner).toBeVisible();
   await expect(banner).toContainText('EVENT REPLAY');
-  await expect(banner).toContainText('reconstructed');
+  await expect(banner).toContainText('retrospective reconstruction');
+  // ...and names the clock ages are measured against, so "N before today" cannot be read as the
+  // value's age at the event time (VISUAL_TRUTH_DOCTRINE §5.6)
+  await expect(banner).toContainText('Ages are measured from today');
   // Event time is not a knowledge time: no AS-OF banner, no as_of anywhere.
   await expect(page.getByTestId('as-of-banner')).toBeHidden();
   expect(page.url()).not.toMatch(/[?&]as_of=/);
@@ -94,8 +97,16 @@ test('scrubbing the event clock changes the selected forecast run with zero look
   const last = page.getByTestId('evolution-run').nth(8);
   await expect(last).toContainText('38.1 ft');
   await expect(last).toHaveAttribute('data-superseded', 'false');
-  await expect(page.getByTestId('evolution-observed-crest')).toContainText('37.73 ft');
+  const crestLine = page.getByTestId('evolution-observed-crest');
+  await expect(crestLine).toContainText('37.73 ft');
   await expect(page.getByTestId('hydrograph-backfilled')).toBeVisible();
+  // Archive age is not staleness (VISUAL_TRUTH_DOCTRINE §5.6). The December crest is a record,
+  // not a feed that has fallen behind: it wears ARCHIVED, and its age names today as the clock it
+  // is measured from. A bare "STALE · age N d" here reads as the value's age at the event time —
+  // a quantity the system never computes.
+  await expect(crestLine).toContainText('ARCHIVED');
+  await expect(crestLine).toContainText('before today');
+  await expect(crestLine).not.toContainText('STALE');
 });
 
 test('NOW exits event replay to live: banner gone, event and at dropped from the URL', async ({ page }) => {
