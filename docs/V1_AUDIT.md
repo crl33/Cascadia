@@ -81,7 +81,7 @@ schema change and a frontend change.
 Additional findings not in the brief:
 
 - **H. Unauthenticated, unthrottled upstream triggers.** `POST /api/refresh` and
-  `POST /api/stations/{id}/refresh` (`server.py:231-256`) let any caller make Cascade Oracle
+  `POST /api/stations/{id}/refresh` (`server.py:231-256`) let any caller make Cascadia Papsukkal
   hammer USGS/NOAA/NRCS. `CORSMiddleware(allow_origins="*", allow_credentials=True)`
   (`server.py:261-267`) is an insecure combination.
 - **I. Third-party scripts and analytics in the page.** `frontend/public/index.html` loads

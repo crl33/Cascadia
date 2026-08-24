@@ -1,7 +1,7 @@
 [project]
 name = "cascade-providers-nwps"
 version = "0.1.0"
-description = "Cascade Oracle — NOAA NWPS v1 adapter (gauge metadata, official thresholds, official forecasts)."
+description = "Cascadia Papsukkal — NOAA NWPS v1 adapter (gauge metadata, official thresholds, official forecasts)."
 requires-python = ">=3.12"
 dependencies = ["cascade-core", "httpx>=0.27", "sqlalchemy>=2.0"]
 

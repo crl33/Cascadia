@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Install every Cascade Oracle Python package editable into the repo virtualenv, in dependency order.
+# Install every Cascadia Papsukkal Python package editable into the repo virtualenv, in dependency order.
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PIP="$ROOT/.venv/bin/pip"

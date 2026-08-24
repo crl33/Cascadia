@@ -1,7 +1,7 @@
-# HYDROLOGY — the causal model Cascade Oracle reasons with
+# HYDROLOGY — the causal model Cascadia Papsukkal reasons with
 
 This document states the science the platform is allowed to encode. It is deliberately
-conservative: where the literature is settled it says FACT; where Cascade Oracle adopts a
+conservative: where the literature is settled it says FACT; where Cascadia Papsukkal adopts a
 working simplification it says ASSUMPTION; where we do not yet know, OPEN QUESTION. Nothing
 in the software may assert more than this document does.
 
@@ -170,7 +170,7 @@ forecast under similar basin QPF"). Model skill is evaluated per basin and per r
 - Basin hypsometry (area per elevation band from the DEM) is the pivot that turns a snow level
   into *rain-exposed basin fraction* and, intersected with snow-covered area, into
   *rain-on-snow exposed fraction*. These two fractions are the first derived snow features
-  Cascade Oracle computes (`ROADMAP.md` Phase 3).
+  Cascadia Papsukkal computes (`ROADMAP.md` Phase 3).
 - Point observations (SNOTEL) are ground truth for their elevation and aspect; gridded
   products (SNODAS) give spatial structure but assimilate those same points and have known
   biases in maritime packs. Fuse; do not pick one.
@@ -181,7 +181,7 @@ forecast under similar basin QPF"). Model skill is evaluated per basin and per r
   saturation-excess runoff generation expands (variable source areas), interflow accelerates,
   and a given rainfall produces a larger, faster hydrograph (FACT for forested PNW soils;
   infiltration-excess runoff is rare there).
-- No single product observes basin soil water. Cascade Oracle fuses: modeled soil moisture
+- No single product observes basin soil water. Cascadia Papsukkal fuses: modeled soil moisture
   (NWM, climatological percentiles), satellite root-zone estimates (SMAP L4, 9 km, coarse but
   spatially honest), point probes where present (SNOTEL SMS), and an antecedent precipitation
   index as a transparent fallback. Each contributes a percentile; disagreement between them is
@@ -235,7 +235,7 @@ hydrology. If an LLM is ever used to verbalize, it verbalizes the structure and 
 
 ## 12. Historical intelligence and hindcasting
 
-The defining test of every intelligence output is: *what would Cascade Oracle have shown at
+The defining test of every intelligence output is: *what would Cascadia Papsukkal have shown at
 time T with only what was knowable at T?* The platform therefore stores, for every value, its
 **knowledge time** (`available_at` — when it was retrievable, not merely when it was valid),
 keeps superseded forecasts, and keeps revised observations as revisions. Replays use
@@ -256,14 +256,14 @@ forecast-evolution signal the platform must be able to replay. Every one of thes
 evidence row for the hindcast dataset described in `EVENT_ZERO.md`; reconstruction tasks are in
 `ROADMAP.md` Phase 6.
 
-## 13. What Cascade Oracle will not claim
+## 13. What Cascadia Papsukkal will not claim
 
 - A probability without a calibrated, hindcast-evaluated method behind it.
 - Flood depth, inundation extent or water-surface elevation without an authoritative model.
 - That a levee or dam "will hold".
 - That a source is current when it is stale, or official when it is configured.
 - Any evacuation, warning or life-safety instruction. Those come from NWS and emergency
-  management; Cascade Oracle links to them and labels them OFFICIAL.
+  management; Cascadia Papsukkal links to them and labels them OFFICIAL.
 
 ## 14. Glossary
 

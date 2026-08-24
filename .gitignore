@@ -1,4 +1,4 @@
-# Cascade Oracle V2 root ignores (v1/ keeps its own .gitignore)
+# Cascadia Papsukkal V2 root ignores (v1/ keeps its own .gitignore)
 .env
 .env.*
 !.env.example

@@ -1,5 +1,7 @@
 # v1/ — the Emergent-generated prototype (read-only reference)
 
+> Naming: the prototype called itself **Cascade Oracle**; the platform was renamed **Cascadia Papsukkal** on 2026-08-22. Files under `v1/` keep the historical name verbatim; nothing else in the repository uses it.
+
 Origin: private repo `crl33/cascade-oracle`, single commit `06a1c69 "Auto-generated changes"`,
 Emergent job `cf6569d5…` created 2026-05-02. Imported verbatim on 2026-08-22 (excluding
 `.git/` and the Emergent `.gitconfig`). **Do not develop here.** Port ideas, not files; the

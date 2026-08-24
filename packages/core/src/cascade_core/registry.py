@@ -17,7 +17,7 @@ PRODUCT_NWPS_THRESHOLDS = "product:nwps-thresholds"
 SOURCES: tuple[dict[str, str], ...] = (
     {"id": SRC_USGS, "authority": "U.S. Geological Survey", "kind": "OBSERVED", "base_url": "https://waterservices.usgs.gov/nwis/iv/", "docs_url": "https://waterservices.usgs.gov/docs/instantaneous-values/"},
     {"id": SRC_NWPS, "authority": "NOAA National Weather Service (NWPS)", "kind": "OFFICIAL_FORECAST", "base_url": "https://api.water.noaa.gov/nwps/v1/", "docs_url": "https://api.water.noaa.gov/nwps/v1/docs/"},
-    {"id": SRC_CASCADE, "authority": "Cascade Oracle", "kind": "DERIVED", "base_url": "", "docs_url": ""},
+    {"id": SRC_CASCADE, "authority": "Cascadia Papsukkal", "kind": "DERIVED", "base_url": "", "docs_url": ""},
 )
 
 PRODUCTS: tuple[dict[str, object], ...] = (

@@ -1,4 +1,4 @@
-# Cascade Oracle — the workspace in one screen
+# Cascadia Papsukkal — the workspace in one screen
 
 Form: **umbrella** over (a) a documentation factory (`docs/`), (b) a historical reference
 (`v1/`), and (c) the V2 implementation (`apps/`, `packages/`, `tests/`, `infra/`), which will

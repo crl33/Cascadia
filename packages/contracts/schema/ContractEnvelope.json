@@ -1277,7 +1277,7 @@
       "type": "string"
     }
   },
-  "$id": "https://cascade-oracle.dev/schema/ContractEnvelope.json",
+  "$id": "https://cascadia-papsukkal.dev/schema/ContractEnvelope.json",
   "additionalProperties": false,
   "properties": {
     "as_of": {

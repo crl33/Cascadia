@@ -1,11 +1,11 @@
 ---
 name: vibesec
-description: Secure-coding and security-audit guide for web applications (VibeSec, Apache-2.0, vendored from BehiSecc/VibeSec-Skill) plus a Cascade Oracle addendum for FastAPI/PostGIS/provider-adapter/geospatial-API threats. Use when writing or reviewing any backend endpoint, provider adapter, frontend code, infra config, or when the user asks for a security scan, audit, or review.
+description: Secure-coding and security-audit guide for web applications (VibeSec, Apache-2.0, vendored from BehiSecc/VibeSec-Skill) plus a Cascadia Papsukkal addendum for FastAPI/PostGIS/provider-adapter/geospatial-API threats. Use when writing or reviewing any backend endpoint, provider adapter, frontend code, infra config, or when the user asks for a security scan, audit, or review.
 ---
 
 # Secure Coding Guide for Web Applications
 
-> Vendored from https://github.com/BehiSecc/VibeSec-Skill (Apache-2.0). Cascade Oracle–specific threats (provider adapters, PostGIS geometry inputs, tile/raster endpoints, scientific-data ingestion, CORS, rate limiting, secrets) are in [references/cascade-oracle-addendum.md](references/cascade-oracle-addendum.md) — read it after this file whenever the work touches Cascade Oracle code.
+> Vendored from https://github.com/BehiSecc/VibeSec-Skill (Apache-2.0). Cascadia Papsukkal–specific threats (provider adapters, PostGIS geometry inputs, tile/raster endpoints, scientific-data ingestion, CORS, rate limiting, secrets) are in [references/cascadia-papsukkal-addendum.md](references/cascadia-papsukkal-addendum.md) — read it after this file whenever the work touches Cascadia Papsukkal code.
 
 ## Overview
 

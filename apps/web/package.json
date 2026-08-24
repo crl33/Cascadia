@@ -1,9 +1,9 @@
 {
-  "name": "@cascade-oracle/web",
+  "name": "@cascadia-papsukkal/web",
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "Cascade Oracle web spike: React + TypeScript + CesiumJS renderer over semantic contracts.",
+  "description": "Cascadia Papsukkal web spike: React + TypeScript + CesiumJS renderer over semantic contracts.",
   "scripts": {
     "dev": "vite",
     "build": "tsc -p tsconfig.json --noEmit && vite build",

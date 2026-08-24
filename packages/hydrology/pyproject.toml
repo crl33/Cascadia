@@ -1,7 +1,7 @@
 [project]
 name = "cascade-hydrology"
 version = "0.1.0"
-description = "Cascade Oracle — flood category vs official thresholds, headroom, trend, surfaces, contract assembly."
+description = "Cascadia Papsukkal — flood category vs official thresholds, headroom, trend, surfaces, contract assembly."
 requires-python = ">=3.12"
 dependencies = ["cascade-core", "cascade-contracts", "sqlalchemy>=2.0"]
 

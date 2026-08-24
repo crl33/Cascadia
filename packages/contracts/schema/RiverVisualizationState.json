@@ -400,7 +400,7 @@
       "type": "string"
     }
   },
-  "$id": "https://cascade-oracle.dev/schema/RiverVisualizationState.json",
+  "$id": "https://cascadia-papsukkal.dev/schema/RiverVisualizationState.json",
   "additionalProperties": false,
   "properties": {
     "basin_id": {

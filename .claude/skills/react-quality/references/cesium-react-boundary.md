@@ -1,6 +1,6 @@
 # The Cesium ↔ React boundary
 
-Cascade Oracle's web app is a planetary-scale 3D observatory. React must never become the
+Cascadia Papsukkal's web app is a planetary-scale 3D observatory. React must never become the
 graphics engine. These patterns keep the renderer fast and the science honest.
 
 ## Ownership

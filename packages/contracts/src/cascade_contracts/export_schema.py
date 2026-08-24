@@ -32,7 +32,7 @@ def export(out_dir: Path) -> list[Path]:
     written: list[Path] = []
     for name, model in CONTRACTS.items():
         schema = model.model_json_schema(by_alias=True)
-        schema["$id"] = f"https://cascade-oracle.dev/schema/{name}.json"
+        schema["$id"] = f"https://cascadia-papsukkal.dev/schema/{name}.json"
         path = out_dir / f"{name}.json"
         path.write_text(json.dumps(schema, indent=2, sort_keys=True) + "\n")
         written.append(path)

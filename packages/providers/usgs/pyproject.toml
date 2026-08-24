@@ -1,7 +1,7 @@
 [project]
 name = "cascade-providers-usgs"
 version = "0.1.0"
-description = "Cascade Oracle — USGS NWIS instantaneous values adapter (client, parser, normalize, jobs, canary)."
+description = "Cascadia Papsukkal — USGS NWIS instantaneous values adapter (client, parser, normalize, jobs, canary)."
 requires-python = ">=3.12"
 dependencies = ["cascade-core", "httpx>=0.27", "sqlalchemy>=2.0"]
 

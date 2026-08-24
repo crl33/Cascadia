@@ -7,7 +7,7 @@
 NOAA/NWS (NWRFC via NWPS) issues official river forecasts for all six seed points (FACT, live 2026-08-22). The National Water Model provides reach-level modeled streamflow and ensembles. V1's plan proposed TimesFM-style forecasting in Phase 4 without an evaluation framework.
 
 ## Decision
-Cascade Oracle is an intelligence-fusion layer above authoritative data and models. It displays official forecasts and categories, authoritative model outputs and their disagreement, and transparent derived indicators (susceptibility index, forcing, headroom). It does not display a Cascade-derived exceedance probability until a method has been hindcast-evaluated against stored history (Event Zero first) with reliability and skill reported (`docs/TESTING.md` §7). Until then such outputs are labeled EXPERIMENTAL and shown as indices.
+Cascadia Papsukkal is an intelligence-fusion layer above authoritative data and models. It displays official forecasts and categories, authoritative model outputs and their disagreement, and transparent derived indicators (susceptibility index, forcing, headroom). It does not display a Cascade-derived exceedance probability until a method has been hindcast-evaluated against stored history (Event Zero first) with reliability and skill reported (`docs/TESTING.md` §7). Until then such outputs are labeled EXPERIMENTAL and shown as indices.
 
 ## Alternatives considered
 - Build a custom ML flood model early — no history, no evaluation, high risk of confident nonsense.

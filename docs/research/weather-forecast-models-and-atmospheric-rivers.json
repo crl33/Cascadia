@@ -52,7 +52,7 @@
         {"claim": "Retention is a fixed 7-day window", "url": "https://api.weather.gov/products?type=FLW&limit=500", "status": "INFERENCE"},
         {"claim": "NWS may block IPs impacting service; align requests to data refresh cycles; contact sdm@noaa.gov", "url": "https://www.weather.gov/abusive-user-block", "status": "FACT"}
       ],
-      "relevance_to_cascade_oracle": "Primary source for official WFO-edited QPF, snow amount and snow level grids at 2.5 km for every WA basin, for flood watches/warnings by county/zone (Skagit WAC057, etc.), and for AFD/ESF/FLW/FLS/RVF narrative text. Poll gridpoints per basin centroid/elevation band and archive text products daily to build history."
+      "relevance_to_cascadia_papsukkal": "Primary source for official WFO-edited QPF, snow amount and snow level grids at 2.5 km for every WA basin, for flood watches/warnings by county/zone (Skagit WAC057, etc.), and for AFD/ESF/FLW/FLS/RVF narrative text. Poll gridpoints per basin centroid/elevation band and archive text products daily to build history."
     },
     {
       "name": "National Blend of Models (NBM) v5.0 GRIB2 on AWS Open Data / NOMADS",
@@ -102,7 +102,7 @@
         {"claim": "https://nomads.ncep.noaa.gov/cgi-bin/filter_blend.pl returns HTTP 200", "url": "https://nomads.ncep.noaa.gov/cgi-bin/filter_blend.pl", "status": "FACT"},
         {"claim": "CONUS grid spacing is 2.5 km", "url": "https://vlab.noaa.gov/web/mdl/nbm", "status": "INFERENCE"}
       ],
-      "relevance_to_cascade_oracle": "Best single calibrated, probabilistic QPF/snow source for WA basins out to 11 days: 6-h APCP percentiles and exceedance probabilities (qmd) give rain-on-snow and flood-volume uncertainty directly; SNOWLVL percentiles give snow-line uncertainty per basin; hourly steps to 48 h match flashy west-slope basins. Subset a WA bounding box via .idx byte ranges each hour."
+      "relevance_to_cascadia_papsukkal": "Best single calibrated, probabilistic QPF/snow source for WA basins out to 11 days: 6-h APCP percentiles and exceedance probabilities (qmd) give rain-on-snow and flood-volume uncertainty directly; SNOWLVL percentiles give snow-line uncertainty per basin; hourly steps to 48 h match flashy west-slope basins. Subset a WA bounding box via .idx byte ranges each hour."
     },
     {
       "name": "HRRR (High-Resolution Rapid Refresh) on AWS Open Data (noaa-hrrr-bdp-pds)",
@@ -149,7 +149,7 @@
         {"claim": "RRFS 00/06/12/18Z cycles to 84 h, other hourly cycles to 18 h; public S3 bucket noaa-rrfs-ops-pds for the parallel feed", "url": "https://gribstream.com/blog/noaa-rrfs-refs-operational-august-2026", "status": "INFERENCE"},
         {"claim": "Date on which HRRR itself will be retired", "url": "https://www.weather.gov/notification/", "status": "OPEN_QUESTION"}
       ],
-      "relevance_to_cascade_oracle": "Highest-resolution operational QPF, precipitation type, 15-min rain rates, freezing-level height and surface/baseflow runoff proxies for orographic west-slope basins (Skagit, Nooksack, Snoqualmie, Cedar, Green, Puyallup/White) at 0-18/48 h. Use for nowcast-range AR intensity and rain/snow partition; pair with NBM/GFS/GEFS for longer leads."
+      "relevance_to_cascadia_papsukkal": "Highest-resolution operational QPF, precipitation type, 15-min rain rates, freezing-level height and surface/baseflow runoff proxies for orographic west-slope basins (Skagit, Nooksack, Snoqualmie, Cedar, Green, Puyallup/White) at 0-18/48 h. Use for nowcast-range AR intensity and rain/snow partition; pair with NBM/GFS/GEFS for longer leads."
     },
     {
       "name": "GFS (Global Forecast System) 0.25-degree GRIB2 on AWS Open Data / NOMADS",
@@ -194,7 +194,7 @@
         {"claim": "GFS v17 proposed for October 2026 (PNS 26-29, 9-km coupled; product removals)", "url": "https://gribstream.com/blog/gfs-v17-proposed-october-2026-coupled-upgrade", "status": "INFERENCE"},
         {"claim": "NOAA publishes no IVT field in GFS GRIB2 output", "url": "https://noaa-gfs-bdp-pds.s3.amazonaws.com/gfs.20260821/12/atmos/gfs.t12z.pgrb2.0p25.f006.idx", "status": "INFERENCE"}
       ],
-      "relevance_to_cascade_oracle": "Deterministic source for computing IVT/AR-scale at WA coastal landfall points (e.g. 47.5N/124.5W, 48.5N/124.5W) out to 16 days, plus PWAT, 0C-isotherm height and synoptic QPF. Hourly output to 120 h supports AR duration (>=24/48 h) calculations required by the Ralph AR scale."
+      "relevance_to_cascadia_papsukkal": "Deterministic source for computing IVT/AR-scale at WA coastal landfall points (e.g. 47.5N/124.5W, 48.5N/124.5W) out to 16 days, plus PWAT, 0C-isotherm height and synoptic QPF. Hourly output to 120 h supports AR duration (>=24/48 h) calculations required by the Ralph AR scale."
     },
     {
       "name": "GEFS (Global Ensemble Forecast System) on AWS Open Data / NOMADS",
@@ -240,7 +240,7 @@
         {"claim": "NOMADS filter_gefs_atmos_0p50a.pl exists (HTTP 200)", "url": "https://nomads.ncep.noaa.gov/cgi-bin/filter_gefs_atmos_0p50a.pl", "status": "FACT"},
         {"claim": "GEFS v12 (31 members) became operational September 2020", "url": "https://www.emc.ncep.noaa.gov/emc/pages/numerical_forecast_systems/gefs.php", "status": "INFERENCE"}
       ],
-      "relevance_to_cascade_oracle": "Only free source of probabilistic AR/IVT forecasts for WA: compute per-member IVT at coastal transect points and derive P(IVT>250), P(IVT>500), AR-scale distributions and AR duration probabilities out to 16 days, mirroring CW3E/PSL products but as data rather than images. Also supplies ensemble QPF/PWAT/freezing level for basin risk envelopes."
+      "relevance_to_cascadia_papsukkal": "Only free source of probabilistic AR/IVT forecasts for WA: compute per-member IVT at coastal transect points and derive P(IVT>250), P(IVT>500), AR-scale distributions and AR duration probabilities out to 16 days, mirroring CW3E/PSL products but as data rather than images. Also supplies ensemble QPF/PWAT/freezing level for basin risk envelopes."
     },
     {
       "name": "CW3E (Scripps) Atmospheric River Scale and IVT/IWV forecast tools",
@@ -267,7 +267,7 @@
       "units": "IVT kg m-1 s-1; IWV cm/mm.",
       "licensing": "Products 'provided as is and are intended for research purposes only' (IVT page disclaimer). No redistribution license stated; scraping images for an operational product needs CW3E permission (OPEN_QUESTION).",
       "limitations": [
-        "Image-only; no machine-readable AR scale or IVT feed. Cascade Oracle should reimplement the AR scale from GFS/GEFS/ECMWF open data using the published algorithm.",
+        "Image-only; no machine-readable AR scale or IVT feed. Cascadia Papsukkal should reimplement the AR scale from GFS/GEFS/ECMWF open data using the published algorithm.",
         "Coverage is the U.S. West Coast / western U.S.; the Washington coast is included in the West-Coast alert framing but specific WA transect points were not verified on a fetched page (INFERENCE).",
         "Ralph et al. 2019 paper itself (AMS) returned HTTP 403 to automated fetch; thresholds were read from the CW3E news release and Wikipedia summary.",
         "Research disclaimer limits use in decision-support messaging without attribution/caveats."
@@ -280,7 +280,7 @@
         {"claim": "Preliminary rank by max IVT: 250-500 -> 1, 500-750 -> 2, 750-1000 -> 3, 1000-1250 -> 4, >=1250 -> 5 (kg m-1 s-1), then duration adjustment (<24 h -1, >48 h +1); Ralph et al. 2019 BAMS 100(2) 269-289, doi:10.1175/BAMS-D-18-0023.1", "url": "https://en.wikipedia.org/wiki/Atmospheric_river", "status": "FACT"},
         {"claim": "Whether CW3E provides gridded IVT/AR-scale data files or an API to partners", "url": "https://cw3e.ucsd.edu/arscale/", "status": "OPEN_QUESTION"}
       ],
-      "relevance_to_cascade_oracle": "Defines the AR-scale algorithm and IVT thresholds (250/500/750/1000/1250 kg m-1 s-1; 24/48-h duration rules) that Cascade Oracle should implement on GFS/GEFS data for WA landfall points; CW3E pages serve as a verification/benchmark display, not a data feed."
+      "relevance_to_cascadia_papsukkal": "Defines the AR-scale algorithm and IVT thresholds (250/500/750/1000/1250 kg m-1 s-1; 24/48-h duration rules) that Cascadia Papsukkal should implement on GFS/GEFS data for WA landfall points; CW3E pages serve as a verification/benchmark display, not a data feed."
     },
     {
       "name": "NOAA PSL Atmospheric River Portal (forecasts section)",
@@ -313,7 +313,7 @@
         {"claim": "Forecast products from GFS, NAM and GEFS; IWV, IVT, time-integrated IVT; GEFS landfall tool with probabilities for IVT >250 and >500; GFS/NAM to 180 h, ensemble to 15 days; regions include U.S. West Coast; image-based only", "url": "https://psl.noaa.gov/arportal/ar_forecasts/", "status": "FACT"},
         {"claim": "NAM, SREF, HREF, HiresW and NAM MOS retired effective October 6, 2026 12 UTC", "url": "https://www.weather.gov/media/notification/pdf_2026/scn26-47_Retirement_of_NAM_SREF_HREF_HiresW_NAM_MOS.aaa.pdf", "status": "INFERENCE"}
       ],
-      "relevance_to_cascade_oracle": "Useful as a reference display for AR landfall probability along the WA coast and to validate in-house IVT computations; not an ingest source."
+      "relevance_to_cascadia_papsukkal": "Useful as a reference display for AR landfall probability along the WA coast and to validate in-house IVT computations; not an ingest source."
     },
     {
       "name": "WPC Quantitative Precipitation Forecast (QPF) and Excessive Rainfall Outlook (ERO) - GIS, GeoJSON, GRIB2",
@@ -359,7 +359,7 @@
         {"claim": "Moderate risk >=40 %; High risk only on Day 1 or Day 2", "url": "https://www.nwahomepage.com/weather/weather-101/weather-101-wpc-excessive-rainfall-outlooks/", "status": "INFERENCE"},
         {"claim": "High risk threshold >=70 %", "url": "https://www.wpc.ncep.noaa.gov/qpf/excessive_rainfall_outlook_ero.php", "status": "OPEN_QUESTION"}
       ],
-      "relevance_to_cascade_oracle": "National human-QC'd QPF and a flash-flood risk outlook that can be clipped to WA basins via ArcGIS/GeoJSON queries; ERO polygons are a ready-made 'official risk' layer and WPC QPF is also an NBM v5.0 input (SCN 26-24 adds a WPC product as input), so it is a useful consistency check."
+      "relevance_to_cascadia_papsukkal": "National human-QC'd QPF and a flash-flood risk outlook that can be clipped to WA basins via ArcGIS/GeoJSON queries; ERO polygons are a ready-made 'official risk' layer and WPC QPF is also an NBM v5.0 input (SCN 26-24 adds a WPC product as input), so it is a useful consistency check."
     },
     {
       "name": "Snow level vs freezing level relationship (NWS Seattle forecast practice reference)",
@@ -401,7 +401,7 @@
         {"claim": "Ted Buehner's NWS Seattle affiliation (former warning coordination meteorologist)", "url": "https://mynorthwest.com/pacific-northwest-weather/mountain-forecasts-vital-difference-freezing-level-snow-level/3939285", "status": "INFERENCE"},
         {"claim": "Authoritative NWS Seattle citation for the 1,000-ft rule", "url": "https://www.weather.gov/sew/", "status": "OPEN_QUESTION"}
       ],
-      "relevance_to_cascade_oracle": "Needed to translate model freezing levels into basin rain/snow partitions (rain-on-snow risk in Skagit/Nooksack/Snoqualmie/Puyallup). Recommended: default offset 1,000 ft (300 m) with sensitivity range 500-1,500 ft, overridden by NBM SNOWLVL percentiles or NWS gridpoint snowLevel where available."
+      "relevance_to_cascadia_papsukkal": "Needed to translate model freezing levels into basin rain/snow partitions (rain-on-snow risk in Skagit/Nooksack/Snoqualmie/Puyallup). Recommended: default offset 1,000 ft (300 m) with sensitivity range 500-1,500 ft, overridden by NBM SNOWLVL percentiles or NWS gridpoint snowLevel where available."
     },
     {
       "name": "GRIB tooling: Herbie, cfgrib/eccodes, xarray (brief)",
@@ -432,7 +432,7 @@
       "evidence": [
         {"claim": "Herbie supports HRRR, RAP, GFS, GEFS, AIGFS/AIGEFS, NBM, RRFS, RTMA/URMA, HAFS, CFS, ECMWF open data, NAVGEM, HRDPS; searches AWS, Google Cloud, NOMADS, Azure; uses index files with byte-range requests and regex search strings; Python 3.11+, xarray, cfgrib, optional wgrib2; pip install herbie-data", "url": "https://herbie.readthedocs.io/en/stable/", "status": "FACT"}
       ],
-      "relevance_to_cascade_oracle": "Practical ingestion layer for all GRIB2 sources above; use search strings like ':APCP:surface:0-6 hour acc', ':HGT:0C isotherm', ':SPFH:(1000|925|850|700|500|300) mb' to pull only the WA-relevant messages."
+      "relevance_to_cascadia_papsukkal": "Practical ingestion layer for all GRIB2 sources above; use search strings like ':APCP:surface:0-6 hour acc', ':HGT:0C isotherm', ':SPFH:(1000|925|850|700|500|300) mb' to pull only the WA-relevant messages."
     }
   ],
   "open_questions": [

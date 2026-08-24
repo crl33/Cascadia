@@ -12,7 +12,7 @@ same day — update the doc or the code, never let them drift.
 | backend / data | `DOMAIN_MODEL.md`, `ARCHITECTURE.md`, `DATA_SOURCES.md`, `adr/` |
 | frontend / visualization | `VISUAL_TRUTH_DOCTRINE.md`, `CINEMATIC_ARCHITECTURE.md`, `VISUALIZATION_CONTRACTS.md`, `SEMANTIC_ZOOM.md`, `CAMERA_SYSTEM.md`, `LAYER_SYSTEM.md`, `PERFORMANCE.md` |
 | QA / science evaluation | `TESTING.md`, `HYDROLOGY.md` §12 (hindcasting), `EVENT_ZERO.md` |
-| planning | `ROADMAP.md`, `CINEMATIC_ROADMAP.md` |
+| planning | `NEXT_STEPS.md` (where we are, next milestone), then `ROADMAP.md`, `CINEMATIC_ROADMAP.md` |
 | auditing the prototype | `V1_AUDIT.md` |
 | checking provider facts | `DATA_SOURCES.md` → `research/README.md` |
 

@@ -17,7 +17,7 @@ import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
 FIX = ROOT / "tests" / "fixtures" / "providers"
-UA = "CascadeOracle/0.1 (fixture capture; contact: cascade-oracle@example.invalid)"
+UA = "CascadiaPapsukkal/0.1 (fixture capture; contact: cascadia-papsukkal@example.invalid)"
 SITES = ["12119000", "12149000", "12200500", "12213100", "12113000", "12100490"]
 LIDS = ["RNTW1", "CRNW1", "MVEW1", "NKSW1", "AUBW1", "WRAW1"]
 USGS_IV = "https://waterservices.usgs.gov/nwis/iv/"

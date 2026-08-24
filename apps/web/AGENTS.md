@@ -1,4 +1,4 @@
-# apps/web — agent entry (Cascade Oracle web spike)
+# apps/web — agent entry (Cascadia Papsukkal web spike)
 
 React 19 + TypeScript strict + Vite 8 + CesiumJS 1.144, npm. The renderer presents; it does
 not define. Nothing in this app computes a hydrologic quantity — it renders contracts from

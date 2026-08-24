@@ -18,7 +18,7 @@ export function TopStrip() {
 
   return (
     <header className="top-strip">
-      <span className="wordmark">Cascade Oracle</span>
+      <span className="wordmark">Cascadia Papsukkal</span>
       <SearchBox />
       <span className="band-indicator" data-testid="band-indicator" title="semantic altitude band">{band.toUpperCase()}</span>
       <span className="flight-state" data-testid="flight-state" data-flight-state={flightState}>{flightState === 'flying' ? 'flying…' : flightState}</span>

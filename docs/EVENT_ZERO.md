@@ -8,10 +8,10 @@ reconstructed from memory.
 
 ## 1. Purpose
 
-Event Zero is the first hindcast dataset of Cascade Oracle (`ROADMAP.md` Phase 6; `TESTING.md` §7). Every row it
+Event Zero is the first hindcast dataset of Cascadia Papsukkal (`ROADMAP.md` Phase 6; `TESTING.md` §7). Every row it
 seeds exists to answer one question:
 
-> **What would Cascade Oracle have known, and shown, at clock time T — using only what was retrievable by T?**
+> **What would Cascadia Papsukkal have known, and shown, at clock time T — using only what was retrievable by T?**
 
 The look-ahead rule (`DATA_DOCTRINE.md` §11; `adr/ADR-0010`): a replay at T may read only rows with
 `available_at ≤ T`, and must read the observation *revision* and the forecast *run* that existed at T. The only

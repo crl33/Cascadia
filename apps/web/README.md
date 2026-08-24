@@ -1,4 +1,4 @@
-# Cascade Oracle — web spike
+# Cascadia Papsukkal — web spike
 
 The cinematic client for the Skagit flight spike: globe over Cascadia (keyless OpenStreetMap
 imagery, ellipsoid terrain, no Cesium ion), search → basin flight → basin panel →

@@ -14,10 +14,10 @@ from cascade_providers_usgs.parser import parse_iv
 SITES = ["12119000", "12149000", "12200500", "12213100", "12113000", "12100490"]
 
 
-async def check(contact: str = "cascade-oracle@example.invalid") -> dict:
+async def check(contact: str = "cascadia-papsukkal@example.invalid") -> dict:
     report: dict = {"provider": "usgs-nwis-iv", "reachable": False, "schema_ok": False, "series": {}}
     try:
-        async with httpx.AsyncClient(timeout=30, follow_redirects=True, headers={"User-Agent": f"CascadeOracle-canary (+contact: {contact})"}) as c:
+        async with httpx.AsyncClient(timeout=30, follow_redirects=True, headers={"User-Agent": f"CascadiaPapsukkal-canary (+contact: {contact})"}) as c:
             r = await c.get(BASE_URL, params={"format": "json", "sites": ",".join(SITES), "parameterCd": PARAMETER_CODES, "period": "PT2H", "siteStatus": "all"})
             report["reachable"] = r.status_code == 200
             report["http_status"] = r.status_code

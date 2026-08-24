@@ -1,4 +1,4 @@
-"""Cascade Oracle contracts.
+"""Cascadia Papsukkal contracts.
 
 Every value that leaves the backend is typed here. There is no constructor for a bare number:
 a scientific quantity always travels with its unit and a provenance reference

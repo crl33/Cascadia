@@ -445,7 +445,7 @@
       "type": "string"
     }
   },
-  "$id": "https://cascade-oracle.dev/schema/BasinVisualizationState.json",
+  "$id": "https://cascadia-papsukkal.dev/schema/BasinVisualizationState.json",
   "additionalProperties": false,
   "properties": {
     "geometry_ref": {

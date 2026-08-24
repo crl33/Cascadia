@@ -41,7 +41,7 @@
         {"claim": "Planner handles 'up to a few thousand partitions fairly well' with pruning; more remaining partitions after pruning -> longer planning and higher memory; 'Never just assume that more partitions are better than fewer partitions, nor vice-versa'", "url": "https://www.postgresql.org/docs/current/ddl-partitioning.html", "status": "FACT"},
         {"claim": "Volume estimate: 5,000 series x 96 obs/day (15-min) ~ 480k rows/day ~ 175M rows/yr; ~40-50 B/row narrow tuple -> single-digit GB/yr heap - comfortably within plain PG with monthly partitions", "url": "", "status": "INFERENCE"}
       ],
-      "relevance_to_cascade_oracle": "Primary system of record for stations, series metadata, observations, derived basin aggregates, forecasts, and basin geometries (PostGIS). Adopt PG 18.x now (5-year support to 2030-11) with PostGIS 3.6.1; plan PG 19 only after PostGIS 3.7.0 final. Partition the observation table by month on observed_at (RANGE) with a (series_id, observed_at) composite index; ~12-36 partitions per year-span is far below the 'few thousand' ceiling. uuidv7() is useful for job/event ids; OLD/NEW RETURNING simplifies idempotent upsert auditing."
+      "relevance_to_cascadia_papsukkal": "Primary system of record for stations, series metadata, observations, derived basin aggregates, forecasts, and basin geometries (PostGIS). Adopt PG 18.x now (5-year support to 2030-11) with PostGIS 3.6.1; plan PG 19 only after PostGIS 3.7.0 final. Partition the observation table by month on observed_at (RANGE) with a (series_id, observed_at) composite index; ~12-36 partitions per year-span is far below the 'few thousand' ceiling. uuidv7() is useful for job/event ids; OLD/NEW RETURNING simplifies idempotent upsert auditing."
     },
     {
       "name": "TimescaleDB vs native partitioning + pg_partman (time-series storage decision)",
@@ -70,7 +70,7 @@
       "licensing": "TimescaleDB has two editions: 'Apache 2 Edition' and 'Community Edition' under the Tiger Data License (TSL). Under TSL 'You cannot sell TimescaleDB Community Edition as a service, even if you are the main contributor' but self-hosting for your own product is permitted; 'You can sell TimescaleDB Apache 2 Edition as a service'. pg_partman: repository LICENSE.txt (PostgreSQL-style permissive license, INFERENCE - license text not read).",
       "limitations": [
         "Apache-2 TimescaleDB lacks everything that makes it attractive for an observation store: columnstore/hypercore compression (ALTER TABLE ... hypercore, add_columnstore_policy), continuous aggregates (CREATE MATERIALIZED VIEW ... continuous aggregate and policies), retention policies (add_retention_policy/remove_retention_policy 'are only available in TimescaleDB Community Edition'), background jobs (add_job/alter_job/delete_job/run_job), and advanced chunk ops (split_chunk/reorder_chunk/move_chunk).",
-        "TSL (Community) edition constrains hosting: managed providers must ship it (e.g., AWS RDS does not include TimescaleDB - INFERENCE, not read this session); TSL forbids offering TimescaleDB itself as a service, which is not Cascade Oracle's business model so it is otherwise usable.",
+        "TSL (Community) edition constrains hosting: managed providers must ship it (e.g., AWS RDS does not include TimescaleDB - INFERENCE, not read this session); TSL forbids offering TimescaleDB itself as a service, which is not Cascadia Papsukkal's business model so it is otherwise usable.",
         "pg_partman 5.x supports only native declarative partitioning ('the older trigger-based methods have been deprecated'); v5.5.0 breaking change: pg_partman_bgw.role defaults to partman_maintainer - 'If this parameter had not been explicitly set before, this will cause the BGW to no longer run successfully' without that role; retention schema must be owned by the child-table owner.",
         "Neither native partitioning nor pg_partman provides columnar compression or incremental materialized aggregates; those must be built as ordinary tables refreshed by jobs (Procrastinate periodic tasks) if needed."
       ],
@@ -81,7 +81,7 @@
         {"claim": "pg_partman latest tag v5.5.0 published 2026-07-22T14:46:50Z; BGW role default changed to partman_maintainer; CVE fixes for SQL injection/privilege escalation; detach-before-drop support; RLS maintenance_role", "url": "https://api.github.com/repos/pgpartman/pg_partman/releases/latest", "status": "FACT"},
         {"claim": "Recommendation: plain declarative partitioning + pg_partman is sufficient at ~thousands of series; revisit TimescaleDB Community only if storage cost (compression) or dashboard-speed aggregates become the bottleneck", "url": "", "status": "INFERENCE"}
       ],
-      "relevance_to_cascade_oracle": "ADR recommendation: do NOT adopt TimescaleDB initially. Use native RANGE partitioning (monthly, on observed_at) with pg_partman 5.5.0 BGW for auto-creation and retention; keep a (series_id, observed_at DESC) index per partition, consider BRIN on observed_at for append-only scans. This keeps the schema portable to any PostgreSQL host and avoids TSL. Document the trigger to revisit: >~1B rows or a need for transparent compression/continuous aggregates, at which point TimescaleDB Community (2.29.x on PG 16-18, self-hosted) is license-compatible for a SaaS that is not itself selling TimescaleDB."
+      "relevance_to_cascadia_papsukkal": "ADR recommendation: do NOT adopt TimescaleDB initially. Use native RANGE partitioning (monthly, on observed_at) with pg_partman 5.5.0 BGW for auto-creation and retention; keep a (series_id, observed_at DESC) index per partition, consider BRIN on observed_at for append-only scans. This keeps the schema portable to any PostgreSQL host and avoids TSL. Document the trigger to revisit: >~1B rows or a need for transparent compression/continuous aggregates, at which point TimescaleDB Community (2.29.x on PG 16-18, self-hosted) is license-compatible for a SaaS that is not itself selling TimescaleDB."
     },
     {
       "name": "Python async web/ORM stack: FastAPI + Pydantic v2 + SQLAlchemy 2.0 asyncio + asyncpg/psycopg 3 + Alembic + GeoAlchemy2",
@@ -143,7 +143,7 @@
         {"claim": "'GeoAlchemy 2 requires SQLAlchemy >= 1.4'; PostGIS 2 and 3 focus; SpatiaLite >= 4.3.0 (alembic helpers need >= 5); MySQL >= 8; GeoPackage; Alembic helpers section exists", "url": "https://geoalchemy-2.readthedocs.io/en/latest/", "status": "FACT"},
         {"claim": "Alternatives (Litestar, Django+Ninja, Starlette-only) exist; not evaluated against fetched docs this session", "url": "", "status": "INFERENCE"}
       ],
-      "relevance_to_cascade_oracle": "ADR recommendation: FastAPI 0.141.x + Pydantic 2.13.x + SQLAlchemy 2.0.5x async + Alembic 1.19.x (async template) + GeoAlchemy2 0.20.x. Driver choice: standardize on psycopg 3 (one driver for API, Alembic, and Procrastinate; sync+async from the same URL; native LISTEN/NOTIFY support - INFERENCE on notify API) unless benchmarks show asyncpg's raw throughput matters for the read API; if both are used, keep separate pools and be explicit about PgBouncer pooling mode. Pin Python 3.12 (scientific wheels) and avoid Pydantic v1 code paths entirely."
+      "relevance_to_cascadia_papsukkal": "ADR recommendation: FastAPI 0.141.x + Pydantic 2.13.x + SQLAlchemy 2.0.5x async + Alembic 1.19.x (async template) + GeoAlchemy2 0.20.x. Driver choice: standardize on psycopg 3 (one driver for API, Alembic, and Procrastinate; sync+async from the same URL; native LISTEN/NOTIFY support - INFERENCE on notify API) unless benchmarks show asyncpg's raw throughput matters for the read API; if both are used, keep separate pools and be explicit about PgBouncer pooling mode. Pin Python 3.12 (scientific wheels) and avoid Pydantic v1 code paths entirely."
     },
     {
       "name": "Procrastinate (recommended Postgres-only job/worker system)",
@@ -192,7 +192,7 @@
         {"claim": "'Trying to defer a task when the queueing_lock is active will result in an AlreadyEnqueued exception, which you can choose to ignore'; queueing_lock allows a single job in todo while multiple may be doing; combine with lock to serialize", "url": "https://procrastinate.readthedocs.io/en/stable/howto/advanced/queueing_locks.html", "status": "FACT"},
         {"claim": "Heartbeats every 10 s by default; get_stalled_jobs() fetches doing-jobs of workers without heartbeat for 30 s; retry requires a user-written periodic task calling retry_job(); nb_seconds deprecated", "url": "https://procrastinate.readthedocs.io/en/stable/howto/production/retry_stalled_jobs.html", "status": "FACT"}
       ],
-      "relevance_to_cascade_oracle": "ADR recommendation for the modular monolith + workers: Procrastinate 3.9.x. Pattern: one `App` in the monolith package; API process defers jobs inside the same DB transaction as the triggering write (psycopg connector); N worker processes (`procrastinate worker -q ingest,derive,notify`). Idempotency: key ingestion jobs by (source, station_or_basin, window_start) via `queueing_lock` (dedupes pending work) and use `lock` per station/source to serialize fetches; persist with INSERT ... ON CONFLICT (series_id, observed_at) DO UPDATE so reruns are safe; periodic tasks get `timestamp` so backfills are deterministic. Retries: RetryStrategy(max_attempts=5, exponential_wait=...) with retry_exceptions limited to transient HTTP/DB errors. Ops: ship a periodic stalled-job retry task and a finished-job deletion task from day one; export worker metrics through OpenTelemetry yourself."
+      "relevance_to_cascadia_papsukkal": "ADR recommendation for the modular monolith + workers: Procrastinate 3.9.x. Pattern: one `App` in the monolith package; API process defers jobs inside the same DB transaction as the triggering write (psycopg connector); N worker processes (`procrastinate worker -q ingest,derive,notify`). Idempotency: key ingestion jobs by (source, station_or_basin, window_start) via `queueing_lock` (dedupes pending work) and use `lock` per station/source to serialize fetches; persist with INSERT ... ON CONFLICT (series_id, observed_at) DO UPDATE so reruns are safe; periodic tasks get `timestamp` so backfills are deterministic. Retries: RetryStrategy(max_attempts=5, exponential_wait=...) with retry_exceptions limited to transient HTTP/DB errors. Ops: ship a periodic stalled-job retry task and a finished-job deletion task from day one; export worker metrics through OpenTelemetry yourself."
     },
     {
       "name": "PgQueuer (Postgres-only alternative job queue)",
@@ -231,7 +231,7 @@
         {"claim": "Retries: raise RetryRequested(delay, reason); DatabaseRetryEntrypointExecutor with max_attempts and initial_delay exponential backoff; heartbeat_timeout makes stalled 'picked' jobs re-pickable; dedupe_key enforced by 'UNIQUE (dedupe_key) WHERE status IN (queued, picked)'; on_conflict='skip'; pgqueuer_log and pgqueuer_statistics (log_aggregation_interval); log not auto-pruned; at-least-once", "url": "https://raw.githubusercontent.com/janbjorge/pgqueuer/main/docs/guides/reliability.md", "status": "FACT"},
         {"claim": "Entrypoints via @pgq.entrypoint() with concurrency_limit, on_failure ('delete'/'hold'), accepts_context; QueueManager dequeues batches with FOR UPDATE SKIP LOCKED; SchedulerManager uses FOR UPDATE SKIP LOCKED 'to ensure only one worker runs each scheduled task, even across multiple processes'; Queries.requeue_jobs()", "url": "https://raw.githubusercontent.com/janbjorge/pgqueuer/main/docs/getting-started/core-concepts.md", "status": "FACT"}
       ],
-      "relevance_to_cascade_oracle": "Runner-up to Procrastinate. It wins on built-in observability (Prometheus, tracing, dashboard), automatic stalled-job re-pickup, and first-class dedupe_key; it loses on ecosystem maturity and sync support. Keep task bodies as plain functions so a switch is cheap if Procrastinate's ops gaps (dashboard, auto-stall recovery) prove costly."
+      "relevance_to_cascadia_papsukkal": "Runner-up to Procrastinate. It wins on built-in observability (Prometheus, tracing, dashboard), automatic stalled-job re-pickup, and first-class dedupe_key; it loses on ecosystem maturity and sync support. Keep task bodies as plain functions so a switch is cheap if Procrastinate's ops gaps (dashboard, auto-stall recovery) prove costly."
     },
     {
       "name": "Broker-backed queues and in-process schedulers: Celery, Dramatiq, arq, APScheduler (not recommended as primary)",
@@ -283,7 +283,7 @@
         {"claim": "APScheduler 4.0.0a6 latest pre-release; not-for-production warning; 4.x SQLAlchemy/PostgreSQL data store, asyncpg/psycopg/Redis/MQTT event brokers, 'Made persistent data stores shareable between multiple processes and nodes', lease extension for schedules/jobs", "url": "https://apscheduler.readthedocs.io/en/master/versionhistory.html", "status": "FACT"},
         {"claim": "APScheduler stable 3.11.3 uploaded 2026-06-28; Python >=3.8; MIT", "url": "https://pypi.org/pypi/apscheduler/json", "status": "FACT"}
       ],
-      "relevance_to_cascade_oracle": "Rejected for the primary job system because each adds Redis/RabbitMQ or lacks distributed coordination. Record in the ADR: APScheduler 3.x remains acceptable as a single 'beat' process if ever needed; Dramatiq/Celery become relevant only if a broker is adopted for other reasons (e.g., pub/sub fan-out to many consumers)."
+      "relevance_to_cascadia_papsukkal": "Rejected for the primary job system because each adds Redis/RabbitMQ or lacks distributed coordination. Record in the ADR: APScheduler 3.x remains acceptable as a single 'beat' process if ever needed; Dramatiq/Celery become relevant only if a broker is adopted for other reasons (e.g., pub/sub fan-out to many consumers)."
     },
     {
       "name": "Orchestration-as-product: Prefect 3 and Dagster OSS",
@@ -325,7 +325,7 @@
         {"claim": "Dagster 1.13.19; Python <3.15,>=3.10; Apache-2.0", "url": "https://pypi.org/pypi/dagster/json", "status": "FACT"},
         {"claim": "Dagster OSS storage: SQLite default, PostgreSQL via storage.postgres + dagster-postgres, MySQL; components webserver, daemon, code locations, run launchers (Default/Docker/K8s); single dagster.yaml", "url": "https://docs.dagster.io/deployment/oss/oss-instance-configuration", "status": "FACT"}
       ],
-      "relevance_to_cascade_oracle": "Not the job engine. Dagster OSS (Postgres-backed) is the natural later addition if the team wants asset lineage/backfill UI for model-grid pipelines (HRRR -> basin stats -> forecasts); it can share the PostgreSQL instance in a separate database. Prefect is the lighter of the two to self-host but duplicates what Procrastinate already provides for this use case."
+      "relevance_to_cascadia_papsukkal": "Not the job engine. Dagster OSS (Postgres-backed) is the natural later addition if the team wants asset lineage/backfill UI for model-grid pipelines (HRRR -> basin stats -> forecasts); it can share the PostgreSQL instance in a separate database. Prefect is the lighter of the two to self-host but duplicates what Procrastinate already provides for this use case."
     },
     {
       "name": "Object storage: MinIO (archived), SeaweedFS, Garage, Cloudflare R2 / AWS S3",
@@ -380,7 +380,7 @@
         {"claim": "R2 pricing: Standard $0.015/GB-month, IA $0.01/GB-month; Class A $4.50/M (IA $9.00/M), Class B $0.36/M (IA $0.90/M); egress 'Free'; free tier 10 GB-month, 1M Class A, 10M Class B", "url": "https://developers.cloudflare.com/r2/pricing/", "status": "FACT"},
         {"claim": "R2 implements ListObjectsV2, Get/Put/Delete/Head Object, multipart, STANDARD and STANDARD_IA; versioning, tagging, ACLs, object lock unimplemented", "url": "https://developers.cloudflare.com/r2/api/s3/api/", "status": "FACT"}
       ],
-      "relevance_to_cascade_oracle": "ADR recommendation: do not adopt MinIO. Production: Cloudflare R2 (zero egress matters for serving GRIB subsets/Zarr/rasters to the app and users; compensate for missing versioning with immutable content-addressed keys like forecasts/hrrr/2026-08-22T12Z/f06/wa.zarr). Dev/CI/air-gapped: SeaweedFS `weed mini` (Apache-2.0, broadest S3 feature set) or Garage (tiny footprint). Keep the S3 surface minimal (Put/Get/Head/List/multipart/presign) so all four backends remain interchangeable."
+      "relevance_to_cascadia_papsukkal": "ADR recommendation: do not adopt MinIO. Production: Cloudflare R2 (zero egress matters for serving GRIB subsets/Zarr/rasters to the app and users; compensate for missing versioning with immutable content-addressed keys like forecasts/hrrr/2026-08-22T12Z/f06/wa.zarr). Dev/CI/air-gapped: SeaweedFS `weed mini` (Apache-2.0, broadest S3 feature set) or Garage (tiny footprint). Keep the S3 surface minimal (Put/Get/Head/List/multipart/presign) so all four backends remain interchangeable."
     },
     {
       "name": "Object-storage Python clients: obstore, boto3, aioboto3",
@@ -416,7 +416,7 @@
         {"claim": "boto3 1.43.78 released 2026-08-21; Python >=3.10; Apache-2.0", "url": "https://pypi.org/project/boto3/", "status": "FACT"},
         {"claim": "aioboto3 15.5.0 released 2025-10-30; wraps aiobotocore; Python >=3.9; Apache-2.0; v9 removed aioboto3.client()/resource() in favor of sessions/context managers", "url": "https://pypi.org/project/aioboto3/", "status": "FACT"}
       ],
-      "relevance_to_cascade_oracle": "Use obstore as the single data-path client (async in workers/API, same code against R2/SeaweedFS/Garage via endpoint config); boto3 for provisioning scripts; skip aioboto3 unless a boto3-only feature is needed."
+      "relevance_to_cascadia_papsukkal": "Use obstore as the single data-path client (async in workers/API, same code against R2/SeaweedFS/Garage via endpoint config); boto3 for provisioning scripts; skip aioboto3 unless a boto3-only feature is needed."
     },
     {
       "name": "NWP/GRIB ingest tooling: xarray, cfgrib, eccodes, Herbie (NOAA open data on AWS)",
@@ -461,7 +461,7 @@
         {"claim": "herbie-data 2026.3.0 released 2026-03-07; Python >=3.11; MIT", "url": "https://pypi.org/project/herbie-data/", "status": "FACT"},
         {"claim": "HRRR on AWS: arn:aws:s3:::noaa-hrrr-bdp-pds (us-east-1), hrrrzarr (us-west-1, Univ. of Utah); hourly updates; NODD data open to the public", "url": "https://registry.opendata.aws/noaa-hrrr-pds/", "status": "FACT"}
       ],
-      "relevance_to_cascade_oracle": "Ingest path for model forcing over WA basins: Herbie (search/subset HRRR, NBM, GFS/GEFS, RRFS from NODD on AWS) -> cfgrib/eccodes -> xarray -> clip to a WA bounding box -> basin zonal stats (next provider) -> PostgreSQL; persist clipped cycles as Zarr v3 in object storage. pip-only install is now viable (eccodes wheels), which simplifies the worker container."
+      "relevance_to_cascadia_papsukkal": "Ingest path for model forcing over WA basins: Herbie (search/subset HRRR, NBM, GFS/GEFS, RRFS from NODD on AWS) -> cfgrib/eccodes -> xarray -> clip to a WA bounding box -> basin zonal stats (next provider) -> PostgreSQL; persist clipped cycles as Zarr v3 in object storage. pip-only install is now viable (eccodes wheels), which simplifies the worker container."
     },
     {
       "name": "Raster/vector geospatial processing: rasterio, rioxarray, exactextract, rasterstats, pyproj, shapely 2, GeoPandas",
@@ -510,7 +510,7 @@
         {"claim": "shapely 2.1.2 released 2025-09-24; Python >=3.10; GEOS >=3.9; NumPy >=1.21; vectorized ufunc interface; releases the GIL during GEOS ops; BSD-3", "url": "https://pypi.org/project/shapely/", "status": "FACT"},
         {"claim": "GeoPandas 1.1.4 released 2026-06-26; Python >=3.10; BSD-3-Clause", "url": "https://pypi.org/project/geopandas/", "status": "FACT"}
       ],
-      "relevance_to_cascade_oracle": "Basin-average forcing (precip, temperature, snow) for Skagit/Nooksack/Snoqualmie/Cedar/Green/Puyallup sub-basins: use exactextract with coverage_weight='area_spherical_m2' (or 'fraction' on an equal-area projection) and weighted_mean so 3-km HRRR cells straddling small, steep sub-basin boundaries are weighted by true overlap; store basin polygons in PostGIS and load via GeoPandas. Use rioxarray for CRS/clip on xarray grids, shapely 2 vectorized ops for geometry prep, pyproj for transforms (WA typically EPSG:2926/2927 or UTM 10N - INFERENCE)."
+      "relevance_to_cascadia_papsukkal": "Basin-average forcing (precip, temperature, snow) for Skagit/Nooksack/Snoqualmie/Cedar/Green/Puyallup sub-basins: use exactextract with coverage_weight='area_spherical_m2' (or 'fraction' on an equal-area projection) and weighted_mean so 3-km HRRR cells straddling small, steep sub-basin boundaries are weighted by true overlap; store basin polygons in PostGIS and load via GeoPandas. Use rioxarray for CRS/clip on xarray grids, shapely 2 vectorized ops for geometry prep, pyproj for transforms (WA typically EPSG:2926/2927 or UTM 10N - INFERENCE)."
     },
     {
       "name": "Cloud-native array storage: Zarr v3 (zarr-python 3), kerchunk, VirtualiZarr, Icechunk",
@@ -558,7 +558,7 @@
         {"claim": "VirtualiZarr 2.7.3 released 2026-08-07; Apache-2.0; Python >=3.12; Alpha; opens netCDF4/HDF5/GRIB virtually; persists to Kerchunk references or Icechunk; v2 added Zarr v3 support and pluggable parsers", "url": "https://pypi.org/project/virtualizarr/", "status": "FACT"},
         {"claim": "Icechunk 2.1.2; Python >=3.12; described as Apache-2.0 transactional storage engine for ND-array data on object storage", "url": "https://pypi.org/pypi/icechunk/json", "status": "FACT"}
       ],
-      "relevance_to_cascade_oracle": "Store clipped WA forecast cycles and derived grids (SWE, precip accumulations) as Zarr v3 with sharding in R2/SeaweedFS via obstore-backed stores; pin zarr>=3.1 and xarray>=2025.x. Defer kerchunk/VirtualiZarr for archive GRIB until a backfill/reanalysis use case appears; Icechunk is a candidate if versioned, transactional grid updates become a requirement."
+      "relevance_to_cascadia_papsukkal": "Store clipped WA forecast cycles and derived grids (SWE, precip accumulations) as Zarr v3 with sharding in R2/SeaweedFS via obstore-backed stores; pin zarr>=3.1 and xarray>=2025.x. Defer kerchunk/VirtualiZarr for archive GRIB until a backfill/reanalysis use case appears; Icechunk is a candidate if versioned, transactional grid updates become a requirement."
     },
     {
       "name": "Units handling: pint and pint-xarray",
@@ -591,7 +591,7 @@
         {"claim": "pint 0.25.3 released 2026-03-19; BSD; Python >=3.11; NumPy integration; temperature conversions; no external deps", "url": "https://pypi.org/project/pint/", "status": "FACT"},
         {"claim": "pint-xarray 0.6.1 (2026-03-23); Apache-2.0; Python >=3.11; deps xarray>=2023.07.0, numpy>=1.26, pint>=0.24", "url": "https://pypi.org/pypi/pint-xarray/json", "status": "FACT"}
       ],
-      "relevance_to_cascade_oracle": "Use pint at ingest boundaries to normalize USGS (cfs, ft), SNOTEL (in, degF), NWM (m3/s, mm) into canonical SI columns, and pint-xarray when converting model grids; record the canonical unit per parameter in the series metadata table."
+      "relevance_to_cascadia_papsukkal": "Use pint at ingest boundaries to normalize USGS (cfs, ft), SNOTEL (in, degF), NWM (m3/s, mm) into canonical SI columns, and pint-xarray when converting model grids; record the canonical unit per parameter in the series metadata table."
     },
     {
       "name": "Observability: OpenTelemetry Python, structlog, prometheus_client, Grafana",
@@ -637,7 +637,7 @@
         {"claim": "prometheus-client 0.26.0 uploaded 2026-07-24; Python >=3.9; Apache-2.0 AND BSD-2-Clause", "url": "https://pypi.org/pypi/prometheus-client/json", "status": "FACT"},
         {"claim": "'Grafana is distributed under AGPL-3.0-only. For Apache-2.0 exceptions, see LICENSING.md.'", "url": "https://github.com/grafana/grafana", "status": "FACT"}
       ],
-      "relevance_to_cascade_oracle": "ADR: structlog (JSON to stdout, contextvars bound with request_id/job_id/station_id) + OpenTelemetry traces and metrics exported via OTLP (auto-instrument FastAPI, SQLAlchemy, psycopg/asyncpg, httpx; manual spans around Procrastinate tasks) -> Grafana stack (Tempo/Mimir/Loki - INFERENCE on backend choice). Avoid prometheus_client multiprocess mode by running one uvicorn worker per container or by exporting metrics through OTLP; expose a /metrics endpoint only for single-process worker containers."
+      "relevance_to_cascadia_papsukkal": "ADR: structlog (JSON to stdout, contextvars bound with request_id/job_id/station_id) + OpenTelemetry traces and metrics exported via OTLP (auto-instrument FastAPI, SQLAlchemy, psycopg/asyncpg, httpx; manual spans around Procrastinate tasks) -> Grafana stack (Tempo/Mimir/Loki - INFERENCE on backend choice). Avoid prometheus_client multiprocess mode by running one uvicorn worker per container or by exporting metrics through OTLP; expose a /metrics endpoint only for single-process worker containers."
     },
     {
       "name": "Testing stack: pytest, pytest-asyncio, respx / pytest-httpx, testcontainers-python, schemathesis, Playwright, hypothesis",
@@ -691,7 +691,7 @@
         {"claim": "playwright 1.62.0; Python >=3.10; Apache-2.0", "url": "https://pypi.org/pypi/playwright/json", "status": "FACT"},
         {"claim": "hypothesis 6.165.10; Python >=3.10; MPL-2.0", "url": "https://pypi.org/pypi/hypothesis/json", "status": "FACT"}
       ],
-      "relevance_to_cascade_oracle": "ADR: pytest 9 + pytest-asyncio 1.4 (asyncio_mode=auto, asyncio_default_fixture_loop_scope=session for a shared engine fixture); respx for recording/mocking USGS/NWPS/AWDB HTTP fixtures (looser pins than pytest-httpx); testcontainers PostgresContainer with a postgis image (tag naming for PG18/PostGIS 3.6 to be verified) for migration and spatial tests; schemathesis from_asgi against the FastAPI app in CI for contract tests; hypothesis strategies for unit conversions and time-window/idempotency logic; Playwright for a small E2E smoke suite of the dashboard."
+      "relevance_to_cascadia_papsukkal": "ADR: pytest 9 + pytest-asyncio 1.4 (asyncio_mode=auto, asyncio_default_fixture_loop_scope=session for a shared engine fixture); respx for recording/mocking USGS/NWPS/AWDB HTTP fixtures (looser pins than pytest-httpx); testcontainers PostgresContainer with a postgis image (tag naming for PG18/PostGIS 3.6 to be verified) for migration and spatial tests; schemathesis from_asgi against the FastAPI app in CI for contract tests; hypothesis strategies for unit conversions and time-window/idempotency logic; Playwright for a small E2E smoke suite of the dashboard."
     }
   ],
   "open_questions": [

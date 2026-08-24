@@ -1,12 +1,12 @@
 # V2 ASSESSMENT — architecture and science orientation (2026-08-22)
 
-The first-assignment deliverable: what Cascade Oracle is, what V1 is worth, where the founding
+The first-assignment deliverable: what Cascadia Papsukkal is, what V1 is worth, where the founding
 brief's assumptions need correction, and the V2 system at a systems level. Everything here is
 expanded in the sibling documents; this file is the index and the judgment calls.
 
-## 1. Cascade Oracle in my own words
+## 1. Cascadia Papsukkal in my own words
 
-Cascade Oracle is a **state estimator with a conscience**. It continuously ingests the
+Cascadia Papsukkal is a **state estimator with a conscience**. It continuously ingests the
 observations, official forecasts and authoritative models that describe a Washington
 watershed — gauges, snow pillows, radar rainfall, reservoir pools, NWRFC river forecasts,
 National Water Model output, atmospheric-river diagnostics — and maintains, per basin, an

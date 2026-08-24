@@ -1,4 +1,4 @@
-# Cascade Oracle
+# Cascadia Papsukkal
 
 A hydrologic intelligence platform for Washington State watersheds: continuous ingestion of
 authoritative observations and forecasts → basin-centric state estimation → explainable,
@@ -32,7 +32,7 @@ something needs explaining, it goes in that folder's `CONTEXT.md`, not in anyone
 | adding a provider | `docs/DATA_SOURCES.md` → `packages/providers/CONTEXT.md` | fixture tests + canary exist |
 | touching the renderer | `docs/CINEMATIC_ARCHITECTURE.md` → `docs/VISUALIZATION_CONTRACTS.md` | no Cesium type leaks upstream |
 | writing tests | `docs/TESTING.md` | deterministic; no live weather dependence |
-| asked "what is next" | `docs/ROADMAP.md`, `docs/CINEMATIC_ROADMAP.md` | the current phase's exit criteria |
+| asked "what is next" | `docs/NEXT_STEPS.md` then `docs/ROADMAP.md`, `docs/CINEMATIC_ROADMAP.md` | the next milestone and its exit test |
 | asked about V1 | `docs/V1_AUDIT.md` → `v1/CONTEXT.md` | preserve knowledge, not debt |
 | hindcasting / December 2025 | `docs/EVENT_ZERO.md` → `docs/HYDROLOGY.md` §12 | every input has a knowledge time |
 | checking what the spike proved | `docs/research/spike-report-2026-08-22.md` | invariants list all checked |

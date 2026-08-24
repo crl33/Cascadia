@@ -41,7 +41,7 @@
         {"claim": "Status-code meanings Ice/Eqp/Bkw/Dis/Mnt/Rat (help page now redirects to a 404 API collection; meanings taken from search snippets)", "url": "https://help.waterdata.usgs.gov/codes-and-parameters/instantaneous-and-daily-value-status-codes", "status": "INFERENCE"},
         {"claim": "Blog posts: 'What's new with WDFN APIs - Summer 2026 Edition' (2026-06-18), 'Modernized access for USGS rating curves is now available' (2026-08-14), 'NWISWeb Decommission Campaign 3' (2026-07-31), 'New parameter codes will not be available on NWISWeb' (2026-06-30)", "url": "https://waterdata.usgs.gov/blog/", "status": "FACT"}
       ],
-      "relevance_to_cascade_oracle": "Do not build new ingestion on this service; it is sunsetting in Q1 2027 and may be intentionally degraded from H2 2026. Use only as a short-term fallback, and follow redirects."
+      "relevance_to_cascadia_papsukkal": "Do not build new ingestion on this service; it is sunsetting in Q1 2027 and may be intentionally degraded from H2 2026. Use only as a short-term fallback, and follow redirects."
     },
     {
       "name": "USGS Water Data APIs - OGC API Features (api.waterdata.usgs.gov/ogcapi/v0)",
@@ -91,7 +91,7 @@
         {"claim": "No EDR endpoint on api.waterdata.usgs.gov (probes 404); api.water.usgs.gov hosts NLDI, fabric pygeoapi, GDP pygeoapi", "url": "https://api.water.usgs.gov/", "status": "FACT"},
         {"claim": "Instantaneous-value qualification code collection does not exist (HTTP 404 'Collection not found') after redirect from help site", "url": "https://api.waterdata.usgs.gov/ogcapi/v0/collections/instantaneous-value-qualification-code-iv_rmk_cd?f=json", "status": "FACT"}
       ],
-      "relevance_to_cascade_oracle": "Primary source for observed stage/discharge at all WA USGS gauges (Skagit, Nooksack, Snoqualmie/Snohomish, Cedar, Green-Duwamish, Puyallup/White). Use latest-continuous for nowcast polling, continuous for backfill (<=3 yr windows), daily for climatology, time-series-metadata for series ids/thresholds, monitoring-locations for datum/altitude. Register an API key."
+      "relevance_to_cascadia_papsukkal": "Primary source for observed stage/discharge at all WA USGS gauges (Skagit, Nooksack, Snoqualmie/Snohomish, Cedar, Green-Duwamish, Puyallup/White). Use latest-continuous for nowcast polling, continuous for backfill (<=3 yr windows), daily for climatology, time-series-metadata for series ids/thresholds, monitoring-locations for datum/altitude. Register an API key."
     },
     {
       "name": "NOAA National Water Prediction Service (NWPS) API v1 (api.water.noaa.gov/nwps/v1)",
@@ -137,7 +137,7 @@
         {"claim": "NWPS replaced AHPS; experimental NWPS became operational March 27, 2024", "url": "https://www.weather.gov/dmx/nwps_info", "status": "FACT"},
         {"claim": "Flyer: endpoint list, 'uses the OpenAPI 3.0 specification', contact nwps.webmaster@noaa.gov", "url": "https://www.weather.gov/media/owp/oh/docs/NWPS_API_Flyer_V6.pdf", "status": "FACT"}
       ],
-      "relevance_to_cascade_oracle": "Single integration point for (a) official NWRFC deterministic forecasts at WA forecast points, (b) flood category thresholds/impact statements, (c) the gauge->USGS id->NWM reachId crosswalk, and (d) NWM reach forecasts without touching NetCDF. Poll gauges/{lid}/stageflow after ~15:30Z daily for NWRFC issuances; persist forecasts yourself because the API keeps no archive."
+      "relevance_to_cascadia_papsukkal": "Single integration point for (a) official NWRFC deterministic forecasts at WA forecast points, (b) flood category thresholds/impact statements, (c) the gauge->USGS id->NWM reachId crosswalk, and (d) NWM reach forecasts without touching NetCDF. Poll gauges/{lid}/stageflow after ~15:30Z daily for NWRFC issuances; persist forecasts yourself because the API keeps no archive."
     },
     {
       "name": "NOAA NWPS HEFS API v1 (Hydrologic Ensemble Forecast Service, experimental)",
@@ -181,7 +181,7 @@
         {"claim": "HEFS at RFCs for over 3,000 locations; serves 10 days of data; experimental, not supported 24/7", "url": "https://water.noaa.gov/about/api", "status": "FACT"},
         {"claim": "NWRFC rolled out HEFS (experimental) for WY2020; first 15 days forced by downscaled GEFS ensembles; ESP10 remains the official water supply forecast; ESP weather years 1981-2019 (39-year ensemble)", "url": "https://www.nwrfc.noaa.gov/presentations/html/wy2020_esp/NWRFC_Updates_to_ESP_Techniques_for_WY2020.pdf", "status": "FACT"}
       ],
-      "relevance_to_cascade_oracle": "Only machine-readable source of official probabilistic (ensemble) streamflow forecasts for WA forecast points; gives 30-day, 6-hourly ensembles and ready-made exceedance quantiles for Skagit (MVEW1/CONW1), Snoqualmie (CRNW1), Stillaguamish, Green (AUBW1/HAHW1), Cedar (LNDW1), Puyallup/Carbon (FFXW1) and others. Archive daily."
+      "relevance_to_cascadia_papsukkal": "Only machine-readable source of official probabilistic (ensemble) streamflow forecasts for WA forecast points; gives 30-day, 6-hourly ensembles and ready-made exceedance quantiles for Skagit (MVEW1/CONW1), Snoqualmie (CRNW1), Stillaguamish, Green (AUBW1/HAHW1), Cedar (LNDW1), Puyallup/Carbon (FFXW1) and others. Archive daily."
     },
     {
       "name": "NOAA Northwest River Forecast Center (NWRFC) web products: station XML/text, water supply ESP CSV, effective-local-flow XML, retrieve.php",
@@ -204,7 +204,7 @@
       },
       "cadence": "Deterministic river forecasts: issued daily (MVEW1 'Issued: 2026-08-21 08:05 PDT' = 15:05Z) and 'updated through the day, as needed' (CHPS T0 fixed at 12Z); water supply ESP: daily ensemble run (ws_summary Issuance Date = Ensemble Date = 2026-08-21); 120-day extended forecast: weekly model updates; ESP runs 13 months (from June, to end of next water year).",
       "latency": "Deterministic forecast available ~15:05Z; appears in NWPS ~15:26Z.",
-      "spatial_resolution": "NWRFC forecast points across WA/OR/ID/MT/WY/NV/BC. Water supply (ESP10) WA points (30 in report): ALFW1, BUMW1, CASW1, CHDW1, CIBW1, CLEW1, CONW1 (Skagit near Concrete), DRSW1, GCDW1, HLKW1, KACW1, KEEW1, KIOW1, LAUW1, LGDW1, LLKW1, MCDW1, MEWW1, MYDW1, NACW1, NITW1, PARW1, PATW1, PESW1, PRDW1, RIMW1, RISW1, SPOW1, STHW1, TONW1 - i.e. only CONW1 among the Cascade Oracle target basins; Yakima/Columbia dominate.",
+      "spatial_resolution": "NWRFC forecast points across WA/OR/ID/MT/WY/NV/BC. Water supply (ESP10) WA points (30 in report): ALFW1, BUMW1, CASW1, CHDW1, CIBW1, CLEW1, CONW1 (Skagit near Concrete), DRSW1, GCDW1, HLKW1, KACW1, KEEW1, KIOW1, LAUW1, LGDW1, LLKW1, MCDW1, MEWW1, MYDW1, NACW1, NITW1, PARW1, PATW1, PESW1, PRDW1, RIMW1, RISW1, SPOW1, STHW1, TONW1 - i.e. only CONW1 among the Cascadia Papsukkal target basins; Yakima/Columbia dominate.",
       "temporal_resolution": "Station XML: 15-min observed, 6-hourly forecast out to 10 days (numdays param); effective local flow XML: 6-hr, 10 days back / 10 days ahead; water supply: seasonal volumes (APR-AUG, APR-JUL, APR-SEP, JAN-JUL, JAN-SEP, OCT-SEP).",
       "historical_depth": "Station XML serves a rolling window (numdays); downloads portal keeps an archive but only the last forecast issued per day for effective-local-flow; retrieve.php supports date-range listing of Lower Columbia RVF products.",
       "missing_data_semantics": "Not documented. XML emits only present values; longitude is given as a positive number (122.334167) - western hemisphere sign must be applied. Water-supply CSV uses blank/absent rows rather than sentinels (not verified).",
@@ -234,7 +234,7 @@
         {"claim": "Downloads portal categories (River Forecasts, CHPS Hydrologic Model Output, ESP Ensembles, Forcings, Runoff, Data Share) and 'currently under construction'", "url": "https://www.nwrfc.noaa.gov/misc/downloads/index.php?type=netcdf_forcings&sortby=date&sortasc=true", "status": "FACT"},
         {"claim": "GitHub org NOAA-NWRFC hosts model calibration code only (no data APIs)", "url": "https://github.com/NOAA-NWRFC", "status": "FACT"}
       ],
-      "relevance_to_cascade_oracle": "Prefer the NWPS API for NWRFC deterministic forecasts and the HEFS API for ensembles; use NWRFC endpoints for (a) the full 10-day XML with creation times, (b) seasonal water-supply volumes (Skagit near Concrete) and natural-flow ESP, (c) effective local flow, and (d) gridded QPE/QPF forcings. Treat as scrape-grade with retries."
+      "relevance_to_cascadia_papsukkal": "Prefer the NWPS API for NWRFC deterministic forecasts and the HEFS API for ensembles; use NWRFC endpoints for (a) the full 10-day XML with creation times, (b) seasonal water-supply volumes (Skagit near Concrete) and natural-flow ESP, (c) effective local flow, and (d) gridded QPE/QPF forcings. Treat as scrape-grade with retries."
     },
     {
       "name": "NOAA National Water Model (NWM) v3.1 operational output - NOMADS and AWS Open Data (noaa-nwm-pds)",
@@ -283,7 +283,7 @@
         {"claim": "NCO product page lists v1.2 (SCN 18-16) and medium_range 7 members - outdated relative to operations", "url": "https://www.nco.ncep.noaa.gov/pmb/products/nwm/", "status": "FACT"},
         {"claim": "NWPS API exposes per-reach NWM series (analysis_assimilation, short_range, medium_range mean+6 members, long_range mean+4 members, medium_range_blend) in ft³/s", "url": "https://api.water.noaa.gov/nwps/v1/reaches/24270288/streamflow", "status": "FACT"}
       ],
-      "relevance_to_cascade_oracle": "Gives continuous, gridded, basin-wide state (SWE, snow depth, soil moisture, ET) and reach-scale streamflow guidance for every WA stream including ungauged tributaries, with 18 h / 10 d / 30 d horizons. Use AnA for state estimation, SR/MR for event lead time, LR for outlook; pull channel_rt by feature_id index set for WA (from RouteLink) and land grids clipped to WA."
+      "relevance_to_cascadia_papsukkal": "Gives continuous, gridded, basin-wide state (SWE, snow depth, soil moisture, ET) and reach-scale streamflow guidance for every WA stream including ungauged tributaries, with 18 h / 10 d / 30 d horizons. Use AnA for state estimation, SR/MR for event lead time, LR for outlook; pull channel_rt by feature_id index set for WA (from RouteLink) and land grids clipped to WA."
     },
     {
       "name": "NOAA National Water Model retrospective simulations on AWS (noaa-nwm-retrospective-3-0-pds, -2-1, -2-0, nwm-archive)",
@@ -319,7 +319,7 @@
         {"claim": "v3.0 bucket layout: Alaska/CONUS/Hawaii/PR; CONUS/netcdf/{CHANOBS,CHRTOUT,FORCING,GWOUT,LAKEOUT,LDASOUT,RTOUT}; CONUS/zarr/*.zarr", "url": "https://noaa-nwm-retrospective-3-0-pds.s3.amazonaws.com/?list-type=2&delimiter=/&prefix=CONUS/netcdf/", "status": "FACT"},
         {"claim": "File naming yyyy/yyyymmddhhhh.product_DOMAIN1.comp; CHRTOUT variables streamflow, velocity, qSfcLatRunoff, qBucket, qBtmVertRunoff; LDASOUT SOIL_M, SNEQV, SNOWH, ACCET, FSNO", "url": "https://github.com/NOAA-Big-Data-Program/bdp-data-docs/blob/main/nwm/README.md", "status": "FACT"}
       ],
-      "relevance_to_cascade_oracle": "Training/climatology baseline for 44 years of modeled streamflow, SWE and soil moisture on every WA reach/grid cell; pair with USGS daily records for bias characterization before trusting operational NWM guidance."
+      "relevance_to_cascadia_papsukkal": "Training/climatology baseline for 44 years of modeled streamflow, SWE and soil moisture on every WA reach/grid cell; pair with USGS daily records for bias characterization before trusting operational NWM guidance."
     },
     {
       "name": "NWM hydrofabric and gauge crosswalk: RouteLink_CONUS.nc (NCO nwprod parm/domain), NWM channel hydrofabric gdb, NWPS reachId",
@@ -359,7 +359,7 @@
         {"claim": "SCN 26-64 Appendix 1: v3.0->v3.1 RouteLink 'to' changes, dropped gauge 04216000, added gauges, corrected ATOK1/IOLK1/GCBG1/KLMC1 reach ids", "url": "https://www.weather.gov/media/notification/pdf_2026/scn26-64_Updated_National_Water_Model_V3.1_aaa.pdf", "status": "FACT"},
         {"claim": "NOAA 'NWM Crosswalk' ArcGIS Hub item exists but page content could not be read (JS app)", "url": "https://noaa.hub.arcgis.com/maps/noaa::nwm-crosswalk", "status": "OPEN_QUESTION"}
       ],
-      "relevance_to_cascade_oracle": "Required to join NWM channel_rt vectors to USGS gauges and NWPS forecast points, to subset the 2.78M-reach vector to WA basins (via 'to' topology and lat/lon), and to attach reach geometry for maps. Cache the v3.1.6 RouteLink and re-derive the WA index set on each NWM version change."
+      "relevance_to_cascadia_papsukkal": "Required to join NWM channel_rt vectors to USGS gauges and NWPS forecast points, to subset the 2.78M-reach vector to WA basins (via 'to' topology and lat/lon), and to attach reach geometry for maps. Cache the v3.1.6 RouteLink and re-derive the WA index set on each NWM version change."
     }
   ],
   "open_questions": [
@@ -368,7 +368,7 @@
     "USGS: details of the 2026-08-14 'Modernized access for USGS rating curves' endpoint (not fetched) - needed to convert NWPS stage thresholds to flow where NWPS flow = -9999.",
     "USGS: is the observed 301 from waterservices.usgs.gov to nwis.waterservices.usgs.gov for startDT/endDT queries part of the decommission 'degradation' plan, and what exactly happens in Q1 2027 (hard shutdown vs. redirect)?",
     "NWPS: semantics of TruncateObs/TruncateFcst and why /stageflow returns ~7.6 days of forecast while /stageflow/forecast returns 10 days; any rate limit, SLA, or terms; no alerts/products catalogue endpoint exists despite the task brief.",
-    "HEFS: meaning of the event 'flag' field; archive depth beyond the stated 10 days (archives/ endpoint holds PI-XML files from several RFCs); which of the 137 WA HEFS locations fall inside each Cascade Oracle basin.",
+    "HEFS: meaning of the event 'flag' field; archive depth beyond the stated 10 days (archives/ endpoint holds PI-XML files from several RFCs); which of the 137 WA HEFS locations fall inside each Cascadia Papsukkal basin.",
     "NWRFC: where ESP ensemble trace files (per point, all members) are downloadable - the downloads portal renders file lists client-side and retrieve.php exposes only RVFPH.LColumbia; also whether the official monthly water-supply forecast (vs. daily ESP updates) is flagged in ws_report_csv.",
     "NWM: actual retention policy of s3://noaa-nwm-pds (documented four-week rollover vs. ~20 months observed); whether the coastal 'pacific' total-water-level domain covers Puget Sound estuaries (Skagit/Snohomish deltas); timeline for NextGen/NWM v4.0.",
     "NWM crosswalk: contents/fields of the NOAA 'NWM Crosswalk' hub dataset and whether a v3.1-era channel geometry download newer than the 2021 gdb tarball exists."

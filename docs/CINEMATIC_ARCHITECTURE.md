@@ -337,7 +337,7 @@ answers `setTime(t)` from data it already holds; a miss is reported to the reque
 ### 7.2 Three timestamps, never collapsed
 
 `valid_time` (when true), `issued_at` (when the run was produced; null for observations) and
-`retrieved_at` (when Cascade Oracle fetched it), plus `available_at` (knowledge time) —
+`retrieved_at` (when Cascadia Papsukkal fetched it), plus `available_at` (knowledge time) —
 DATA_DOCTRINE.md §3 and §11. Client consequences:
 
 - Every forecast primitive and panel row shows "valid … · issued … by … · fetched …".

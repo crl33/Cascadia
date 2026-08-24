@@ -1,6 +1,6 @@
 # Spike report — 2026-08-22
 
-End-to-end verification of the Cascade Oracle architecture spike: worker → raw archive →
+End-to-end verification of the Cascadia Papsukkal architecture spike: worker → raw archive →
 SQLite → read-only API → contracts → web client (CesiumJS) → Playwright. Verified by the
 spike-verification pass on 2026-08-22 (macOS, Python 3.14.6, Node 22.22.2). All automated
 tests run offline against committed fixtures; the live runs below used the public USGS/NWPS APIs.

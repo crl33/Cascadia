@@ -49,7 +49,7 @@ Invariants:
 ## 2. Repository layout
 
 ```
-cascade-oracle/
+cascadia-papsukkal/
 ├─ CLAUDE.md · CONTEXT.md · AGENTS.md           ICM routing
 ├─ docs/                                       doctrine, architecture, ADRs, research
 ├─ v1/                                         prototype, read-only

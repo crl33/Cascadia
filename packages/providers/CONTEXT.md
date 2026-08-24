@@ -6,7 +6,7 @@ carrying rows. Nothing here computes features or assessments.
 ## Inputs
 - Reference (every adapter): `../../docs/DATA_SOURCES.md` (the provider's row: authority,
   cadence, latency, units, sentinels, quality flags, licensing), `../../docs/DATA_DOCTRINE.md`
-  §1–§8, `../../.claude/skills/vibesec/references/cascade-oracle-addendum.md` §1–§2.
+  §1–§8, `../../.claude/skills/vibesec/references/cascadia-papsukkal-addendum.md` §1–§2.
 - Working: the captured fixtures in `<name>/fixtures/` with `manifest.yaml`.
 
 Do NOT load: other providers' code, hydrology methods, the web app.

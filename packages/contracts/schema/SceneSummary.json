@@ -1335,7 +1335,7 @@
       "type": "string"
     }
   },
-  "$id": "https://cascade-oracle.dev/schema/SceneSummary.json",
+  "$id": "https://cascadia-papsukkal.dev/schema/SceneSummary.json",
   "additionalProperties": false,
   "description": "docs/VISUALIZATION_CONTRACTS.md \u00a78 \u2014 the band-appropriate subset for a request.",
   "properties": {

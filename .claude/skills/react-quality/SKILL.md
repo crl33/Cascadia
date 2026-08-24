@@ -1,9 +1,9 @@
 ---
 name: react-quality
-description: React engineering quality gate for Cascade Oracle's web app (React + TypeScript + Vite + CesiumJS). Combines React Doctor (static health score and fix recipes), React Scan (runtime re-render detection), and Context7 (current library docs instead of stale training data). Use when writing, reviewing, profiling, or cleaning up any React/TypeScript code under apps/web, before committing frontend changes, when a UI feels slow, when adding a library API call, or when the user says "doctor", "scan renders", "react audit", "use context7", or "check the docs".
+description: React engineering quality gate for Cascadia Papsukkal's web app (React + TypeScript + Vite + CesiumJS). Combines React Doctor (static health score and fix recipes), React Scan (runtime re-render detection), and Context7 (current library docs instead of stale training data). Use when writing, reviewing, profiling, or cleaning up any React/TypeScript code under apps/web, before committing frontend changes, when a UI feels slow, when adding a library API call, or when the user says "doctor", "scan renders", "react audit", "use context7", or "check the docs".
 ---
 
-# React quality for Cascade Oracle
+# React quality for Cascadia Papsukkal
 
 Three tools, one rule each. Run them in this order when touching `apps/web`.
 
@@ -58,7 +58,7 @@ npx react-doctor@latest --verbose --scope changed
   Severity follows the hot path: anything touched per camera frame, per timeline tick, or
   per list row outranks a settings panel.
 
-## 4. Cascade Oracle–specific rules (the scanner cannot see these)
+## 4. Cascadia Papsukkal–specific rules (the scanner cannot see these)
 
 The renderer boundary is architecture, not style. Details and examples in
 [references/cesium-react-boundary.md](references/cesium-react-boundary.md).

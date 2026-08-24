@@ -1,6 +1,6 @@
 # CAMERA SYSTEM — the camera as a product feature
 
-The camera is how Cascade Oracle turns "the world is the interface" into something a person can
+The camera is how Cascadia Papsukkal turns "the world is the interface" into something a person can
 operate. It is owned by `apps/web/src/camera/` (a plain TypeScript module, not React — see
 [`.claude/skills/react-quality/references/cesium-react-boundary.md`](../.claude/skills/react-quality/references/cesium-react-boundary.md)),
 it consumes only stable ids, geometry and the semantic contracts in

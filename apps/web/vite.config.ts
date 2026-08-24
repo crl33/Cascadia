@@ -1,5 +1,5 @@
 /**
- * Vite configuration for the Cascade Oracle web spike.
+ * Vite configuration for the Cascadia Papsukkal web spike.
  * Owns: the React plugin, the ion-free Cesium static asset copy (Workers/ThirdParty/Assets/Widgets)
  * with CESIUM_BASE_URL defined at build time — the pattern from Cesium's official Vite example —
  * and the vitest settings. No proxies, no external scripts: the API base is a runtime env value.

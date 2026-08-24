@@ -1,5 +1,5 @@
 /**
- * Live-API contract check: validates a running Cascade Oracle API (the real FastAPI app, or the
+ * Live-API contract check: validates a running Cascadia Papsukkal API (the real FastAPI app, or the
  * stub) against the client's zod schemas, endpoint by endpoint, using the seed Skagit / MVEW1 /
  * AUBW1 ids. Offline by default: the whole suite is skipped unless CASCADE_LIVE_API_BASE is set
  * (e.g. `CASCADE_LIVE_API_BASE=http://localhost:8000 npx vitest run src/contracts/live-api.test.ts`).

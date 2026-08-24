@@ -1,7 +1,7 @@
 [project]
 name = "cascade-core"
 version = "0.1.0"
-description = "Cascade Oracle — settings, async DB, ORM models, object store, time/units/freshness utilities, as_known_at."
+description = "Cascadia Papsukkal — settings, async DB, ORM models, object store, time/units/freshness utilities, as_known_at."
 requires-python = ">=3.12"
 dependencies = ["cascade-contracts", "sqlalchemy>=2.0", "aiosqlite>=0.20", "httpx>=0.27", "pint>=0.24", "pydantic>=2.9"]
 

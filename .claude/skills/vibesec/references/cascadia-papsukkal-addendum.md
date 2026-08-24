@@ -1,4 +1,4 @@
-# VibeSec addendum — Cascade Oracle threat model
+# VibeSec addendum — Cascadia Papsukkal threat model
 
 Read after `SKILL.md`. This file covers what a generic web-app checklist misses for a
 scientific ingestion platform: the attack surface is mostly *upstream providers, expensive
@@ -13,7 +13,7 @@ Every adapter (`packages/providers/*`) makes outbound HTTP to NOAA/USGS/NRCS/USA
   validated against the adapter's allowlisted host before it is followed).
 - Adapters follow at most N redirects and re-validate the host on every hop.
 - Adapters set a hard timeout, a max response size, and a `User-Agent` that identifies
-  Cascade Oracle with a contact address (NWS API requires one; others rate-limit by it).
+  Cascadia Papsukkal with a contact address (NWS API requires one; others rate-limit by it).
 - Raw payloads are archived to object storage **before** parsing; parsing bugs must not lose
   data, and a malicious payload must not be able to reach the database unparsed.
 - Parsers are fixture-tested for malformed/oversized/sentinel inputs. A provider returning
@@ -25,7 +25,7 @@ Every adapter (`packages/providers/*`) makes outbound HTTP to NOAA/USGS/NRCS/USA
 GRIB2, NetCDF/HDF5, GeoTIFF, shapefiles, LAS/LAZ and KML/GPX are all parsed by native
 libraries (eccodes, netCDF-C/HDF5, GDAL, PDAL, libxml2).
 
-- Parse only files that Cascade Oracle fetched itself from allowlisted hosts; never parse
+- Parse only files that Cascadia Papsukkal fetched itself from allowlisted hosts; never parse
   user uploads in the API process.
 - Run heavy parsers in worker processes with memory/CPU limits, not in the API process.
 - Pin and track CVEs for GDAL, HDF5, eccodes, PROJ, and libxml2. Disable external entity
@@ -97,7 +97,7 @@ A value shown as OFFICIAL that is not official is an integrity failure, not a UX
 - Lockfiles committed; `pip-audit`/`npm audit` in CI; Dependabot or Renovate enabled.
 - Container images pinned by digest; non-root users; read-only filesystems for API containers.
 
-## 9. Review checklist for a Cascade Oracle PR
+## 9. Review checklist for a Cascadia Papsukkal PR
 
 - [ ] New outbound HTTP? Host allowlisted, timeout, size cap, UA, raw archive before parse.
 - [ ] New endpoint? Input limits documented; no upstream fetch on request path; rate limit.

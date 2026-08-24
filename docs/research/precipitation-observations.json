@@ -55,7 +55,7 @@
         {"claim": "NWS mapservices ImageServer 'obs/mrms_qpe' exposes rft_1hr..rft_72hr layers (used by NWRFC's map)", "url": "https://www.nwrfc.noaa.gov/rfc/mrms/js/mrms_nwrfc.js?version=20250128v1", "status": "FACT"},
         {"claim": "KRTX (Portland) coverage of SW Washington (Cowlitz/Lewis) is also terrain-limited", "url": "https://www.nssl.noaa.gov/projects/mrms/", "status": "INFERENCE"}
       ],
-      "relevance_to_cascade_oracle": "Primary real-time gridded precipitation forcing and nowcast input for all WA basins; use RadarOnly_QPE_01H (2-min) for nowcasting and MultiSensor_QPE_01H_Pass2 (hourly, ~1 h latency) for hydrologic forcing; carry RadarQualityIndex/GaugeInflIndex as per-cell quality covariates because Skagit, Nooksack, Snoqualmie and Olympic basins sit in low-RQI terrain; build a Washington-subset re-chunking pipeline from the S3 bucket with SNS/SQS triggers."
+      "relevance_to_cascadia_papsukkal": "Primary real-time gridded precipitation forcing and nowcast input for all WA basins; use RadarOnly_QPE_01H (2-min) for nowcasting and MultiSensor_QPE_01H_Pass2 (hourly, ~1 h latency) for hydrologic forcing; carry RadarQualityIndex/GaugeInflIndex as per-cell quality covariates because Skagit, Nooksack, Snoqualmie and Olympic basins sit in low-RQI terrain; build a Washington-subset re-chunking pipeline from the S3 bucket with SNS/SQS triggers."
     },
     {
       "name": "MRMS archive holdings (Iowa State MTArchive, NCEI NEXRAD QPE CDR reanalysis, Microsoft Planetary Computer mirror)",
@@ -94,7 +94,7 @@
         {"claim": "NSSL MRMS Operational Display keeps a one-week rolling archive only", "url": "https://inside.nssl.noaa.gov/mrms/links/", "status": "FACT"},
         {"claim": "NCEI NEXRAD QPE CDR from MRMS reanalysis covers 2002-01-01 to 2011-12-31, netCDF-4, radar-only and gauge-corrected fields, restricted", "url": "https://www.ncei.noaa.gov/access/metadata/landing-page/bin/iso?id=gov.noaa.ncdc%3AC01543", "status": "INFERENCE"}
       ],
-      "relevance_to_cascade_oracle": "Use IEM for backfilling 2014-2020 MRMS history (training data, event reanalysis for 2015, 2017, 2020, 2021 atmospheric-river floods) and AWS for 2020-10 onward; note the 2-min RadarOnly archive at IEM is the only long 2-min record."
+      "relevance_to_cascadia_papsukkal": "Use IEM for backfilling 2014-2020 MRMS history (training data, event reanalysis for 2015, 2017, 2020, 2021 atmospheric-river floods) and AWS for 2020-10 onward; note the 2-min RadarOnly archive at IEM is the only long 2-min record."
     },
     {
       "name": "NCEP Stage IV multi-sensor QPE (RFC-produced, NCEP-mosaicked) with NWPS, NOMADS, NCAR EOL and NCEI access",
@@ -142,7 +142,7 @@
         {"claim": "CNRFC, NWRFC and CBRFC use Mountain Mapper gauge-based processing; hourly estimates at some RFCs lack manual QC", "url": "https://journals.ametsoc.org/view/journals/wefo/31/2/waf-d-14-00112_1.xml", "status": "INFERENCE"},
         {"claim": "EMC Stage IV documentation page (re-issue schedule, RFC notes) could not be fetched (HTTP 403 from both EMC paths)", "url": "https://www.emc.ncep.noaa.gov/mmb/SREF/pcpanl/stage4/", "status": "OPEN_QUESTION"}
       ],
-      "relevance_to_cascade_oracle": "Best long-record, RFC-QC'd gridded QPE for model calibration, bias-correcting MRMS, and computing event totals after the fact; do not use for real-time WA operations. Schedule a D+3 and D+7 re-pull of NOMADS files (or the NWPS daily tar) to capture NWRFC back-fill."
+      "relevance_to_cascadia_papsukkal": "Best long-record, RFC-QC'd gridded QPE for model calibration, bias-correcting MRMS, and computing event totals after the fact; do not use for real-time WA operations. Schedule a D+3 and D+7 re-pull of NOMADS files (or the NWPS daily tar) to capture NWRFC back-fill."
     },
     {
       "name": "NWRFC (Northwest River Forecast Center) observed precipitation products",
@@ -181,7 +181,7 @@
         {"claim": "mrms_nwrfc.js queries https://mapservices.weather.noaa.gov/raster/rest/services/obs/mrms_qpe/ImageServer (layers rft_1hr, rft_3hr, rft_6hr, rft_12hr, rft_24hr, rft_48hr, rft_72hr) and converts mm to inches client-side", "url": "https://www.nwrfc.noaa.gov/rfc/mrms/js/mrms_nwrfc.js?version=20250128v1", "status": "FACT"},
         {"claim": "NWRFC site map lists a 'Precipitation Summary' under water supply and links the legacy AHPS national archive", "url": "https://www.nwrfc.noaa.gov/site_map.cgi", "status": "FACT"}
       ],
-      "relevance_to_cascade_oracle": "Daily QC'd station 6-h/24-h precipitation for the whole NWRFC domain (including BC stations) is a cheap validation set for MRMS/Stage IV bias in WA basins; the ImageServer gives a ready-made MRMS QPE tile service for UI overlays."
+      "relevance_to_cascadia_papsukkal": "Daily QC'd station 6-h/24-h precipitation for the whole NWRFC domain (including BC stations) is a cheap validation set for MRMS/Stage IV bias in WA basins; the ImageServer gives a ready-made MRMS QPE tile service for UI overlays."
     },
     {
       "name": "NWS API (api.weather.gov) station observations - ASOS/AWOS precipitation",
@@ -214,7 +214,7 @@
         {"claim": "KSEA latest observation 2026-08-22T08:10Z had precipitationLast3Hours value null, qualityControl 'Z', unitCode wmoUnit:mm; 0 non-null precip values in last 200 obs", "url": "https://api.weather.gov/stations/KSEA/observations/latest", "status": "FACT"},
         {"claim": "Retention probe: 100 features/day for 2026-08-15..17 and 0 for 2026-08-14 and earlier at KSEA and KBLI", "url": "https://api.weather.gov/stations/KSEA/observations?start=2026-08-14T00:00:00Z&end=2026-08-14T23:59:00Z&limit=100", "status": "FACT"}
       ],
-      "relevance_to_cascade_oracle": "Free real-time ASOS point check for lowland basins (Sea-Tac for Green-Duwamish, Bellingham for Nooksack, Paine Field for Snohomish) but a weak precipitation source; better as temperature/wind context than as gauge truth."
+      "relevance_to_cascadia_papsukkal": "Free real-time ASOS point check for lowland basins (Sea-Tac for Green-Duwamish, Bellingham for Nooksack, Paine Field for Snohomish) but a weak precipitation source; better as temperature/wind context than as gauge truth."
     },
     {
       "name": "Synoptic Data Weather API (Mesonet API) - aggregated ASOS/AWOS, RAWS, SNOTEL, HADS and mesonet precipitation",
@@ -237,7 +237,7 @@
       "units": "mm default; cm or in selectable",
       "licensing": "Terms: Restricted Data Content cannot be redistributed without written approval; Public Data Content may be used internally but commercial redistribution requires written consent; attribution 'Data Aggregated by Synoptic' with hyperlink when serving third parties; Open Access is non-commercial, .edu only, requires credit and sharing results",
       "limitations": [
-        "Cascade Oracle as a non-.edu product needs a commercial contract; pricing not published (commercial pricing page/contact).",
+        "Cascadia Papsukkal as a non-.edu product needs a commercial contract; pricing not published (commercial pricing page/contact).",
         "Redistribution of even public-origin data through a product requires Synoptic's written consent under the T&Cs.",
         "Derived precipitation is an interpretation layer; for audit trails keep raw agency feeds (NRCS AWDB, USGS, FEMS) alongside."
       ],
@@ -250,7 +250,7 @@
         {"claim": "Open Access: accredited US institutions with .edu email, non-commercial, 1 year history, 1 concurrent request, credit Synoptic and share results, scoped to project region/time", "url": "https://synopticdata.com/open-access-program/", "status": "FACT"},
         {"claim": "T&Cs: no redistribution of Restricted Data Content; Public Data Content internal use OK, commercial redistribution requires written consent; attribution 'Data Aggregated by Synoptic'; 1 TB/yr raw storage cap for redistribution clients", "url": "https://synopticdata.com/tcs", "status": "FACT"}
       ],
-      "relevance_to_cascade_oracle": "Fastest path to a unified real-time gauge feed (ASOS+RAWS+SNOTEL+HADS+WSDOT) for WA with consistent derived accumulations; budget for a commercial license and redistribution consent, or use it for internal QC only and serve agency-native feeds publicly."
+      "relevance_to_cascadia_papsukkal": "Fastest path to a unified real-time gauge feed (ASOS+RAWS+SNOTEL+HADS+WSDOT) for WA with consistent derived accumulations; budget for a commercial license and redistribution consent, or use it for internal QC only and serve agency-native feeds publicly."
     },
     {
       "name": "RAWS (Remote Automated Weather Stations) precipitation via WRCC RAWS USA Climate Archive and USFS FEMS",
@@ -283,7 +283,7 @@
         {"claim": "FEMS provides historical and current observations and forecasts; a read-only API for external applications; download page with hourly or daily options", "url": "https://www.wildfire.gov/application/fems", "status": "FACT"},
         {"claim": "Public FEMS users can access RAWS hourly observations for the most recent 2-week period; authenticated users have full history", "url": "https://www.wildfire.gov/application/fems", "status": "INFERENCE"}
       ],
-      "relevance_to_cascade_oracle": "Only dense upland gauge network in Olympic/Cascade foothills (e.g., DNR RAWS in Skagit/Nooksack/Snoqualmie forests) for summer/fall storms; for winter use SNOTEL instead. Obtain a FEMS API role or license RAWS via Synoptic."
+      "relevance_to_cascadia_papsukkal": "Only dense upland gauge network in Olympic/Cascade foothills (e.g., DNR RAWS in Skagit/Nooksack/Snoqualmie forests) for summer/fall storms; for winter use SNOTEL instead. Obtain a FEMS API role or license RAWS via Synoptic."
     },
     {
       "name": "NRCS SNOTEL precipitation via AWDB REST API (PREC, PRCP, PRCPSA, PRCPMTD)",
@@ -317,7 +317,7 @@
         {"claim": "78 active WA SNOTEL stations; first is 908:WA:SNTL Alpine Meadows (King County, HUC 171100100501, 3500 ft, SHEF APSW1, begin 1994-09-01)", "url": "https://wcc.sc.egov.usda.gov/awdbRestApi/services/v1/stations?stationTriplets=*:WA:SNTL&activeOnly=true", "status": "FACT"},
         {"claim": "Hourly PREC for 908:WA:SNTL available (156.6-156.7 in, 2026-08-21 00-06Z, beginDate 1994-09-16)", "url": "https://wcc.sc.egov.usda.gov/awdbRestApi/services/v1/data?stationTriplets=908:WA:SNTL&elements=PREC&duration=HOURLY&beginDate=2026-08-21%2000:00&endDate=2026-08-21%2006:00", "status": "FACT"}
       ],
-      "relevance_to_cascade_oracle": "Core mountain precipitation truth for Skagit, Nooksack, Snoqualmie, Cedar, Green and Puyallup/White headwaters; pairs with SWE/TOBS for rain-on-snow detection; HUC metadata lets stations be mapped to basins automatically."
+      "relevance_to_cascadia_papsukkal": "Core mountain precipitation truth for Skagit, Nooksack, Snoqualmie, Cedar, Green and Puyallup/White headwaters; pairs with SWE/TOBS for rain-on-snow detection; HUC metadata lets stations be mapped to basins automatically."
     },
     {
       "name": "USGS Water Data APIs - continuous precipitation (parameter 00045) at USGS rain gauges",
@@ -354,7 +354,7 @@
         {"claim": "WaterServices decommission in Q1 2027; no intentional degradation before August 2026; migration guide at api.waterdata.usgs.gov/docs/ogcapi/migration/", "url": "https://waterdata.usgs.gov/blog/api-waterservices-decom/", "status": "FACT"},
         {"claim": "Summer 2026 update: /continuous and /daily accept state name and HUC filters; peaks endpoint added; WaterServices decommissioning winter 2027", "url": "https://waterdata.usgs.gov/blog/api-updates-2026/", "status": "FACT"}
       ],
-      "relevance_to_cascade_oracle": "Small but high-quality 15-min gauge set co-located with streamgages (ideal for rainfall-runoff lag estimation in Snoqualmie, Nooksack, Cedar basins); use the same OGC API already needed for discharge."
+      "relevance_to_cascadia_papsukkal": "Small but high-quality 15-min gauge set co-located with streamgages (ideal for rainfall-runoff lag estimation in Snoqualmie, Nooksack, Cedar basins); use the same OGC API already needed for discharge."
     },
     {
       "name": "King County Hydrologic Information Center (HIC) rain gauges",
@@ -388,7 +388,7 @@
         {"claim": "Multi-Parameter Data download page lists site codes (01a, 02a ... 49AA) with options for Gauge Metadata, Multi-Site, Annual Summary, Multi-Depth, Crest/Stage, Field Measurements", "url": "https://green2.kingcounty.gov/hydrology/DataDownload.aspx", "status": "FACT"},
         {"claim": "King County open data 'Rain Gage Data' (pzrb-xkes): 'Data from King County rain gages', attribution King County, license Public Domain, external link to the flood warning rain-gages page", "url": "https://data.kingcounty.gov/api/views/pzrb-xkes.json", "status": "FACT"}
       ],
-      "relevance_to_cascade_oracle": "Densest rain-gauge network for Cedar/Lake Washington, Green-Duwamish, Snoqualmie (King County portion) and White River; essential for urban-basin nowcasting and MRMS bias correction in the Puget lowland."
+      "relevance_to_cascadia_papsukkal": "Densest rain-gauge network for Cedar/Lake Washington, Green-Duwamish, Snoqualmie (King County portion) and White River; essential for urban-basin nowcasting and MRMS bias correction in the Puget lowland."
     },
     {
       "name": "Seattle Public Utilities (SPU) rain gauge network and Seattle RainWatch",
@@ -422,7 +422,7 @@
         {"claim": "Socrata catalog search on data.seattle.gov for 'rain' returns only the federated GIS 'Rain Gages' layer and SPU underdrain/rain-garden layers, no readings dataset", "url": "https://data.seattle.gov/api/catalog/v1?q=rain&limit=40", "status": "FACT"},
         {"claim": "SPU posts 5-minute rain gauge readings on the open-data portal", "url": "https://data.seattle.gov/browse?tags=precipitation", "status": "OPEN_QUESTION"}
       ],
-      "relevance_to_cascade_oracle": "Longest high-resolution urban gauge record in the region (1978+, 1-min) for Seattle-side tributaries of Lake Washington/Duwamish; pursue an SPU data agreement; RainWatch's demise leaves a gap Cascade Oracle could fill."
+      "relevance_to_cascadia_papsukkal": "Longest high-resolution urban gauge record in the region (1978+, 1-min) for Seattle-side tributaries of Lake Washington/Duwamish; pursue an SPU data agreement; RainWatch's demise leaves a gap Cascadia Papsukkal could fill."
     },
     {
       "name": "NOAA precipitation-frequency atlases for Washington: NOAA Atlas 2 (current), Atlas 14 (not applicable), Atlas 15 (forthcoming), plus WSDOT/Schaefer-Wallis regional L-moment analyses",
@@ -459,7 +459,7 @@
         {"claim": "Wallis, Schaefer, Barker, Taylor (HESS 2007): regional L-moment precipitation-frequency for 2-h and 24-h durations, 12 regions in Washington, GEV to 1-in-500 and Kappa beyond, PRISM mapping; updates the 1973 NWS atlas", "url": "https://hess.copernicus.org/articles/11/415/2007/", "status": "FACT"},
         {"claim": "WSDOT research report 640-1 (western WA 2002) and eastern WA (2006) by MGS Engineering are the underlying state reports", "url": "https://www.wsdot.wa.gov/research/reports/fullreports/640-1.pdf", "status": "INFERENCE"}
       ],
-      "relevance_to_cascade_oracle": "Return-period labeling of observed MRMS/gauge accumulations for WA cannot use Atlas 14; implement Atlas 2 (2/100-yr, 6/24-h) plus Schaefer-Wallis regional curves now and plan an Atlas 15 ingest for late 2026/2027; MRMS FLASH_QPE_ARI products embed Atlas 14 and are therefore unreliable over WA (INFERENCE)."
+      "relevance_to_cascadia_papsukkal": "Return-period labeling of observed MRMS/gauge accumulations for WA cannot use Atlas 14; implement Atlas 2 (2/100-yr, 6/24-h) plus Schaefer-Wallis regional curves now and plan an Atlas 15 ingest for late 2026/2027; MRMS FLASH_QPE_ARI products embed Atlas 14 and are therefore unreliable over WA (INFERENCE)."
     },
     {
       "name": "NCEI Cooperative Observer Hourly Precipitation Data (COOP-HPD v2, DSI-3240 successor)",
@@ -485,7 +485,7 @@
       "evidence": [
         {"claim": "Directory v2 contains access, archive, doc, station-inventory; doc includes CHPD-v2-ATBD-20181023.pdf, COOP-HPD-description.pdf, readme.csv.txt, hpd-states.txt, status.txt", "url": "https://www.ncei.noaa.gov/data/coop-hourly-precipitation/v2/doc/", "status": "FACT"}
       ],
-      "relevance_to_cascade_oracle": "Long hourly gauge record for training/bias analysis and for local precipitation-frequency estimation where Atlas 14 is absent."
+      "relevance_to_cascadia_papsukkal": "Long hourly gauge record for training/bias analysis and for local precipitation-frequency estimation where Atlas 14 is absent."
     }
   ],
   "open_questions": [

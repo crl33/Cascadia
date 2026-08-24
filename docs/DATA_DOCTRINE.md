@@ -15,7 +15,7 @@ A value is never a bare number. The minimum record (see `DOMAIN_MODEL.md` for th
 | `value`, `unit` | the number and its unit (§6) |
 | `valid_time` | when the value is true (observation instant, or forecast valid time) |
 | `issued_at` | forecast/model run issuance (null for observations) |
-| `retrieved_at` | when Cascade Oracle fetched it |
+| `retrieved_at` | when Cascadia Papsukkal fetched it |
 | `available_at` | knowledge time: the earliest instant the platform *could* have had it = `max(issued_at or valid_time, retrieved_at)` for hindcasts — see §11 |
 | `quality` | flags (provisional/approved/estimated/ice/equipment/suspect/sentinel/out-of-range) |
 | `raw_artifact_id` | pointer to the archived raw payload the value was parsed from |
@@ -31,7 +31,7 @@ when produced, when fetched, how stale, what transformed it, from which inputs*.
 | OBSERVED | a measurement by an instrument or sensor network (USGS, SNOTEL, MRMS radar QPE is "observed-derived" and is tagged OBSERVED with `method=radar_qpe`) | no — labeled *observed* |
 | OFFICIAL_FORECAST | a forecast issued by an authority with public responsibility (NWS/NWRFC river forecasts, NWS QPF, NWS alerts) | **yes** |
 | MODELED | output of an authoritative model not designated as the official forecast (NWM, SNODAS, SMAP L4, NBM, HRRR, GFS) | no — labeled with the model name |
-| DERIVED | computed by Cascade Oracle from the above with a published, versioned method | no |
+| DERIVED | computed by Cascadia Papsukkal from the above with a published, versioned method | no |
 | EXPERIMENTAL | DERIVED outputs whose method has not passed hindcast evaluation | no — always badged EXPERIMENTAL |
 | CONFIGURED | hand-entered operational metadata (thresholds, mappings) | never; never used in hazard computation |
 | UNKNOWN | absent, failed, or unclassifiable | n/a |
@@ -140,7 +140,7 @@ uses; direct table access in replay code is a review failure.
 
 ## 12. Claims and safety language
 
-- Cascade Oracle is **not** an official alert authority. Official warnings, watches and
+- Cascadia Papsukkal is **not** an official alert authority. Official warnings, watches and
   evacuation instructions are displayed verbatim with issuer and time, badged OFFICIAL, and
   linked to the issuer.
 - Cascade-derived intelligence is badged DERIVED or EXPERIMENTAL, with a one-line method
@@ -170,4 +170,4 @@ Nothing in PostgreSQL is ever deleted by application code; corrections are rows.
 - Tests: property tests that a fallback cannot carry `OFFICIAL_FORECAST`; that
   `as_known_at(T)` excludes later rows; that staleness is computed, not stored.
 - Review: a PR that displays a value without a badge, or computes hazard from CONFIGURED
-  input, fails review by checklist (`.claude/skills/vibesec/references/cascade-oracle-addendum.md` §7).
+  input, fails review by checklist (`.claude/skills/vibesec/references/cascadia-papsukkal-addendum.md` §7).

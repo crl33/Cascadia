@@ -475,7 +475,7 @@ for, and the same mechanisms (LOD, caching, caps) control both latency and spend
   delivered via `/config/public` (vibesec §4). Each provider carries its limits in `BasemapProvider.usage`
   (`maxZoom`, `maxTileRequestsPerMinute`, `prefetchAllowed`;
   [CINEMATIC_ARCHITECTURE.md](CINEMATIC_ARCHITECTURE.md) §10) and each tier adds a
-  vendor-request ceiling per session; a production default basemap that Cascade Oracle controls (self-hosted vector tiles or a
+  vendor-request ceiling per session; a production default basemap that Cascadia Papsukkal controls (self-hosted vector tiles or a
   quota-bearing static-tile service; ADR-0006 evidence, retrieved 2026-08-22) is always
   mounted as the fallback, with the keyless OSM default behind it for dev/demo only (FACT per
   ADR-0006 evidence: OSM tiles are dev/demo-only by policy and heavy use is blocked); quota

@@ -32,7 +32,7 @@ backend contract field (VISUALIZATION_CONTRACTS §10 rule 2).
 |---|---|---|---|---|
 | **A** | DIRECT OBSERVATION | a measurement by an instrument or sensor network, including observed-derived products | USGS stage/discharge (`station:usgs:12200500`), SNOTEL SWE (`station:snotel:515:WA:SNTL`), MRMS radar QPE (`method=radar_qpe`), reservoir pool elevation from the operator, satellite snow-covered area / dated satellite scenes used *as evidence* | backend value + provenance |
 | **B** | AUTHORITATIVE MODEL / OFFICIAL FORECAST | output of an authority's model or an official forecast/alert. Sub-class **B-official** (NWPS/NWRFC river forecasts, NWS/WPC QPF, NWS alerts) may be labeled OFFICIAL; sub-class **B-model** (NWM, SNODAS, SMAP L4, NBM, HRRR, GFS/GEFS) is labeled with the model name | official forecast crest at `fp:nwps:MVEW1`, NWM reach forecast for `reach:nwm:24270288`, SNODAS SWE grid, HRRR QPF field, forecast snow level, Flood Watch | backend value + provenance |
-| **C** | CASCADE-DERIVED INTELLIGENCE | computed by Cascade Oracle from A/B with a versioned `Method`. Sub-class **C-EXPERIMENTAL**: method not yet hindcast-evaluated | headroom, rate of rise, rain-exposed fraction (`method:rain-exposed-fraction@1.0.0`), basin-mean SWE, model agreement, explanation drivers (the presentation hints `tension` and `flow_visual_intensity` are DERIVED scalars with a documented method but carry no meaning beyond scaling, §2); EXPERIMENTAL: susceptibility index | backend value + method + lineage |
+| **C** | CASCADE-DERIVED INTELLIGENCE | computed by Cascadia Papsukkal from A/B with a versioned `Method`. Sub-class **C-EXPERIMENTAL**: method not yet hindcast-evaluated | headroom, rate of rise, rain-exposed fraction (`method:rain-exposed-fraction@1.0.0`), basin-mean SWE, model agreement, explanation drivers (the presentation hints `tension` and `flow_visual_intensity` are DERIVED scalars with a documented method but carry no meaning beyond scaling, §2); EXPERIMENTAL: susceptibility index | backend value + method + lineage |
 | **D** | CARTOGRAPHIC REPRESENTATION | the static stage on which values are shown | basemap imagery, terrain mesh, river flowline geometry (NHDPlus HR), basin outlines (WBD/NLDI), labels, levee lines (NLD), dam points (NID), reservoir pool polygons, regulatory floodplain polygons (NFHL) | backend geography (versioned datasets) + client cartography |
 | **E** | CINEMATIC REPRESENTATION | procedural or animated effects that exist for legibility, orientation and mood; never values | procedural clouds, animated river textures, rain/snow particles, haze, solar lighting, glow, camera motion | client only; each effect declares its **driver** (a value of class A/B/C, or the clock) |
 
@@ -411,7 +411,7 @@ intelligence (panels, timeline, provenance) stays complete while E elements drop
   with issuer and issued/expires time, badged OFFICIAL, linked to the issuer
   (`OfficialAlert.raw`, `official_alerts[]`). They are never paraphrased, summarized or
   re-severitied by the client.
-- Cascade Oracle never implies alert authority: no sirens, no "alert" wording for C-class
+- Cascadia Papsukkal never implies alert authority: no sirens, no "alert" wording for C-class
   states, no push-notification style banners for indices, no countdowns. Time-to-threshold is
   an indicator with its window and nonlinearity caveat (HYDROLOGY §9), never a countdown clock.
 - Copy rules (DATA_DOCTRINE §12): never "will flood", "safe", "protected"; use "official

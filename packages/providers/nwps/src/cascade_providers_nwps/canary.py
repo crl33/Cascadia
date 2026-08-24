@@ -15,9 +15,9 @@ from cascade_providers_nwps.parser import parse_gauge, parse_stageflow
 LIDS = ["RNTW1", "CRNW1", "MVEW1", "NKSW1", "AUBW1", "WRAW1"]
 
 
-async def check(contact: str = "cascade-oracle@example.invalid") -> dict:
+async def check(contact: str = "cascadia-papsukkal@example.invalid") -> dict:
     report: dict = {"provider": "nwps-v1", "lids": {}}
-    async with httpx.AsyncClient(timeout=60, headers={"User-Agent": f"CascadeOracle-canary (+contact: {contact})"}) as c:
+    async with httpx.AsyncClient(timeout=60, headers={"User-Agent": f"CascadiaPapsukkal-canary (+contact: {contact})"}) as c:
         for lid in LIDS:
             entry: dict = {}
             try:

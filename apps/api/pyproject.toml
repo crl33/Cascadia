@@ -1,7 +1,7 @@
 [project]
 name = "cascade-api"
 version = "0.1.0"
-description = "Cascade Oracle — read-only FastAPI serving contract envelopes with as_of (knowledge time)."
+description = "Cascadia Papsukkal — read-only FastAPI serving contract envelopes with as_of (knowledge time)."
 requires-python = ">=3.12"
 dependencies = ["cascade-core", "cascade-contracts", "cascade-hydrology", "fastapi>=0.115", "uvicorn[standard]>=0.30", "sqlalchemy>=2.0"]
 

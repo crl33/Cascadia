@@ -40,4 +40,4 @@ const server = createServer((req, res) => {
   res.end(JSON.stringify(isError ? result.body : result));
 });
 
-server.listen(PORT, '127.0.0.1', () => console.log(`cascade-oracle stub API listening on http://localhost:${PORT} (fixtures only; no provider calls)`));
+server.listen(PORT, '127.0.0.1', () => console.log(`cascadia-papsukkal stub API listening on http://localhost:${PORT} (fixtures only; no provider calls)`));

@@ -13,7 +13,7 @@ SEED_FILE = Path(__file__).resolve().parent / "seed" / "stations.json"
 class Settings:
     db_url: str = "sqlite+aiosqlite:///./data/cascade.db"
     raw_dir: Path = Path("./data/raw")
-    contact: str = "cascade-oracle@example.invalid"
+    contact: str = "cascadia-papsukkal@example.invalid"
     cors_origins: tuple[str, ...] = ("http://localhost:5173",)
     geo_dir: Path = Path("./tests/fixtures/geo")
     seed_file: Path = field(default=SEED_FILE)
@@ -33,4 +33,4 @@ class Settings:
 
     @property
     def user_agent(self) -> str:
-        return f"CascadeOracle/0.1 (+contact: {self.contact})"
+        return f"CascadiaPapsukkal/0.1 (+contact: {self.contact})"
