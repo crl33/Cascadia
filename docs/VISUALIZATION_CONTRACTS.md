@@ -178,3 +178,43 @@ object for the whole world.
 5. Contract tests: each schema has fixture documents; the web client's generated types are
    checked against them in CI; the API's responses are validated against the schema in
    integration tests.
+
+## 11. Series and forecast-run bodies (not envelopes)
+
+Three P1/P2 endpoints return raw series rather than visualization state. They are **not** part of
+the versioned envelope above: they carry no `version`, they are not modelled in
+`packages/contracts`, and their client types are hand-written zod in
+`apps/web/src/contracts/schemas.ts` rather than generated. Promoting them is a follow-up
+(ADR-0014); until then a change here is a coordinated API + client deploy.
+
+`GET /stations/{station_id}/series?variable=stage|flow` — one variable, so one `unit` and one
+`datum` describe the whole body. `datum` is null for flow.
+
+`GET /forecast-points/{lid}/runs/latest` and `GET /forecast-points/{lid}/runs?start=&end=` — a run
+is **two-column**: NWPS issues a primary and a secondary series together, and every point carries
+both.
+
+```jsonc
+{
+  "run_id": "run:130", "issued_at": "…", "issuer": "NWRFC",
+  "primary": "flow",        // the variable this run is ISSUED on
+  "unit": "cfs",            // the unit of the PRIMARY variable
+  "stage_unit": "ft",       // unit of points[].stage, null when there is no stage column
+  "flow_unit": "cfs",       // unit of points[].flow, null when there is no flow column
+  "stage_datum": "NGVD29",  // gauge-zero datum of the STAGE column only; null with no stage column
+  "points": [ { "t": "…", "stage": 56.8, "flow": 293.34 } ],
+  "provenance": ProvenanceRef
+}
+```
+
+Rules specific to these bodies:
+
+1. **Units and datum are declared per column, never per run.** A flow-primary run may carry a
+   fully populated stage column (AUBW1 does); that column's datum is real and is named for it.
+   There is no field that means "the run's datum" — flow values never have one (ADR-0009,
+   ADR-0014).
+2. `stage_datum` non-null **implies** a stage column exists. Ingestion enforces the converse: a
+   run with no stage column stores no datum, so the two are never out of step.
+3. Values are returned as issued. Nothing is converted between units or datums at read time; a
+   consumer that cannot match basis, unit and datum refuses to draw and says why, exactly as
+   §10 rule 1 requires for envelope values.

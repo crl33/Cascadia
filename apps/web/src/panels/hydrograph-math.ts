@@ -203,7 +203,8 @@ export function thresholdOverlay(
 export interface ForecastRunLike {
   primary: string;
   unit: string;
-  datum?: string | null;
+  /** Gauge-zero datum of the `stage` column only; null when the run carries no stage column. */
+  stage_datum?: string | null;
   points: readonly { t: string; stage?: number | null; flow?: number | null }[];
 }
 
@@ -214,8 +215,10 @@ export interface ForecastChoice {
 
 /**
  * The official-forecast series for the charted basis. Drawn only when the run's declared
- * primary variable, unit and (for stage) datum match the axis; the run's secondary variable
- * carries no declared unit and is never charted.
+ * primary variable, unit and (for stage) datum match the axis. The run's secondary column is
+ * never charted as the official forecast — the run is issued on its primary, and the companion
+ * column is not what NWRFC issued. On a stage axis the run's `stage_datum` must be known and
+ * equal: a datum is never assumed, so an undeclared one refuses like a mismatched one (ADR-0009).
  */
 export function forecastSeriesFor(
   run: ForecastRunLike | null | undefined,
@@ -230,8 +233,13 @@ export function forecastSeriesFor(
   if (axisUnit != null && run.unit !== axisUnit) {
     return { points: null, reason: `The official forecast run is in ${run.unit}; the series is in ${axisUnit}. Not overlaid; values are never converted.` };
   }
-  if (basis === 'stage' && axisDatum != null && run.datum != null && run.datum !== axisDatum) {
-    return { points: null, reason: `The official forecast run uses datum ${run.datum}; the series uses ${axisDatum}. Not overlaid; datums are never compared.` };
+  if (basis === 'stage' && axisDatum != null) {
+    if (run.stage_datum == null) {
+      return { points: null, reason: `The official forecast run declares no vertical datum for its stage values; the series uses ${axisDatum}. Not overlaid; a datum is never assumed.` };
+    }
+    if (run.stage_datum !== axisDatum) {
+      return { points: null, reason: `The official forecast run uses datum ${run.stage_datum}; the series uses ${axisDatum}. Not overlaid; datums are never compared.` };
+    }
   }
   const points = run.points.map((p) => ({ t: Date.parse(p.t), v: (basis === 'stage' ? p.stage : p.flow) ?? null }));
   return { points, reason: null };

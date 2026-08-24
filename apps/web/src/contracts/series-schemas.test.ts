@@ -21,9 +21,20 @@ describe('station series and forecast run stub responses validate against the cl
     const run = ForecastRunSchema.parse(buildRunsLatest(fx, 'MVEW1'));
     expect(run.primary).toBe('stage');
     expect(run.issuer).toBe('NWRFC');
-    expect(run.datum).toBe('NGVD29');
+    expect(run.stage_unit).toBe('ft');
+    expect(run.stage_datum).toBe('NGVD29');
     expect(run.points.length).toBeGreaterThan(0);
     expect(run.provenance.source_kind).toBe('OFFICIAL_FORECAST');
     expect(buildRunsLatest(fx, 'RNTW1')).toBeNull();
+  });
+  it('a run with no stage column declares no stage datum (ADR-0014)', () => {
+    const run = ForecastRunSchema.parse(buildRunsLatest(fx, 'AUBW1'));
+    expect(run.primary).toBe('flow');
+    expect(run.unit).toBe('cfs');
+    expect(run.flow_unit).toBe('cfs');
+    // This capture carries no secondary stage series, so there is nothing for a datum to describe.
+    expect(run.points.every((p) => p.stage == null)).toBe(true);
+    expect(run.stage_unit).toBeNull();
+    expect(run.stage_datum).toBeNull();
   });
 });

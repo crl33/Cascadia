@@ -130,7 +130,7 @@ describe('thresholdOverlay honesty', () => {
 
 describe('forecastSeriesFor honesty', () => {
   const run = {
-    primary: 'stage', unit: 'ft', datum: 'NGVD29',
+    primary: 'stage', unit: 'ft', stage_datum: 'NGVD29',
     points: [
       { t: '2026-08-22T00:00:00Z', stage: 10.53, flow: 6550 },
       { t: '2026-08-22T06:00:00Z', stage: 10.6, flow: 6670 },
@@ -144,7 +144,7 @@ describe('forecastSeriesFor honesty', () => {
       { t: Date.parse('2026-08-22T06:00:00Z'), v: 10.6 },
     ]);
   });
-  it('refuses to chart the secondary variable — its unit is not declared', () => {
+  it('refuses to chart the secondary column — the run is issued on its primary', () => {
     const choice = forecastSeriesFor(run, 'flow', 'cfs', null);
     expect(choice.points).toBeNull();
     expect(choice.reason).toMatch(/issued on stage/);
@@ -153,6 +153,29 @@ describe('forecastSeriesFor honesty', () => {
     expect(forecastSeriesFor(run, 'stage', 'm', 'NGVD29').reason).toMatch(/never converted/);
     expect(forecastSeriesFor(run, 'stage', 'ft', 'NAVD88').reason).toMatch(/datum/);
     expect(forecastSeriesFor(null, 'stage', 'ft', 'NGVD29')).toEqual({ points: null, reason: null });
+  });
+  it('refuses a stage overlay when the run declares no datum — a datum is never assumed', () => {
+    const undeclared = { ...run, stage_datum: null };
+    const choice = forecastSeriesFor(undeclared, 'stage', 'ft', 'NGVD29');
+    expect(choice.points).toBeNull();
+    expect(choice.reason).toMatch(/never assumed/);
+  });
+  it('charts a flow-primary run on the flow axis; its stage datum is irrelevant there', () => {
+    // AUBW1 shape: issued on flow in cfs, with a stage column riding along in NGVD29. The datum
+    // describes that stage column only and must not gate the flow overlay (ADR-0014).
+    const flowRun = {
+      primary: 'flow', unit: 'cfs', stage_datum: 'NGVD29',
+      points: [
+        { t: '2026-08-24T18:00:00Z', stage: 56.8, flow: 293.34 },
+        { t: '2026-08-25T00:00:00Z', stage: 56.8, flow: 292.66 },
+      ],
+    };
+    const choice = forecastSeriesFor(flowRun, 'flow', 'cfs', null);
+    expect(choice.reason).toBeNull();
+    expect(choice.points).toEqual([
+      { t: Date.parse('2026-08-24T18:00:00Z'), v: 293.34 },
+      { t: Date.parse('2026-08-25T00:00:00Z'), v: 292.66 },
+    ]);
   });
 });
 

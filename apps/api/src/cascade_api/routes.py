@@ -118,6 +118,15 @@ async def forecast_point_state(session: Session, as_of: AsOf, lid: Annotated[str
 
 @router.get("/forecast-points/{lid}/runs/latest")
 async def latest_run(session: Session, as_of: AsOf, lid: Annotated[str, Path(pattern=LID)]) -> dict:
+    """The latest official forecast run known at as_of, as issued — values are never converted.
+
+    `primary`/`unit` name the variable the run is ISSUED on. Every point carries both columns
+    because NWPS publishes a primary and a secondary series together (AUBW1 is issued on flow
+    in cfs and carries stage in ft alongside), so the columns are declared per column, never
+    per run: `stage_unit`/`flow_unit` are the units of `points[].stage`/`points[].flow`, and
+    `stage_datum` is the gauge-zero vertical datum OF THE STAGE COLUMN ONLY — null when the
+    run carries no stage column. Flow never has a datum (ADR-0009, ADR-0014).
+    """
     k = as_known_at(session, as_of)
     fp = await k.forecast_point_by_lid(lid)
     if fp is None:
@@ -133,7 +142,9 @@ async def latest_run(session: Session, as_of: AsOf, lid: Annotated[str, Path(pat
         "issuer": run.issuer,
         "primary": run.primary_variable,
         "unit": run.unit,
-        "datum": run.datum,
+        "stage_unit": run.stage_unit,
+        "flow_unit": run.flow_unit,
+        "stage_datum": run.datum,  # the stage column's datum, never the flow column's (ADR-0014)
         "points": [{"t": v.valid_time, "stage": v.stage, "flow": v.flow} for v in values],
         "provenance": _dump(env.provenance_refs[f"nwps-forecast-{lid.lower()}"]),
     }
@@ -177,7 +188,9 @@ async def forecast_runs_window(
                 "issuer": run.issuer,
                 "primary": run.primary_variable,
                 "unit": run.unit,
-                "datum": run.datum,
+                "stage_unit": run.stage_unit,
+                "flow_unit": run.flow_unit,
+                "stage_datum": run.datum,  # per /runs/latest: the stage column only (ADR-0014)
                 "supersedes_run_id": None if run.supersedes_run_id is None else f"run:{run.supersedes_run_id}",
                 "points": [{"t": v.valid_time, "stage": v.stage, "flow": v.flow} for v in values],
             }

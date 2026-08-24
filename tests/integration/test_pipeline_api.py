@@ -127,7 +127,14 @@ async def test_pipeline_then_api(runtime: Runtime) -> None:
 
         r = await c.get("/forecast-points/MVEW1/runs/latest", params={"as_of": "2026-08-22T13:30:00Z"})
         run = r.json()
-        assert run["primary"] == "stage" and run["unit"] == "ft" and run["datum"] == "NGVD29" and len(run["points"]) == 32 and run["provenance"]["source_kind"] == "OFFICIAL_FORECAST"
+        assert run["primary"] == "stage" and run["unit"] == "ft" and len(run["points"]) == 32 and run["provenance"]["source_kind"] == "OFFICIAL_FORECAST"
+        assert run["stage_unit"] == "ft" and run["stage_datum"] == "NGVD29" and "datum" not in run
+        # AUBW1 is issued on FLOW and carries a stage column alongside: the datum describes that
+        # stage column, is named for it, and is never presented as the flow values' datum (ADR-0014).
+        aub_run = (await c.get("/forecast-points/AUBW1/runs/latest", params={"as_of": "2026-08-22T13:30:00Z"})).json()
+        assert aub_run["primary"] == "flow" and aub_run["unit"] == "cfs" and aub_run["flow_unit"] == "cfs"
+        assert aub_run["stage_unit"] == "ft" and aub_run["stage_datum"] == "NGVD29" and "datum" not in aub_run
+        assert all(p["stage"] is not None for p in aub_run["points"])
         r = await c.get("/stations/station:usgs:12200500/series", params={"variable": "flow", "hours": 72, "as_of": "2026-08-22T13:30:00Z"})
         series = r.json()
         sk_flow = next(x for x in parse_iv((FIXTURES / "usgs/valid.json").read_bytes()) if x.site == "12200500" and x.variable == "flow")

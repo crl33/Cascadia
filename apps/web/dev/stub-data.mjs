@@ -198,19 +198,23 @@ export function buildRunsLatest(fx, lid) {
     const sf = fx.samples.mvew1_stageflow;
     const ref = fx.riverEnvelope.provenance_refs['nwps-forecast-mvew1'];
     return {
-      run_id: `run:nwps:MVEW1:${sf.issued}`, issued_at: sf.issued, issuer: 'NWRFC', primary: 'stage', unit: 'ft', datum: 'NGVD29',
+      run_id: `run:nwps:MVEW1:${sf.issued}`, issued_at: sf.issued, issuer: 'NWRFC', primary: 'stage', unit: 'ft',
+      stage_unit: 'ft', flow_unit: 'cfs', stage_datum: 'NGVD29',
       points: sf.data.map((d) => ({ t: d.validTime, stage: d.primary, flow: d.secondary == null ? null : Math.round(d.secondary * 1000) })),
       provenance: { ...ref, label: `${ref.label} — dev stub: first ${sf.data.length} of 31 points (kcfs converted to cfs)` },
     };
   }
   const aub = aubw1State(fx);
   if (lid === 'AUBW1' && aub && fx.samples.aubw1_stageflow) {
-    // Flow-primary point; the flat `datum` rides along for stage values (spike-report-2026-08-22.md
-    // finding 3) — the primary values here are flow in cfs (kcfs × 1000, 2 decimals kept).
+    // Flow-primary point: the primary values are flow in cfs (kcfs × 1000, 2 decimals kept).
+    // The live gauge also carries a stage column, but this capture did not record the secondary
+    // series (see the fixture's _note), so there is no stage column here and therefore no
+    // `stage_datum` — a datum is only ever declared for a stage column that exists (ADR-0014).
     const sf = fx.samples.aubw1_stageflow;
     const ref = aub.provenance_refs['nwps-forecast-aubw1'];
     return {
-      run_id: `run:nwps:AUBW1:${sf.issued}`, issued_at: sf.issued, issuer: 'NWRFC', primary: 'flow', unit: 'cfs', datum: 'NGVD29',
+      run_id: `run:nwps:AUBW1:${sf.issued}`, issued_at: sf.issued, issuer: 'NWRFC', primary: 'flow', unit: 'cfs',
+      stage_unit: null, flow_unit: 'cfs', stage_datum: null,
       points: sf.data.map((d) => ({ t: d.validTime, stage: null, flow: Math.round(d.primary * 1000 * 100) / 100 })),
       provenance: { ...ref, label: `${ref.label} — dev stub: first ${sf.data.length} of 40 points (kcfs converted to cfs)` },
     };

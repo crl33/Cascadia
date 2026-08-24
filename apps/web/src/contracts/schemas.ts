@@ -232,13 +232,23 @@ export const StationSeriesSchema = z.object({
   provenance: ProvenanceRefSchema,
 });
 export const ForecastRunPointSchema = z.object({ t: iso, stage: z.number().nullable().optional(), flow: z.number().nullable().optional() });
+/**
+ * GET /forecast-points/{lid}/runs/latest. `primary`/`unit` name the variable the run is ISSUED
+ * on; every point carries both columns because NWPS publishes a primary and a secondary series
+ * together. The columns are therefore declared per column, never per run: `stage_unit` and
+ * `flow_unit` are the units of `points[].stage` / `points[].flow`, and `stage_datum` is the
+ * gauge-zero vertical datum of the STAGE column only — null when the run has no stage column,
+ * and never the datum of a flow value (ADR-0009, ADR-0014).
+ */
 export const ForecastRunSchema = z.object({
   run_id: z.string(),
   issued_at: iso,
   issuer: z.string(),
   primary: SeriesVariableSchema,
   unit: z.string(),
-  datum: z.string().nullable().optional(),
+  stage_unit: z.string().nullable().optional(),
+  flow_unit: z.string().nullable().optional(),
+  stage_datum: z.string().nullable().optional(),
   points: z.array(ForecastRunPointSchema),
   provenance: ProvenanceRefSchema,
 });

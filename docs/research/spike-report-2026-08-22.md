@@ -185,6 +185,8 @@ No Python source, docs, `v1/` or `packages/contracts/` were modified.
    `primary: "flow", unit: "cfs", datum: "NGVD29"`). The datum applies to the `stage` values that
    also ride along in `points`, which is defensible, but the spec's flat `datum` field is ambiguous
    for flow-primary runs. Contract clarification, not a bug.
+   *Resolved 2026-08-24 (ADR-0014): the field is now `stage_datum`, declared per column alongside
+   `stage_unit`/`flow_unit`. This reading was right — the live AUBW1 stage column is populated.*
 4. **Contract gaps carried from the implementers** (packages/contracts is read-only):
    `AgreementState` has no `reason` field (the UNKNOWN reason is rendered from client copy, not the
    envelope); `Regulation.class` does not allow `regulated_upper` (basins use it; the river item says

@@ -33,7 +33,7 @@ const crestOf = (run: RunListItem): { text: string; t: string | null } => {
   const value = run.primary === 'stage' ? point.stage : point.flow;
   if (value == null) return { text: 'UNKNOWN', t: point.t };
   return {
-    text: formatQuantity({ value, unit: run.unit, datum: run.primary === 'stage' ? run.datum ?? null : null }, 1),
+    text: formatQuantity({ value, unit: run.unit, datum: run.primary === 'stage' ? run.stage_datum ?? null : null }, 1),
     t: point.t,
   };
 };
@@ -64,7 +64,9 @@ export function ForecastEvolution() {
     const value = run.primary === 'stage' ? point?.stage : point?.flow;
     if (value == null) return '—';
     if (run.primary !== series.variable || run.unit !== series.unit) return '—';
-    if (run.primary === 'stage' && run.datum != null && series.datum != null && run.datum !== series.datum) return '—';
+    // A stage error is a comparison, so an undeclared datum refuses exactly like a mismatched
+    // one — a datum is never assumed (ADR-0009). `stage_datum` describes the run's stage column.
+    if (run.primary === 'stage' && (run.stage_datum == null || series.datum == null || run.stage_datum !== series.datum)) return '—';
     const error = value - crest.v;
     return `${error >= 0 ? '+' : '−'}${Math.abs(error).toFixed(2)} ${run.unit}`;
   };

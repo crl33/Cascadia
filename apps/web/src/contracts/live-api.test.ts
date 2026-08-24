@@ -75,6 +75,14 @@ describe.skipIf(!base)('live API responses validate against the client zod schem
     const run = ForecastRunSchema.parse(await get('/forecast-points/MVEW1/runs/latest'));
     expect(run.provenance.source_kind).toBe('OFFICIAL_FORECAST');
     expect(run.points.length).toBeGreaterThan(0);
+    // A datum is declared for the stage column and named for it — never for a flow value, and
+    // never as a bare `datum` a reader could attach to the primary variable (ADR-0014). Asserted
+    // on the raw body: zod strips unknown keys, so a parsed object could not show a stale one.
+    const rawAubw1 = await get('/forecast-points/AUBW1/runs/latest');
+    expect(rawAubw1).not.toHaveProperty('datum');
+    const aubw1 = ForecastRunSchema.parse(rawAubw1);
+    if (aubw1.points.some((p) => p.stage != null)) expect(aubw1.stage_unit).not.toBeNull();
+    else expect(aubw1.stage_datum ?? null).toBeNull();
   });
   it('as_of before ingestion yields UNKNOWN with a reason, never a value', async () => {
     const env = RiverEnvelopeSchema.parse(await get('/forecast-points/MVEW1/state?as_of=2026-01-01T00:00:00Z'));
