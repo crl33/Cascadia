@@ -29,7 +29,7 @@ files, and `usgs_timeslices` (the DA input record, 2.6 GB — trivially worth ke
 | `analysis_assim` CONUS, all kinds | 6,336 | 299.0 GB |
 | `analysis_assim_extend` CONUS, all kinds | 2,464 | 118.6 GB |
 | `short_range` channel_rt + reservoir | 19,008 | 125.5 GB |
-| `medium_range` channel_rt + reservoir, blend + mem1–7 | 264,000 | 1,750.0 GB |
+| `medium_range` channel_rt + reservoir, blend + mem1–6 | 264,000 | 1,750.0 GB |
 | `medium_range` channel_rt, blend + mem1 only | 42,240 | 554.6 GB |
 | `usgs_timeslices` | 2,112 | 2.6 GB |
 
@@ -37,16 +37,26 @@ files, and `usgs_timeslices` (the DA input record, 2.6 GB — trivially worth ke
 
 | Tier | Contents | Files | Size | R2 storage | One-time writes |
 |---|---|---|---|---|---|
-| **FULL** (recommended) | AnA + AnA-extend all kinds; SR + MR channel_rt/reservoir with **all 7 members + blend**; timeslices | 293,920 | **2.30 TB** | **$34.43/mo** | ~$1.32 |
+| **FULL** (recommended) | AnA + AnA-extend all kinds; SR + MR channel_rt/reservoir with **all 6 members (mem1–mem6) + blend**; timeslices | 293,920 | **2.30 TB** | **$34.43/mo** | ~$1.32 |
 | LEAN | as FULL but medium_range blend + mem1 only | 72,160 | 1.10 TB | $16.50/mo | ~$0.32 |
 
 Recommendation: **FULL**. The doctrine treats model disagreement as information
-(`HYDROLOGY.md`); dropping members 2–7 permanently destroys the ensemble-spread signal the
+(`HYDROLOGY.md`); dropping members 2–6 permanently destroys the ensemble-spread signal the
 hindcast is supposed to evaluate, for ~$18/mo of difference. LEAN is acceptable if cost
 rules; nothing else in FULL is safely shrinkable.
 
 Egress note: reading the archive back out of R2 is free (R2 has zero egress fees), and the
 source bucket is AWS Open Data (NOAA pays egress), so the copy itself moves no paid bytes.
+
+## 3c. DECISION 2026-08-24 (owner): bulk copy PARKED
+
+No LEAN/FULL copy for now. Instead: independently verify the same Dec 1-22 products
+(incl. medium_range mem2-7) remain retrievable from the long-term Google Cloud
+(gs://national-water-model) and Azure (noaanwm.blob.core.windows.net/nwm) operational NWM
+archives - **verified 2026-08-24: both mirrors byte-exact, retrieval paths tested** (see `nwm-alternate-archives-2026-08-24.md`). The 2.55 GB usgs_timeslices
+archive in R2 is kept. Revisit LEAN/FULL/extracted-WA-archive when Event Zero ensemble
+hindcasting is actually being implemented; the preferred end-state is an extracted
+Cascadia/Washington-specific analytical archive, not raw CONUS replication.
 
 ## 4. Copy mechanics — revised 2026-08-24 after live checks
 
@@ -92,3 +102,36 @@ R2-scoped token; then the tier decision above.
 Per-object sha256 or ETag comparison against this manifest; store the manifest alongside
 the archive (`_manifest/` prefix); record source `LastModified` as object metadata
 (`x-amz-meta-source-last-modified`) so `available_at` survives the copy.
+
+## 3b. Tier contents in detail (owner decision aid, 2026-08-24)
+
+> Correction 2026-08-24: operational NWM v3.x medium_range comprises blend + mem1–mem6.
+> `medium_range_mem7` exists in NO archive (AWS, GCS) for this window — it was never
+> produced, not lost. Earlier '7 members' wording was a label error; all byte/file counts
+> were computed from real listings and are unchanged.
+
+
+Window for every line: nwm.20251201 – nwm.20251222 (22 days, all cycles present).
+
+| Component | Config / cycles | In LEAN | In FULL | Files | Size |
+|---|---|---|---|---|---|
+| analysis_assim (channel_rt+land+reservoir+terrain, tm00-02) | hourly, 24/day | yes | yes | 6,336 | 299 GB |
+| analysis_assim_extend (same kinds, tm00-27) | daily 16Z | yes | yes | 2,464 | 119 GB |
+| short_range channel_rt + reservoir (18-h leads) | hourly, 24/day | yes | yes | 19,008 | 126 GB |
+| usgs_timeslices (DA input record) | continuous | already copied | already copied | 2,112 | 2.6 GB |
+| medium_range channel_rt: blend + mem1 (240-h leads) | 4/day (00/06/12/18Z) | yes | yes | 42,240 | 555 GB |
+| medium_range reservoir: blend + mem1 | 4/day | yes | yes | 42,240 | 5.5 GB |
+| medium_range channel_rt: mem2–mem6 (204-h leads) | 4/day | no | yes | 89,760 | 1,178 GB |
+| medium_range reservoir: mem2–mem6 | 4/day | no | yes | 89,760 | 11.6 GB |
+| **LEAN total** | | | | **112,288** | **1.11 TB ($16.6/mo)** |
+| **FULL total** | | | | **291,808** | **2.30 TB ($34.4/mo)** |
+
+LEAN enables: full AnA reconstruction (streamflow analysis + land states incl. soil/SWE at
+every WA reach), the deterministic operational forecast record (blend = the official NBM-forced
+best blend; mem1 = GFS-forced control), per-reach hindcast hydrographs, NWM-vs-NWRFC forecast
+evolution and error analysis, reservoir module outputs for regulated reaches, and the DA input
+record. LEAN cannot reconstruct: ensemble spread. FULL adds the five additional GEFS-forced members (mem2–mem6) —
+member agreement/disagreement per reach per cycle, hindcastable exceedance fractions, and
+spread-vs-error calibration (e.g. whether the Dec 9–10 Skagit over-forecast was flagged by
+member divergence). The Model Agreement risk surface's NWM component can only ever be
+hindcast against Event Zero with FULL; deleting mem2–7 from the source bucket is permanent.

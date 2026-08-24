@@ -1,6 +1,5 @@
 """Fixture documents must validate against the contracts (docs/TESTING.md §4)."""
 
-import json
 from pathlib import Path
 
 import pytest

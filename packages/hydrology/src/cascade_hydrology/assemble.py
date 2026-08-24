@@ -43,7 +43,14 @@ from cascade_contracts.visualization import (
 from cascade_core.freshness import compute_freshness
 from cascade_core.knowledge import Knowledge
 from cascade_core.models import Basin, ForecastPoint, SourceProduct, Threshold
-from cascade_core.registry import PRODUCT_NWPS_FORECAST, PRODUCT_NWPS_THRESHOLDS, PRODUCT_USGS_IV, SRC_CASCADE, SRC_NWPS, SRC_USGS
+from cascade_core.registry import (
+    PRODUCT_NWPS_FORECAST,
+    PRODUCT_NWPS_THRESHOLDS,
+    PRODUCT_USGS_IV,
+    SRC_CASCADE,
+    SRC_NWPS,
+    SRC_USGS,
+)
 from cascade_hydrology import surfaces
 from cascade_hydrology.category import CategoryResult, Measure, ThresholdSet, categorize
 from cascade_hydrology.headroom import headroom as compute_headroom

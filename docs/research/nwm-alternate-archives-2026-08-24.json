@@ -1,0 +1,1852 @@
+{
+ "generated_at": "2026-08-24T10:58:48.392241+00:00",
+ "gcs": {
+  "base": "https://storage.googleapis.com/national-water-model/",
+  "days": {
+   "20251201": {
+    "analysis_assim": {
+     "files": 288,
+     "bytes": 13383281832,
+     "matches_aws": true
+    },
+    "analysis_assim_extend": {
+     "files": 112,
+     "bytes": 5308199787,
+     "matches_aws": true
+    },
+    "short_range": {
+     "files": 1728,
+     "bytes": 43399079384,
+     "matches_aws": true
+    },
+    "medium_range_blend": {
+     "files": 2560,
+     "bytes": 104971490092,
+     "matches_aws": true
+    },
+    "medium_range_mem1": {
+     "files": 2560,
+     "bytes": 105060271801,
+     "matches_aws": true
+    },
+    "medium_range_mem2": {
+     "files": 2176,
+     "bytes": 88993184763,
+     "matches_aws": true
+    },
+    "medium_range_mem3": {
+     "files": 2176,
+     "bytes": 89153793848,
+     "matches_aws": true
+    },
+    "medium_range_mem4": {
+     "files": 2176,
+     "bytes": 89393187803,
+     "matches_aws": true
+    },
+    "medium_range_mem5": {
+     "files": 2176,
+     "bytes": 89636604551,
+     "matches_aws": true
+    },
+    "medium_range_mem6": {
+     "files": 2176,
+     "bytes": 89667018967,
+     "matches_aws": true
+    },
+    "medium_range_mem7": {
+     "files": 0,
+     "bytes": 0,
+     "matches_aws": false
+    },
+    "usgs_timeslices": {
+     "files": 96,
+     "bytes": 116225312,
+     "matches_aws": true
+    }
+   },
+   "20251202": {
+    "analysis_assim": {
+     "files": 288,
+     "bytes": 13580758645,
+     "matches_aws": true
+    },
+    "analysis_assim_extend": {
+     "files": 112,
+     "bytes": 5354636024,
+     "matches_aws": true
+    },
+    "short_range": {
+     "files": 1728,
+     "bytes": 44204230943,
+     "matches_aws": true
+    },
+    "medium_range_blend": {
+     "files": 2560,
+     "bytes": 104856471080,
+     "matches_aws": true
+    },
+    "medium_range_mem1": {
+     "files": 2560,
+     "bytes": 105369062990,
+     "matches_aws": true
+    },
+    "medium_range_mem2": {
+     "files": 2176,
+     "bytes": 89087820489,
+     "matches_aws": true
+    },
+    "medium_range_mem3": {
+     "files": 2176,
+     "bytes": 88984728793,
+     "matches_aws": true
+    },
+    "medium_range_mem4": {
+     "files": 2176,
+     "bytes": 88972455297,
+     "matches_aws": true
+    },
+    "medium_range_mem5": {
+     "files": 2176,
+     "bytes": 89030638772,
+     "matches_aws": true
+    },
+    "medium_range_mem6": {
+     "files": 2176,
+     "bytes": 89224235421,
+     "matches_aws": true
+    },
+    "medium_range_mem7": {
+     "files": 0,
+     "bytes": 0,
+     "matches_aws": false
+    },
+    "usgs_timeslices": {
+     "files": 96,
+     "bytes": 116059354,
+     "matches_aws": true
+    }
+   },
+   "20251203": {
+    "analysis_assim": {
+     "files": 288,
+     "bytes": 13585209605,
+     "matches_aws": true
+    },
+    "analysis_assim_extend": {
+     "files": 112,
+     "bytes": 5402127162,
+     "matches_aws": true
+    },
+    "short_range": {
+     "files": 1728,
+     "bytes": 44366582769,
+     "matches_aws": true
+    },
+    "medium_range_blend": {
+     "files": 2560,
+     "bytes": 105268158568,
+     "matches_aws": true
+    },
+    "medium_range_mem1": {
+     "files": 2560,
+     "bytes": 105731346478,
+     "matches_aws": true
+    },
+    "medium_range_mem2": {
+     "files": 2176,
+     "bytes": 89347683446,
+     "matches_aws": true
+    },
+    "medium_range_mem3": {
+     "files": 2176,
+     "bytes": 89330397754,
+     "matches_aws": true
+    },
+    "medium_range_mem4": {
+     "files": 2176,
+     "bytes": 89243333706,
+     "matches_aws": true
+    },
+    "medium_range_mem5": {
+     "files": 2176,
+     "bytes": 89077279854,
+     "matches_aws": true
+    },
+    "medium_range_mem6": {
+     "files": 2176,
+     "bytes": 89034029307,
+     "matches_aws": true
+    },
+    "medium_range_mem7": {
+     "files": 0,
+     "bytes": 0,
+     "matches_aws": false
+    },
+    "usgs_timeslices": {
+     "files": 96,
+     "bytes": 116202241,
+     "matches_aws": true
+    }
+   },
+   "20251204": {
+    "analysis_assim": {
+     "files": 288,
+     "bytes": 13644891697,
+     "matches_aws": true
+    },
+    "analysis_assim_extend": {
+     "files": 112,
+     "bytes": 5398461703,
+     "matches_aws": true
+    },
+    "short_range": {
+     "files": 1728,
+     "bytes": 44533924108,
+     "matches_aws": true
+    },
+    "medium_range_blend": {
+     "files": 2560,
+     "bytes": 105241889310,
+     "matches_aws": true
+    },
+    "medium_range_mem1": {
+     "files": 2560,
+     "bytes": 105543519303,
+     "matches_aws": true
+    },
+    "medium_range_mem2": {
+     "files": 2176,
+     "bytes": 89326227688,
+     "matches_aws": true
+    },
+    "medium_range_mem3": {
+     "files": 2176,
+     "bytes": 89301701668,
+     "matches_aws": true
+    },
+    "medium_range_mem4": {
+     "files": 2176,
+     "bytes": 89377177800,
+     "matches_aws": true
+    },
+    "medium_range_mem5": {
+     "files": 2176,
+     "bytes": 89450017932,
+     "matches_aws": true
+    },
+    "medium_range_mem6": {
+     "files": 2176,
+     "bytes": 89346500071,
+     "matches_aws": true
+    },
+    "medium_range_mem7": {
+     "files": 0,
+     "bytes": 0,
+     "matches_aws": false
+    },
+    "usgs_timeslices": {
+     "files": 96,
+     "bytes": 116322691,
+     "matches_aws": true
+    }
+   },
+   "20251205": {
+    "analysis_assim": {
+     "files": 288,
+     "bytes": 13672888626,
+     "matches_aws": true
+    },
+    "analysis_assim_extend": {
+     "files": 112,
+     "bytes": 5427931244,
+     "matches_aws": true
+    },
+    "short_range": {
+     "files": 1728,
+     "bytes": 44526080940,
+     "matches_aws": true
+    },
+    "medium_range_blend": {
+     "files": 2560,
+     "bytes": 104906807383,
+     "matches_aws": true
+    },
+    "medium_range_mem1": {
+     "files": 2560,
+     "bytes": 105076379634,
+     "matches_aws": true
+    },
+    "medium_range_mem2": {
+     "files": 2176,
+     "bytes": 89194389394,
+     "matches_aws": true
+    },
+    "medium_range_mem3": {
+     "files": 2176,
+     "bytes": 89278818415,
+     "matches_aws": true
+    },
+    "medium_range_mem4": {
+     "files": 2176,
+     "bytes": 89298333228,
+     "matches_aws": true
+    },
+    "medium_range_mem5": {
+     "files": 2176,
+     "bytes": 89338958277,
+     "matches_aws": true
+    },
+    "medium_range_mem6": {
+     "files": 2176,
+     "bytes": 89318289947,
+     "matches_aws": true
+    },
+    "medium_range_mem7": {
+     "files": 0,
+     "bytes": 0,
+     "matches_aws": false
+    },
+    "usgs_timeslices": {
+     "files": 96,
+     "bytes": 116051641,
+     "matches_aws": true
+    }
+   },
+   "20251206": {
+    "analysis_assim": {
+     "files": 288,
+     "bytes": 13703461791,
+     "matches_aws": true
+    },
+    "analysis_assim_extend": {
+     "files": 112,
+     "bytes": 5427327910,
+     "matches_aws": true
+    },
+    "short_range": {
+     "files": 1728,
+     "bytes": 44404769858,
+     "matches_aws": true
+    },
+    "medium_range_blend": {
+     "files": 2560,
+     "bytes": 104549819258,
+     "matches_aws": true
+    },
+    "medium_range_mem1": {
+     "files": 2560,
+     "bytes": 104902579028,
+     "matches_aws": true
+    },
+    "medium_range_mem2": {
+     "files": 2176,
+     "bytes": 88987592481,
+     "matches_aws": true
+    },
+    "medium_range_mem3": {
+     "files": 2176,
+     "bytes": 88933907108,
+     "matches_aws": true
+    },
+    "medium_range_mem4": {
+     "files": 2176,
+     "bytes": 88914359426,
+     "matches_aws": true
+    },
+    "medium_range_mem5": {
+     "files": 2176,
+     "bytes": 88883133876,
+     "matches_aws": true
+    },
+    "medium_range_mem6": {
+     "files": 2176,
+     "bytes": 88951575600,
+     "matches_aws": true
+    },
+    "medium_range_mem7": {
+     "files": 0,
+     "bytes": 0,
+     "matches_aws": false
+    },
+    "usgs_timeslices": {
+     "files": 96,
+     "bytes": 116063431,
+     "matches_aws": true
+    }
+   },
+   "20251207": {
+    "analysis_assim": {
+     "files": 288,
+     "bytes": 13638913841,
+     "matches_aws": true
+    },
+    "analysis_assim_extend": {
+     "files": 112,
+     "bytes": 5424777223,
+     "matches_aws": true
+    },
+    "short_range": {
+     "files": 1728,
+     "bytes": 44192195664,
+     "matches_aws": true
+    },
+    "medium_range_blend": {
+     "files": 2560,
+     "bytes": 104400792954,
+     "matches_aws": true
+    },
+    "medium_range_mem1": {
+     "files": 2560,
+     "bytes": 104481129059,
+     "matches_aws": true
+    },
+    "medium_range_mem2": {
+     "files": 2176,
+     "bytes": 88652863597,
+     "matches_aws": true
+    },
+    "medium_range_mem3": {
+     "files": 2176,
+     "bytes": 88706485061,
+     "matches_aws": true
+    },
+    "medium_range_mem4": {
+     "files": 2176,
+     "bytes": 88715634734,
+     "matches_aws": true
+    },
+    "medium_range_mem5": {
+     "files": 2176,
+     "bytes": 88739223941,
+     "matches_aws": true
+    },
+    "medium_range_mem6": {
+     "files": 2176,
+     "bytes": 88717392217,
+     "matches_aws": true
+    },
+    "medium_range_mem7": {
+     "files": 0,
+     "bytes": 0,
+     "matches_aws": false
+    },
+    "usgs_timeslices": {
+     "files": 96,
+     "bytes": 116046991,
+     "matches_aws": true
+    }
+   },
+   "20251208": {
+    "analysis_assim": {
+     "files": 288,
+     "bytes": 13621061959,
+     "matches_aws": true
+    },
+    "analysis_assim_extend": {
+     "files": 112,
+     "bytes": 5401001605,
+     "matches_aws": true
+    },
+    "short_range": {
+     "files": 1728,
+     "bytes": 44198027397,
+     "matches_aws": true
+    },
+    "medium_range_blend": {
+     "files": 2560,
+     "bytes": 104135167024,
+     "matches_aws": true
+    },
+    "medium_range_mem1": {
+     "files": 2560,
+     "bytes": 104362715214,
+     "matches_aws": true
+    },
+    "medium_range_mem2": {
+     "files": 2176,
+     "bytes": 88338051669,
+     "matches_aws": true
+    },
+    "medium_range_mem3": {
+     "files": 2176,
+     "bytes": 88314430709,
+     "matches_aws": true
+    },
+    "medium_range_mem4": {
+     "files": 2176,
+     "bytes": 88349184607,
+     "matches_aws": true
+    },
+    "medium_range_mem5": {
+     "files": 2176,
+     "bytes": 88423611091,
+     "matches_aws": true
+    },
+    "medium_range_mem6": {
+     "files": 2176,
+     "bytes": 88504287145,
+     "matches_aws": true
+    },
+    "medium_range_mem7": {
+     "files": 0,
+     "bytes": 0,
+     "matches_aws": false
+    },
+    "usgs_timeslices": {
+     "files": 96,
+     "bytes": 115981443,
+     "matches_aws": true
+    }
+   },
+   "20251209": {
+    "analysis_assim": {
+     "files": 288,
+     "bytes": 13666065618,
+     "matches_aws": true
+    },
+    "analysis_assim_extend": {
+     "files": 112,
+     "bytes": 5415260492,
+     "matches_aws": true
+    },
+    "short_range": {
+     "files": 1728,
+     "bytes": 43915250644,
+     "matches_aws": true
+    },
+    "medium_range_blend": {
+     "files": 2560,
+     "bytes": 104344184111,
+     "matches_aws": true
+    },
+    "medium_range_mem1": {
+     "files": 2560,
+     "bytes": 104696376543,
+     "matches_aws": true
+    },
+    "medium_range_mem2": {
+     "files": 2176,
+     "bytes": 88374367398,
+     "matches_aws": true
+    },
+    "medium_range_mem3": {
+     "files": 2176,
+     "bytes": 88377232255,
+     "matches_aws": true
+    },
+    "medium_range_mem4": {
+     "files": 2176,
+     "bytes": 88327736767,
+     "matches_aws": true
+    },
+    "medium_range_mem5": {
+     "files": 2176,
+     "bytes": 88230673219,
+     "matches_aws": true
+    },
+    "medium_range_mem6": {
+     "files": 2176,
+     "bytes": 88191992352,
+     "matches_aws": true
+    },
+    "medium_range_mem7": {
+     "files": 0,
+     "bytes": 0,
+     "matches_aws": false
+    },
+    "usgs_timeslices": {
+     "files": 96,
+     "bytes": 114848691,
+     "matches_aws": true
+    }
+   },
+   "20251210": {
+    "analysis_assim": {
+     "files": 288,
+     "bytes": 13650123783,
+     "matches_aws": true
+    },
+    "analysis_assim_extend": {
+     "files": 112,
+     "bytes": 5425237002,
+     "matches_aws": true
+    },
+    "short_range": {
+     "files": 1728,
+     "bytes": 43654266397,
+     "matches_aws": true
+    },
+    "medium_range_blend": {
+     "files": 2560,
+     "bytes": 104199368566,
+     "matches_aws": true
+    },
+    "medium_range_mem1": {
+     "files": 2560,
+     "bytes": 104611534143,
+     "matches_aws": true
+    },
+    "medium_range_mem2": {
+     "files": 2176,
+     "bytes": 88310119377,
+     "matches_aws": true
+    },
+    "medium_range_mem3": {
+     "files": 2176,
+     "bytes": 88279629018,
+     "matches_aws": true
+    },
+    "medium_range_mem4": {
+     "files": 2176,
+     "bytes": 88263916800,
+     "matches_aws": true
+    },
+    "medium_range_mem5": {
+     "files": 2176,
+     "bytes": 88274220632,
+     "matches_aws": true
+    },
+    "medium_range_mem6": {
+     "files": 2176,
+     "bytes": 88257043481,
+     "matches_aws": true
+    },
+    "medium_range_mem7": {
+     "files": 0,
+     "bytes": 0,
+     "matches_aws": false
+    },
+    "usgs_timeslices": {
+     "files": 96,
+     "bytes": 115927675,
+     "matches_aws": true
+    }
+   },
+   "20251211": {
+    "analysis_assim": {
+     "files": 288,
+     "bytes": 13561196080,
+     "matches_aws": true
+    },
+    "analysis_assim_extend": {
+     "files": 112,
+     "bytes": 5415401423,
+     "matches_aws": true
+    },
+    "short_range": {
+     "files": 1728,
+     "bytes": 43414470545,
+     "matches_aws": true
+    },
+    "medium_range_blend": {
+     "files": 2560,
+     "bytes": 104093976835,
+     "matches_aws": true
+    },
+    "medium_range_mem1": {
+     "files": 2560,
+     "bytes": 104308956128,
+     "matches_aws": true
+    },
+    "medium_range_mem2": {
+     "files": 2176,
+     "bytes": 88179723933,
+     "matches_aws": true
+    },
+    "medium_range_mem3": {
+     "files": 2176,
+     "bytes": 88162740774,
+     "matches_aws": true
+    },
+    "medium_range_mem4": {
+     "files": 2176,
+     "bytes": 88136747984,
+     "matches_aws": true
+    },
+    "medium_range_mem5": {
+     "files": 2176,
+     "bytes": 88128358300,
+     "matches_aws": true
+    },
+    "medium_range_mem6": {
+     "files": 2176,
+     "bytes": 88084283387,
+     "matches_aws": true
+    },
+    "medium_range_mem7": {
+     "files": 0,
+     "bytes": 0,
+     "matches_aws": false
+    },
+    "usgs_timeslices": {
+     "files": 96,
+     "bytes": 116002421,
+     "matches_aws": true
+    }
+   },
+   "20251212": {
+    "analysis_assim": {
+     "files": 288,
+     "bytes": 13447446197,
+     "matches_aws": true
+    },
+    "analysis_assim_extend": {
+     "files": 112,
+     "bytes": 5356135257,
+     "matches_aws": true
+    },
+    "short_range": {
+     "files": 1728,
+     "bytes": 43389015072,
+     "matches_aws": true
+    },
+    "medium_range_blend": {
+     "files": 2560,
+     "bytes": 104086576079,
+     "matches_aws": true
+    },
+    "medium_range_mem1": {
+     "files": 2560,
+     "bytes": 104274602033,
+     "matches_aws": true
+    },
+    "medium_range_mem2": {
+     "files": 2176,
+     "bytes": 88137692792,
+     "matches_aws": true
+    },
+    "medium_range_mem3": {
+     "files": 2176,
+     "bytes": 88152947784,
+     "matches_aws": true
+    },
+    "medium_range_mem4": {
+     "files": 2176,
+     "bytes": 88191595349,
+     "matches_aws": true
+    },
+    "medium_range_mem5": {
+     "files": 2176,
+     "bytes": 88188158147,
+     "matches_aws": true
+    },
+    "medium_range_mem6": {
+     "files": 2176,
+     "bytes": 88158990311,
+     "matches_aws": true
+    },
+    "medium_range_mem7": {
+     "files": 0,
+     "bytes": 0,
+     "matches_aws": false
+    },
+    "usgs_timeslices": {
+     "files": 96,
+     "bytes": 116058477,
+     "matches_aws": true
+    }
+   },
+   "20251213": {
+    "analysis_assim": {
+     "files": 288,
+     "bytes": 13386657306,
+     "matches_aws": true
+    },
+    "analysis_assim_extend": {
+     "files": 112,
+     "bytes": 5312323037,
+     "matches_aws": true
+    },
+    "short_range": {
+     "files": 1728,
+     "bytes": 43301510137,
+     "matches_aws": true
+    },
+    "medium_range_blend": {
+     "files": 2560,
+     "bytes": 104431234750,
+     "matches_aws": true
+    },
+    "medium_range_mem1": {
+     "files": 2560,
+     "bytes": 104794380205,
+     "matches_aws": true
+    },
+    "medium_range_mem2": {
+     "files": 2176,
+     "bytes": 88595729248,
+     "matches_aws": true
+    },
+    "medium_range_mem3": {
+     "files": 2176,
+     "bytes": 88500073927,
+     "matches_aws": true
+    },
+    "medium_range_mem4": {
+     "files": 2176,
+     "bytes": 88412036133,
+     "matches_aws": true
+    },
+    "medium_range_mem5": {
+     "files": 2176,
+     "bytes": 88319994436,
+     "matches_aws": true
+    },
+    "medium_range_mem6": {
+     "files": 2176,
+     "bytes": 88278023415,
+     "matches_aws": true
+    },
+    "medium_range_mem7": {
+     "files": 0,
+     "bytes": 0,
+     "matches_aws": false
+    },
+    "usgs_timeslices": {
+     "files": 96,
+     "bytes": 115983734,
+     "matches_aws": true
+    }
+   },
+   "20251214": {
+    "analysis_assim": {
+     "files": 288,
+     "bytes": 13409015247,
+     "matches_aws": true
+    },
+    "analysis_assim_extend": {
+     "files": 112,
+     "bytes": 5305096143,
+     "matches_aws": true
+    },
+    "short_range": {
+     "files": 1728,
+     "bytes": 43256016488,
+     "matches_aws": true
+    },
+    "medium_range_blend": {
+     "files": 2560,
+     "bytes": 104986234874,
+     "matches_aws": true
+    },
+    "medium_range_mem1": {
+     "files": 2560,
+     "bytes": 105246238669,
+     "matches_aws": true
+    },
+    "medium_range_mem2": {
+     "files": 2176,
+     "bytes": 89042785005,
+     "matches_aws": true
+    },
+    "medium_range_mem3": {
+     "files": 2176,
+     "bytes": 89006657846,
+     "matches_aws": true
+    },
+    "medium_range_mem4": {
+     "files": 2176,
+     "bytes": 88938064049,
+     "matches_aws": true
+    },
+    "medium_range_mem5": {
+     "files": 2176,
+     "bytes": 88883108204,
+     "matches_aws": true
+    },
+    "medium_range_mem6": {
+     "files": 2176,
+     "bytes": 88884778505,
+     "matches_aws": true
+    },
+    "medium_range_mem7": {
+     "files": 0,
+     "bytes": 0,
+     "matches_aws": false
+    },
+    "usgs_timeslices": {
+     "files": 96,
+     "bytes": 115433049,
+     "matches_aws": true
+    }
+   },
+   "20251215": {
+    "analysis_assim": {
+     "files": 288,
+     "bytes": 13422815224,
+     "matches_aws": true
+    },
+    "analysis_assim_extend": {
+     "files": 112,
+     "bytes": 5307764844,
+     "matches_aws": true
+    },
+    "short_range": {
+     "files": 1728,
+     "bytes": 43223430330,
+     "matches_aws": true
+    },
+    "medium_range_blend": {
+     "files": 2560,
+     "bytes": 105356211982,
+     "matches_aws": true
+    },
+    "medium_range_mem1": {
+     "files": 2560,
+     "bytes": 105750558943,
+     "matches_aws": true
+    },
+    "medium_range_mem2": {
+     "files": 2176,
+     "bytes": 89474665868,
+     "matches_aws": true
+    },
+    "medium_range_mem3": {
+     "files": 2176,
+     "bytes": 89393054449,
+     "matches_aws": true
+    },
+    "medium_range_mem4": {
+     "files": 2176,
+     "bytes": 89320386965,
+     "matches_aws": true
+    },
+    "medium_range_mem5": {
+     "files": 2176,
+     "bytes": 89298385921,
+     "matches_aws": true
+    },
+    "medium_range_mem6": {
+     "files": 2176,
+     "bytes": 89282013986,
+     "matches_aws": true
+    },
+    "medium_range_mem7": {
+     "files": 0,
+     "bytes": 0,
+     "matches_aws": false
+    },
+    "usgs_timeslices": {
+     "files": 96,
+     "bytes": 115474184,
+     "matches_aws": true
+    }
+   },
+   "20251216": {
+    "analysis_assim": {
+     "files": 288,
+     "bytes": 13534607477,
+     "matches_aws": true
+    },
+    "analysis_assim_extend": {
+     "files": 112,
+     "bytes": 5344792256,
+     "matches_aws": true
+    },
+    "short_range": {
+     "files": 1728,
+     "bytes": 43386432737,
+     "matches_aws": true
+    },
+    "medium_range_blend": {
+     "files": 2560,
+     "bytes": 105686581290,
+     "matches_aws": true
+    },
+    "medium_range_mem1": {
+     "files": 2560,
+     "bytes": 105885695495,
+     "matches_aws": true
+    },
+    "medium_range_mem2": {
+     "files": 2176,
+     "bytes": 89639730918,
+     "matches_aws": true
+    },
+    "medium_range_mem3": {
+     "files": 2176,
+     "bytes": 89690017918,
+     "matches_aws": true
+    },
+    "medium_range_mem4": {
+     "files": 2176,
+     "bytes": 89773523066,
+     "matches_aws": true
+    },
+    "medium_range_mem5": {
+     "files": 2176,
+     "bytes": 89820739115,
+     "matches_aws": true
+    },
+    "medium_range_mem6": {
+     "files": 2176,
+     "bytes": 89781086247,
+     "matches_aws": true
+    },
+    "medium_range_mem7": {
+     "files": 0,
+     "bytes": 0,
+     "matches_aws": false
+    },
+    "usgs_timeslices": {
+     "files": 96,
+     "bytes": 115740899,
+     "matches_aws": true
+    }
+   },
+   "20251217": {
+    "analysis_assim": {
+     "files": 288,
+     "bytes": 13710666625,
+     "matches_aws": true
+    },
+    "analysis_assim_extend": {
+     "files": 112,
+     "bytes": 5416956145,
+     "matches_aws": true
+    },
+    "short_range": {
+     "files": 1728,
+     "bytes": 43776714388,
+     "matches_aws": true
+    },
+    "medium_range_blend": {
+     "files": 2560,
+     "bytes": 105775766335,
+     "matches_aws": true
+    },
+    "medium_range_mem1": {
+     "files": 2560,
+     "bytes": 105936066187,
+     "matches_aws": true
+    },
+    "medium_range_mem2": {
+     "files": 2176,
+     "bytes": 89769262912,
+     "matches_aws": true
+    },
+    "medium_range_mem3": {
+     "files": 2176,
+     "bytes": 89719741866,
+     "matches_aws": true
+    },
+    "medium_range_mem4": {
+     "files": 2176,
+     "bytes": 89680687313,
+     "matches_aws": true
+    },
+    "medium_range_mem5": {
+     "files": 2176,
+     "bytes": 89589690628,
+     "matches_aws": true
+    },
+    "medium_range_mem6": {
+     "files": 2176,
+     "bytes": 89529848992,
+     "matches_aws": true
+    },
+    "medium_range_mem7": {
+     "files": 0,
+     "bytes": 0,
+     "matches_aws": false
+    },
+    "usgs_timeslices": {
+     "files": 96,
+     "bytes": 115994510,
+     "matches_aws": true
+    }
+   },
+   "20251218": {
+    "analysis_assim": {
+     "files": 288,
+     "bytes": 13690862217,
+     "matches_aws": true
+    },
+    "analysis_assim_extend": {
+     "files": 112,
+     "bytes": 5454911275,
+     "matches_aws": true
+    },
+    "short_range": {
+     "files": 1728,
+     "bytes": 44086896418,
+     "matches_aws": true
+    },
+    "medium_range_blend": {
+     "files": 2560,
+     "bytes": 105577407139,
+     "matches_aws": true
+    },
+    "medium_range_mem1": {
+     "files": 2560,
+     "bytes": 105901119950,
+     "matches_aws": true
+    },
+    "medium_range_mem2": {
+     "files": 2176,
+     "bytes": 89638542115,
+     "matches_aws": true
+    },
+    "medium_range_mem3": {
+     "files": 2176,
+     "bytes": 89556532897,
+     "matches_aws": true
+    },
+    "medium_range_mem4": {
+     "files": 2176,
+     "bytes": 89472051212,
+     "matches_aws": true
+    },
+    "medium_range_mem5": {
+     "files": 2176,
+     "bytes": 89455894205,
+     "matches_aws": true
+    },
+    "medium_range_mem6": {
+     "files": 2176,
+     "bytes": 89498768533,
+     "matches_aws": true
+    },
+    "medium_range_mem7": {
+     "files": 0,
+     "bytes": 0,
+     "matches_aws": false
+    },
+    "usgs_timeslices": {
+     "files": 96,
+     "bytes": 116013030,
+     "matches_aws": true
+    }
+   },
+   "20251219": {
+    "analysis_assim": {
+     "files": 288,
+     "bytes": 13871558320,
+     "matches_aws": true
+    },
+    "analysis_assim_extend": {
+     "files": 112,
+     "bytes": 5487508498,
+     "matches_aws": true
+    },
+    "short_range": {
+     "files": 1728,
+     "bytes": 44556072532,
+     "matches_aws": true
+    },
+    "medium_range_blend": {
+     "files": 2560,
+     "bytes": 105467389102,
+     "matches_aws": true
+    },
+    "medium_range_mem1": {
+     "files": 2560,
+     "bytes": 105904123590,
+     "matches_aws": true
+    },
+    "medium_range_mem2": {
+     "files": 2176,
+     "bytes": 89595916826,
+     "matches_aws": true
+    },
+    "medium_range_mem3": {
+     "files": 2176,
+     "bytes": 89556132513,
+     "matches_aws": true
+    },
+    "medium_range_mem4": {
+     "files": 2176,
+     "bytes": 89502781636,
+     "matches_aws": true
+    },
+    "medium_range_mem5": {
+     "files": 2176,
+     "bytes": 89448734569,
+     "matches_aws": true
+    },
+    "medium_range_mem6": {
+     "files": 2176,
+     "bytes": 89370208265,
+     "matches_aws": true
+    },
+    "medium_range_mem7": {
+     "files": 0,
+     "bytes": 0,
+     "matches_aws": false
+    },
+    "usgs_timeslices": {
+     "files": 96,
+     "bytes": 116013219,
+     "matches_aws": true
+    }
+   },
+   "20251220": {
+    "analysis_assim": {
+     "files": 288,
+     "bytes": 13710176936,
+     "matches_aws": true
+    },
+    "analysis_assim_extend": {
+     "files": 112,
+     "bytes": 5496520638,
+     "matches_aws": true
+    },
+    "short_range": {
+     "files": 1728,
+     "bytes": 44143460911,
+     "matches_aws": true
+    },
+    "medium_range_blend": {
+     "files": 2560,
+     "bytes": 104781958161,
+     "matches_aws": true
+    },
+    "medium_range_mem1": {
+     "files": 2560,
+     "bytes": 105143815422,
+     "matches_aws": true
+    },
+    "medium_range_mem2": {
+     "files": 2176,
+     "bytes": 89075176104,
+     "matches_aws": true
+    },
+    "medium_range_mem3": {
+     "files": 2176,
+     "bytes": 89109386895,
+     "matches_aws": true
+    },
+    "medium_range_mem4": {
+     "files": 2176,
+     "bytes": 89125581707,
+     "matches_aws": true
+    },
+    "medium_range_mem5": {
+     "files": 2176,
+     "bytes": 89114585852,
+     "matches_aws": true
+    },
+    "medium_range_mem6": {
+     "files": 2176,
+     "bytes": 89029788018,
+     "matches_aws": true
+    },
+    "medium_range_mem7": {
+     "files": 0,
+     "bytes": 0,
+     "matches_aws": false
+    },
+    "usgs_timeslices": {
+     "files": 96,
+     "bytes": 115947064,
+     "matches_aws": true
+    }
+   },
+   "20251221": {
+    "analysis_assim": {
+     "files": 288,
+     "bytes": 13548824617,
+     "matches_aws": true
+    },
+    "analysis_assim_extend": {
+     "files": 112,
+     "bytes": 5390451003,
+     "matches_aws": true
+    },
+    "short_range": {
+     "files": 1728,
+     "bytes": 43824466638,
+     "matches_aws": true
+    },
+    "medium_range_blend": {
+     "files": 2560,
+     "bytes": 104498627128,
+     "matches_aws": true
+    },
+    "medium_range_mem1": {
+     "files": 2560,
+     "bytes": 104746446617,
+     "matches_aws": true
+    },
+    "medium_range_mem2": {
+     "files": 2176,
+     "bytes": 88600120013,
+     "matches_aws": true
+    },
+    "medium_range_mem3": {
+     "files": 2176,
+     "bytes": 88620307996,
+     "matches_aws": true
+    },
+    "medium_range_mem4": {
+     "files": 2176,
+     "bytes": 88683402386,
+     "matches_aws": true
+    },
+    "medium_range_mem5": {
+     "files": 2176,
+     "bytes": 88730223257,
+     "matches_aws": true
+    },
+    "medium_range_mem6": {
+     "files": 2176,
+     "bytes": 88850760892,
+     "matches_aws": true
+    },
+    "medium_range_mem7": {
+     "files": 0,
+     "bytes": 0,
+     "matches_aws": false
+    },
+    "usgs_timeslices": {
+     "files": 96,
+     "bytes": 115907742,
+     "matches_aws": true
+    }
+   },
+   "20251222": {
+    "analysis_assim": {
+     "files": 288,
+     "bytes": 13535727912,
+     "matches_aws": true
+    },
+    "analysis_assim_extend": {
+     "files": 112,
+     "bytes": 5372622219,
+     "matches_aws": true
+    },
+    "short_range": {
+     "files": 1728,
+     "bytes": 43636121204,
+     "matches_aws": true
+    },
+    "medium_range_blend": {
+     "files": 2560,
+     "bytes": 104627007448,
+     "matches_aws": true
+    },
+    "medium_range_mem1": {
+     "files": 2560,
+     "bytes": 104867472241,
+     "matches_aws": true
+    },
+    "medium_range_mem2": {
+     "files": 2176,
+     "bytes": 88720763742,
+     "matches_aws": true
+    },
+    "medium_range_mem3": {
+     "files": 2176,
+     "bytes": 88722501596,
+     "matches_aws": true
+    },
+    "medium_range_mem4": {
+     "files": 2176,
+     "bytes": 88633936536,
+     "matches_aws": true
+    },
+    "medium_range_mem5": {
+     "files": 2176,
+     "bytes": 88608845285,
+     "matches_aws": true
+    },
+    "medium_range_mem6": {
+     "files": 2176,
+     "bytes": 88571372371,
+     "matches_aws": true
+    },
+    "medium_range_mem7": {
+     "files": 0,
+     "bytes": 0,
+     "matches_aws": false
+    },
+    "usgs_timeslices": {
+     "files": 96,
+     "bytes": 115849586,
+     "matches_aws": true
+    }
+   }
+  },
+  "mismatches": [
+   {
+    "day": "20251201",
+    "product": "medium_range_mem7",
+    "gcs": [
+     0,
+     0
+    ],
+    "aws": [
+     null,
+     null
+    ]
+   },
+   {
+    "day": "20251202",
+    "product": "medium_range_mem7",
+    "gcs": [
+     0,
+     0
+    ],
+    "aws": [
+     null,
+     null
+    ]
+   },
+   {
+    "day": "20251203",
+    "product": "medium_range_mem7",
+    "gcs": [
+     0,
+     0
+    ],
+    "aws": [
+     null,
+     null
+    ]
+   },
+   {
+    "day": "20251204",
+    "product": "medium_range_mem7",
+    "gcs": [
+     0,
+     0
+    ],
+    "aws": [
+     null,
+     null
+    ]
+   },
+   {
+    "day": "20251205",
+    "product": "medium_range_mem7",
+    "gcs": [
+     0,
+     0
+    ],
+    "aws": [
+     null,
+     null
+    ]
+   },
+   {
+    "day": "20251206",
+    "product": "medium_range_mem7",
+    "gcs": [
+     0,
+     0
+    ],
+    "aws": [
+     null,
+     null
+    ]
+   },
+   {
+    "day": "20251207",
+    "product": "medium_range_mem7",
+    "gcs": [
+     0,
+     0
+    ],
+    "aws": [
+     null,
+     null
+    ]
+   },
+   {
+    "day": "20251208",
+    "product": "medium_range_mem7",
+    "gcs": [
+     0,
+     0
+    ],
+    "aws": [
+     null,
+     null
+    ]
+   },
+   {
+    "day": "20251209",
+    "product": "medium_range_mem7",
+    "gcs": [
+     0,
+     0
+    ],
+    "aws": [
+     null,
+     null
+    ]
+   },
+   {
+    "day": "20251210",
+    "product": "medium_range_mem7",
+    "gcs": [
+     0,
+     0
+    ],
+    "aws": [
+     null,
+     null
+    ]
+   },
+   {
+    "day": "20251211",
+    "product": "medium_range_mem7",
+    "gcs": [
+     0,
+     0
+    ],
+    "aws": [
+     null,
+     null
+    ]
+   },
+   {
+    "day": "20251212",
+    "product": "medium_range_mem7",
+    "gcs": [
+     0,
+     0
+    ],
+    "aws": [
+     null,
+     null
+    ]
+   },
+   {
+    "day": "20251213",
+    "product": "medium_range_mem7",
+    "gcs": [
+     0,
+     0
+    ],
+    "aws": [
+     null,
+     null
+    ]
+   },
+   {
+    "day": "20251214",
+    "product": "medium_range_mem7",
+    "gcs": [
+     0,
+     0
+    ],
+    "aws": [
+     null,
+     null
+    ]
+   },
+   {
+    "day": "20251215",
+    "product": "medium_range_mem7",
+    "gcs": [
+     0,
+     0
+    ],
+    "aws": [
+     null,
+     null
+    ]
+   },
+   {
+    "day": "20251216",
+    "product": "medium_range_mem7",
+    "gcs": [
+     0,
+     0
+    ],
+    "aws": [
+     null,
+     null
+    ]
+   },
+   {
+    "day": "20251217",
+    "product": "medium_range_mem7",
+    "gcs": [
+     0,
+     0
+    ],
+    "aws": [
+     null,
+     null
+    ]
+   },
+   {
+    "day": "20251218",
+    "product": "medium_range_mem7",
+    "gcs": [
+     0,
+     0
+    ],
+    "aws": [
+     null,
+     null
+    ]
+   },
+   {
+    "day": "20251219",
+    "product": "medium_range_mem7",
+    "gcs": [
+     0,
+     0
+    ],
+    "aws": [
+     null,
+     null
+    ]
+   },
+   {
+    "day": "20251220",
+    "product": "medium_range_mem7",
+    "gcs": [
+     0,
+     0
+    ],
+    "aws": [
+     null,
+     null
+    ]
+   },
+   {
+    "day": "20251221",
+    "product": "medium_range_mem7",
+    "gcs": [
+     0,
+     0
+    ],
+    "aws": [
+     null,
+     null
+    ]
+   },
+   {
+    "day": "20251222",
+    "product": "medium_range_mem7",
+    "gcs": [
+     0,
+     0
+    ],
+    "aws": [
+     null,
+     null
+    ]
+   }
+  ]
+ },
+ "azure": {
+  "base": "https://noaanwm.blob.core.windows.net/nwm/",
+  "sample_days": {
+   "20251201": {
+    "analysis_assim": {
+     "files": 288,
+     "bytes": 13383281832,
+     "matches_aws": true
+    },
+    "analysis_assim_extend": {
+     "files": 112,
+     "bytes": 5308199787,
+     "matches_aws": true
+    },
+    "short_range": {
+     "files": 1728,
+     "bytes": 43399079384,
+     "matches_aws": true
+    },
+    "medium_range_blend": {
+     "files": 2560,
+     "bytes": 104971490092,
+     "matches_aws": true
+    },
+    "medium_range_mem1": {
+     "files": 2560,
+     "bytes": 105060271801,
+     "matches_aws": true
+    },
+    "medium_range_mem2": {
+     "files": 2176,
+     "bytes": 88993184763,
+     "matches_aws": true
+    },
+    "medium_range_mem3": {
+     "files": 2176,
+     "bytes": 89153793848,
+     "matches_aws": true
+    },
+    "medium_range_mem4": {
+     "files": 2176,
+     "bytes": 89393187803,
+     "matches_aws": true
+    },
+    "medium_range_mem5": {
+     "files": 2176,
+     "bytes": 89636604551,
+     "matches_aws": true
+    },
+    "medium_range_mem6": {
+     "files": 2176,
+     "bytes": 89667018967,
+     "matches_aws": true
+    },
+    "medium_range_mem7": {
+     "files": 0,
+     "bytes": 0,
+     "matches_aws": true
+    },
+    "usgs_timeslices": {
+     "files": 96,
+     "bytes": 116225312,
+     "matches_aws": true
+    }
+   },
+   "20251212": {
+    "analysis_assim": {
+     "files": 288,
+     "bytes": 13447446197,
+     "matches_aws": true
+    },
+    "analysis_assim_extend": {
+     "files": 112,
+     "bytes": 5356135257,
+     "matches_aws": true
+    },
+    "short_range": {
+     "files": 1728,
+     "bytes": 43389015072,
+     "matches_aws": true
+    },
+    "medium_range_blend": {
+     "files": 2560,
+     "bytes": 104086576079,
+     "matches_aws": true
+    },
+    "medium_range_mem1": {
+     "files": 2560,
+     "bytes": 104274602033,
+     "matches_aws": true
+    },
+    "medium_range_mem2": {
+     "files": 2176,
+     "bytes": 88137692792,
+     "matches_aws": true
+    },
+    "medium_range_mem3": {
+     "files": 2176,
+     "bytes": 88152947784,
+     "matches_aws": true
+    },
+    "medium_range_mem4": {
+     "files": 2176,
+     "bytes": 88191595349,
+     "matches_aws": true
+    },
+    "medium_range_mem5": {
+     "files": 2176,
+     "bytes": 88188158147,
+     "matches_aws": true
+    },
+    "medium_range_mem6": {
+     "files": 2176,
+     "bytes": 88158990311,
+     "matches_aws": true
+    },
+    "medium_range_mem7": {
+     "files": 0,
+     "bytes": 0,
+     "matches_aws": true
+    },
+    "usgs_timeslices": {
+     "files": 96,
+     "bytes": 116058477,
+     "matches_aws": true
+    }
+   },
+   "20251222": {
+    "analysis_assim": {
+     "files": 288,
+     "bytes": 13535727912,
+     "matches_aws": true
+    },
+    "analysis_assim_extend": {
+     "files": 112,
+     "bytes": 5372622219,
+     "matches_aws": true
+    },
+    "short_range": {
+     "files": 1728,
+     "bytes": 43636121204,
+     "matches_aws": true
+    },
+    "medium_range_blend": {
+     "files": 2560,
+     "bytes": 104627007448,
+     "matches_aws": true
+    },
+    "medium_range_mem1": {
+     "files": 2560,
+     "bytes": 104867472241,
+     "matches_aws": true
+    },
+    "medium_range_mem2": {
+     "files": 2176,
+     "bytes": 88720763742,
+     "matches_aws": true
+    },
+    "medium_range_mem3": {
+     "files": 2176,
+     "bytes": 88722501596,
+     "matches_aws": true
+    },
+    "medium_range_mem4": {
+     "files": 2176,
+     "bytes": 88633936536,
+     "matches_aws": true
+    },
+    "medium_range_mem5": {
+     "files": 2176,
+     "bytes": 88608845285,
+     "matches_aws": true
+    },
+    "medium_range_mem6": {
+     "files": 2176,
+     "bytes": 88571372371,
+     "matches_aws": true
+    },
+    "medium_range_mem7": {
+     "files": 0,
+     "bytes": 0,
+     "matches_aws": true
+    },
+    "usgs_timeslices": {
+     "files": 96,
+     "bytes": 115849586,
+     "matches_aws": true
+    }
+   }
+  },
+  "mismatches": []
+ },
+ "content_checks": [
+  {
+   "key": "nwm.20251212/medium_range_mem2/nwm.t00z.medium_range.channel_rt_2.f003.conus.nc",
+   "gcs_equal_aws": true,
+   "azure_equal_aws": true
+  },
+  {
+   "key": "nwm.20251212/medium_range_mem6/nwm.t12z.medium_range.channel_rt_6.f003.conus.nc",
+   "gcs_equal_aws": true,
+   "azure_equal_aws": true
+  },
+  {
+   "key": "nwm.20251210/analysis_assim/nwm.t12z.analysis_assim.channel_rt.tm00.conus.nc",
+   "gcs_equal_aws": true,
+   "azure_equal_aws": true
+  },
+  {
+   "key": "nwm.20251222/short_range/nwm.t23z.short_range.channel_rt.f001.conus.nc",
+   "gcs_equal_aws": true,
+   "azure_equal_aws": true
+  }
+ ]
+}

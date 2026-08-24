@@ -46,6 +46,39 @@ when a milestone closes; delete lines that stop being true.
 
 ## 2. Milestones, in order
 
+> **Reprioritized 2026-08-24 (owner directive):** M1 is done and the Event Zero bulk copy is
+> parked (long-term mirrors GCS+Azure verified byte-exact 2026-08-24, retrieval paths tested;
+> extracted WA-specific analytical archive preferred later). Priority is now a substantially complete working product:
+> the frontend/Cesium experience, live intelligence surfaces, the historical replay /
+> Event Zero experience, and production robustness. No new recurring infrastructure cost
+> unless required for functionality actively being built. Execution order: **P1 → P2 → P3**
+> below, then the remaining M-milestones as originally sequenced.
+
+### P1 — Cinematic client C1/C2 on the live backend (M)
+- Hydrograph panel (observed + official forecast + thresholds with datum), layer inspector
+  with per-value provenance, search, deep links; band boundaries fixed from telemetry;
+  remove the Cesium ion logo credit (ion-free attribution).
+- Timeline/replay controls driving `as_of` across every query (the API already honors it).
+- Exit: CINEMATIC_ROADMAP C1+C2 exit criteria against cascadia.papsukkal.com.
+
+### P2 — Event Zero replay experience (M)
+- Backfill Dec 2025 point truth into production: USGS IV Dec 1–31 for the seed stations via
+  the OGC API (keyed, 4000/h), NWPS thresholds snapshot, AFOS text products (archiver built)
+  parsed to `OfficialAlert`s — EVENT_ZERO T2/T4/T5 at seed-station scope.
+- Frontend: an Event Zero mode — fly the Skagit, scrub Dec 3–22, watch observed stages,
+  official forecast evolution (MVEW1 36.9→41.5→42.3→39.1→38.3→38.1 vs 37.73 observed) and
+  alerts replay with knowledge-time honesty (`as_of` = the scrub position).
+- Exit: the MVEW1 forecast-evolution table reproduces on screen from stored rows with zero
+  look-ahead violations.
+
+### P3 — Live intelligence surfaces v0 (M)
+- Forcing v0 from NBM QPF percentiles at basin scale (EXPERIMENTAL badge, documented method);
+  susceptibility v0 from streamflow percentile + (when SNOTEL adapter lands) SWE context;
+  agreement v0 from NWM blend-vs-NWRFC crest comparison at forecast points. All labeled,
+  all provenance-carrying, UNKNOWN where inputs are missing.
+- Exit: no surface shows UNKNOWN for reasons that are now implemented; every value traces.
+
+
 Each milestone has an exit test. Sizes are relative. Dependencies point at earlier milestones.
 
 ### M1 — A real backend behind the deployed client (M) — **DONE 2026-08-24** (see infra/CONTEXT.md; smoke-tested through cascadia.papsukkal.com)

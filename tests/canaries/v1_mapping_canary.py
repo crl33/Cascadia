@@ -1,6 +1,6 @@
 """Live canary: verify V1's USGS sites, NWPS LIDs and SNOTEL mappings against the real APIs.
 Read-only GETs. Prints a compact JSON report. Network failures are reported, not hidden."""
-import json, sys, urllib.request, urllib.parse, datetime as dt
+import json, urllib.request, urllib.parse, datetime as dt
 UA = {"User-Agent": "CascadiaPapsukkal-V2-audit/0.1 (architecture verification)", "Accept": "application/json"}
 def get(url, timeout=25):
     req = urllib.request.Request(url, headers=UA)

@@ -171,3 +171,19 @@ could test reproduced cleanly on a fresh database.
 13. **Migration DDL timestamps are `sa.DateTime()`** — same rendered DDL as `UTCDateTime`,
     but the UTC-naive convention lives only in the ORM layer; future hand migrations must
     not introduce `timestamptz` columns without a coordinated model change.
+
+## M2 robustness batch (orchestrator verification, 2026-08-24)
+
+The batch's verify agent completed every leg but was cut off before reporting; the
+orchestrator re-ran the decisive checks: offline suite 72 passed / 6 skipped; pg suite 6
+passed (incl. the new partition-horizon maintenance test); ruff clean; lint-imports 3
+contracts kept / 0 broken; contracts drift gate clean; web contracts:check + 29 vitest +
+production build green; `.github/workflows/ci.yml` parses with jobs backend / backend-pg /
+web / e2e-stub / gitleaks; docker image rebuilt (arm64) and dual-process supervision proven
+live twice (builder: kill -9 → container down; orchestrator: killed worker pid 8 → container
+exited 1 within 15 s). AFOS archiver verified by live dry-run (ESFSEW 5, FFASEW 30, FLWSEW 93
+products, FLSSEW et al. counted in the upload manifest); upload to `cascadia-event-zero`
+executed by the orchestrator with credentials. Railway start command switched to the
+supervised `all` mode. Known follow-ups: e2e-stub CI job is CI-verified-only; action major
+tags unverified against github.com; gitleaks-action needs a license only if the repo moves
+to an org.

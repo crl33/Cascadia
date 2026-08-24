@@ -13,6 +13,10 @@ Composition contract:
   (AlreadyEnqueued) instead of piling up.
 - The queue requires PostgreSQL (LISTEN/NOTIFY + row locks). sqlite keeps working for
   ``seed`` / ``run-once``; ``conninfo_from_url`` fails loudly for anything non-PostgreSQL.
+- Besides the provider jobs, the app registers one maintenance task
+  (``cascade_worker.maintenance``): a monthly cron that keeps the observation partition
+  horizon premade ahead of ingestion. It is queue-only on purpose — never part of
+  ``scheduler.JOBS`` — so ``run-once``/``run`` on sqlite are unaffected.
 """
 
 from __future__ import annotations
@@ -26,8 +30,9 @@ from procrastinate.connector import BaseConnector
 from sqlalchemy.engine.url import make_url
 
 from cascade_core.settings import Settings
-from cascade_worker.runtime import Runtime, run_job
-from cascade_worker.scheduler import JOBS, Job
+from cascade_worker import maintenance
+from cascade_worker.runtime import JobFn, Runtime, run_job
+from cascade_worker.scheduler import JOBS
 
 log = logging.getLogger("cascade.worker.queue")
 
@@ -92,30 +97,46 @@ def create_queue_app(
         return holder["rt"]
 
     for job in JOBS:
-        _register_job(app, job, runtime)
+        _register_job(app, job.name, job.fn, runtime, cron=cron_for_cadence(job.cadence_seconds))
+    _register_job(
+        app,
+        maintenance.JOB_NAME,
+        maintenance.run_ensure_partitions,
+        runtime,
+        cron=maintenance.CRON,
+        periodic_id="monthly",
+    )
     return app
 
 
-def _register_job(app: App, job: Job, runtime: Callable[[], Runtime]) -> None:
+def _register_job(
+    app: App,
+    name: str,
+    fn: JobFn,
+    runtime: Callable[[], Runtime],
+    *,
+    cron: str,
+    periodic_id: str = "cadence",
+) -> None:
     async def _run(timestamp: int | None = None) -> dict[str, Any]:
         # `timestamp` is injected by the periodic deferrer (cron slot, epoch seconds);
         # manual defers omit it.
-        jr = await run_job(runtime(), job.name, job.fn)
-        log.info("queue job %s ok=%s rows=%s error=%s", job.name, jr.ok, jr.rows_written, jr.error)
+        jr = await run_job(runtime(), name, fn)
+        log.info("queue job %s ok=%s rows=%s error=%s", name, jr.ok, jr.rows_written, jr.error)
         if not jr.ok:
-            raise JobFailed(f"{job.name}: {jr.error}")
-        return {"job": job.name, "ok": True, "rows_written": jr.rows_written, "timestamp": timestamp}
+            raise JobFailed(f"{name}: {jr.error}")
+        return {"job": name, "ok": True, "rows_written": jr.rows_written, "timestamp": timestamp}
 
-    _run.__name__ = job.name.replace(".", "_")
+    _run.__name__ = name.replace(".", "_")
     _run.__qualname__ = _run.__name__
     task = app.task(
-        name=job.name,
+        name=name,
         queue=QUEUE_NAME,
-        queueing_lock=job.name,
-        lock=job.name,
+        queueing_lock=name,
+        lock=name,
         retry=RETRY,
     )(_run)
-    app.periodic(cron=cron_for_cadence(job.cadence_seconds), periodic_id="cadence")(task)
+    app.periodic(cron=cron, periodic_id=periodic_id)(task)
 
 
 async def apply_queue_schema(app: App) -> str:

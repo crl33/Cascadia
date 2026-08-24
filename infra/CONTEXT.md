@@ -6,8 +6,8 @@ S3 API are the only external contracts. Build context is always the REPO ROOT
 
 | File | What it is |
 |---|---|
-| `Dockerfile` | `python:3.14-slim`, non-root user `cascade`. Layered for cache: pyprojects → third-party deps (extracted via tomllib) + prod-only runtime (psycopg, procrastinate, obstore, geoalchemy2, alembic — pinned here until package pyprojects declare them, M2) → sources → simple pip installs of the 7 local packages → geo fixtures + entrypoint. `HEALTHCHECK` probes `/system/health` in api mode only. |
-| `docker-entrypoint.sh` | Mode selector: `api` → uvicorn on `${PORT:-8000}`; `worker` → `python -m cascade_worker worker`; anything else exec'd verbatim (so `python -m cascade_worker seed` and Railway full-command start commands both work). Writes `/tmp/cascade-run-mode` for the healthcheck probe. |
+| `Dockerfile` | `python:3.14-slim`, non-root user `cascade`. Layered for cache: pyprojects → third-party deps (extracted via tomllib; no Dockerfile-only pins — psycopg[binary,pool]/obstore/geoalchemy2 are declared by cascade-core, procrastinate by cascade-worker; alembic is deliberately absent, migrations run from a repo checkout via `scripts/migrate.sh`) → sources → simple pip installs of the 7 local packages → geo fixtures + entrypoint. `HEALTHCHECK` probes `/system/health` in api and all modes. |
+| `docker-entrypoint.sh` | Mode selector: `api` → uvicorn on `${PORT:-8000}`; `worker` → `python -m cascade_worker worker`; `all` → api + worker as supervised siblings — if EITHER exits, the other is drained with SIGTERM and the container exits non-zero so the platform restart policy revives the pair (SIGTERM/SIGINT forwarded to both for graceful drain); anything else exec'd verbatim (so `python -m cascade_worker seed` and Railway full-command start commands both work). Writes `/tmp/cascade-run-mode` for the healthcheck probe. |
 | `container-healthcheck.py` | Stdlib probe: GET `/system/health` when mode is api/uvicorn, exit 0 otherwise. Railway ignores it (uses its own Healthcheck Path). |
 | `docker-compose.dev.yml` | Local parity: `postgis` (postgis/postgis:18-3.6, host 127.0.0.1:5433, named volume at `/var/lib/postgresql` — the pg18 mount point), `api` (127.0.0.1:8000) and `worker` built from `Dockerfile`, env from `../.env` (optional) + in-network `CASCADE_DB_URL`, gated on postgis health. All ports loopback-only. Clashes with a standalone `cascadia-pg` on 5433 — stop one. |
 | `.env.example` | The environment contract (no secrets, placeholders only). Every variable the containers read; `POSTGRES_PASSWORD` is compose-dev-only. |
@@ -44,7 +44,7 @@ When stub fixtures change, run `scripts/sync-pages-fixtures.sh` so `functions/fi
 
 | | |
 |---|---|
-| Compute | Railway project `affectionate-stillness` (rename in UI if desired), service `papsukkal-backend`, env `production` — ONE container running api + worker (`sh -c "python -m cascade_worker worker & exec uvicorn ..."`), built from `infra/Dockerfile` (`RAILWAY_DOCKERFILE_PATH`) |
+| Compute | Railway project `affectionate-stillness` (rename in UI if desired), service `papsukkal-backend`, env `production` — ONE container running api + worker — start command should be the entrypoint's `all` mode (supervised siblings; the container exits non-zero when either process dies so Railway restarts the pair — the previous `sh -c "python -m cascade_worker worker & exec uvicorn ..."` left the API serving with ingestion silently stopped when the worker died), built from `infra/Dockerfile` (`RAILWAY_DOCKERFILE_PATH`) |
 | Public URL | https://papsukkal-backend-production.up.railway.app (proxied same-origin via the Pages gateway at cascadia.papsukkal.com) |
 | Database | Neon `cascadia-papsukkal` (PG 18, PostGIS 3.6, `us-west-2`); API/worker use the pooled URL, the queue uses the DIRECT URL (`CASCADE_QUEUE_DB_URL`) |
 | Raw archive | R2 bucket `cascadia-raw` (`CASCADE_OBJECT_STORE=s3`), content-addressed sha256 keys |

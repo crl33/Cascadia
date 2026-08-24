@@ -12,7 +12,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from cascade_contracts import SceneSummary
 from cascade_core.freshness import compute_freshness
 from cascade_core.knowledge import Knowledge, as_known_at
-from cascade_core.registry import PRODUCT_NWPS_FORECAST, PRODUCT_NWPS_THRESHOLDS, PRODUCT_USGS_IV
+from cascade_core.registry import (
+    PRODUCT_NWPS_FORECAST,
+    PRODUCT_NWPS_THRESHOLDS,
+    PRODUCT_USGS_IV,
+)
 from cascade_core.timeutils import parse_iso, utcnow
 from cascade_hydrology.assemble import basin_envelope, river_envelope
 

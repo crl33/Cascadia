@@ -8,4 +8,4 @@ for pkg in packages/contracts packages/core packages/providers/usgs packages/pro
   "$PIP" install -q -e "$ROOT/$pkg"
 done
 "$PIP" install -q -e "$ROOT[dev]"
-echo "installed: contracts core providers/usgs providers/nwps hydrology api worker"
+echo "installed: contracts core providers/usgs providers/nwps hydrology api worker (+dev tools incl. import-linter, alembic — run \`.venv/bin/lint-imports\` for the architecture contracts)"

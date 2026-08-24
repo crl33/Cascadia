@@ -16,7 +16,12 @@ import sys
 from cascade_core.db import create_schema
 from cascade_core.seed import seed_all
 from cascade_core.settings import Settings
-from cascade_worker.queue import apply_queue_schema, create_queue_app, queue_status, run_worker
+from cascade_worker.queue import (
+    apply_queue_schema,
+    create_queue_app,
+    queue_status,
+    run_worker,
+)
 from cascade_worker.runtime import Runtime
 from cascade_worker.scheduler import run_forever, run_once
 

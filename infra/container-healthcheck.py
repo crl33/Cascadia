@@ -1,5 +1,5 @@
-"""Docker HEALTHCHECK probe. In api mode, GET /system/health on the local
-port and require HTTP 200. In any other mode (worker, one-shot commands)
+"""Docker HEALTHCHECK probe. In api and all modes, GET /system/health on the
+local port and require HTTP 200. In any other mode (worker, one-shot commands)
 exit 0 — there is no HTTP server to probe. Stdlib only."""
 import os
 import sys
@@ -11,7 +11,7 @@ try:
 except OSError:
     mode = ""
 
-if mode != "api" and not mode.startswith("uvicorn"):
+if mode not in ("api", "all") and not mode.startswith("uvicorn"):
     sys.exit(0)
 
 port = os.environ.get("PORT", "8000")

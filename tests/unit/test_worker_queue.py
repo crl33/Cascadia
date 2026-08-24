@@ -1,13 +1,17 @@
 """Queue app: cron derivation, conninfo conversion, task registration (locks, retry, periodic),
-defer dedupe via queueing_lock, and the run_job wrap contract. Offline: InMemoryConnector only."""
+defer dedupe via queueing_lock, the run_job wrap contract, and the partition-maintenance
+task's registration/window math. Offline: InMemoryConnector only."""
 
 from __future__ import annotations
+
+from datetime import date
 
 import pytest
 from procrastinate import exceptions
 from procrastinate.testing import InMemoryConnector
 
 from cascade_core.settings import Settings
+from cascade_worker import maintenance
 from cascade_worker import queue as q
 from cascade_worker.scheduler import JOBS
 
@@ -56,7 +60,25 @@ def test_tasks_registered_with_locks_retry_and_cron() -> None:
         "usgs.fetch_iv": "*/15 * * * *",
         "nwps.fetch_forecast": "*/30 * * * *",
         "nwps.fetch_thresholds": "10 */6 * * *",
+        "maintenance.ensure_observation_partitions": "3 0 1 * *",
     }
+
+
+def test_partition_maintenance_task_registered_with_monthly_cron() -> None:
+    app = q.create_queue_app(PG_SETTINGS, connector=InMemoryConnector())
+    task = app.tasks[maintenance.JOB_NAME]
+    assert task.queueing_lock == maintenance.JOB_NAME  # never two queued instances
+    assert task.lock == maintenance.JOB_NAME  # never two running instances
+    assert task.queue == q.QUEUE_NAME
+    assert task.retry_strategy is not None
+    crons = {name: pt.cron for (name, _), pt in app.periodic_registry.periodic_tasks.items()}
+    assert crons[maintenance.JOB_NAME] == "3 0 1 * *"  # 00:03 UTC, 1st of the month
+
+
+def test_month_window_spans_current_month_through_13_ahead() -> None:
+    assert maintenance.month_window(date(2026, 8, 24)) == (date(2026, 8, 1), date(2027, 9, 1))
+    assert maintenance.month_window(date(2026, 12, 31)) == (date(2026, 12, 1), date(2028, 1, 1))  # year rollover
+    assert maintenance.month_window(date(2027, 1, 1)) == (date(2027, 1, 1), date(2028, 2, 1))
 
 
 async def test_defer_works_and_queueing_lock_dedupes() -> None:

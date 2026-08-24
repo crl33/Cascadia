@@ -46,15 +46,12 @@ for p in paths:
 print("\n".join(sorted(deps)))
 PY
 
-# Third-party deps + production-only runtime (PostgreSQL driver, job queue,
-# object store, migrations). The second group is pinned here until the package
-# pyprojects declare them (M2); keep the floors in sync with the repo venv.
-RUN pip install -r /tmp/requirements-thirdparty.txt \
-    "psycopg[binary,pool]>=3.2" \
-    "procrastinate>=3.9" \
-    "obstore>=0.11" \
-    "geoalchemy2>=0.20" \
-    "alembic>=1.19"
+# Everything the runtime needs is declared by the pyprojects above — no
+# Dockerfile-only pins (dedrift 2026-08-24): psycopg[binary,pool] and obstore
+# live in cascade-core, procrastinate in cascade-worker, geoalchemy2 in
+# cascade-core. alembic is intentionally absent: migrations run from a repo
+# checkout (scripts/migrate.sh), never from this image.
+RUN pip install -r /tmp/requirements-thirdparty.txt
 
 # --- layer 2: local sources + hash-free simple installs ----------------------
 COPY packages/ packages/
@@ -87,7 +84,7 @@ ENV CASCADE_GEO_DIR=/app/tests/fixtures/geo \
 
 EXPOSE 8000
 
-# api mode: probe /system/health on ${PORT:-8000}; worker and one-shot modes:
+# api/all modes: probe /system/health on ${PORT:-8000}; worker and one-shot modes:
 # the probe reads /tmp/cascade-run-mode and exits 0 (nothing to probe).
 HEALTHCHECK --interval=30s --timeout=6s --start-period=15s --retries=3 \
     CMD ["python", "/usr/local/bin/container-healthcheck.py"]

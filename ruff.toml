@@ -1,0 +1,30 @@
+# Ruff configuration for Cascadia Papsukkal V2 (used by CI: .github/workflows/ci.yml).
+# Default lenient rule set (E4/E7/E9/F) over all first-party Python; import sorting (I)
+# is enforced only on the cascade packages (packages/* and apps/api, apps/worker).
+target-version = "py312"
+
+# v1/ is a read-only historical prototype; functions/ and apps/web are JavaScript/TypeScript;
+# data/ holds local spike artifacts. (.venv, node_modules, dist etc. are default-excluded.)
+extend-exclude = ["v1", "functions", "apps/web", "data"]
+
+[lint]
+select = ["E4", "E7", "E9", "F", "I"]
+
+[lint.per-file-ignores]
+# Import sorting only for the cascade packages; everywhere else keeps the lenient default.
+"!{packages,apps}/**" = ["I"]
+# Operational one-off scripts and live canaries keep their compact one-line style
+# (multiple imports/statements per line). Correctness rules (E9, F) still apply.
+"scripts/*.py" = ["E401", "E701", "E702"]
+"tests/canaries/*.py" = ["E401", "E701", "E702"]
+
+[lint.isort]
+known-first-party = [
+  "cascade_contracts",
+  "cascade_core",
+  "cascade_hydrology",
+  "cascade_providers_usgs",
+  "cascade_providers_nwps",
+  "cascade_api",
+  "cascade_worker",
+]

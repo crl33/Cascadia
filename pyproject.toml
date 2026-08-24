@@ -16,7 +16,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=8", "pytest-asyncio>=0.24", "respx>=0.21", "shapely>=2.0"]
+dev = ["pytest>=8", "pytest-asyncio>=0.24", "respx>=0.21", "shapely>=2.0", "import-linter>=2.3", "alembic>=1.19"]
 
 [build-system]
 requires = ["setuptools>=69"]
@@ -33,3 +33,36 @@ testpaths = ["tests", "packages/contracts/tests"]
 pythonpath = ["."]
 filterwarnings = ["error::DeprecationWarning:cascade_.*"]
 markers = ["pg: needs a live PostgreSQL/PostGIS — skipped unless CASCADE_TEST_PG_URL is set"]
+
+# Architecture contracts (CI gate: `lint-imports` from the repo root, inside the
+# venv that scripts/install-dev.sh builds). These encode docs/ARCHITECTURE.md:
+# the API is read-only assembly, contracts are pure shapes, core is the floor.
+[tool.importlinter]
+root_packages = [
+  "cascade_contracts",
+  "cascade_core",
+  "cascade_hydrology",
+  "cascade_providers_usgs",
+  "cascade_providers_nwps",
+  "cascade_api",
+  "cascade_worker",
+]
+include_external_packages = true
+
+[[tool.importlinter.contracts]]
+name = "cascade_api is read-only: no provider adapters, no job queue"
+type = "forbidden"
+source_modules = ["cascade_api"]
+forbidden_modules = ["cascade_providers_usgs", "cascade_providers_nwps", "procrastinate"]
+
+[[tool.importlinter.contracts]]
+name = "cascade_contracts is pure shapes: nothing from core/providers/hydrology"
+type = "forbidden"
+source_modules = ["cascade_contracts"]
+forbidden_modules = ["cascade_core", "cascade_hydrology", "cascade_providers_usgs", "cascade_providers_nwps"]
+
+[[tool.importlinter.contracts]]
+name = "cascade_core is the foundation: never imports the apps"
+type = "forbidden"
+source_modules = ["cascade_core"]
+forbidden_modules = ["cascade_api", "cascade_worker"]

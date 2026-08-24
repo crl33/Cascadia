@@ -12,10 +12,19 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from cascade_core.fetch import ArchivingFetcher
-from cascade_core.models import ForecastPoint, ForecastRun, ForecastValue, Station, Threshold
+from cascade_core.models import (
+    ForecastPoint,
+    ForecastRun,
+    ForecastValue,
+    Station,
+    Threshold,
+)
 from cascade_core.registry import PRODUCT_NWPS_FORECAST, PRODUCT_NWPS_THRESHOLDS
 from cascade_providers_nwps.client import fetch_gauge, fetch_stageflow
-from cascade_providers_nwps.normalize import forecast_from_stageflow, thresholds_from_gauge
+from cascade_providers_nwps.normalize import (
+    forecast_from_stageflow,
+    thresholds_from_gauge,
+)
 from cascade_providers_nwps.parser import parse_gauge, parse_stageflow
 
 JOB_THRESHOLDS = "nwps.fetch_thresholds"
