@@ -168,3 +168,16 @@ variable only, never in a file.
 `docker compose -f infra/docker-compose.dev.yml up --build` runs the same image
 against local PostGIS 18/3.6, everything bound to 127.0.0.1 (API on :8000, Postgres
 on :5433). Stop any standalone `cascadia-pg` container first — it holds port 5433.
+
+## Operational gotcha discovered 2026-08-24: Railway start command bypasses ENTRYPOINT
+
+A Railway custom start command replaces the image's ENTRYPOINT+CMD, not just CMD. A start
+command of `all` therefore executes a literal `all` binary (instant exit, deployment FAILED
+with an empty runtime log and build logs that innocently end at "image push"). The correct
+production start command is:
+
+    /usr/local/bin/docker-entrypoint.sh all
+
+Diagnosis pattern for "build green, deploy FAILED, no runtime logs": the container command
+never executed - check the start command against the entrypoint contract before suspecting
+the registry or the healthcheck.
