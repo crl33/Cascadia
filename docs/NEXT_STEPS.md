@@ -262,3 +262,13 @@ Goal: `cascadia.papsukkal.com` shows live Skagit data with provenance, continuou
   the same job modules and an external Postgres).
 - NWS/USGS endpoint changes (the legacy IV degradation window has started; the OGC API is v0).
 - HEFS API withdrawal (experimental) — Phase 5 would fall back to NWM ensembles only.
+
+> **Top P4 item — `/viz/basins` latency (measured 2026-08-25).** The endpoint computes three
+> surfaces for six basins and takes **21.8 s** in production (a single basin's state: 4.6 s;
+> `/system/health`: 1.9 s). It exceeded the gateway's 20 s abort the moment P3 landed and
+> returned 503; the gateway backstop was raised to 60 s, which unblocks the page without
+> addressing the cause. The cost is per basin and linear, so it is round trips, not compute:
+> each basin re-reads thresholds, runs, the climatology ladder and the member series
+> individually. Fix in the API (batch the per-basin reads into set-based queries, and cache the
+> assembled envelope until the next ingest — the inputs only change every 6–12 h), not by
+> raising timeouts again.
