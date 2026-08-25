@@ -263,12 +263,35 @@ Goal: `cascadia.papsukkal.com` shows live Skagit data with provenance, continuou
 - NWS/USGS endpoint changes (the legacy IV degradation window has started; the OGC API is v0).
 - HEFS API withdrawal (experimental) — Phase 5 would fall back to NWM ensembles only.
 
-> **Top P4 item — `/viz/basins` latency (measured 2026-08-25).** The endpoint computes three
-> surfaces for six basins and takes **21.8 s** in production (a single basin's state: 4.6 s;
-> `/system/health`: 1.9 s). It exceeded the gateway's 20 s abort the moment P3 landed and
-> returned 503; the gateway backstop was raised to 60 s, which unblocks the page without
-> addressing the cause. The cost is per basin and linear, so it is round trips, not compute:
-> each basin re-reads thresholds, runs, the climatology ladder and the member series
-> individually. Fix in the API (batch the per-basin reads into set-based queries, and cache the
-> assembled envelope until the next ingest — the inputs only change every 6–12 h), not by
-> raising timeouts again.
+> **Top P4 item — `/viz/basins` latency, diagnosed with numbers (2026-08-25).**
+>
+> | measurement | value |
+> |---|---|
+> | production `/viz/basins` | 21.8 s (18.4 s after a redeploy; variance, not a fix) |
+> | production `/basins/{id}/state` (one basin) | 3.8–4.6 s |
+> | production `/system/health` | 1.7–1.9 s |
+> | local `basin_envelope` for all six basins | **2.67 s** |
+> | queries issued by `/viz/basins` | **120** (92 distinct, 28 exact repeats) |
+> | implied per-query round trip: production vs local | **176 ms vs 14 ms** |
+>
+> It is not compute — the same work takes 2.67 s locally. It is 120 round trips against a
+> database roughly 150–175 ms away. Query mix: `derived_feature` 47, `observation` 18,
+> `forecast_run` 17, `station` 12, `forecast_value` 12, `forecast_point` 6, `threshold` 6.
+>
+> Co-location was tried and does NOT work through the API: `serviceInstanceUpdate` accepts a
+> `region` and returns `true`, but the service instance still reports `region: null` and a
+> `deploymentRedeploy` does not relocate it. Setting the region in the Railway dashboard (to an
+> Oregon region, matching Neon's `us-west-2`) is the cheapest available win and is worth trying
+> by hand — at ~15 ms per query the present 120 queries would cost ~1.8 s.
+>
+> The durable fix is to stop issuing 120 queries: batch the per-basin reads into set-based
+> queries (one `derived_feature` read for all six basins rather than 47, likewise runs and
+> observations), which is worth doing whatever the region says — at 176 ms, 15 queries is ~4.5 s
+> and at 15 ms it is sub-second. Request-scoped memoisation inside `Knowledge` would remove only
+> the 28 exact repeats and is not sufficient on its own; note that it would NOT breach the
+> "no process-local caches" rule, since `Knowledge` is built per request and its reads are
+> knowledge-time-filtered and therefore immutable for a given `as_of`.
+>
+> The Pages gateway abort was raised 20 s → 60 s so the page works meanwhile. That is a backstop
+> against a hung backend, not a latency budget.
+
