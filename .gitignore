@@ -25,6 +25,12 @@ coverage/
 data/raw/
 data/cache/
 *.grib2
+*.nc
+# ...but the checked-in test fixtures are the deterministic inputs of the offline suite and MUST
+# be versioned: the blanket rule above silently excluded them, so every NBM test passed locally
+# (the files were on disk) and errored in CI with FileNotFoundError. ~1.5 MB total.
+!tests/fixtures/**/*.grib2
+!tests/fixtures/**/*.nc
 *.grb2
 *.nc
 *.tif
