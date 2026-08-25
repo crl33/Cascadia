@@ -70,10 +70,15 @@ JOBS: tuple[Job, ...] = (
     Job(nwps_jobs.JOB_FORECAST, nwps_jobs.CADENCE_FORECAST_SECONDS, nwps_jobs.run_fetch_forecast),
     Job(usgs_jobs.JOB_NAME, usgs_jobs.CADENCE_SECONDS, usgs_jobs.run_fetch_iv),
     # --- P3 forcing: masks first, then the two NBM subsets ------------------------------
-    # 05:50 UTC: twenty minutes ahead of the 06:10 qmd slot, so a grid change is picked up
-    # before the cycle that would otherwise be refused. A no-op day costs one ~172 KB subset.
-    Job(nbm_jobs.JOB_BUILD_MASKS, 86400, _run_build_grid_masks, cron="50 5 * * *"),
-    Job(nbm_jobs.JOB_FETCH_QMD, nbm_jobs.CADENCE_QMD_SECONDS, nbm_jobs.run_fetch_qmd),
+    # 07:30 UTC: ten minutes ahead of the 07:40 qmd slot, so a grid change is picked up before
+    # the cycle that would otherwise be refused. A no-op day costs one ~172 KB subset.
+    Job(nbm_jobs.JOB_BUILD_MASKS, 86400, _run_build_grid_masks, cron="30 7 * * *"),
+    # qmd runs on the MAIN cycles only (00Z/12Z carry the 0-N day cumulative windows; 06Z/18Z do
+    # not — client.QMD_CYCLE_HOURS), and each lands about 7 h 20 m after its cycle. The derived
+    # `*/12` cron would fire at 00:10 and 12:10 UTC and always collect a cycle ~12 h old; 07:40
+    # and 19:40 collect each cycle ~20 minutes after it lands, which is the whole difference
+    # between a forcing surface that is hours stale and one that is current.
+    Job(nbm_jobs.JOB_FETCH_QMD, nbm_jobs.CADENCE_QMD_SECONDS, nbm_jobs.run_fetch_qmd, cron="40 7,19 * * *"),
     Job(nbm_jobs.JOB_FETCH_CORE_SNOWLVL, nbm_jobs.CADENCE_CORE_SNOWLVL_SECONDS, nbm_jobs.run_fetch_core_snowlvl),
     # --- P3 agreement: the independent model's ensemble at each seeded reach -------------
     Job(nwm_jobs.JOB_NAME, nwm_jobs.CADENCE_SECONDS, nwm_jobs.run_fetch_medium_range),

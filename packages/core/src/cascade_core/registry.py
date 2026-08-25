@@ -74,7 +74,7 @@ PRODUCTS: tuple[dict[str, object], ...] = (
     # PT6H / PT8H: qmd runs only for the 00/06/12/18Z cycles and lands ~7 h 20 m after the
     # cycle (design §1.1, measured). A displayed QPF percentile can legitimately be 7-13 h old
     # and the freshness badge must say so rather than the grace hiding it.
-    {"id": PRODUCT_NBM_QMD, "source_id": SRC_NBM, "label": "NBM v5.0 QPF percentiles (qmd, WA subset via NOMADS filter_blend.pl)", "variables": ["precip_accum"], "expected_cadence_seconds": 21600, "grace_seconds": 28800},
+    {"id": PRODUCT_NBM_QMD, "source_id": SRC_NBM, "label": "NBM v5.0 QPF percentiles (qmd, WA subset via NOMADS filter_blend.pl)", "variables": ["precip_accum"], "expected_cadence_seconds": 43200, "grace_seconds": 32400},  # 12-hourly: only 00Z/12Z carry the 0-N day cumulative windows (client.QMD_CYCLE_HOURS)
     # PT6H / PT8H, matching qmd — NOT the PT1H at which NOAA publishes `core`. Freshness is
     # computed against the anchor Cascade STORES, and `nbm.fetch_core_snowlvl` runs 6-hourly and
     # selects its cycle with `latest_qmd_cycle` (7.5 h latency), so the stored anchor is never
@@ -138,7 +138,7 @@ JOBS: tuple[JobSpec, ...] = (
     # freshness map. Its health is still reported — a silently failing mask build is what makes
     # every NBM basin mean read UNKNOWN (see the scheduler's JOBS docstring).
     JobSpec("nbm.build_grid_masks", "nbm", SRC_NBM, (), 86400),
-    JobSpec("nbm.fetch_qmd", "nbm", SRC_NBM, (PRODUCT_NBM_QMD,), 6 * 3600),
+    JobSpec("nbm.fetch_qmd", "nbm", SRC_NBM, (PRODUCT_NBM_QMD,), 12 * 3600),
     JobSpec("nbm.fetch_core_snowlvl", "nbm", SRC_NBM, (PRODUCT_NBM_CORE,), 6 * 3600),
     JobSpec("nwm.fetch_reach_medium_range", "nwm", SRC_NWM, (PRODUCT_NWM_MR,), 6 * 3600),
     # Builds both ladders in one pass: Cascade's own from the OGC daily record, and the USGS

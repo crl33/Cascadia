@@ -36,9 +36,13 @@ jobs:
             apps/worker/pyproject.toml
       - name: Install packages (same order as scripts/install-dev.sh)
         run: |
-          for pkg in packages/contracts packages/core packages/providers/usgs packages/providers/nwps packages/hydrology apps/api apps/worker; do
+          # Single source of truth: the same package list scripts/install-dev.sh installs, parsed
+          # from it rather than duplicated here. A hardcoded copy silently drifted when P3 added
+          # geo/awdb/nbm and CI failed on a package that had existed locally for hours.
+          for pkg in $(sed -n 's/^for pkg in \(.*\); do$/\1/p' scripts/install-dev.sh); do
             python -m pip install -q -e "$pkg"
           done
+          python -m pip install -q -e "apps/worker[grib]"
           python -m pip install -q -e ".[dev]"
           python -m pip install -q ruff import-linter
       - name: Ruff (rule set in ruff.toml)
@@ -84,9 +88,13 @@ jobs:
             apps/worker/pyproject.toml
       - name: Install packages (same order as scripts/install-dev.sh)
         run: |
-          for pkg in packages/contracts packages/core packages/providers/usgs packages/providers/nwps packages/hydrology apps/api apps/worker; do
+          # Single source of truth: the same package list scripts/install-dev.sh installs, parsed
+          # from it rather than duplicated here. A hardcoded copy silently drifted when P3 added
+          # geo/awdb/nbm and CI failed on a package that had existed locally for hours.
+          for pkg in $(sed -n 's/^for pkg in \(.*\); do$/\1/p' scripts/install-dev.sh); do
             python -m pip install -q -e "$pkg"
           done
+          python -m pip install -q -e "apps/worker[grib]"
           python -m pip install -q -e ".[dev]"
           # test_pg_migration.py shells out to `python -m alembic`; the +psycopg URL needs the
           # driver wheel. Both are now declared upstream (alembic in the root [dev] extras,

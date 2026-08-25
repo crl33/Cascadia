@@ -80,7 +80,9 @@ from cascade_providers_nbm.parser import (
 JOB_BUILD_MASKS = "nbm.build_grid_masks"
 JOB_FETCH_QMD = "nbm.fetch_qmd"
 JOB_FETCH_CORE_SNOWLVL = "nbm.fetch_core_snowlvl"
-CADENCE_QMD_SECONDS = 6 * 3600
+#: 12-hourly: only the 00Z/12Z cycles publish the 0-N day cumulative windows the 72-hour
+#: basin QPF is defined on (client.QMD_CYCLE_HOURS, measured live 2026-08-25).
+CADENCE_QMD_SECONDS = 12 * 3600
 CADENCE_CORE_SNOWLVL_SECONDS = 6 * 3600
 
 #: Where the full-resolution basin polygons live. Display-LOD geometry over-counts the Skagit

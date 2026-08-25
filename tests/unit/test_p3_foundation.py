@@ -201,7 +201,10 @@ def test_p3_product_cadences_match_the_measured_design_values() -> None:
     same job cadence and the same cycle selector make the right comparison.
     """
     by_id = {p["id"]: p for p in PRODUCTS}
-    assert (by_id[PRODUCT_NBM_QMD]["expected_cadence_seconds"], by_id[PRODUCT_NBM_QMD]["grace_seconds"]) == (21600, 28800)
+    # qmd is 12-hourly, not 6: measured live 2026-08-25, only the 00Z/12Z cycles publish the
+    # 0-2/0-3 day cumulative windows (06Z/18Z carry 0-1 day alone), so a 6-hourly cadence
+    # would call the surface late every other cycle for a file that was never coming.
+    assert (by_id[PRODUCT_NBM_QMD]["expected_cadence_seconds"], by_id[PRODUCT_NBM_QMD]["grace_seconds"]) == (43200, 32400)
     assert (by_id[PRODUCT_NBM_CORE]["expected_cadence_seconds"], by_id[PRODUCT_NBM_CORE]["grace_seconds"]) == (21600, 28800)
     assert (by_id[PRODUCT_NWM_MR]["expected_cadence_seconds"], by_id[PRODUCT_NWM_MR]["grace_seconds"]) == (21600, 28800)
     assert by_id[PRODUCT_USGS_OGC_DAILY]["expected_cadence_seconds"] == 86400

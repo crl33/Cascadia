@@ -627,7 +627,7 @@ async def test_a_stale_cycle_keeps_the_value_but_drops_the_confidence(sessions, 
         await jobs.run_fetch_qmd(session, _fetcher(tmp_path), cycle=CYCLE, horizons=(72,))
         products = await _products(session)
         basin = await session.get(Basin, "basin:skagit")
-        late = CYCLE.issued_at + timedelta(hours=20)  # past cadence (6 h) + grace (8 h)
+        late = CYCLE.issued_at + timedelta(hours=24)  # past cadence (12 h) + grace (9 h)
         out = await forcing.assess(as_known_at(session, late), basin, products, now=late)
     assert out.surface.state is SurfaceLevel.LOW and out.surface.value is not None
     assert out.surface.confidence.value == "low"
@@ -702,8 +702,15 @@ def test_the_request_is_the_url_the_design_verified() -> None:
 
 
 def test_the_latest_cycle_respects_the_measured_qmd_latency() -> None:
-    # qmd f072 landed at cycle + 7 h 20 m; at 18:00Z the 12Z cycle is not there yet.
-    assert str(client.latest_qmd_cycle(datetime(2026, 8, 24, 18, 0, tzinfo=UTC))) == "20260824T06Z"
+    """Latency AND the main-cycle rule: 06Z/18Z are never selected at all.
+
+    They publish `0-1 day` acc only — no `0-2`/`0-3 day` window — so a subset from them cannot
+    contain the field the 72-hour basin QPF is defined on (measured live 2026-08-25; see
+    `client.QMD_CYCLE_HOURS`).
+    """
+    # qmd f072 landed at cycle + 7 h 20 m; at 18:00Z the 12Z cycle is not there yet, and 06Z is
+    # not a candidate at all, so the newest usable cycle is 00Z.
+    assert str(client.latest_qmd_cycle(datetime(2026, 8, 24, 18, 0, tzinfo=UTC))) == "20260824T00Z"
     assert str(client.latest_qmd_cycle(datetime(2026, 8, 24, 20, 0, tzinfo=UTC))) == "20260824T12Z"
     assert client.latest_qmd_cycle(NOW).issued_at == CYCLE.issued_at
 
@@ -719,3 +726,29 @@ def test_the_seed_geometry_the_masks_are_built_from_is_the_full_resolution_one()
         for ring in polygon
     )
     assert vertices > 100_000, "the full-resolution geometry lost detail; masks would over-count"
+
+
+# --------------------------------------------------------------------------------------
+# the provider publishes the cumulative windows on the MAIN cycles only
+# --------------------------------------------------------------------------------------
+def test_qmd_is_only_asked_of_cycles_that_publish_the_cumulative_window() -> None:
+    """00Z/12Z carry `0-1/0-2/0-3 day` acc; 06Z/18Z carry `0-1 day` only.
+
+    Measured live 2026-08-25 over six cycles x three leads. Production found this by failing on
+    an 18Z cycle with "qmd f048 carries no 0-48 h APCP field" — the same class of error as asking
+    `core` f072 for a SNOWLVL percentile it does not publish. The fix is the same: never ask a
+    cycle for a field it cannot contain, and never sum per-day quantiles into a total (the p90 of
+    a three-day total is not the sum of three daily p90s).
+    """
+    from datetime import UTC, datetime
+
+    from cascade_providers_nbm.client import QMD_CYCLE_HOURS, latest_qmd_cycle
+
+    assert QMD_CYCLE_HOURS == (0, 12)
+    # every hour of the day selects a main cycle, never an intermediate one
+    for hour in range(24):
+        chosen = latest_qmd_cycle(datetime(2026, 8, 25, hour, 30, tzinfo=UTC))
+        assert chosen.hour in QMD_CYCLE_HOURS, f"{hour:02d}Z selected {chosen}"
+    # and it is a real cycle in the past, never a future one
+    now = datetime(2026, 8, 25, 14, 0, tzinfo=UTC)
+    assert latest_qmd_cycle(now).hour == 0  # 12Z has not landed by 14:00Z (7.5 h latency)

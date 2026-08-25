@@ -46,8 +46,29 @@ RETENTION_CLASS = "gridded-90d"
 SUFFIX = ".grib2"
 ACCEPT = "application/octet-stream"
 
-#: qmd runs only for these cycles and lands ~7 h 20 m later (design §1.1, measured).
-QMD_CYCLE_HOURS = (0, 6, 12, 18)
+#: qmd runs on all four synoptic cycles and lands ~7 h 20 m later (design §1.1, measured), but
+#: only the MAIN cycles carry the cumulative windows this surface is defined on.
+#:
+#: **Measured live 2026-08-25 across six cycles x three leads (S3 `.idx` sidecars):** 00Z and 12Z
+#: publish `0-1 day`, `0-2 day` and `0-3 day` acc; 06Z and 18Z publish `0-1 day` ONLY — their
+#: f048/f072 carry the per-day increments (`1-2 day`, `2-3 day`) and no 0-anchored window at all.
+#:
+#: | cycle | f024 | f048 | f072 |
+#: |---|---|---|---|
+#: | 00Z, 12Z | 0-1 day | 0-2 day | 0-3 day |
+#: | 06Z, 18Z | 0-1 day | (none)  | (none)  |
+#:
+#: The design measured its numbers on a 12Z cycle and generalised to all four; production found
+#: the difference the honest way, by failing on an 18Z cycle with "no 0-48 h APCP field". Asking
+#: a cycle for a field it never publishes is the same error as asking `core` f072 for SNOWLVL
+#: percentiles, and it gets the same fix: **stop asking.** The 72-hour basin QPF therefore
+#: updates twice a day, not four times.
+#:
+#: The per-day increments are NOT summed into a 72-hour total on the intermediate cycles:
+#: quantiles do not add (the p90 of a 3-day total is not the sum of three daily p90s), and
+#: inventing one would be exactly the pointwise-percentile fallacy this surface is careful to
+#: name elsewhere.
+QMD_CYCLE_HOURS = (0, 12)
 #: The 0-N day cumulative APCP windows live one per file: f024 -> 0-1 day, f048 -> 0-2 day,
 #: f072 -> 0-3 day. One file per horizon, not one file per forecast hour.
 QMD_HORIZONS_H = (24, 48, 72)

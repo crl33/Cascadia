@@ -1121,3 +1121,37 @@ and a freshness fallback that called bytes data. What remains is one route that 
 the explanation the reason sentence promises, carrying the caveats there is no room for in one
 sentence. Everything else on the list is calibration, which needs an event this sample does not
 contain.
+
+### P3.10 — Production found the eighth overclaim within an hour of deploy (2026-08-25)
+
+`nbm.fetch_qmd` failed on every attempt in production with
+`NbmParseError: field_missing: qmd f048 carries no 0-48 h APCP field`, so forcing stayed UNKNOWN
+at all six basins. `/system/health` reported it — which is finding C's fix earning its keep on
+its first day.
+
+**Measured live across six cycles × three leads (S3 `.idx` sidecars, 2026-08-25):**
+
+| cycle | f024 | f048 | f072 |
+|---|---|---|---|
+| 00Z, 12Z | `0-1 day acc` | `0-2 day acc` | `0-3 day acc` |
+| 06Z, 18Z | `0-1 day acc` | none | none |
+
+The intermediate cycles publish the per-day increments (`1-2 day`, `2-3 day`) and no 0-anchored
+window at all. The design measured its numbers on a 12Z cycle (its `1,045,326 B` for `qmd.f072`
+is exactly what a 12Z subset returns) and generalised to all four cycles; `QMD_CYCLE_HOURS` was
+`(0, 6, 12, 18)`, so half of all runs asked for a field that was never coming.
+
+**Fix.** `QMD_CYCLE_HOURS = (0, 12)`; product cadence PT6H → PT12H with grace PT9H; the job cron
+became explicit — `40 7,19 * * *` rather than the derived `10 */12 * * *`, because the arithmetic
+slot fires at 00:10/12:10 UTC and would collect a twelve-hour-old cycle every single time, while
+each cycle lands about 7 h 20 m after its hour. The per-day increments are NOT summed into a
+72-hour total: quantiles do not add, and the p90 of a three-day total is not the sum of three
+daily p90s.
+
+**Verified live after the fix** (cycle 20260824T12Z): `0-24`, `0-48` and `0-72` cumulative windows
+all present; bytes/cycle **1,816,540 — the design's estimate to the byte**. Ingest cost halves,
+since two cycles a day are fetched instead of four.
+
+Same family as the SNOWLVL-at-f072 failure: asking a provider for a field it does not publish at
+that cycle. The lesson both times is that a "field_missing" parse error is usually a request
+error, and the honest fix is to stop asking.

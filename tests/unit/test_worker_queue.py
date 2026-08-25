@@ -73,8 +73,8 @@ def test_tasks_registered_with_locks_retry_and_cron() -> None:
         "nwps.fetch_thresholds": "10 */6 * * *",
         # P3 (design §6 stage 2). The mask build owns an explicit slot 20 min ahead of the qmd
         # fetch that depends on it; the climatology is annual and fires on 1 January only.
-        "nbm.build_grid_masks": "50 5 * * *",
-        "nbm.fetch_qmd": "10 */6 * * *",
+        "nbm.build_grid_masks": "30 7 * * *",
+        "nbm.fetch_qmd": "40 7,19 * * *",  # main cycles only, ~20 min after each lands
         "nbm.fetch_core_snowlvl": "10 */6 * * *",
         "nwm.fetch_reach_medium_range": "10 */6 * * *",
         "usgs.build_climatology": "30 4 1 1 *",
@@ -98,11 +98,19 @@ def test_job_order_puts_each_producer_before_its_consumer() -> None:
 
 
 def test_the_mask_build_cron_precedes_a_qmd_slot() -> None:
-    """The pinned mask slot has to be EARLIER in the day than a qmd slot, not merely different."""
+    """The pinned mask slot has to be EARLIER in the day than a qmd slot, not merely different.
+
+    Both crons are explicit now: qmd runs on the main cycles only and each lands ~7 h 20 m after
+    its cycle, so the slots follow the provider (07:40 / 19:40 UTC) rather than the arithmetic
+    `*/12`, which would have collected a twelve-hour-old cycle every time.
+    """
     by_name = {job.name: job for job in JOBS}
-    minute, hour = by_name["nbm.build_grid_masks"].cron.split()[:2]
-    assert (int(hour), int(minute)) < (6, 10)  # the 06:10 qmd slot
-    assert by_name["nbm.fetch_qmd"].cron is None  # the qmd job takes its slot from its cadence
+    mask_minute, mask_hour = by_name["nbm.build_grid_masks"].cron.split()[:2]
+    qmd_minute, qmd_hours = by_name["nbm.fetch_qmd"].cron.split()[:2]
+    first_qmd_hour = min(int(h) for h in qmd_hours.split(","))
+    assert (int(mask_hour), int(mask_minute)) < (first_qmd_hour, int(qmd_minute))
+    # and the qmd slots sit after the measured landing time of the cycles they collect
+    assert sorted(int(h) for h in qmd_hours.split(",")) == [7, 19]
 
 
 def test_partition_maintenance_task_registered_with_monthly_cron() -> None:
