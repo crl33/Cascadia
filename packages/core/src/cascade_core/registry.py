@@ -186,3 +186,18 @@ EXPECTED_PRODUCTS: tuple[str, ...] = tuple(str(p["id"]) for p in PRODUCTS if str
 #: been produced (measured 2026-08-25, pg-migration-verification-2026-08-24 §P3.9). A product that
 #: is supposed to yield values and has none reads `missing`, which is the truth.
 METADATA_ONLY_PRODUCTS: frozenset[str] = frozenset({PRODUCT_AWDB_STATIONS})
+
+#: Products whose values are **valid until superseded** rather than sampled on a cadence: an
+#: official flood threshold is true until NWS changes it, which happens perhaps once a year.
+#: Their rows are written only on change (append-only, never a duplicate), so the newest row is
+#: months old on a healthy system and value-age says nothing about whether the information is
+#: current — it says how long the value has been stable, which is not the same question.
+#:
+#: For these, freshness is "when did we last CHECK", so the anchor merges the newest value row
+#: with the newest successful fetch of the product. The failure mode the `METADATA_ONLY_PRODUCTS`
+#: comment warns about — bytes arriving while the parse step fails, reading `current` on the
+#: strength of unparsed bytes — is covered here by the other half of `/system/health`: a parse
+#: failure fails the JOB, and every registered job is now accounted for. Without this, thresholds
+#: read `stale` forever and `/system/health` answers `degraded` on a perfectly healthy system,
+#: which is the same disease as answering `ok` on a broken one: a signal nobody can act on.
+VALID_UNTIL_SUPERSEDED_PRODUCTS: frozenset[str] = frozenset({PRODUCT_NWPS_THRESHOLDS})

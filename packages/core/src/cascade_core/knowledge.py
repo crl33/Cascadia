@@ -26,7 +26,12 @@ from cascade_core.models import (
     Station,
     Threshold,
 )
-from cascade_core.registry import METADATA_ONLY_PRODUCTS, PRODUCTS, SOURCES
+from cascade_core.registry import (
+    METADATA_ONLY_PRODUCTS,
+    PRODUCTS,
+    SOURCES,
+    VALID_UNTIL_SUPERSEDED_PRODUCTS,
+)
 from cascade_core.timeutils import to_utc
 
 # Which products are an OFFICIAL forecast, resolved from the registry rather than listed here
@@ -279,6 +284,16 @@ class Knowledge:
                 if pid is None:
                     continue
                 have = anchors.get(pid)
+                if kind == "raw_artifact" and pid in VALID_UNTIL_SUPERSEDED_PRODUCTS and have is not None:
+                    # Valid-until-superseded: the newest value row can be months old on a healthy
+                    # system, so merge in the last successful fetch — freshness here is "when did
+                    # we last check", not "how old is the value" (registry).
+                    anchors[pid] = FreshnessAnchor(
+                        kind=f"{have.kind}+{kind}",
+                        valid_time=newer(have.valid_time, fix(v)),
+                        retrieved_at=newer(have.retrieved_at, fix(r)),
+                    )
+                    continue
                 if kind == "raw_artifact" and (have is not None or pid not in METADATA_ONLY_PRODUCTS):
                     # Value rows win, and for a product that is SUPPOSED to yield values, having
                     # none is `missing` — not `current` on the strength of bytes that never

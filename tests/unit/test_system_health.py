@@ -312,3 +312,50 @@ async def test_replay_before_any_ingestion_is_unknown_with_reasons(db) -> None:
     assert h["status"] == "unknown"
     assert {j["state"] for j in h["jobs"].values()} == {"pending"}
     assert all(f["state"] == "missing" for f in h["freshness"].values())
+
+
+async def test_a_threshold_that_has_not_changed_is_current_not_stale(tmp_path) -> None:
+    """Valid-until-superseded: freshness is "when did we last check", not "how old is the value".
+
+    NWS changes an official flood threshold perhaps once a year, and rows are written only on
+    change, so on a healthy system the newest threshold row is months old. Anchoring on value-age
+    made /system/health answer `degraded` forever — the same disease as answering `ok` on a broken
+    system: a signal nobody can act on. The parse-failure hole that argument could open is closed
+    by the other half of health: a parse failure fails the job, and every job is accounted for.
+    """
+    from datetime import timedelta
+
+    from cascade_core.db import create_schema, make_engine, make_session_factory
+    from cascade_core.knowledge import as_known_at
+    from cascade_core.models import RawArtifact, Threshold
+    from cascade_core.registry import PRODUCT_NWPS_THRESHOLDS, VALID_UNTIL_SUPERSEDED_PRODUCTS
+    from cascade_core.timeutils import utcnow
+
+    assert PRODUCT_NWPS_THRESHOLDS in VALID_UNTIL_SUPERSEDED_PRODUCTS
+    engine = make_engine(f"sqlite+aiosqlite:///{tmp_path}/h.db")
+    await create_schema(engine)
+    now = utcnow()
+    async with make_session_factory(engine)() as s:
+        long_ago = now - timedelta(days=200)
+        art = RawArtifact(sha256="c" * 64, object_key="t/x", product_id=PRODUCT_NWPS_THRESHOLDS,
+                          fetched_at=long_ago, request_url="https://example.invalid/t", bytes=1,
+                          http_status=200, content_type="application/json")
+        s.add(art)
+        await s.flush()
+        s.add(Threshold(fp_id="fp:nwps:MVEW1", product_id=PRODUCT_NWPS_THRESHOLDS, category="action",
+                        value=23.5, unit="ft", basis="stage", datum="NGVD29",
+                        source_kind="OFFICIAL_FORECAST", effective_from=long_ago,
+                        retrieved_at=long_ago, raw_artifact_id=art.id))
+        # ...and a poll ten minutes ago that found nothing changed, so it wrote no threshold row
+        s.add(RawArtifact(sha256="d" * 64, object_key="t/y", product_id=PRODUCT_NWPS_THRESHOLDS,
+                          fetched_at=now - timedelta(minutes=10), request_url="https://example.invalid/t",
+                          bytes=1, http_status=200, content_type="application/json"))
+        await s.commit()
+
+        anchors = await as_known_at(s, now).product_freshness_anchors()
+    await engine.dispose()
+
+    anchor = anchors[PRODUCT_NWPS_THRESHOLDS]
+    # the recent CHECK is what freshness reads, while the value's own age is still 200 days
+    assert anchor.retrieved_at is not None and (now - anchor.retrieved_at) < timedelta(hours=1)
+    assert "raw_artifact" in anchor.kind and "threshold" in anchor.kind
