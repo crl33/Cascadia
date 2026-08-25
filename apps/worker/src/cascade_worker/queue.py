@@ -63,13 +63,40 @@ def conninfo_from_url(url: str) -> str:
     return u.set(drivername="postgresql").render_as_string(hide_password=False)
 
 
+#: Cadences longer than a day, mapped to the calendar slot that fires that often. This is a
+#: TABLE and not arithmetic on purpose: cron cannot express "every N days" for N > 1 — `*/2` in
+#: the day-of-month field restarts its count every month — so a longer cadence has to become a
+#: calendar rule, and which rule it becomes is a decision, not a division. Minutes are staggered
+#: off :00 and off each other so the daily, monthly and annual jobs never share a slot.
+CALENDAR_CRON: dict[int, str] = {
+    7 * 86400: "20 4 * * 1",  # weekly: Monday 04:20 UTC
+    30 * 86400: "25 4 1 * *",  # monthly: the 1st at 04:25 UTC
+    365 * 86400: "30 4 1 1 *",  # annual: 1 January at 04:30 UTC
+}
+
+
 def cron_for_cadence(seconds: int) -> str:
-    """Map a job cadence to a cron string: 900 s -> ``*/15 * * * *``, 1800 s -> ``*/30``,
-    whole-hour cadences -> a fixed minute (:10, avoiding the top-of-hour stampede)."""
+    """Map a job cadence to a cron string.
+
+    900 s -> ``*/15 * * * *``; 1800 s -> ``*/30 * * * *``; whole-hour cadences that divide a day
+    -> a fixed minute (:10, avoiding the top-of-hour stampede); the calendar cadences in
+    :data:`CALENDAR_CRON` -> their calendar slot. Anything else raises, because a cadence with no
+    honest cron is a scheduling decision somebody has to make, not one to round off silently.
+
+    **The annual slot fires on 1 January and not before.** A job registered with an annual
+    cadence therefore does nothing at all between deployment and the next New Year, which for
+    ``usgs.build_climatology`` means the susceptibility surface stays UNKNOWN with the "no
+    day-of-year climatology stored" reason until the ladder is built by hand:
+    ``python -m cascade_worker run-once`` (every job) or a one-off
+    ``app.tasks["usgs.build_climatology"].defer_async()``. That is stated here rather than
+    papered over by pretending an annual job is a monthly one.
+    """
     if seconds % 60 == 0 and seconds < 3600 and 3600 % seconds == 0:
         return f"*/{seconds // 60} * * * *"
     if seconds % 3600 == 0 and (24 * 3600) % seconds == 0:
         return f"10 */{seconds // 3600} * * *"
+    if seconds in CALENDAR_CRON:
+        return CALENDAR_CRON[seconds]
     raise ValueError(f"no cron mapping for cadence {seconds}s; add one deliberately")
 
 
@@ -97,7 +124,9 @@ def create_queue_app(
         return holder["rt"]
 
     for job in JOBS:
-        _register_job(app, job.name, job.fn, runtime, cron=cron_for_cadence(job.cadence_seconds))
+        # A job may pin its own cron when its slot matters relative to another job's; otherwise
+        # the cadence decides (scheduler.Job.cron).
+        _register_job(app, job.name, job.fn, runtime, cron=job.cron or cron_for_cadence(job.cadence_seconds))
     _register_job(
         app,
         maintenance.JOB_NAME,

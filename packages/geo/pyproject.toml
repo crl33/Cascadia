@@ -1,0 +1,16 @@
+[project]
+name = "cascade-geo"
+version = "0.1.0"
+description = "Cascadia Papsukkal — basin geometry, grid projections and zonal aggregation masks (no provider code, no science)."
+requires-python = ">=3.12"
+# Deliberately dependency-free: the projection and the polygon clipping are exact and
+# small enough to own, and neither shapely/GEOS nor pyproj/PROJ has to enter the worker
+# image for six basins against one 99x142 subgrid.
+dependencies = []
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/cascade_geo"]

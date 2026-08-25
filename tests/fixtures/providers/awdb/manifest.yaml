@@ -1,0 +1,47 @@
+provider: nrcs-awdb
+design_ref: "docs/research/p3-surfaces-design-2026-08-24.md \xA72.1"
+captured:
+- file: stations_wa_sntl.json
+  url: https://wcc.sc.egov.usda.gov/awdbRestApi/services/v1/stations?stationTriplets=%2A%3AWA%3ASNTL&activeOnly=true
+  captured_at: '2026-08-24T22:07:10.128582+00:00'
+  http_status: 200
+  content_type: application/json
+  bytes: 34719
+  sha256: 76aebf1ccf7d458199c496c3b91fd515a21c754cf34f6b9f0079ad0b20a2eff5
+  notes: "REAL capture: every active Washington SNOTEL station with its HUC12, elevation\
+    \ and coordinates. The basin mapping is derived from huc[:8] against the seeded\
+    \ basin huc8 lists \u2014 never a hardcoded site list."
+- file: data_wteq_prec_puget.json
+  url: https://wcc.sc.egov.usda.gov/awdbRestApi/services/v1/data?stationTriplets=1011%3AWA%3ASNTL%2C1068%3AWA%3ASNTL%2C1069%3AWA%3ASNTL%2C1080%3AWA%3ASNTL%2C1085%3AWA%3ASNTL%2C1319%3AWA%3ASNTL%2C418%3AWA%3ASNTL%2C420%3AWA%3ASNTL%2C515%3AWA%3ASNTL%2C672%3AWA%3ASNTL%2C711%3AWA%3ASNTL%2C788%3AWA%3ASNTL%2C791%3AWA%3ASNTL%2C817%3AWA%3ASNTL%2C897%3AWA%3ASNTL%2C898%3AWA%3ASNTL%2C899%3AWA%3ASNTL%2C908%3AWA%3ASNTL%2C909%3AWA%3ASNTL%2C910%3AWA%3ASNTL%2C911%3AWA%3ASNTL%2C912%3AWA%3ASNTL%2C928%3AWA%3ASNTL%2C941%3AWA%3ASNTL%2C942%3AWA%3ASNTL%2C975%3AWA%3ASNTL%2C990%3AWA%3ASNTL%2C991%3AWA%3ASNTL%2C999%3AWA%3ASNTL&elements=WTEQ%2CPREC&duration=DAILY&beginDate=2026-08-04&endDate=2026-08-24&periodRef=END&centralTendencyType=MEDIAN&returnFlags=true
+  captured_at: '2026-08-24T22:07:14.107795+00:00'
+  http_status: 200
+  content_type: application/json
+  bytes: 93000
+  sha256: 38bb354bab9884a879f97cd0b5d4c7e7bb50abd4aec0f6cbef1b758858522e00
+  notes: "REAL capture: WTEQ (snow water equivalent) and PREC (water-year ACCUMULATED\
+    \ precipitation) for the 29 Puget-basin SNOTEL sites, 21 days, periodRef=END (the\
+    \ DAILY value dated D is the 00:00 PST reading of D+1 \u2014 DATA_SOURCES S1),\
+    \ with per-value median. Captured in late August: SWE and its median are 0.0 at\
+    \ nearly every site, which is exactly the divide-by-zero case the normalizer must\
+    \ refuse rather than fabricate a percent-of-median."
+- file: data_sms_puget.json
+  url: https://wcc.sc.egov.usda.gov/awdbRestApi/services/v1/data?stationTriplets=1011%3AWA%3ASNTL%2C1068%3AWA%3ASNTL%2C1069%3AWA%3ASNTL%2C1080%3AWA%3ASNTL%2C1085%3AWA%3ASNTL%2C1319%3AWA%3ASNTL%2C418%3AWA%3ASNTL%2C420%3AWA%3ASNTL%2C515%3AWA%3ASNTL%2C672%3AWA%3ASNTL%2C711%3AWA%3ASNTL%2C788%3AWA%3ASNTL%2C791%3AWA%3ASNTL%2C817%3AWA%3ASNTL%2C897%3AWA%3ASNTL%2C898%3AWA%3ASNTL%2C899%3AWA%3ASNTL%2C908%3AWA%3ASNTL%2C909%3AWA%3ASNTL%2C910%3AWA%3ASNTL%2C911%3AWA%3ASNTL%2C912%3AWA%3ASNTL%2C928%3AWA%3ASNTL%2C941%3AWA%3ASNTL%2C942%3AWA%3ASNTL%2C975%3AWA%3ASNTL%2C990%3AWA%3ASNTL%2C991%3AWA%3ASNTL%2C999%3AWA%3ASNTL&elements=SMS%3A%2A&duration=DAILY&beginDate=2026-08-18&endDate=2026-08-24&periodRef=END&centralTendencyType=MEDIAN&returnFlags=true
+  captured_at: '2026-08-24T22:07:16.640845+00:00'
+  http_status: 200
+  content_type: application/json
+  bytes: 19281
+  sha256: d2de732e43b63c6deaa88e3a72cab94082af4ac72a49947000be20c6aa67be28
+  notes: "NEGATIVE RESULT, captured on purpose (design \xA72.1, \xA72.6, \xA77): SNOTEL\
+    \ soil moisture for the same sites. No `median` key at all even with centralTendencyType=MEDIAN,\
+    \ inconsistent depth sets per site, qcFlag 'N' (no profile) at most sites, and\
+    \ physically incoherent profiles. There is no honest way to turn this into a basin\
+    \ soil-saturation percentile, so soil_saturation_percentile ships with value null\
+    \ and an unavailability provenance. tests/unit/test_susceptibility.py asserts\
+    \ against THESE bytes, so a future 'let us just use SMS' change has to argue with\
+    \ the data."
+derived:
+- file: data_missing_field.json
+  derived_from: data_wteq_prec_puget.json
+  sha256: 9e374f74d8f133825a6a5103704ec6d50136aca64199abd4fedcbc988899614b
+  bytes: 6013
+  notes: elementCode removed from the first stationElement -> ParseError.

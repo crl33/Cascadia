@@ -60,11 +60,42 @@ class Provenanced(StrictModel):
 
 
 class SurfaceState(Provenanced):
-    """One of the risk surfaces (docs/HYDROLOGY.md §3–§6)."""
+    """One of the risk surfaces (docs/HYDROLOGY.md §3–§6).
+
+    `state` is the banded answer, `value` is the quantity it was banded from, and `spread`
+    names the uncertainty points that came with that quantity. **None of `score`, `value` or
+    `spread` is ever a probability.** Where `experimental` is true the surface is a Cascadia
+    Papsukkal derivation whose method has not passed hindcast evaluation, so its number is
+    EXPERIMENTAL by definition: it carries a `method_id` through `prov`, it is uncalibrated,
+    and no client may render it as a chance of anything (ADR-0008, docs/DATA_DOCTRINE.md §9).
+    A threshold-crossing probability may only ever come from counted model members, never
+    from here. `state = unknown` with a specific `reason` is a legitimate, correct answer;
+    a fabricated value is not.
+    """
 
     state: SurfaceLevel
     horizon_h: int | None = Field(default=None, ge=0)
-    score: float | None = Field(default=None, ge=0, le=1, description="experimental index, never a probability")
+    score: float | None = Field(
+        default=None, ge=0, le=1,
+        description="EXPERIMENTAL index in [0,1] from the surface's own band table; never a probability",
+    )
+    value: Quantity | None = Field(
+        default=None,
+        description=(
+            "the headline quantity `state` was banded from, in its own unit (e.g. 72-h "
+            "basin-mean QPF in mm, or a day-of-year flow percentile in pct). EXPERIMENTAL "
+            "whenever `experimental` is true; never a probability"
+        ),
+    )
+    spread: dict[str, float] | None = Field(
+        default=None,
+        description=(
+            "named spread points for `value`, in the SAME unit, e.g. {'p10': 88.0, 'p90': "
+            "211.0}. Keys name the method's own statistic and nothing more: a model's "
+            "pointwise percentile is not a basin-scale percentile and must be labeled as "
+            "what it is. Never a probability"
+        ),
+    )
     confidence: ConfidenceLabel = ConfidenceLabel.UNKNOWN
     experimental: bool = False
     reason: str | None = Field(default=None, description="why UNKNOWN, when it is")

@@ -1,0 +1,108 @@
+provider: nwm-via-nwps
+# NWM v3.1 medium-range ensemble served as JSON by NWPS `/reaches/{reachId}/streamflow`.
+# Source src:nwm-v3.1 (MODELED) — the SAME HOST as the official-forecast fixtures in
+# ../nwps, and a different source: nothing here is an NWRFC forecast.
+# Captured with User-Agent CascadiaPapsukkal/0.1, sequentially, 1.5 s apart.
+captured:
+- file: medium_range_RNTW1.json
+  url: https://api.water.noaa.gov/nwps/v1/reaches/24537890/streamflow?series=medium_range
+  captured_at: '2026-08-24T22:05:36+00:00'
+  http_status: 200
+  content_type: application/json
+  bytes: 161060
+  sha256: c79706cd9eabba7eed81dbbe81011ffe2f1a01403c09e36a66d720f5ae32b5ed
+  notes: 'RNTW1 (Cedar River at Renton), reach 24537890. referenceTime 2026-08-24T12:00:00Z; units ft³/s; mean+6 members; points {"mean": 240, "member1": 240, "member2": 204, "member3": 204, "member4": 204, "member5": 204, "member6": 204}.'
+- file: medium_range_CRNW1.json
+  url: https://api.water.noaa.gov/nwps/v1/reaches/23970199/streamflow?series=medium_range
+  captured_at: '2026-08-24T22:05:36+00:00'
+  http_status: 200
+  content_type: application/json
+  bytes: 159758
+  sha256: 18a4dad5ad2aa1e4b7fbd0f4e56dd23e24ffe94387f2e850fcca356bbbdf8ec7
+  notes: 'CRNW1 (Snoqualmie River near Carnation), reach 23970199. referenceTime 2026-08-24T12:00:00Z; units ft³/s; mean+6 members; points {"mean": 240, "member1": 240, "member2": 204, "member3": 204, "member4": 204, "member5": 204, "member6": 204}.'
+- file: medium_range_MVEW1.json
+  url: https://api.water.noaa.gov/nwps/v1/reaches/24270288/streamflow?series=medium_range
+  captured_at: '2026-08-24T22:05:36+00:00'
+  http_status: 200
+  content_type: application/json
+  bytes: 157346
+  sha256: 7303bf1bcddc228bb6dfdac9882b06c136b465a16fce4b6a668a4263fe032d40
+  notes: 'MVEW1 (Skagit River near Mount Vernon), reach 24270288. referenceTime 2026-08-24T12:00:00Z; units ft³/s; mean+6 members; points {"mean": 240, "member1": 240, "member2": 204, "member3": 204, "member4": 204, "member5": 204, "member6": 204}.'
+- file: medium_range_NKSW1.json
+  url: https://api.water.noaa.gov/nwps/v1/reaches/23955772/streamflow?series=medium_range
+  captured_at: '2026-08-24T22:05:36+00:00'
+  http_status: 200
+  content_type: application/json
+  bytes: 160264
+  sha256: 055096a808c237b7b23691af7e0fe167244b352e94cac04125215f68c1445b12
+  notes: 'NKSW1 (Nooksack River at Ferndale), reach 23955772. referenceTime 2026-08-24T12:00:00Z; units ft³/s; mean+6 members; points {"mean": 240, "member1": 240, "member2": 204, "member3": 204, "member4": 204, "member5": 204, "member6": 204}.'
+- file: medium_range_AUBW1.json
+  url: https://api.water.noaa.gov/nwps/v1/reaches/23977634/streamflow?series=medium_range
+  captured_at: '2026-08-24T22:05:36+00:00'
+  http_status: 200
+  content_type: application/json
+  bytes: 159691
+  sha256: 91882b6ff1bb916e496e105c22431208064117ef81b840bc4e2e14f4648ba3f2
+  notes: 'AUBW1 (Green River near Auburn), reach 23977634. referenceTime 2026-08-24T12:00:00Z; units ft³/s; mean+6 members; points {"mean": 240, "member1": 240, "member2": 204, "member3": 204, "member4": 204, "member5": 204, "member6": 204}.'
+- file: medium_range_WRAW1.json
+  url: https://api.water.noaa.gov/nwps/v1/reaches/23981235/streamflow?series=medium_range
+  captured_at: '2026-08-24T22:05:36+00:00'
+  http_status: 200
+  content_type: application/json
+  bytes: 159868
+  sha256: bff78bc14a62f46eac80f3f0401f17f6170baa1a8f0d3a8a9be2bac9fe4cd55a
+  notes: 'WRAW1 (White River at R St near Auburn), reach 23981235. referenceTime 2026-08-24T12:00:00Z; units ft³/s; mean+6 members; points {"mean": 240, "member1": 240, "member2": 204, "member3": 204, "member4": 204, "member5": 204, "member6": 204}.'
+derived:
+- file: medium_range_AUBW1_diverged.json
+  derived_from: medium_range_AUBW1.json
+  bytes: 42812
+  sha256: f6f35b9b06f857a2366122aecf365887831ba5cc9642ea8fd20308fd14ec3f62
+  notes: >-
+    Truncated to 80 points/series and rewritten to a 300 cfs baseline with one crest per member:
+    member1..6 = 5000/8000/9500/11000/13000/15000 cfs at 2-hourly offsets, provider mean 10250
+    cfs. The live payload cannot test member spread (in late August every member is identical
+    inside the first 72 h), so this is the fixture for the lower-median rule (member3, 9500 cfs)
+    and for the member fraction against AUBW1's official FLOW thresholds (1 of 6 members reaches
+    major).
+- file: medium_range_MVEW1_short.json
+  derived_from: medium_range_MVEW1.json
+  bytes: 48307
+  sha256: d94068f1c387b1db0f73306fe4b99ef9930bec0d363c7a929b3a7ba3bacaea2e
+  notes: >-
+    Truncated to 80 points/series; provider values untouched. 80 > 72 keeps the hazard-window
+    truncation (72 stored values) under test without a 157 KB file.
+- file: medium_range_MVEW1_no_series.json
+  derived_from: medium_range_MVEW1_short.json
+  bytes: 615
+  sha256: 20bbe271d435bcb3f3cce1bd94b6b1592a15bb20f30167485e85e26df6ee2ae5
+  notes: >-
+    mediumRange: {} — the shape NWPS returns for a series a reach does not carry. Must parse to
+    an ensemble with no mean and no members ('no NWM cycle known'), never to agreement.
+- file: medium_range_MVEW1_mixed_cycle.json
+  derived_from: medium_range_MVEW1_short.json
+  bytes: 48307
+  sha256: 2f9591b374f7e730dfff99caa3132f7aae68fd2b24b1bc404c47442d196c2405
+  notes: >-
+    member3.referenceTime moved to 18Z while the rest stay 12Z -> NormalizeError: a mixed-cycle
+    ensemble is a fabricated ensemble.
+- file: medium_range_MVEW1_bad_units.json
+  derived_from: medium_range_MVEW1_short.json
+  bytes: 48306
+  sha256: 746ad6ed7d2a929b44aaf92bc822cc8a7ebb27b9a3908302f7e23bd7f35c811f
+  notes: >-
+    member2.units = 'm³/s' -> ParseError. The parser refuses an unrecognised unit spelling
+    instead of converting it (ADR-0009).
+- file: medium_range_MVEW1_sentinel.json
+  derived_from: medium_range_MVEW1_short.json
+  bytes: 48269
+  sha256: f496a6ac4daffb65fa8d98f56e3efe1256c5b9e605e5fe3c6c4c24a2d5c7ddc0
+  notes: >-
+    mean.data[0..2].flow and member1.data[5].flow = -9999 -> None, dropped from the window;
+    never 0.
+- file: malformed.json
+  derived_from: medium_range_MVEW1_short.json
+  bytes: 2048
+  sha256: 9f8bab26d618e81931defc4ca0ad7f0e86f990182373a76dde5c25f0c627e2d6
+  notes: >-
+    Truncated JSON -> ParseError.
+rebuild: .venv/bin/python tests/fixtures/providers/nwm-via-nwps/derive.py

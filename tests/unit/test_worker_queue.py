@@ -29,6 +29,17 @@ def test_cron_for_cadence_maps_the_known_cadences() -> None:
         q.cron_for_cadence(7 * 3600)  # does not divide the day
 
 
+def test_calendar_cadences_map_to_calendar_slots_not_to_arithmetic() -> None:
+    """Cron cannot say "every N days" for N > 1, so the long cadences are a table, not division."""
+    assert q.cron_for_cadence(7 * 86400) == "20 4 * * 1"  # weekly: Monday
+    assert q.cron_for_cadence(30 * 86400) == "25 4 1 * *"  # monthly: the 1st
+    assert q.cron_for_cadence(365 * 86400) == "30 4 1 1 *"  # annual: 1 January
+    # Staggered minutes: a daily, monthly and annual job never contend for one slot.
+    assert len({c.split()[0] for c in q.CALENDAR_CRON.values()} | {"10"}) == 4
+    with pytest.raises(ValueError, match="no cron mapping"):
+        q.cron_for_cadence(90 * 86400)  # a quarter is not in the table; decide it deliberately
+
+
 def test_conninfo_from_url_strips_the_sqlalchemy_driver() -> None:
     assert q.conninfo_from_url("postgresql+psycopg://postgres:dev@127.0.0.1:5433/cascadia") == "postgresql://postgres:dev@127.0.0.1:5433/cascadia"
     # query params (sslmode) and encoded passwords survive the conversion
@@ -60,8 +71,38 @@ def test_tasks_registered_with_locks_retry_and_cron() -> None:
         "usgs.fetch_iv": "*/15 * * * *",
         "nwps.fetch_forecast": "*/30 * * * *",
         "nwps.fetch_thresholds": "10 */6 * * *",
+        # P3 (design §6 stage 2). The mask build owns an explicit slot 20 min ahead of the qmd
+        # fetch that depends on it; the climatology is annual and fires on 1 January only.
+        "nbm.build_grid_masks": "50 5 * * *",
+        "nbm.fetch_qmd": "10 */6 * * *",
+        "nbm.fetch_core_snowlvl": "10 */6 * * *",
+        "nwm.fetch_reach_medium_range": "10 */6 * * *",
+        "usgs.build_climatology": "30 4 1 1 *",
+        "usgs.fetch_daily_percentile": "10 */24 * * *",
+        "awdb.fetch_snotel_context": "10 */24 * * *",
         "maintenance.ensure_observation_partitions": "3 0 1 * *",
     }
+
+
+def test_job_order_puts_each_producer_before_its_consumer() -> None:
+    """`run_once` walks JOBS in order; two P3 dependencies fail SAFELY, so they are pinned here.
+
+    Without a grid mask the NBM jobs refuse and forcing reads UNKNOWN; without a stored
+    day-of-year ladder the percentile job writes nothing and susceptibility reads UNKNOWN.
+    Neither crashes, which is why the ordering needs a test rather than a stack trace.
+    """
+    order = [job.name for job in JOBS]
+    assert order.index("nbm.build_grid_masks") < order.index("nbm.fetch_qmd")
+    assert order.index("nbm.build_grid_masks") < order.index("nbm.fetch_core_snowlvl")
+    assert order.index("usgs.build_climatology") < order.index("usgs.fetch_daily_percentile")
+
+
+def test_the_mask_build_cron_precedes_a_qmd_slot() -> None:
+    """The pinned mask slot has to be EARLIER in the day than a qmd slot, not merely different."""
+    by_name = {job.name: job for job in JOBS}
+    minute, hour = by_name["nbm.build_grid_masks"].cron.split()[:2]
+    assert (int(hour), int(minute)) < (6, 10)  # the 06:10 qmd slot
+    assert by_name["nbm.fetch_qmd"].cron is None  # the qmd job takes its slot from its cadence
 
 
 def test_partition_maintenance_task_registered_with_monthly_cron() -> None:

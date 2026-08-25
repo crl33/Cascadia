@@ -22,9 +22,12 @@ select = ["E4", "E7", "E9", "F", "I"]
 known-first-party = [
   "cascade_contracts",
   "cascade_core",
+  "cascade_geo",
   "cascade_hydrology",
   "cascade_providers_usgs",
+  "cascade_providers_awdb",
   "cascade_providers_nwps",
+  "cascade_providers_nbm",
   "cascade_api",
   "cascade_worker",
 ]

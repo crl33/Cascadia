@@ -1,0 +1,47 @@
+provider: nbm-v5
+cycle: 20260824T12Z
+subregion:
+  toplat: 49.4
+  bottomlat: 46.7
+  leftlon: -122.9
+  rightlon: -120.55
+captured:
+- file: qmd_f072_wa.grib2
+  url: https://nomads.ncep.noaa.gov/cgi-bin/filter_blend.pl?dir=%2Fblend.20260824%2F12%2Fqmd&file=blend.t12z.qmd.f072.co.grib2&var_APCP=on&subregion=&toplat=49.40&leftlon=-122.90&rightlon=-120.55&bottomlat=46.70
+  captured_at: '2026-08-24T22:10:08.642357+00:00'
+  http_status: 200
+  content_type: application/octet-stream
+  bytes: 1045326
+  sha256: f802507b6bf42482081e002d21352d464a7cbffabaa63b6bb03da7b2e86e233d
+  notes: APCP, every window and percentile level, WA box. The 0-3 day cumulative window
+    is the 72-h forcing horizon.
+- file: qmd_f024_wa.grib2
+  url: https://nomads.ncep.noaa.gov/cgi-bin/filter_blend.pl?dir=%2Fblend.20260824%2F12%2Fqmd&file=blend.t12z.qmd.f024.co.grib2&var_APCP=on&subregion=&toplat=49.40&leftlon=-122.90&rightlon=-120.55&bottomlat=46.70
+  captured_at: '2026-08-24T22:10:24.962079+00:00'
+  http_status: 200
+  content_type: application/octet-stream
+  bytes: 214318
+  sha256: ae19f27c639d8879882c962a92a2c8cf021dd6c773badb8fb9bff3a9e8982f11
+  notes: APCP for the 0-1 day cumulative window (the 24-h horizon), same box.
+- file: core_f024_snowlvl_wa.grib2
+  url: https://nomads.ncep.noaa.gov/cgi-bin/filter_blend.pl?dir=%2Fblend.20260824%2F12%2Fcore&file=blend.t12z.core.f024.co.grib2&var_SNOWLVL=on&subregion=&toplat=49.40&leftlon=-122.90&rightlon=-120.55&bottomlat=46.70
+  captured_at: '2026-08-24T22:10:29.205753+00:00'
+  http_status: 200
+  content_type: application/octet-stream
+  bytes: 171727
+  sha256: 64627804deaaac23dce9d41201c5fec915ce5abfc780c821b4efe215e9cdaab3
+  notes: SNOWLVL deterministic + 15 percentiles at f024. core carries no QPF percentiles;
+    qmd carries no SNOWLVL.
+derived:
+- file: truncated.grib2
+  derived_from: qmd_f072_wa.grib2
+  bytes: 65536
+  sha256: 0c4e00283ddbcc963ed44065e0a8468c95e0d7b4330f7096d161d5365404e46b
+  notes: 'First 64 KB only: a truncated download must raise a typed parse error, never
+    a short field.'
+- file: html_error.html
+  derived_from: '-'
+  bytes: 88
+  sha256: 43221bb12a0ab46a419c6b9d77603651d94a7c84cef776ec7375e9b8160a558c
+  notes: An HTML error page served with HTTP 200 must be refused before eccodes sees
+    it.

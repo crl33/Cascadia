@@ -11,7 +11,6 @@ from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 
 from cascade_contracts import (
-    ConfidenceLabel,
     ContractEnvelope,
     FloodCategory,
     Freshness,
@@ -32,6 +31,7 @@ from cascade_contracts.visualization import (
     AgreementState,
     BasinSurfaces,
     BasinVisualizationState,
+    Driver,
     GeometryRef,
     HazardState,
     ObservedRiverState,
@@ -41,7 +41,7 @@ from cascade_contracts.visualization import (
     Topology,
 )
 from cascade_core.freshness import compute_freshness
-from cascade_core.knowledge import Knowledge
+from cascade_core.knowledge import OFFICIAL_FORECAST_PRODUCTS, Knowledge
 from cascade_core.models import (
     Basin,
     ForecastPoint,
@@ -53,16 +53,40 @@ from cascade_core.registry import (
     PRODUCT_NWPS_FORECAST,
     PRODUCT_NWPS_THRESHOLDS,
     PRODUCT_USGS_IV,
+    SOURCES,
     SRC_CASCADE,
     SRC_NWPS,
     SRC_USGS,
 )
-from cascade_hydrology import surfaces
+from cascade_hydrology import agreement, forcing, surfaces, susceptibility
 from cascade_hydrology.category import CategoryResult, Measure, ThresholdSet, categorize
 from cascade_hydrology.headroom import headroom as compute_headroom
+from cascade_hydrology.surfaces import SurfaceReason, require_reason
 from cascade_hydrology.trend import rate_of_rise
 
 RIVER_REGULATION = {"regulated_upper": "regulated", "regulated": "regulated", "partially_regulated": "partially_regulated", "natural": "natural"}
+
+# SourceKind per source id, read from the registry (cascade_core.registry declares it once and
+# the seeded `data_source` rows are merged from the same tuple). Nothing in this module may
+# spell a kind out beside a value: that is exactly how an NWM run would end up badged as the
+# NWRFC forecast (design §3.4 defect 2, docs/DATA_DOCTRINE.md §2).
+_SOURCE_KIND_BY_ID: dict[str, str] = {str(s["id"]): str(s["kind"]) for s in SOURCES}
+UNKNOWN_SOURCE_ID = "src:unknown"
+
+
+def resolved_source_kind(product: SourceProduct | None) -> SourceKind:
+    """The SourceKind of a product's source, resolved from the registry; UNKNOWN when it misses.
+
+    UNKNOWN is the only safe default. Defaulting to OFFICIAL_FORECAST — which this module did
+    until P3 — means an unrecognised product silently inherits the authority of the National
+    Weather Service; defaulting to UNKNOWN means the client shows an unbadged value and someone
+    goes and registers the source."""
+    if product is None:
+        return SourceKind.UNKNOWN
+    try:
+        return SourceKind(_SOURCE_KIND_BY_ID[product.source_id])
+    except (KeyError, ValueError):
+        return SourceKind.UNKNOWN
 
 
 def threshold_set(rows: dict[str, Threshold]) -> ThresholdSet | None:
@@ -92,20 +116,27 @@ def forecast_run_ref(run: ForecastRun, products: dict[str, SourceProduct], *, no
     """The provenance record of one stored forecast run, wherever the run is displayed.
 
     Identity comes from the run's own SourceProduct — a run reconstructed from archived FLS
-    text is not an NWPS forecast and must not claim to be one. Freshness is computed at read
-    time against the knowledge clock; `raw_artifact_id` points at the stored bytes the run was
-    parsed from. The `products` lookup cannot miss (ForecastRun.product_id is a FK into
-    source_product); the fallback keeps the ref constructible rather than guessing identity."""
+    text is not an NWPS forecast and must not claim to be one, and an NWM medium-range run is
+    MODELED, never OFFICIAL_FORECAST. **`source_kind` is resolved from the registry** through
+    `SourceProduct.source_id`; it is never spelled out here, because `forecast_run` holds more
+    than one forecast product from P3 on and a hardcoded kind would badge every one of them as
+    the National Weather Service's official forecast (design §3.4 defect 2).
+
+    Freshness is computed at read time against the knowledge clock; `raw_artifact_id` points at
+    the stored bytes the run was parsed from. The `products` lookup cannot miss
+    (ForecastRun.product_id is a FK into source_product); if it somehow does, the ref stays
+    constructible but claims nothing — UNKNOWN source, UNKNOWN kind, a label that names the
+    product id instead of asserting an issuer."""
     product = products.get(run.product_id)
     return ProvenanceRef(
-        source_id=product.source_id if product else SRC_NWPS,
-        source_kind=SourceKind.OFFICIAL_FORECAST,
+        source_id=product.source_id if product else UNKNOWN_SOURCE_ID,
+        source_kind=resolved_source_kind(product),
         product_id=run.product_id,
         issued_at=run.issued_at,
         valid_time=valid_time,
         retrieved_at=run.retrieved_at,
         freshness=_fresh(products, run.product_id, valid_time=run.issued_at, retrieved_at=run.retrieved_at, now=now),
-        label=product.label if product else f"{run.issuer} official river forecast via NOAA NWPS",
+        label=product.label if product else f"Unregistered forecast product {run.product_id!r} issued by {run.issuer}",
         raw_artifact_id=str(run.raw_artifact_id),
     )
 
@@ -116,6 +147,10 @@ class PointAssessment:
     refs: dict[str, ProvenanceRef] = field(default_factory=dict)
     hazard: CategoryResult = field(default_factory=lambda: CategoryResult(FloodCategory.UNKNOWN, "not assessed"))
     hazard_ref: str = ""
+    #: The OFFICIAL threshold set this point was categorized against, carried out so the basin
+    #: assembler can hand the same object to `agreement.assess` instead of re-reading the
+    #: thresholds and risking a different answer for the same point in the same envelope.
+    thresholds: ThresholdSet | None = None
 
 
 async def assess_point(k: Knowledge, fp: ForecastPoint, basin: Basin | None, products: dict[str, SourceProduct]) -> PointAssessment:
@@ -221,7 +256,9 @@ async def assess_point(k: Knowledge, fp: ForecastPoint, basin: Basin | None, pro
     # 5. official forecast known at T and the 72 h hazard
     fkey = f"nwps-forecast-{lid}"
     forecast_model: OfficialForecastSummary | None = None
-    run = await k.latest_forecast_run(fp.id)
+    # explicit: this surface is the OFFICIAL forecast, so it asks for official products by id
+    # (design §3.4 defect 1 — the same set is the reader's default, said out loud here).
+    run = await k.latest_forecast_run(fp.id, product_ids=OFFICIAL_FORECAST_PRODUCTS)
     if run is None:
         hazard = CategoryResult(FloodCategory.UNKNOWN, "no official NWRFC forecast known at this knowledge time")
         refs[fkey] = ProvenanceRef(source_id=SRC_NWPS, source_kind=SourceKind.UNKNOWN, product_id=PRODUCT_NWPS_FORECAST, freshness=Freshness(state=FreshnessState.MISSING), label="No NWRFC forecast known at this knowledge time")
@@ -263,7 +300,7 @@ async def assess_point(k: Knowledge, fp: ForecastPoint, basin: Basin | None, pro
         location=(fp.lon, fp.lat) if fp.lon is not None and fp.lat is not None else None,
         flow_visual_intensity=None,
     )
-    return PointAssessment(item=item, refs=refs, hazard=hazard, hazard_ref=fkey)
+    return PointAssessment(item=item, refs=refs, hazard=hazard, hazard_ref=fkey, thresholds=tset)
 
 
 def _envelope(contract: str, items: list, refs: dict[str, ProvenanceRef], *, as_of: datetime, generated_at: datetime) -> ContractEnvelope:
@@ -282,38 +319,112 @@ async def river_envelope(k: Knowledge, fps: list[ForecastPoint], *, generated_at
     return _envelope("RiverVisualizationState", items, refs, as_of=k.as_of, generated_at=generated_at)
 
 
-CASCADE_REFS = {
-    "cascade-susceptibility": ProvenanceRef(source_id=SRC_CASCADE, source_kind=SourceKind.EXPERIMENTAL, method_id="method:susceptibility-index@0.0.0", freshness=Freshness(state=FreshnessState.MISSING), label="Cascade experimental susceptibility index (not yet computed)"),
-    "cascade-forcing": ProvenanceRef(source_id=SRC_CASCADE, source_kind=SourceKind.EXPERIMENTAL, method_id="method:forcing-assessment@0.0.0", freshness=Freshness(state=FreshnessState.MISSING), label="Cascade forcing assessment (not yet computed)"),
-}
+def _renumbered(*groups: tuple[Driver, ...]) -> tuple[Driver, ...]:
+    """One ordered `headline_drivers` list out of the per-surface driver lists.
+
+    Each surface numbers its own drivers from 1 (`susceptibility` p1 is the flow percentile,
+    `forcing` p1 is the 72-h QPF, `agreement` p1 is the official crest), so merging them
+    verbatim would put three "#1"s in one list. `Driver.rank` on a basin item is the display
+    order of that single list, so the ranks are renumbered here while each surface's own
+    ordering is preserved. Nothing else about a driver is touched — not its feature id, not its
+    value, not its unit, and not the provenance key it points at.
+    """
+    out: list[Driver] = []
+    for group in groups:
+        for driver in sorted(group, key=lambda d: d.rank):
+            out.append(driver.model_copy(update={"rank": len(out) + 1}))
+    return tuple(out)
+
+
+def _explained(surface: SurfaceState, *, name: str) -> SurfaceState:
+    """An UNKNOWN surface always leaves here with a reason (docs/DATA_DOCTRINE.md §12)."""
+    if surface.state is not SurfaceLevel.UNKNOWN or surface.reason:
+        return surface
+    return surface.model_copy(update={"reason": SurfaceReason.unexplained(name)})
 
 
 async def basin_envelope(k: Knowledge, basins: list[Basin], *, generated_at: datetime) -> ContractEnvelope:
+    """The basin envelope: four surfaces per basin, each computed by its own method module.
+
+    P3 wiring (docs/research/p3-surfaces-design-2026-08-24.md §6 stage 2). Every surface here
+    is now the output of a versioned method that reads stored rows through the knowledge clock;
+    the placeholder `cascade-susceptibility` / `cascade-forcing` refs that said "not yet
+    computed" are gone. What has *not* changed is the doctrine: a surface with no input is
+    UNKNOWN with a reason that names the input, never a value; official and model forecasts are
+    carried as two numbers with two `source_kind`s and are never averaged; and the only
+    probability that may appear is a counted fraction of model members.
+    """
     products = await k.products()
-    items, refs = [], dict(CASCADE_REFS)
+    items: list[BasinVisualizationState] = []
+    refs: dict[str, ProvenanceRef] = {}
     for basin in basins:
         outlet = await k.forecast_point_by_lid(basin.outlet_fp_id.split(":")[-1]) if basin.outlet_fp_id else None
+        agreement_drivers: tuple[Driver, ...] = ()
+        model_probability: dict[str, str | float] | None = None
+        model_probability_note: str | None = None
         if outlet is not None:
             pa = await assess_point(k, outlet, basin, products)
             hazard, hazard_ref = pa.hazard, pa.hazard_ref
             refs[hazard_ref] = pa.refs[hazard_ref]
+
+            # AGREEMENT: the official run and the NWM run, compared, never blended. The refs are
+            # built here (not in `agreement`) so both go through `forecast_run_ref`, which
+            # resolves `source_kind` from the registry — that is what keeps an NWM run from
+            # being badged OFFICIAL_FORECAST (design §3.4 defect 2).
+            ag = await agreement.assess(k, outlet, thresholds=pa.thresholds)
+            for key, run in ag.runs_by_prov_key.items():
+                # Merge, never overwrite: `assess_point` already registered the official run
+                # under this same key with the crest's valid_time on it, which is the more
+                # informative ref of the two.
+                if key not in refs:
+                    refs[key] = forecast_run_ref(run, products, now=k.as_of)
+            agreement_state = ag.state.model_copy(
+                update={"reason": require_reason(ag.state.reason, surface="agreement")}
+                if ag.state.state is AgreementLevel.UNKNOWN
+                else {}
+            )
+            agreement_drivers = ag.drivers
+            model_probability = ag.model_probability
+            if model_probability is None and hazard.category is not FloodCategory.UNKNOWN:
+                # The hazard category is known, so the *absence* of a member fraction beside it
+                # is the fact worth stating: usually that the official categories are in stage.
+                why = ag.result.category_note or ag.state.reason
+                model_probability_note = None if why is None else SurfaceReason.no_model_probability(why)
         else:
             hazard_ref = f"missing-outlet-{basin.id.split(':')[-1]}"
-            hazard = CategoryResult(FloodCategory.UNKNOWN, "basin has no outlet forecast point configured")
+            hazard = CategoryResult(FloodCategory.UNKNOWN, SurfaceReason.no_outlet_point(basin.id))
             refs[hazard_ref] = ProvenanceRef(source_id=SRC_CASCADE, source_kind=SourceKind.UNKNOWN, freshness=Freshness(state=FreshnessState.MISSING), label="No outlet forecast point")
+            agreement_state = AgreementState(state=AgreementLevel.UNKNOWN, reason=SurfaceReason.agreement_needs_an_outlet(basin.id), prov=())
+
+        # SUSCEPTIBILITY: day-of-year flow percentile at the basin's configured gauge.
+        sus = await susceptibility.assess(k, basin, products)
+        refs.update(sus.refs)
+        # FORCING: basin-mean NBM QPF, banded. EXPERIMENTAL, and the spread is pointwise.
+        frc = await forcing.assess(k, basin, products)
+        refs.update(frc.refs)
+
+        hazard_reason = " ".join(x for x in (hazard.reason, model_probability_note) if x) or None
         items.append(
             BasinVisualizationState(
                 id=basin.id,
                 name=basin.name,
                 regulation_class=basin.regulation_class,
                 surfaces=BasinSurfaces(
-                    susceptibility=SurfaceState(state=SurfaceLevel.UNKNOWN, prov="cascade-susceptibility", truth=TruthClass.CASCADE_DERIVED, confidence=ConfidenceLabel.UNKNOWN, experimental=True, reason=surfaces.SUSCEPTIBILITY_REASON),
-                    forcing=SurfaceState(state=SurfaceLevel.UNKNOWN, horizon_h=72, prov="cascade-forcing", truth=TruthClass.CASCADE_DERIVED, confidence=ConfidenceLabel.UNKNOWN, experimental=True, reason=surfaces.FORCING_REASON),
-                    hazard=HazardState(horizon_h=surfaces.HAZARD_HORIZON_H, official_category=hazard.category, official_prov=hazard_ref, prov=hazard_ref, truth=TruthClass.AUTHORITATIVE_MODEL, reason=hazard.reason),
-                    agreement=AgreementState(state=AgreementLevel.UNKNOWN, prov=()),  # reason: surfaces.AGREEMENT_REASON (contract has no reason field yet)
+                    susceptibility=_explained(sus.surface, name="susceptibility"),
+                    forcing=_explained(frc.surface, name="forcing"),
+                    hazard=HazardState(
+                        horizon_h=surfaces.HAZARD_HORIZON_H,
+                        official_category=hazard.category,
+                        official_prov=hazard_ref,
+                        prov=hazard_ref,
+                        truth=TruthClass.AUTHORITATIVE_MODEL,
+                        model_probability=model_probability,
+                        reason=hazard_reason,
+                    ),
+                    agreement=agreement_state,
                 ),
                 tension=None,
-                headline_drivers=(),
+                headline_drivers=_renumbered(sus.drivers, frc.drivers, agreement_drivers),
                 official_alerts=(),
                 outlet_forecast_point_id=basin.outlet_fp_id,
                 geometry_ref=GeometryRef(lod="basin", feature_id=basin.id, url=f"/basins/{basin.id}/geometry?lod=basin"),

@@ -103,6 +103,9 @@ async def test_seed_loads_geometry_and_partitions_route(scratch_url: str) -> Non
         async with sessions() as session:
             counts = await seed_all(session, geo_dir=GEO, seed_file=SEED_FILE)
         assert counts["basins"] == 6 and counts["forecast_points"] == 6
+        # 6 forecast-point stations + the Sauk (station:usgs:12189500), which the seed addendum
+        # adds as the Skagit's unregulated susceptibility gauge and which has no forecast point.
+        assert counts["stations"] == 7
         assert counts["basin_geometries"] == 12  # 6 basins x 2 LODs
 
         async with sessions() as session:
@@ -117,13 +120,19 @@ async def test_seed_loads_geometry_and_partitions_route(scratch_url: str) -> Non
                 )
             ).scalar_one()
             assert well_formed == 12
-            for table in ("station", "forecast_point"):
+            for table, expected in (("station", 7), ("forecast_point", 6)):
                 pts = (
                     await session.execute(
                         text(f"SELECT count(*) FROM {table} WHERE geom IS NOT NULL")  # noqa: S608 - fixed identifiers
                     )
                 ).scalar_one()
-                assert pts == 6, table
+                assert pts == expected, table
+            sauk_lon, sauk_lat = (
+                await session.execute(
+                    text("SELECT ST_X(geom), ST_Y(geom) FROM station WHERE id = 'station:usgs:12189500'")
+                )
+            ).one()
+            assert sauk_lon == pytest.approx(-121.5685) and sauk_lat == pytest.approx(48.4246)
             lon, lat = (
                 await session.execute(
                     text("SELECT ST_X(geom), ST_Y(geom) FROM station WHERE id = 'station:usgs:12200500'")

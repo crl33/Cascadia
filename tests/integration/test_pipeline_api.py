@@ -21,11 +21,18 @@ from cascade_core.seed import seed_all
 from cascade_core.settings import Settings
 from cascade_providers_usgs.parser import parse_iv
 from cascade_worker.runtime import Runtime
-from cascade_worker.scheduler import run_once
+from cascade_worker.scheduler import JOBS, run_once
 from tests.conftest import FIXTURES, GEO
 
 CLOCK = datetime(2026, 8, 22, 13, 30, tzinfo=UTC)
 LIDS = ["RNTW1", "CRNW1", "MVEW1", "NKSW1", "AUBW1", "WRAW1"]
+
+#: The jobs `_mock_providers` below actually mocks. `JOBS` also carries the six P3 ingest jobs
+#: (NBM, NWM-via-NWPS, USGS statistics, AWDB), which have their own offline fixtures and tests;
+#: re-mocking their payloads here would say nothing new about the API surface this file covers,
+#: and running them unmocked would only assert that respx blocks unmocked hosts.
+SPIKE_JOB_NAMES = ("nwps.fetch_thresholds", "nwps.fetch_forecast", "usgs.fetch_iv")
+SPIKE_JOBS = tuple(job for job in JOBS if job.name in SPIKE_JOB_NAMES)
 
 
 def _mock_providers(fixtures: Path, *, mvew1_stageflow: str = "stageflow_MVEW1.json") -> None:
@@ -57,7 +64,7 @@ async def _count(rt: Runtime, model) -> int:
 async def test_pipeline_then_api(runtime: Runtime) -> None:
     rt = runtime
     _mock_providers(FIXTURES)
-    results = await run_once(rt)
+    results = await run_once(rt, SPIKE_JOBS)
     assert all(ok for _, ok, _, _ in results), results
     # one raw artifact per fetched payload: 6 gauges + 6 stageflows + 1 USGS batch
     assert await _count(rt, RawArtifact) == 13
@@ -69,7 +76,7 @@ async def test_pipeline_then_api(runtime: Runtime) -> None:
     assert n_obs == expected_obs and n_runs == 6 and n_thr == 24
 
     # idempotency: a second run-once writes zero new observation/run/threshold rows but archives again
-    results2 = await run_once(rt)
+    results2 = await run_once(rt, SPIKE_JOBS)
     assert [(n, ok, rows) for n, ok, rows, _ in results2] == [(results2[0][0], True, 0), (results2[1][0], True, 0), (results2[2][0], True, 0)]
     assert await _count(rt, Observation) == n_obs and await _count(rt, ForecastRun) == n_runs and await _count(rt, Threshold) == n_thr
     assert await _count(rt, RawArtifact) == 26
@@ -161,12 +168,12 @@ async def test_pipeline_then_api(runtime: Runtime) -> None:
 async def test_forecast_supersession_and_threshold_versioning(runtime: Runtime) -> None:
     rt = runtime
     _mock_providers(FIXTURES)
-    await run_once(rt)
+    await run_once(rt, SPIKE_JOBS)
     # a later issuance arrives: a new run supersedes, the earlier run remains, and replay at the old T sees the old run
     respx.get("https://api.water.noaa.gov/nwps/v1/gauges/MVEW1/stageflow").mock(return_value=httpx.Response(200, content=(FIXTURES / "nwps/stageflow_MVEW1_later.json").read_bytes()))
     later_clock = CLOCK + timedelta(hours=1)
     rt.fetcher.clock = lambda: later_clock
-    await run_once(rt)
+    await run_once(rt, SPIKE_JOBS)
     async with rt.sessions() as s:
         runs = (await s.execute(select(ForecastRun).where(ForecastRun.fp_id == "fp:nwps:MVEW1").order_by(ForecastRun.issued_at))).scalars().all()
     assert len(runs) == 2 and runs[1].supersedes_run_id == runs[0].id

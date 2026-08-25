@@ -51,8 +51,8 @@ One item per basin (and optionally subbasin) in the requested band/extent.
   "name": "Skagit",
   "regulation_class": "regulated_upper|natural|partially_regulated",
   "surfaces": {
-    "susceptibility": { "state": "low|moderate|high|very_high|unknown", "score": 0.62|null, "confidence": ConfidenceLabel, "prov": "<ref>", "truth": "cascade_derived", "experimental": true },
-    "forcing":        { "horizon_h": 72, "state": "low|moderate|high|extreme|unknown", "qpf_mm": 142.0|null, "spread": {"p10": …, "p90": …}|null, "prov": "<ref>", "truth": "authoritative_model" },
+    "susceptibility": { "state": "low|moderate|high|very_high|unknown", "score": 0.62|null, "value": {"value": 62.0, "unit": "pct"}|null, "confidence": ConfidenceLabel, "prov": "<ref>", "truth": "cascade_derived", "experimental": true },
+    "forcing":        { "horizon_h": 72, "state": "low|moderate|high|very_high|unknown", "score": 0.71|null, "value": {"value": 142.0, "unit": "mm"}|null, "spread": {"p10": …, "p90": …}|null, "prov": "<ref>", "truth": "cascade_derived", "experimental": true },
     "hazard":         { "horizon_h": 72, "official_category": "none|action|minor|moderate|major|unknown", "official_prov": "<ref>", "model_probability": {"model": "nwm-mr-ens", "exceeds": "minor", "fraction": 0.43}|null, "cascade_index": null, "truth": "authoritative_model" },
     "agreement":      { "state": "high|moderate|low|unknown", "explanation_ref": "…", "prov": ["<ref>", …] }
   },
@@ -174,7 +174,11 @@ object for the whole world.
 3. Replay: the same request with `as_of=T` must return a document that is a pure function of
    the database as of T (DATA_DOCTRINE §11).
 4. Versioning: additive changes bump minor; removals bump major; the client checks
-   `version` and degrades gracefully.
+   `version` and degrades gracefully. **1.2.0** (2026-08-24) added the optional
+   `SurfaceState.value` (the quantity the state was banded from, with its unit) and
+   `SurfaceState.spread` (named spread points in that same unit) — additive, so 1.1.0
+   consumers keep validating. Neither is ever a probability, and where the surface is a
+   Cascade derivation both are EXPERIMENTAL; `headline_drivers` remain the explanation.
 5. Contract tests: each schema has fixture documents; the web client's generated types are
    checked against them in CI; the API's responses are validated against the schema in
    integration tests.

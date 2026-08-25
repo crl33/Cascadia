@@ -32,14 +32,24 @@ def sha256_hex(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
 
-def object_key_for(data: bytes, suffix: str = ".json") -> str:
+def object_key_for(data: bytes, suffix: str = ".json", prefix: str = "") -> str:
+    """Content-addressed key, optionally under a lifecycle prefix.
+
+    ``prefix`` exists so a bucket lifecycle rule can bound one product family without
+    touching the rest of the archive: the R2 rule ``expire-nbm-90d`` expires objects under
+    ``nbm/`` after 90 days (infra/CONTEXT.md, DATA_DOCTRINE §13), which only works if the
+    NBM subsets are actually written there. It never changes the address of existing
+    objects: the default is the empty prefix, and the sha256 part is unchanged.
+    """
     h = sha256_hex(data)
-    return f"{h[:2]}/{h[2:4]}/{h}{suffix}"
+    if prefix and not prefix.endswith("/"):
+        raise ValueError(f"object key prefix must end with '/': {prefix!r}")
+    return f"{prefix}{h[:2]}/{h[2:4]}/{h}{suffix}"
 
 
 class ObjectStore(Protocol):
-    def put(self, data: bytes, *, suffix: str = ".json") -> str:
-        """Store bytes; return the content-addressed object key."""
+    def put(self, data: bytes, *, suffix: str = ".json", prefix: str = "") -> str:
+        """Store bytes under ``prefix``; return the content-addressed object key."""
 
     def get(self, key: str) -> bytes:
         """Return the stored bytes; raise ``KeyError`` if the key is absent."""
@@ -51,8 +61,8 @@ class LocalFilesystemStore:
     def __init__(self, root: Path) -> None:
         self.root = Path(root)
 
-    def put(self, data: bytes, *, suffix: str = ".json") -> str:
-        key = object_key_for(data, suffix)
+    def put(self, data: bytes, *, suffix: str = ".json", prefix: str = "") -> str:
+        key = object_key_for(data, suffix, prefix)
         path = self.root / key
         if not path.exists():
             path.parent.mkdir(parents=True, exist_ok=True)
@@ -92,11 +102,11 @@ class ObstoreStore:
     def __init__(self, store: Any) -> None:
         self.store = store
 
-    def put(self, data: bytes, *, suffix: str = ".json") -> str:
+    def put(self, data: bytes, *, suffix: str = ".json", prefix: str = "") -> str:
         import obstore
         from obstore.exceptions import AlreadyExistsError
 
-        key = object_key_for(data, suffix)
+        key = object_key_for(data, suffix, prefix)
         try:
             obstore.put(self.store, key, data, mode="create")
         except AlreadyExistsError:

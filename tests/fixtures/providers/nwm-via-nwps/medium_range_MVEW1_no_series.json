@@ -1,0 +1,38 @@
+{
+ "reach": {
+  "reachId": "24270288",
+  "name": "Skagit River",
+  "latitude": 48.4449,
+  "longitude": -122.342,
+  "streamflow": [
+   "medium_range_blend",
+   "medium_range",
+   "analysis_assimilation",
+   "short_range",
+   "long_range"
+  ],
+  "route": {
+   "upstream": [
+    {
+     "reachId": "24270290",
+     "streamOrder": "6"
+    },
+    {
+     "reachId": "24271110",
+     "streamOrder": "6"
+    }
+   ],
+   "downstream": [
+    {
+     "reachId": "24270286",
+     "streamOrder": "6"
+    }
+   ]
+  }
+ },
+ "analysisAssimilation": {},
+ "shortRange": {},
+ "mediumRange": {},
+ "longRange": {},
+ "mediumRangeBlend": {}
+}

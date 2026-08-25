@@ -1,0 +1,60 @@
+{
+  "_provenance": {
+    "note": "P3 live-intelligence-surfaces seed addendum. Kept separate from stations.json so each block carries its own verification date and so the surface builders only ever READ seed data. Every value here was fetched live on 2026-08-24 and is recorded in docs/research/p3-surfaces-design-2026-08-24.md: reach ids from https://api.water.noaa.gov/nwps/v1/gauges/{lid} (design §3.1); the Sauk station from https://waterservices.usgs.gov/nwis/site/?format=rdb&sites=12189500 (SAUK RIVER NEAR SAUK, WA; dec_lat_va 48.42455859, dec_long_va -121.5684634, NAD83, rounded to 4 dp for consistency with stations.json; PST). MVEW1 already carries its reach id in stations.json and is deliberately not repeated here. Susceptibility gauges and their confidence ceilings are design §2.3 (Nooksack capped at moderate per design §7 item 6 until tidal contamination of the Ferndale daily mean is checked). All of this is CONFIGURED metadata: it selects and caveats an observation, it never becomes one.",
+    "verified_at": "2026-08-24T21:10:00Z",
+    "design_ref": "docs/research/p3-surfaces-design-2026-08-24.md"
+  },
+  "forecast_point_reach_ids": {
+    "fp:nwps:RNTW1": "reach:nwm:24537890",
+    "fp:nwps:CRNW1": "reach:nwm:23970199",
+    "fp:nwps:NKSW1": "reach:nwm:23955772",
+    "fp:nwps:AUBW1": "reach:nwm:23977634",
+    "fp:nwps:WRAW1": "reach:nwm:23981235"
+  },
+  "stations": [
+    {
+      "id": "station:usgs:12189500",
+      "agency": "usgs",
+      "external_id": "12189500",
+      "name": "Sauk River near Sauk",
+      "basin_id": "basin:skagit",
+      "lon": -121.5685,
+      "lat": 48.4246,
+      "vertical_datum": null,
+      "time_zone": "PST8PDT",
+      "note": "Unregulated Skagit tributary, 98-year daily record (1929-2026), drainage 714 sq mi. Used for discharge only, so no gauge-zero vertical datum is carried (ADR-0014: flow values never have a datum). Not an NWPS forecast point."
+    }
+  ],
+  "basin_susceptibility_gauges": {
+    "basin:nooksack": {
+      "gauge_station_id": "station:usgs:12213100",
+      "confidence_ceiling": "moderate",
+      "note": "Nooksack at Ferndale is unregulated but tidally influenced; whether the USGS daily mean is materially tide-contaminated has not been checked, so confidence is capped at moderate rather than high (design §7 item 6)."
+    },
+    "basin:snohomish-snoqualmie": {
+      "gauge_station_id": "station:usgs:12149000",
+      "confidence_ceiling": "high",
+      "note": "Snoqualmie near Carnation is unregulated, so its day-of-year flow percentile is a basin state rather than an operating decision."
+    },
+    "basin:cedar": {
+      "gauge_station_id": "station:usgs:12119000",
+      "confidence_ceiling": "moderate",
+      "note": "Cedar at Renton sits below Chester Morse, which is operated for water supply with a limited flood role; the percentile is therefore partly an operations signal."
+    },
+    "basin:skagit": {
+      "gauge_station_id": "station:usgs:12189500",
+      "confidence_ceiling": "moderate",
+      "note": "The upper Skagit is regulated (Ross, Baker), so basin wetness is read from the unregulated Sauk (12189500, 1929-2026), which is often the dominant flood contributor (HYDROLOGY §2) — not from the Mount Vernon outlet."
+    },
+    "basin:green-duwamish": {
+      "gauge_station_id": "station:usgs:12113000",
+      "confidence_ceiling": "low",
+      "note": "Green near Auburn is below Howard Hanson, so the percentile partly measures USACE reservoir operations rather than basin wetness. Adding an unregulated inflow gauge above the dam is an open seed-data decision (design §2.3)."
+    },
+    "basin:puyallup-white": {
+      "gauge_station_id": "station:usgs:12100490",
+      "confidence_ceiling": "low",
+      "note": "White at R St is below Mud Mountain and has only a 17-year record (2010-2026), so the percentile is both operations-contaminated and thinly sampled. Adding an unregulated inflow gauge above the dam is an open seed-data decision (design §2.3)."
+    }
+  }
+}

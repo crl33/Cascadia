@@ -64,6 +64,13 @@ body { background: var(--canvas); color: var(--text-primary); font-family: var(-
 .reason { margin: 4px 0; color: var(--text-muted); font-size: 13px; }
 .value-line { margin: 4px 0; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 .value { font-size: 15px; color: var(--text-primary); }
+.drivers { list-style: none; margin: 4px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.driver { padding: 6px 0 0; border-top: 1px dotted var(--stroke); }
+.driver:first-child { border-top: none; padding-top: 0; }
+.driver-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.driver-name { color: var(--text-secondary); font-size: 13px; }
+.driver-value { color: var(--text-primary); font-size: 13px; white-space: nowrap; }
+.driver-direction { display: block; font-size: 11px; color: var(--text-muted); }
 .thresholds { border-collapse: collapse; margin: 6px 0; }
 .thresholds th, .thresholds td { padding: 2px 12px 2px 0; text-align: left; }
 .thresholds th { font-weight: 500; color: var(--text-muted); font-size: 12px; }

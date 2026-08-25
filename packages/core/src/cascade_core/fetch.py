@@ -4,6 +4,17 @@ Allowlisted hosts only (re-validated on every redirect hop), hard timeout, max r
 User-Agent with contact, per-host minimum interval + concurrency cap, and archive-before-parse:
 the raw bytes are written to the object store and a RawArtifact row is flushed BEFORE the bytes
 are returned to any parser. The API process never constructs one of these.
+
+Two allowlists, deliberately:
+
+- ``PROVIDER_HOSTS`` below is the *ceiling* — every host any Cascadia Papsukkal adapter is
+  permitted to contact, in one reviewable place. Adding a provider means adding its host here
+  on purpose, with a comment naming the DATA_SOURCES row it comes from.
+- each adapter still passes the narrow ``allowed_hosts`` for the call it is making, so a bug in
+  one adapter cannot reach another provider's host.
+
+Bytes are not always JSON. ``fetch(..., accept=...)`` sets the Accept header per call, because
+the same fetcher archives GRIB2 (``application/octet-stream``), RDB text and JSON.
 """
 
 from __future__ import annotations
@@ -21,6 +32,22 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from cascade_core.models import RawArtifact
 from cascade_core.objectstore import ObjectStore, sha256_hex
 from cascade_core.timeutils import utcnow
+
+# Every host a Cascadia Papsukkal provider adapter may contact, with the docs/DATA_SOURCES.md
+# row it belongs to. This is the ceiling, not the per-call allowlist: `fetch` refuses an
+# `allowed_hosts` set that reaches outside it, so a new host is an explicit, reviewable edit.
+PROVIDER_HOSTS: frozenset[str] = frozenset(
+    {
+        "waterservices.usgs.gov",            # H1 USGS NWIS instantaneous values + nwis/stat (statistics)
+        "nwis.waterservices.usgs.gov",       # H1 redirect target
+        "api.waterdata.usgs.gov",            # H2 USGS OGC API-Features; statistics v0 (BETA)
+        "api.water.noaa.gov",                # H3 NWPS gauges/stageflow; H6 NWM reaches via NWPS
+        "mesonet.agron.iastate.edu",         # AFOS text archive (IEM) for FLW/FLS reconstruction
+        "nomads.ncep.noaa.gov",              # W2 NBM live subsets via filter_blend.pl (primary)
+        "noaa-nbm-grib2-pds.s3.amazonaws.com",  # W2 NBM S3 archive: .idx + ranged GET (backfill/fallback)
+        "wcc.sc.egov.usda.gov",              # S1 NRCS AWDB (SNOTEL WTEQ/PREC)
+    }
+)
 
 
 class FetchError(Exception):
@@ -89,10 +116,11 @@ class ArchivingFetcher:
         self._client = client
 
     def _client_or_new(self) -> httpx.AsyncClient:
+        # No Accept here: it is per call (JSON, GRIB2 and RDB all come through this fetcher).
         return self._client or httpx.AsyncClient(
             timeout=self.timeout_s,
             follow_redirects=False,
-            headers={"User-Agent": self.user_agent, "Accept": "application/json"},
+            headers={"User-Agent": self.user_agent},
         )
 
     async def fetch(
@@ -104,8 +132,34 @@ class ArchivingFetcher:
         allowed_hosts: frozenset[str],
         product_id: str,
         suffix: str = ".json",
+        accept: str = "application/json",
+        prefix: str = "",
+        retention_class: str | None = None,
+        timeout_s: float | None = None,
     ) -> FetchResult:
-        """GET with redirect host re-validation; archive; return bytes plus the artifact id."""
+        """GET with redirect host re-validation; archive; return bytes plus the artifact id.
+
+        ``timeout_s`` overrides the fetcher's timeout for this call only: a server-side
+        subsetting CGI (NOMADS ``filter_blend.pl``) legitimately takes 15-20 s to answer,
+        which would otherwise sit inside the default 30 s and fail intermittently.
+
+        ``prefix`` places the archived object under an object-store key prefix so a
+        bucket lifecycle rule can bound one product family (``nbm/`` -> the R2 rule
+        ``expire-nbm-90d``); it defaults to none, so every existing key is unchanged.
+
+        ``accept`` is the Accept header for this call — GRIB2 wants
+        ``application/octet-stream`` and USGS RDB wants ``text/plain``; only JSON is the
+        default. ``retention_class`` is recorded on the RawArtifact so an object-store
+        lifecycle rule (e.g. 90 days on gridded products, DATA_DOCTRINE §13) can expire the
+        bytes while the row survives and provenance can say the grid expired.
+        """
+        outside = allowed_hosts - PROVIDER_HOSTS
+        if outside:
+            raise FetchError(
+                "unregistered_host",
+                f"{sorted(outside)} not in cascade_core.fetch.PROVIDER_HOSTS; "
+                "register the host there (with its docs/DATA_SOURCES.md row) before fetching it",
+            )
         client = self._client_or_new()
         owns = client is not self._client
         try:
@@ -118,7 +172,11 @@ class ArchivingFetcher:
                 async with self.limiter:
                     await self.limiter.wait_turn(host)
                     try:
-                        response = await client.get(target)
+                        response = await client.get(
+                            target,
+                            headers={"Accept": accept},
+                            **({"timeout": timeout_s} if timeout_s is not None else {}),
+                        )
                     except httpx.TimeoutException as e:
                         raise FetchError("timeout", f"{target}: {e!r}") from e
                     except httpx.HTTPError as e:
@@ -136,7 +194,7 @@ class ArchivingFetcher:
             if len(content) > self.max_bytes:
                 raise FetchError("too_large", f"{len(content)} bytes > {self.max_bytes}")
             fetched_at = self.clock()
-            key = self.store.put(content, suffix=suffix)
+            key = self.store.put(content, suffix=suffix, prefix=prefix)
             artifact = RawArtifact(
                 sha256=sha256_hex(content),
                 object_key=key,
@@ -146,6 +204,7 @@ class ArchivingFetcher:
                 bytes=len(content),
                 http_status=response.status_code,
                 content_type=response.headers.get("content-type"),
+                retention_class=retention_class,
             )
             session.add(artifact)
             await session.flush()

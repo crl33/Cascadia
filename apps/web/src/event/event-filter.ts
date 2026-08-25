@@ -17,11 +17,35 @@ export function filterSeriesAt(series: StationSeries | null, at: string | null):
   return { ...series, points: series.points.filter((p) => ms(p.t) <= cutoff) };
 }
 
-/** Runs whose issuance the cursor has crossed, ascending by issued_at (input order not trusted). */
+/**
+ * A run may be presented AS the official forecast only when the API's own ProvenanceRef — built
+ * from the run's SourceProduct and resolved through the registry — says OFFICIAL_FORECAST. The
+ * kind is read, never inferred from a product-id list held here.
+ */
+const isOfficialForecastRun = (run: RunListItem): boolean => run.provenance.source_kind === 'OFFICIAL_FORECAST';
+
+/**
+ * Official runs whose issuance the cursor has crossed, ascending by issued_at (input order not
+ * trusted).
+ *
+ * The product filter is load-bearing, not tidiness. `GET /forecast-points/{lid}/runs` is the
+ * forecast-EVOLUTION read and deliberately returns every product side by side — from P3 the NWM
+ * medium-range ensemble lands in `forecast_run` beside the NWRFC forecast. Both consumers of
+ * this helper present what it returns as the official forecast: the hydrograph draws it in the
+ * forecast colour, titles every point "· OFFICIAL FORECAST" and stamps truth
+ * `authoritative_model`, and ForecastEvolution tables it under "Official forecast crests as
+ * issued". Unfiltered, a model run issued later than the RFC's would take that place — the
+ * frontend twin of the read-path defect the backend fixed in
+ * docs/research/p3-surfaces-design-2026-08-24.md §3.4. A model run is shown as a model run or it
+ * is not shown here at all.
+ */
 export function runsIssuedAtOrBefore(runs: readonly RunListItem[], at: string | null): RunListItem[] {
   if (at === null) return [];
   const cutoff = ms(at);
-  return [...runs].sort((a, b) => ms(a.issued_at) - ms(b.issued_at)).filter((r) => ms(r.issued_at) <= cutoff);
+  return [...runs]
+    .filter(isOfficialForecastRun)
+    .sort((a, b) => ms(a.issued_at) - ms(b.issued_at))
+    .filter((r) => ms(r.issued_at) <= cutoff);
 }
 
 /** The run the replay clock selects: the latest issuance at or before `at`, or null (UNKNOWN). */

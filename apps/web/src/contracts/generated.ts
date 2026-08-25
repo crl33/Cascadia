@@ -60,15 +60,24 @@ export type Prov3 = string;
  */
 export type Reason1 = string | null;
 /**
- * experimental index, never a probability
+ * EXPERIMENTAL index in [0,1] from the surface's own band table; never a probability
  */
 export type Score = number | null;
+/**
+ * named spread points for `value`, in the SAME unit, e.g. {'p10': 88.0, 'p90': 211.0}. Keys name the method's own statistic and nothing more: a model's pointwise percentile is not a basin-scale percentile and must be labeled as what it is. Never a probability
+ */
+export type Spread = {
+  [k: string]: number | undefined;
+} | null;
 export type SurfaceLevel = 'low' | 'moderate' | 'high' | 'very_high' | 'unknown';
 /**
  * docs/VISUAL_TRUTH_DOCTRINE.md — what kind of thing a rendered element is.
  */
 export type TruthClass =
   'observation' | 'authoritative_model' | 'cascade_derived' | 'cartographic' | 'cinematic';
+export type Datum = string | null;
+export type Unit1 = string;
+export type Value1 = number;
 /**
  * only after hindcast evaluation (ADR-0008)
  */
@@ -100,9 +109,6 @@ export type Basis = string;
 export type Prov5 = string;
 export type Reason3 = string | null;
 export type TimeToThresholdH = number | null;
-export type Datum = string | null;
-export type Unit1 = string;
-export type Value1 = number;
 export type Id2 = string;
 /**
  * [lon, lat] WGS84; cartographic
@@ -244,6 +250,16 @@ export interface AgreementState {
 }
 /**
  * One of the risk surfaces (docs/HYDROLOGY.md §3–§6).
+ *
+ * `state` is the banded answer, `value` is the quantity it was banded from, and `spread`
+ * names the uncertainty points that came with that quantity. **None of `score`, `value` or
+ * `spread` is ever a probability.** Where `experimental` is true the surface is a Cascadia
+ * Papsukkal derivation whose method has not passed hindcast evaluation, so its number is
+ * EXPERIMENTAL by definition: it carries a `method_id` through `prov`, it is uncalibrated,
+ * and no client may render it as a chance of anything (ADR-0008, docs/DATA_DOCTRINE.md §9).
+ * A threshold-crossing probability may only ever come from counted model members, never
+ * from here. `state = unknown` with a specific `reason` is a legitimate, correct answer;
+ * a fabricated value is not.
  */
 export interface SurfaceState {
   confidence?: ConfidenceLabel;
@@ -252,8 +268,21 @@ export interface SurfaceState {
   prov: Prov3;
   reason?: Reason1;
   score?: Score;
+  spread?: Spread;
   state: SurfaceLevel;
   truth: TruthClass;
+  /**
+   * the headline quantity `state` was banded from, in its own unit (e.g. 72-h basin-mean QPF in mm, or a day-of-year flow percentile in pct). EXPERIMENTAL whenever `experimental` is true; never a probability
+   */
+  value?: Quantity | null;
+}
+/**
+ * A number with its unit; `datum` is required for stage-like quantities.
+ */
+export interface Quantity {
+  datum?: Datum;
+  unit: Unit1;
+  value: Value1;
 }
 export interface HazardState {
   cascade_index?: CascadeIndex;
@@ -290,14 +319,6 @@ export interface Headroom {
   time_to_threshold_h?: TimeToThresholdH;
   to_category: FloodCategory;
   value?: Quantity | null;
-}
-/**
- * A number with its unit; `datum` is required for stage-like quantities.
- */
-export interface Quantity {
-  datum?: Datum;
-  unit: Unit1;
-  value: Value1;
 }
 export interface ObservedRiverState {
   flow?: Quantity | null;

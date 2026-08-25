@@ -7,7 +7,9 @@ from enum import StrEnum
 
 from pydantic import BaseModel, ConfigDict, Field
 
-CONTRACT_VERSION = "1.1.0"  # 1.1.0 (2026-08-22): +ground band, +AgreementState.reason, Regulation.class accepts regulated_upper
+CONTRACT_VERSION = "1.2.0"  # 1.2.0 (2026-08-24): +SurfaceState.value, +SurfaceState.spread — additive only,
+# so 1.1.0 consumers keep validating (docs/VISUALIZATION_CONTRACTS.md §10 rule 4).
+# 1.1.0 (2026-08-22): +ground band, +AgreementState.reason, Regulation.class accepts regulated_upper
 
 
 class SourceKind(StrEnum):

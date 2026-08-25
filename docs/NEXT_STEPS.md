@@ -1,4 +1,4 @@
-# NEXT STEPS — what is done, what is not, and the order of work (2026-08-22)
+# NEXT STEPS — what is done, what is not, and the order of work (2026-08-24)
 
 A plan, not a roadmap: [ROADMAP.md](ROADMAP.md) and [CINEMATIC_ROADMAP.md](CINEMATIC_ROADMAP.md)
 define the phases; this file says where we actually are and what to do next, in order. Update it
@@ -14,7 +14,7 @@ when a milestone closes; delete lines that stop being true.
 | Doctrine & architecture | `HYDROLOGY`, `DATA_DOCTRINE`, `DOMAIN_MODEL`, `ARCHITECTURE`, `TESTING`, 7 cinematic docs, ADR-0001…0013 (all accepted) |
 | Data inventory | `DATA_SOURCES.md` — 75 providers; `docs/research/` evidence for 9 categories (3 independently verified, 6 pending) |
 | Event Zero | `EVENT_ZERO.md` — 25 verified crest rows, 115 timeline rows with issuance-time `available_at` |
-| Contracts | `packages/contracts` 1.1.0 — Pydantic + JSON Schema + fixtures + generated TypeScript; contract tests green |
+| Contracts | `packages/contracts` **1.2.0** (P3 added `SurfaceState.value` + `SurfaceState.spread`, additively) — Pydantic + JSON Schema + fixtures + generated TypeScript; contract tests green |
 | Spike (verified end to end) | worker → raw archive → SQLite → read-only API → CesiumJS client; 40 backend tests, 27 web tests, Playwright 4/4 vs stub and vs real API, react-doctor 90/100 (`research/spike-report-2026-08-22.md`) |
 | Geography seed | six WBD-derived basins at two display LODs; six stations / forecast points; SNOTEL mappings verified |
 | Deployment (added 2026-08-22 by a second tool) | web client on Cloudflare Pages (`cascadia-c7y.pages.dev`) behind a Worker gateway at `cascadia.papsukkal.com`; production build points at a **same-origin API** |
@@ -32,7 +32,7 @@ when a milestone closes; delete lines that stop being true.
    from August 2026); the OGC API adapter with a registered key is not written.
 4. **No continuous history yet.** Nothing is ingesting around the clock; the 30-day freshness SLO
    and replay golden tests of Phase 1 cannot start until a worker runs somewhere.
-5. **HEFS, NWS alerts, AWDB/SNOTEL, SSE** adapters are not written (all researched, none coded).
+5. **HEFS, NWS alerts, SSE** adapters are not written (all researched, none coded). ~~AWDB/SNOTEL~~ landed with P3 (WTEQ + PREC as *unscored context*, HYDROLOGY §7); SNOTEL soil moisture was evaluated and REJECTED — no climatology, inconsistent depths, `no profile` flags (p3-surfaces-design §2.1), so soil stays UNKNOWN.
 6. **Basin geometry is HUC8 unions**, not outlet-delineated (NLDI/StreamStats); no hypsometry; no
    reach topology in the store.
 7. **Six research categories lack a second-agent verification pass** (hydrology, precipitation,
@@ -89,12 +89,69 @@ when a milestone closes; delete lines that stop being true.
 > (VISUAL_TRUTH_DOCTRINE §5.6). `/system/version` plus a stamped `CASCADE_GIT_REVISION` make the
 > deployed build checkable against the repository; HEAD and production were reconciled at close.
 
-### P3 — Live intelligence surfaces v0 (M)
+### P3 — Live intelligence surfaces v0 (M) — **BUILT 2026-08-24**, design and verification in `research/p3-surfaces-design-2026-08-24.md`
 - Forcing v0 from NBM QPF percentiles at basin scale (EXPERIMENTAL badge, documented method);
   susceptibility v0 from streamflow percentile + (when SNOTEL adapter lands) SWE context;
   agreement v0 from NWM blend-vs-NWRFC crest comparison at forecast points. All labeled,
   all provenance-carrying, UNKNOWN where inputs are missing.
 - Exit: no surface shows UNKNOWN for reasons that are now implemented; every value traces.
+
+**What shipped.** Three surfaces, one foundation, one integration seam.
+
+| Piece | What it is | Where |
+|---|---|---|
+| Foundation | `derived_feature` + `grid_mask` tables (migration `0002`), NBM/NWM/USGS-statistics/AWDB registry ids, per-call `Accept` + host allowlist + object-key prefix on `ArchivingFetcher`, contract **1.2.0** (`SurfaceState.value`, `SurfaceState.spread`), `eccodes` in the worker extra only | `infra/migrations/`, `packages/core/`, `packages/contracts/` |
+| Forcing v0 | NOMADS `filter_blend.pl` WA subset (1.05 MB against a 785 MB source file), `eccodes` decode, area-weighted basin means over full-resolution polygons, banded by an **uncalibrated** table carried as a parameter block | `packages/providers/nbm/`, `packages/geo/`, `hydrology/forcing.py` |
+| Susceptibility v0 | The platform's own day-of-year flow climatology from USGS OGC `daily` (decommission-proof), today's rank inside it, SNOTEL SWE/precipitation as **unscored context** | `packages/providers/{usgs,awdb}/`, `hydrology/susceptibility.py` |
+| Agreement v0 | NWM v3.1 medium-range **ensemble** per reach from NWPS JSON, compared with the NWRFC run on flow — magnitude, timing, and category only where official flow thresholds exist | `packages/providers/nwps/reaches_*`, `hydrology/agreement.py` |
+| Integration | reason **vocabularies** replace the three "not implemented in the spike" constants; `basin_envelope` calls all three methods and merges their drivers into one ranked list; six ingest jobs + the mask build registered on the queue; the panel renders values, units, spread, confidence, agreement's reason and every driver's provenance | `hydrology/{surfaces,assemble}.py`, `apps/worker/{scheduler,queue}.py`, `apps/web/src/panels/BasinPanel.tsx` |
+
+**Two read-path defects were fixed first, and they were the real risk.** `forecast_run` now holds
+two forecast products, so `latest_forecast_run` takes a product filter (defaulting to the
+registry-resolved OFFICIAL set) and `forecast_run_ref` resolves `source_kind` from the registry
+instead of spelling `OFFICIAL_FORECAST` beside every run. Without both, an NWM cycle issued later
+than the NWRFC run would have been rendered as the National Weather Service's forecast.
+
+**Measured cost** (design §8, unchanged by the build): ~13.2 MB/day ingest, ~400 MB/month R2
+before the 90-day `nbm/` lifecycle rule and ~1.2 GB steady state after it, ~73 k Neon
+rows/month (~14 MB), ~20 s worker CPU/day, 24 NOMADS + 24 NWPS-reach requests/day. No new
+service and no new recurring charge.
+
+**Exit status.** `GET /viz/basins` returns computed `forcing` and `susceptibility` for all six
+basins and a computed `agreement` at five of six, end to end from checked-in provider payloads
+(`tests/integration/test_p3_surfaces_api.py`). What is still UNKNOWN is UNKNOWN *on purpose* and
+now says which input is missing:
+
+- **soil** — no basin soil-moisture product exists; SNOTEL SMS returns no climatology,
+  inconsistent depths and `no profile` flags. Waits for SMAP L4 or NWM `land`.
+- **agreement at CRNW1** — the NWRFC run carries no flow column (every secondary value is the
+  −9999 sentinel). Waits for a flow column or `method:nwps-rating-conversion`.
+- **category agreement at MVEW1/NKSW1/RNTW1** — official categories there are in stage, and
+  ADR-0011 forbids inventing the flow equivalent. `model_probability` is therefore emitted only
+  at AUBW1 and WRAW1, as a counted member fraction.
+- **rain-exposed / rain-on-snow fractions** — need hypsometry (gap 6) and snow-covered area.
+
+**Carried forward out of P3** (each is a decision or a build, not a bug):
+1. **Band edges are uncalibrated assumptions** — 25/75/150 mm per 72 h (forcing), 25/75/90
+   (susceptibility), 0.25/0.60 and 6 h/18 h (agreement). Stored as parameter blocks with that
+   sentence attached; calibration is hindcast work (ADR-0008, Phase 7).
+2. **The annual climatology job fires on 1 January only** — cron cannot express "every 365 days"
+   from an arbitrary start. Until then the ladder must be built once by hand
+   (`python -m cascade_worker run-once`, or defer `usgs.build_climatology`); a fresh deployment
+   otherwise shows susceptibility UNKNOWN with the "no day-of-year climatology" reason.
+3. **No S3 `.idx` + ranged-GET backfill for NBM** — NOMADS keeps 1–2 days, so a worker outage
+   longer than that loses those cycles until the byte-range path (verified working, §1.2) is
+   built. The surface reports no cycle; nothing is substituted.
+4. **The dev stub and the Cloudflare Pages fallback still serve the pre-P3 envelope**, including
+   the now-false "not implemented in the spike" sentences
+   (`packages/contracts/fixtures/basin_skagit_envelope.json` → `scripts/sync-pages-fixtures.sh`).
+   Recapturing that fixture from a real `/viz/basins` response is a small, separate change.
+5. **`/system/health` does not yet report the P3 products**, and the three new canaries
+   (`nbm`, `nwm-via-nwps`, `awdb`/susceptibility) are not folded into the scheduled canary run.
+6. **Open provider questions the canaries now watch**: whether `filter_blend.pl` survives an NBM
+   version change, whether NWM `medium_range` stays at 6 members, NWPS `/reaches` rate limits,
+   and the intermittent empty `mediumRange` responses (6/6 reaches answered at 22:05Z, 1/6
+   twenty minutes later).
 
 
 Each milestone has an exit test. Sizes are relative. Dependencies point at earlier milestones.

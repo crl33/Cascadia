@@ -40,6 +40,12 @@ test('search Skagit → basin selected → BasinPanel shows Skagit with an OFFIC
   await expect(page.getByTestId('surface-forcing-state')).toHaveText('UNKNOWN');
   await expect(page.getByTestId('surface-susceptibility-badge')).toContainText('EXPERIMENTAL');
   await expect(page.getByTestId('hazard-category')).toContainText('NONE');
+  // An UNKNOWN surface must always render WHY. Agreement is the one the panel used to leave
+  // bare, and "UNKNOWN" with no sentence beside it reads as "the forecasts agree".
+  await expect(page.getByTestId('surface-agreement-state')).toHaveText('UNKNOWN');
+  await expect(page.getByTestId('surface-agreement-reason')).not.toBeEmpty();
+  await expect(page.getByTestId('surface-susceptibility-reason')).not.toBeEmpty();
+  await expect(page.getByTestId('surface-forcing-reason')).not.toBeEmpty();
   await expect(page).toHaveURL(/sel=basin%3Askagit/);
 
   if (renderer === 'ready') {

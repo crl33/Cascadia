@@ -15,6 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from cascade_core.models import (
     Basin,
+    DerivedFeature,
     ForecastPoint,
     ForecastRun,
     ForecastValue,
@@ -24,7 +25,18 @@ from cascade_core.models import (
     Station,
     Threshold,
 )
+from cascade_core.registry import PRODUCTS, SOURCES
 from cascade_core.timeutils import to_utc
+
+# Which products are an OFFICIAL forecast, resolved from the registry rather than listed here
+# (cascade_core.registry is the only place a source's SourceKind is declared). P3 puts a second
+# forecast product — the NWM medium-range ensemble — into `forecast_run`, so "the latest run at
+# this point" stopped being a synonym for "the official forecast at this point"
+# (docs/research/p3-surfaces-design-2026-08-24.md §3.4 defect 1).
+_SOURCE_KIND: dict[str, str] = {str(s["id"]): str(s["kind"]) for s in SOURCES}
+OFFICIAL_FORECAST_PRODUCTS: frozenset[str] = frozenset(
+    str(p["id"]) for p in PRODUCTS if _SOURCE_KIND.get(str(p["source_id"])) == "OFFICIAL_FORECAST"
+)
 
 
 @dataclass(frozen=True)
@@ -76,32 +88,128 @@ class Knowledge:
         rows = await self.observations(station_id, variable, since=self.as_of - lookback)
         return rows[-1] if rows else None
 
-    async def latest_forecast_run(self, fp_id: str) -> ForecastRun | None:
-        q = (
-            select(ForecastRun)
-            .where(ForecastRun.fp_id == fp_id, ForecastRun.available_at <= self.as_of)
-            .order_by(ForecastRun.issued_at.desc(), ForecastRun.id.desc())
-            .limit(1)
-        )
+    async def latest_forecast_run(
+        self, fp_id: str, *, product_ids: frozenset[str] | None = OFFICIAL_FORECAST_PRODUCTS
+    ) -> ForecastRun | None:
+        """The latest run known at T at this point, restricted to ``product_ids``.
+
+        ``forecast_run`` holds more than one forecast product: from P3 the NWM medium-range
+        ensemble lands in the same table as the NWRFC official forecast. Ordering by issued_at
+        across every product would hand back whichever run happens to be newest, so on any cycle
+        where the model beat the RFC the caller displaying "the official forecast" would be
+        showing a model run (design §3.4 defect 1 — the fix is the filter, not a convention).
+
+        The default is therefore the registry-resolved OFFICIAL set, not "everything": a caller
+        that says nothing gets the official forecast, which is what every existing caller means.
+        Pass an explicit set to read another product, or ``product_ids=None`` to deliberately
+        ask for the latest run of ANY product (the caller then owns badging it correctly)."""
+        q = select(ForecastRun).where(ForecastRun.fp_id == fp_id, ForecastRun.available_at <= self.as_of)
+        if product_ids is not None:
+            q = q.where(ForecastRun.product_id.in_(sorted(product_ids)))
+        q = q.order_by(ForecastRun.issued_at.desc(), ForecastRun.id.desc()).limit(1)
         return (await self.session.execute(q)).scalar_one_or_none()
 
-    async def forecast_runs(self, fp_id: str, issued_from: datetime, issued_until: datetime) -> list[ForecastRun]:
+    async def forecast_runs(
+        self,
+        fp_id: str,
+        issued_from: datetime,
+        issued_until: datetime,
+        *,
+        product_ids: frozenset[str] | None = None,
+    ) -> list[ForecastRun]:
         """Known-at-T forecast runs with issued_at inside [issued_from, issued_until], ascending.
 
         The Event Zero forecast-evolution read: select by ISSUED time, knowledge-filter by
         available_at — a backfilled run (available_at ≫ issued_at) stays invisible at any T
-        before its retrieval (ADR-0010)."""
+        before its retrieval (ADR-0010).
+
+        ``product_ids`` defaults to None = every product, because this is the *evolution* read:
+        it returns runs of every kind side by side and each item carries its own product id and
+        ProvenanceRef, so a model run shows up as a model run instead of being hidden. Pass a
+        set when a caller needs one product's history only."""
         q = (
             select(ForecastRun)
             .where(ForecastRun.fp_id == fp_id, ForecastRun.available_at <= self.as_of)
             .where(ForecastRun.issued_at >= to_utc(issued_from), ForecastRun.issued_at <= to_utc(issued_until))
-            .order_by(ForecastRun.issued_at, ForecastRun.id)
         )
+        if product_ids is not None:
+            q = q.where(ForecastRun.product_id.in_(sorted(product_ids)))
+        q = q.order_by(ForecastRun.issued_at, ForecastRun.id)
         return list((await self.session.execute(q)).scalars().all())
 
     async def forecast_values(self, run_id: int) -> list[ForecastValue]:
         q = select(ForecastValue).where(ForecastValue.run_id == run_id).order_by(ForecastValue.valid_time)
         return list((await self.session.execute(q)).scalars().all())
+
+    async def derived_features(
+        self,
+        feature: str,
+        scope_id: str,
+        *,
+        method_id: str | None = None,
+        window: str | None = None,
+        valid_from: datetime | None = None,
+        valid_until: datetime | None = None,
+        latest_per_valid_time: bool = False,
+    ) -> list[DerivedFeature]:
+        """Known-at-T derived features, ascending by (valid_time, available_at, id).
+
+        Knowledge filtering is on ``available_at`` only. ``valid_time`` is deliberately NOT
+        clamped to ``as_of``: a derived forecast feature (72-hour basin QPF) is legitimately
+        valid in the future, and clamping it would silently hide the forecast half of the
+        surface. Pass ``valid_until`` when a caller genuinely wants present-or-past rows.
+
+        ``method_id`` and ``window`` filter only when given (``None`` means "do not filter",
+        not "match NULL"). Recomputation is append-only — a new run under the same method is a
+        new row — so ``latest_per_valid_time=True`` keeps the last-known row per valid_time,
+        the same rule ``observations`` uses for revisions.
+        """
+        q = (
+            select(DerivedFeature)
+            .where(DerivedFeature.feature == feature, DerivedFeature.scope_id == scope_id)
+            .where(DerivedFeature.available_at <= self.as_of)
+            .order_by(DerivedFeature.valid_time, DerivedFeature.available_at, DerivedFeature.id)
+        )
+        if method_id is not None:
+            q = q.where(DerivedFeature.method_id == method_id)
+        if window is not None:
+            q = q.where(DerivedFeature.window == window)
+        if valid_from is not None:
+            q = q.where(DerivedFeature.valid_time >= to_utc(valid_from))
+        if valid_until is not None:
+            q = q.where(DerivedFeature.valid_time <= to_utc(valid_until))
+        rows = list((await self.session.execute(q)).scalars().all())
+        if not latest_per_valid_time:
+            return rows
+        best: dict[datetime, DerivedFeature] = {}
+        for row in rows:  # ordering means the last write for a valid_time wins
+            best[row.valid_time] = row
+        return [best[k] for k in sorted(best)]
+
+    async def latest_derived_feature(
+        self,
+        feature: str,
+        scope_id: str,
+        *,
+        method_id: str | None = None,
+        window: str | None = None,
+        lookback: timedelta = timedelta(days=30),
+    ) -> DerivedFeature | None:
+        """The most recent known-at-T row for a feature/scope with valid_time <= T.
+
+        Bounded by ``lookback`` so a surface reading a stale table gets None (and says why)
+        instead of quietly presenting a value from an arbitrary distance in the past.
+        """
+        rows = await self.derived_features(
+            feature,
+            scope_id,
+            method_id=method_id,
+            window=window,
+            valid_from=self.as_of - lookback,
+            valid_until=self.as_of,
+            latest_per_valid_time=True,
+        )
+        return rows[-1] if rows else None
 
     async def thresholds(self, fp_id: str) -> dict[str, Threshold]:
         """Latest known-at-T official threshold row per category."""

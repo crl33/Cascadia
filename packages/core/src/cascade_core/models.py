@@ -34,6 +34,7 @@ from sqlalchemy import (
     String,
     UniqueConstraint,
 )
+from sqlalchemy.dialects import postgresql
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from sqlalchemy.types import TypeDecorator
 
@@ -62,12 +63,37 @@ class UTCDateTime(TypeDecorator[datetime]):
         return None if value is None else value.replace(tzinfo=UTC)
 
 
+# JSON that becomes JSONB on PostgreSQL and stays plain JSON on SQLite. Used by the tables
+# added in migration 0002 (docs/research/p3-surfaces-design-2026-08-24.md §1.6 specifies JSONB);
+# the 0001 tables keep plain JSON — changing their column type is a schema change, not this one.
+JSONVariant = JSON().with_variant(postgresql.JSONB(), "postgresql")
+
+
 class Base(DeclarativeBase):
     pass
 
 
 class Basin(Base):
+    """A basin plus the CONFIGURED operational metadata the seed owns.
+
+    ``susceptibility_gauge_id`` names the station whose flow percentile stands in for basin
+    wetness (p3-surfaces-design §2.3): on a regulated reach, flow is an operator decision and
+    not a basin state, so the gauge is chosen per basin and is deliberately NOT always the
+    outlet. ``susceptibility_confidence_ceiling`` is the highest ConfidenceLabel that gauge may
+    ever justify, and ``susceptibility_note`` is the sentence that must be rendered with it.
+    All three are CONFIGURED: they select and caveat an observation, they never become one.
+    Like ``outlet_fp_id``, the gauge id carries no FK — station.basin_id already points the
+    other way and a second FK would make the seed flush order circular.
+    """
+
     __tablename__ = "basin"
+    __table_args__ = (
+        CheckConstraint(
+            "susceptibility_confidence_ceiling IS NULL OR "
+            "susceptibility_confidence_ceiling IN ('high', 'moderate', 'low', 'unknown')",
+            name="ck_basin_susceptibility_ceiling",
+        ),
+    )
     id: Mapped[str] = mapped_column(String, primary_key=True)
     name: Mapped[str] = mapped_column(String)
     regulation_class: Mapped[str] = mapped_column(String)
@@ -77,6 +103,9 @@ class Basin(Base):
     bbox: Mapped[list[float] | None] = mapped_column(JSON)
     geometry_ref: Mapped[str | None] = mapped_column(String)
     regulated_by: Mapped[list[str]] = mapped_column(JSON, default=list)
+    susceptibility_gauge_id: Mapped[str | None] = mapped_column(String)  # station:usgs:12189500
+    susceptibility_confidence_ceiling: Mapped[str | None] = mapped_column(String)
+    susceptibility_note: Mapped[str | None] = mapped_column(String)
 
 
 class BasinGeometry(Base):
@@ -163,6 +192,10 @@ class RawArtifact(Base):
     bytes: Mapped[int] = mapped_column(Integer)
     http_status: Mapped[int] = mapped_column(Integer)
     content_type: Mapped[str | None] = mapped_column(String)
+    # Object-store retention policy this artifact was written under (DATA_DOCTRINE §13):
+    # NULL = keep indefinitely; "gridded-90d" = the R2 lifecycle rule may expire the bytes.
+    # The row always survives, so a provenance popover can say the grid expired rather than 404.
+    retention_class: Mapped[str | None] = mapped_column(String)
 
 
 class Observation(Base):
@@ -234,6 +267,87 @@ class Threshold(Base):
     effective_from: Mapped[datetime] = mapped_column(UTCDateTime, index=True)  # = knowledge time of this row
     retrieved_at: Mapped[datetime] = mapped_column(UTCDateTime)
     raw_artifact_id: Mapped[int] = mapped_column(ForeignKey("raw_artifact.id"))
+
+
+class DerivedFeature(Base):
+    """A number Cascadia Papsukkal computed, with the chain back to what it was computed from
+    (docs/DOMAIN_MODEL.md §2.3, p3-surfaces-design §1.6).
+
+    Append-only, exactly like the observation/forecast value tables: a recomputation is a new
+    row, never an update, and a method change is a new ``method_id`` and therefore a new
+    identity (DATA_DOCTRINE §8). Nothing here is a probability; ``value``/``percentile`` are
+    method outputs whose trustworthiness is carried by ``method_id`` + ``confidence_label``.
+
+    Provenance columns, all of which the assembler needs to build a ProvenanceRef without
+    hardcoding anything: ``method_id`` (what computed it), ``product_id`` (the upstream
+    SourceProduct whose bytes it came from — NULL for a pure-Cascade derivation, and the only
+    honest way to resolve ``source_kind`` from the registry rather than assuming it),
+    ``raw_artifact_id`` / ``inputs`` / ``raw_inputs_hash`` (which bytes and rows), and the
+    three times (``valid_time`` when it is true, ``issued_at`` for a model cycle,
+    ``available_at`` when Cascadia first knew it — the knowledge-time filter reads this one).
+
+    Not partitioned in v0: at the measured volumes (~73k rows/month, p3-surfaces-design §8) it
+    does not need to be, and ADR-0013 says partition when measured, not before.
+    """
+
+    __tablename__ = "derived_feature"
+    __table_args__ = (
+        UniqueConstraint(
+            "method_id", "feature", "scope_id", "window", "valid_time", "issued_at",
+            name="uq_derived_feature_identity",
+            # window and issued_at are legitimately NULL (a present-state feature has no
+            # window; an observed-derived feature has no model cycle). Without this, PostgreSQL
+            # treats NULLs as distinct and the identity constraint would not bite exactly where
+            # it matters most. (SQLite has no equivalent; the offline suite is single-writer.)
+            postgresql_nulls_not_distinct=True,
+        ),
+        CheckConstraint(
+            "confidence_label IN ('high', 'moderate', 'low', 'unknown')",
+            name="ck_derived_feature_confidence",
+        ),
+        Index("ix_derived_feature_scope_time", "scope_id", "feature", "valid_time"),
+    )
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    feature: Mapped[str] = mapped_column(String)  # basin_qpf_72h_p50 | streamflow_doy_percentile
+    scope_kind: Mapped[str] = mapped_column(String)  # basin | forecast_point | station | reach
+    scope_id: Mapped[str] = mapped_column(String)  # basin:skagit | fp:nwps:MVEW1
+    window: Mapped[str | None] = mapped_column(String)  # 24h | 48h | 72h | 14d | None
+    valid_time: Mapped[datetime] = mapped_column(UTCDateTime, index=True)
+    issued_at: Mapped[datetime | None] = mapped_column(UTCDateTime)  # model cycle; None if observed-derived
+    computed_at: Mapped[datetime] = mapped_column(UTCDateTime)
+    available_at: Mapped[datetime] = mapped_column(UTCDateTime, index=True)
+    method_id: Mapped[str] = mapped_column(String)  # method:basin-qpf@1.0.0
+    product_id: Mapped[str | None] = mapped_column(ForeignKey("source_product.id"))
+    value: Mapped[float | None] = mapped_column(Float)
+    values_json: Mapped[dict[str, Any] | None] = mapped_column(JSONVariant)  # e.g. a percentile ladder
+    unit: Mapped[str] = mapped_column(String)
+    percentile: Mapped[float | None] = mapped_column(Float)
+    climatology_ref: Mapped[str | None] = mapped_column(String)  # usgs-ogc-daily:12189500:1929-2026
+    confidence_label: Mapped[str] = mapped_column(String, default="unknown", server_default="unknown")
+    quality: Mapped[list[str]] = mapped_column(JSONVariant, default=list)
+    inputs: Mapped[list[dict[str, Any]]] = mapped_column(JSONVariant, default=list)  # [{"table":..,"id":..}]
+    raw_inputs_hash: Mapped[str | None] = mapped_column(String)
+    raw_artifact_id: Mapped[int | None] = mapped_column(ForeignKey("raw_artifact.id"))
+
+
+class GridMask(Base):
+    """Basin x grid definition -> fractional cell weights (p3-surfaces-design §1.4).
+
+    ``grid_definition_hash`` is a hash of the grid definition the mask was built against (for
+    GRIB2, Section 3). It is part of the primary key on purpose: if the provider silently
+    changes its grid, the lookup misses and the aggregation job must refuse and report UNKNOWN
+    instead of area-weighting the wrong cells. Regenerable reference data, not a value row.
+    """
+
+    __tablename__ = "grid_mask"
+    basin_id: Mapped[str] = mapped_column(ForeignKey("basin.id"), primary_key=True)
+    grid_definition_hash: Mapped[str] = mapped_column(String, primary_key=True)
+    method_id: Mapped[str] = mapped_column(String)  # method:basin-grid-mask@1.0.0
+    cells: Mapped[list[list[float]]] = mapped_column(JSONVariant)  # [[flat_index, weight], ...]
+    cell_count: Mapped[int] = mapped_column(Integer)
+    masked_area_km2: Mapped[float] = mapped_column(Float)
+    polygon_source: Mapped[str] = mapped_column(String)  # basins_seed_full.geojson.gz@<sha256>
+    computed_at: Mapped[datetime] = mapped_column(UTCDateTime)
 
 
 class JobRun(Base):

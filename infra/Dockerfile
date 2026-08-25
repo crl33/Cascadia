@@ -14,33 +14,54 @@ ENV PYTHONUNBUFFERED=1 \
 
 WORKDIR /app
 
+# Worker-only extras installed into this image. The image is one artifact run in two modes
+# (api | worker), and on Railway a single supervised container runs both, so the worker's
+# GRIB2 stack has to be here. Build with --build-arg WORKER_EXTRAS= to get an API-only image
+# without eccodes/eccodeslib/eckitlib (~94 MB) — p3-surfaces-design §4 item 7, §8.
+ARG WORKER_EXTRAS=grib
+
 # --- layer 1: third-party dependencies (changes rarely) ----------------------
 COPY packages/contracts/pyproject.toml packages/contracts/pyproject.toml
 COPY packages/core/pyproject.toml packages/core/pyproject.toml
+COPY packages/geo/pyproject.toml packages/geo/pyproject.toml
 COPY packages/hydrology/pyproject.toml packages/hydrology/pyproject.toml
 COPY packages/providers/usgs/pyproject.toml packages/providers/usgs/pyproject.toml
 COPY packages/providers/nwps/pyproject.toml packages/providers/nwps/pyproject.toml
+COPY packages/providers/nbm/pyproject.toml packages/providers/nbm/pyproject.toml
+COPY packages/providers/awdb/pyproject.toml packages/providers/awdb/pyproject.toml
 COPY apps/api/pyproject.toml apps/api/pyproject.toml
 COPY apps/worker/pyproject.toml apps/worker/pyproject.toml
 
 # Collect every third-party requirement the local packages declare; the
 # cascade-* names are satisfied by the local installs in layer 2.
 RUN python - <<'PY' > /tmp/requirements-thirdparty.txt
+import os
 import tomllib
 from pathlib import Path
 
 paths = [
     "packages/contracts/pyproject.toml",
     "packages/core/pyproject.toml",
+    "packages/geo/pyproject.toml",
     "packages/hydrology/pyproject.toml",
     "packages/providers/usgs/pyproject.toml",
     "packages/providers/nwps/pyproject.toml",
+    "packages/providers/nbm/pyproject.toml",
+    "packages/providers/awdb/pyproject.toml",
     "apps/api/pyproject.toml",
     "apps/worker/pyproject.toml",
 ]
 deps = set()
 for p in paths:
-    for dep in tomllib.loads(Path(p).read_text())["project"]["dependencies"]:
+    project = tomllib.loads(Path(p).read_text())["project"]
+    declared = list(project["dependencies"])
+    # Worker extras (WORKER_EXTRAS build arg) join the cacheable dependency layer so a source
+    # edit never re-downloads the GRIB2 stack. Only the worker declares optional groups.
+    if p == "apps/worker/pyproject.toml":
+        optional = project.get("optional-dependencies", {})
+        for extra in filter(None, os.environ.get("WORKER_EXTRAS", "").split(",")):
+            declared += optional[extra]
+    for dep in declared:
         if not dep.lower().replace("_", "-").startswith("cascade-"):
             deps.add(dep)
 print("\n".join(sorted(deps)))
@@ -60,11 +81,14 @@ COPY apps/worker/ apps/worker/
 RUN pip install \
     ./packages/contracts \
     ./packages/core \
+    ./packages/geo \
+    ./packages/hydrology \
     ./packages/providers/usgs \
     ./packages/providers/nwps \
-    ./packages/hydrology \
+    ./packages/providers/nbm \
+    ./packages/providers/awdb \
     ./apps/api \
-    ./apps/worker
+    "./apps/worker${WORKER_EXTRAS:+[$WORKER_EXTRAS]}"
 
 # --- layer 3: runtime data, entrypoint, non-root -----------------------------
 # Basin geography LOD fixtures: the API loads CASCADE_GEO_DIR at startup.

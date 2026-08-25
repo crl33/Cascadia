@@ -1,6 +1,14 @@
 """Seed reference rows: sources/products (registry), basins (geo fixtures), stations and forecast
 points (seed/stations.json). Idempotent: rows are merged by id, never duplicated.
 
+Seed data arrives in one primary file plus named addenda (``ADDENDUM_FILES``, resolved as
+siblings of the primary seed file). Each addendum carries its own ``_provenance`` block with the
+date its values were verified, and adds fields to rows the primary file already defines rather
+than restating them — so a later phase never has to edit a file another phase owns, and no fact
+is stated twice in two places. Addendum keys are validated against the primary seed: an unknown
+basin id, forecast point id or gauge station id raises instead of silently seeding nothing (a
+mis-keyed gauge would otherwise surface as an UNKNOWN with a misleading reason).
+
 On PostgreSQL the seed additionally materializes the PostGIS surface (all regenerable
 reference geometry, never value rows — DATA_DOCTRINE append-only rules concern value tables):
 
@@ -21,6 +29,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from cascade_core.models import Basin, DataSource, ForecastPoint, SourceProduct, Station
 from cascade_core.registry import PRODUCTS, SOURCES
+
+# Seed addenda, merged in order after the primary seed file. Siblings of the primary file.
+ADDENDUM_FILES: tuple[str, ...] = ("p3_surfaces.json",)
 
 _BASIN_GEOMETRY_UPSERT = text(
     """
@@ -45,6 +56,42 @@ def load_basin_features(geo_dir: Path, lod: str) -> dict:
     return json.loads(path.read_text())
 
 
+def load_addenda(seed_file: Path) -> dict:
+    """Merge the addendum files that sit beside ``seed_file``; missing files are not an error."""
+    merged: dict[str, dict] = {"forecast_point_reach_ids": {}, "basin_susceptibility_gauges": {}, "stations": []}
+    for name in ADDENDUM_FILES:
+        path = Path(seed_file).parent / name
+        if not path.exists():
+            continue
+        data = json.loads(path.read_text())
+        merged["forecast_point_reach_ids"].update(data.get("forecast_point_reach_ids", {}))
+        merged["basin_susceptibility_gauges"].update(data.get("basin_susceptibility_gauges", {}))
+        merged["stations"].extend(data.get("stations", []))
+    return merged
+
+
+def _validate_addenda(addenda: dict, seed: dict, basin_ids: set[str]) -> None:
+    """Every addendum key must name something the primary seed defines. Typos raise here."""
+    fp_ids = {fp["id"] for fp in seed["forecast_points"]}
+    station_ids = {fp["station_id"] for fp in seed["forecast_points"]} | {
+        st["id"] for st in addenda["stations"]
+    }
+    unknown_fps = sorted(set(addenda["forecast_point_reach_ids"]) - fp_ids)
+    if unknown_fps:
+        raise ValueError(f"seed addendum names unknown forecast points: {unknown_fps}")
+    unknown_basins = sorted(set(addenda["basin_susceptibility_gauges"]) - basin_ids)
+    if unknown_basins:
+        raise ValueError(f"seed addendum names unknown basins: {unknown_basins}")
+    for basin_id, cfg in sorted(addenda["basin_susceptibility_gauges"].items()):
+        if cfg["gauge_station_id"] not in station_ids:
+            raise ValueError(
+                f"{basin_id}: susceptibility gauge {cfg['gauge_station_id']!r} is not a seeded station"
+            )
+    for st in addenda["stations"]:
+        if st["basin_id"] not in basin_ids:
+            raise ValueError(f"seed addendum station {st['id']!r} names unknown basin {st['basin_id']!r}")
+
+
 async def seed_all(session: AsyncSession, *, geo_dir: Path, seed_file: Path) -> dict[str, int]:
     counts = {"sources": 0, "products": 0, "basins": 0, "stations": 0, "forecast_points": 0}
     for s in SOURCES:
@@ -54,9 +101,14 @@ async def seed_all(session: AsyncSession, *, geo_dir: Path, seed_file: Path) -> 
         await session.merge(SourceProduct(**p))  # type: ignore[arg-type]
         counts["products"] += 1
     seed = json.loads(Path(seed_file).read_text())
+    addenda = load_addenda(Path(seed_file))
     basin_meta = seed.get("basins", {})
-    for feature in load_basin_features(geo_dir, "state")["features"]:
+    basin_features = load_basin_features(geo_dir, "state")["features"]
+    _validate_addenda(addenda, seed, {f["properties"]["id"] for f in basin_features})
+    gauges = addenda["basin_susceptibility_gauges"]
+    for feature in basin_features:
         props = feature["properties"]
+        gauge = gauges.get(props["id"], {})
         await session.merge(
             Basin(
                 id=props["id"],
@@ -68,9 +120,31 @@ async def seed_all(session: AsyncSession, *, geo_dir: Path, seed_file: Path) -> 
                 bbox=props.get("bbox"),
                 geometry_ref=f"/basins/{props['id']}/geometry?lod=basin",
                 regulated_by=list(basin_meta.get(props["id"], {}).get("regulated_by", [])),
+                # CONFIGURED: which gauge stands in for basin wetness, how far it may be
+                # trusted, and the caveat that must be rendered with it (design §2.3).
+                susceptibility_gauge_id=gauge.get("gauge_station_id"),
+                susceptibility_confidence_ceiling=gauge.get("confidence_ceiling"),
+                susceptibility_note=gauge.get("note"),
             )
         )
         counts["basins"] += 1
+    for st in addenda["stations"]:
+        # Stations with no NWPS forecast point (the unregulated Sauk proxy for the Skagit).
+        await session.merge(
+            Station(
+                id=st["id"],
+                agency=st["agency"],
+                external_id=st["external_id"],
+                name=st["name"],
+                basin_id=st["basin_id"],
+                lon=st["lon"],
+                lat=st["lat"],
+                vertical_datum=st.get("vertical_datum"),
+                time_zone=st.get("time_zone"),
+            )
+        )
+        counts["stations"] += 1
+    reach_ids = addenda["forecast_point_reach_ids"]
     for fp in seed["forecast_points"]:
         await session.merge(
             Station(
@@ -95,7 +169,7 @@ async def seed_all(session: AsyncSession, *, geo_dir: Path, seed_file: Path) -> 
                 basin_id=fp["basin_id"],
                 upstream_lids=list(fp.get("upstream_lids", [])),
                 downstream_lids=[],
-                reach_id=fp.get("reach_id"),
+                reach_id=reach_ids.get(fp["id"], fp.get("reach_id")),
                 datums=[fp["datum"]],
                 rfc="NWRFC",
                 wfo="SEW",

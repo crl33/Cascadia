@@ -46,6 +46,12 @@ const SurfaceStateSchema = z.object({
   state: SurfaceLevelSchema,
   horizon_h: z.number().nullable().optional(),
   score: z.number().nullable().optional(),
+  // contract 1.2.0: the headline quantity `state` was banded from, and the named spread points
+  // that came with it. `spread` keys are left opaque on purpose — they are the method's own
+  // statistic (`pointwise_p90` is a basin mean of a per-cell percentile, NOT a basin-scale
+  // 90th percentile) and the client renders the key it is given rather than relabelling it.
+  value: QuantitySchema.nullable().optional(),
+  spread: z.record(z.string(), z.number()).nullable().optional(),
   confidence: ConfidenceLabelSchema.optional(),
   experimental: z.boolean().optional(),
   reason: z.string().nullable().optional(),
@@ -64,6 +70,10 @@ const HazardStateSchema = z.object({
 
 const AgreementStateSchema = z.object({
   state: AgreementLevelSchema,
+  // Present since contract 1.1.0 and previously stripped here, which is why the panel had
+  // nothing to render: an UNKNOWN agreement without its reason is indistinguishable from
+  // "the two forecasts agree" (docs/DATA_DOCTRINE.md §12).
+  reason: z.string().nullable().optional(),
   explanation_ref: z.string().nullable().optional(),
   prov: z.array(z.string()).optional(),
 });

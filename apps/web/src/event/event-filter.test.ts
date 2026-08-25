@@ -45,6 +45,31 @@ const CHAIN: RunListItem[] = ISSUANCES.map(([iso, crest], i) =>
 
 const crestOf = (r: RunListItem | null): number | null => r?.points[0]?.stage ?? null;
 
+describe('a model run never takes the official forecast\'s place (P3, design §3.4)', () => {
+  // From P3 `GET /forecast-points/{lid}/runs` returns every forecast product side by side, and
+  // an NWM medium-range cycle can be issued LATER than the NWRFC run. Both consumers of this
+  // helper label what they get as the official forecast, so the model run must not be eligible.
+  const modelRun: RunListItem = {
+    ...run('2025-12-12T12:00:00Z', 99.9, null),
+    run_id: 'run:nwm:MVEW1',
+    product_id: 'product:nwm-mr-via-nwps',
+    issuer: 'NOAA OWP (National Water Model v3.1)',
+    provenance: prov({ source_id: 'src:nwm-v3.1', source_kind: 'MODELED', product_id: 'product:nwm-mr-via-nwps' }),
+  };
+
+  it('excludes it from the replay selection even when it is the latest issuance', () => {
+    const mixed = [...CHAIN, modelRun];
+    expect(currentRunAt(mixed, '2025-12-12T13:00:00Z')?.run_id).toBe(CHAIN[CHAIN.length - 1]!.run_id);
+    expect(crestOf(currentRunAt(mixed, '2025-12-12T13:00:00Z'))).toBe(38.1); // not the model's 99.9
+    expect(runsIssuedAtOrBefore(mixed, '2025-12-12T13:00:00Z').map((r) => r.product_id))
+      .not.toContain('product:nwm-mr-via-nwps');
+  });
+
+  it('shows nothing rather than a model run when only a model run exists', () => {
+    expect(currentRunAt([modelRun], '2025-12-12T13:00:00Z')).toBeNull();
+  });
+});
+
 describe('run selection by the replay clock (EVENT_ZERO §8 look-ahead audit item 5)', () => {
   it('selects the latest run issued at or before the cursor', () => {
     // At T = §5 #47 (the 42.3 ft peak forecast) the current crest is 42.3 …
