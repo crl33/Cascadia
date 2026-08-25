@@ -3,6 +3,10 @@
 Ids are the vocabulary shared by providers, hydrology, the API and /system/health. Cadence and
 grace seconds are the seed values; the SourceProduct rows are what freshness is computed from.
 
+`JOBS` is the job catalogue in the same vocabulary: name, provider, source, the products each
+job writes, cadence. `/system/health` is derived from it rather than from a hand-kept list, so a
+newly registered job is covered the moment it exists (see `JobSpec`).
+
 `kind` here is the ONLY place a source's SourceKind is declared. Nothing downstream may hardcode
 one: an adapter, an assembler or a ProvenanceRef resolves it by looking the product's source up
 here (or in the seeded `data_source` row), so a model product can never be badged as an official
@@ -15,6 +19,8 @@ core at cycle + 42–44 m).
 """
 
 from __future__ import annotations
+
+from dataclasses import dataclass
 
 SRC_USGS = "src:usgs-nwis-iv"
 SRC_NWPS = "src:nwps-v1"
@@ -69,8 +75,15 @@ PRODUCTS: tuple[dict[str, object], ...] = (
     # cycle (design §1.1, measured). A displayed QPF percentile can legitimately be 7-13 h old
     # and the freshness badge must say so rather than the grace hiding it.
     {"id": PRODUCT_NBM_QMD, "source_id": SRC_NBM, "label": "NBM v5.0 QPF percentiles (qmd, WA subset via NOMADS filter_blend.pl)", "variables": ["precip_accum"], "expected_cadence_seconds": 21600, "grace_seconds": 28800},
-    # PT1H / PT1H: core is hourly and landed at cycle + 42-44 m (design §1.1, measured).
-    {"id": PRODUCT_NBM_CORE, "source_id": SRC_NBM, "label": "NBM v5.0 core, snow-level percentiles (WA subset via NOMADS filter_blend.pl)", "variables": ["snow_level"], "expected_cadence_seconds": 3600, "grace_seconds": 3600},
+    # PT6H / PT8H, matching qmd — NOT the PT1H at which NOAA publishes `core`. Freshness is
+    # computed against the anchor Cascade STORES, and `nbm.fetch_core_snowlvl` runs 6-hourly and
+    # selects its cycle with `latest_qmd_cycle` (7.5 h latency), so the stored anchor is never
+    # younger than 7.5 h and never older than ~13.5 h. Against a PT1H cadence that is stale on
+    # every cycle: measured 2026-08-25 on a fresh database with all ten jobs green,
+    # `/system/health` answered `degraded` naming this product alone, 47,760 s old against a
+    # 3,600 s cadence (pg-migration-verification-2026-08-24 §P3.9). A health endpoint that is
+    # degraded whatever happens hides a real failure exactly as well as one that is always ok.
+    {"id": PRODUCT_NBM_CORE, "source_id": SRC_NBM, "label": "NBM v5.0 core, snow-level percentiles (WA subset via NOMADS filter_blend.pl)", "variables": ["snow_level"], "expected_cadence_seconds": 21600, "grace_seconds": 28800},
     # PT6H / PT8H: medium range runs 00/06/12/18Z. Member count is read from the payload,
     # never assumed (design §7 item 4).
     {"id": PRODUCT_NWM_MR, "source_id": SRC_NWM, "label": "NWM v3.1 medium-range ensemble by reach via NWPS /reaches (members, never blended with the official forecast)", "variables": ["flow"], "expected_cadence_seconds": 21600, "grace_seconds": 28800},
@@ -84,3 +97,92 @@ PRODUCTS: tuple[dict[str, object], ...] = (
     {"id": PRODUCT_AWDB_DAILY, "source_id": SRC_AWDB, "label": "SNOTEL daily values (WTEQ, PREC) with per-value median, point network", "variables": ["swe", "precip_accum"], "expected_cadence_seconds": 86400, "grace_seconds": 129600},
     {"id": PRODUCT_AWDB_STATIONS, "source_id": SRC_AWDB, "label": "AWDB station metadata (triplet, HUC, elevation, station elements)", "variables": ["metadata"], "expected_cadence_seconds": 604800, "grace_seconds": 604800},
 )
+
+
+@dataclass(frozen=True)
+class JobSpec:
+    """One registered ingest job, described in the vocabulary everything else already shares.
+
+    This is the *catalogue*: what the job is called, whose bytes it reads, which products it
+    writes and how often it is expected to run. The worker binds each name to a callable
+    (`apps/worker/src/cascade_worker/scheduler.py`); `/system/health` reads the catalogue to know
+    what it must account for. The API cannot import the scheduler — that would drag the provider
+    adapters into `cascade_api` and break the import contract — so the two live apart and are
+    pinned together by `tests/unit/test_job_registry.py`, which imports both in the test process
+    and fails when a job is registered in one and missing from the other, or when the cadences
+    disagree. A job added to the scheduler and forgotten here is a red test, not a blind spot:
+    that blindness is exactly what let `nbm.fetch_core_snowlvl` fail on every cycle while
+    `/system/health` answered `ok` (pg-migration-verification-2026-08-24 §P3.6 finding C).
+
+    `products` is what the job WRITES, and it is what the freshness half of `/system/health`
+    expects to see arrive. It is empty for a job that produces no product rows at all
+    (`nbm.build_grid_masks` writes basin masks, not values).
+    """
+
+    name: str
+    #: Health grouping key — one upstream service, several jobs. Kept short and stable because
+    #: it is the key clients see in `/system/health`'s `providers` map.
+    provider: str
+    #: The registry source this job reads from, so `source_kind` is never guessed here either.
+    source_id: str
+    products: tuple[str, ...]
+    #: Seconds between scheduled runs; must equal the scheduler's cadence for the same job.
+    cadence_seconds: int
+
+
+JOBS: tuple[JobSpec, ...] = (
+    JobSpec("nwps.fetch_thresholds", "nwps", SRC_NWPS, (PRODUCT_NWPS_THRESHOLDS,), 6 * 3600),
+    JobSpec("nwps.fetch_forecast", "nwps", SRC_NWPS, (PRODUCT_NWPS_FORECAST,), 30 * 60),
+    JobSpec("usgs.fetch_iv", "usgs", SRC_USGS, (PRODUCT_USGS_IV,), 900),
+    # Writes grid masks, not values: no product of its own, and therefore nothing in the
+    # freshness map. Its health is still reported — a silently failing mask build is what makes
+    # every NBM basin mean read UNKNOWN (see the scheduler's JOBS docstring).
+    JobSpec("nbm.build_grid_masks", "nbm", SRC_NBM, (), 86400),
+    JobSpec("nbm.fetch_qmd", "nbm", SRC_NBM, (PRODUCT_NBM_QMD,), 6 * 3600),
+    JobSpec("nbm.fetch_core_snowlvl", "nbm", SRC_NBM, (PRODUCT_NBM_CORE,), 6 * 3600),
+    JobSpec("nwm.fetch_reach_medium_range", "nwm", SRC_NWM, (PRODUCT_NWM_MR,), 6 * 3600),
+    # Builds both ladders in one pass: Cascade's own from the OGC daily record, and the USGS
+    # published day-of-year table as the cross-check. They are stored separately and never averaged.
+    JobSpec("usgs.build_climatology", "usgs-stats", SRC_USGS_STATS, (PRODUCT_USGS_OGC_DAILY, PRODUCT_USGS_DAILY_STATS), 31_536_000),
+    JobSpec("usgs.fetch_daily_percentile", "usgs-ogc", SRC_USGS_OGC, (PRODUCT_USGS_OGC_DAILY,), 86400),
+    JobSpec("awdb.fetch_snotel_context", "awdb", SRC_AWDB, (PRODUCT_AWDB_DAILY, PRODUCT_AWDB_STATIONS), 86400),
+    # Registered on the QUEUE only, never in `scheduler.JOBS` (it needs PostgreSQL, and `run-once`
+    # must keep working on sqlite) — but it runs through `run_job` like everything else, leaves
+    # job_run rows, and keeps the observation partition horizon ahead of ingestion. It belongs
+    # here for exactly the reason this catalogue exists: a job whose only registration is in a
+    # place health does not read is a job health cannot see. Monthly cron `3 0 1 * *`.
+    JobSpec("maintenance.ensure_observation_partitions", "cascade", SRC_CASCADE, (), 30 * 86400),
+)
+
+JOBS_BY_NAME: dict[str, JobSpec] = {job.name: job for job in JOBS}
+
+#: Registered products that NO scheduled job writes, with the reason. Listing them explicitly is
+#: what stops a new product from being quietly dropped from `/system/health`'s freshness map:
+#: `tests/unit/test_job_registry.py` asserts every id in `PRODUCTS` is either written by a job or
+#: named here, so "nothing writes this" has to be a decision someone made, not an omission.
+UNSCHEDULED_PRODUCTS: dict[str, str] = {
+    # Event Zero reconstruction only: written by the December-2025 backfill, never on a cron.
+    PRODUCT_NWS_FLS_CREST: "backfill-only (Event Zero); no scheduled job writes it",
+}
+
+#: product id -> the jobs that write it, in `JOBS` order. Derived, never hand-listed.
+PRODUCT_WRITERS: dict[str, tuple[str, ...]] = {
+    pid: tuple(job.name for job in JOBS if pid in job.products)
+    for pid in dict.fromkeys(pid for job in JOBS for pid in job.products)
+}
+
+#: The products `/system/health` expects to see arrive, in registry order. A product here with no
+#: rows is reported as `missing` with a reason — it never falls out of the report.
+EXPECTED_PRODUCTS: tuple[str, ...] = tuple(str(p["id"]) for p in PRODUCTS if str(p["id"]) in PRODUCT_WRITERS)
+
+#: Products that legitimately produce NO value rows — metadata, not measurements — and can
+#: therefore only ever be anchored on the bytes that were fetched. Freshness falls back to
+#: `raw_artifact` for THESE and nothing else (`Knowledge.product_freshness_anchors`).
+#:
+#: The list has to be explicit because bytes are not values. `nbm.build_grid_masks` fetches a
+#: `product:nbm-v5-core` file of its own, so on a database where `nbm.fetch_core_snowlvl` has
+#: never once succeeded there are still `raw_artifact` rows for that product — and an unrestricted
+#: fallback answered `state: current, reason: null` for a product of which not one value has ever
+#: been produced (measured 2026-08-25, pg-migration-verification-2026-08-24 §P3.9). A product that
+#: is supposed to yield values and has none reads `missing`, which is the truth.
+METADATA_ONLY_PRODUCTS: frozenset[str] = frozenset({PRODUCT_AWDB_STATIONS})

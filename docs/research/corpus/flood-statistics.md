@@ -40,6 +40,12 @@ Four independent lines converge on that:
    **52 %** have already recorded a peak exceeding their own published 1 % AEP estimate. Under
    perfect stationarity and a perfect estimate, the expected fraction for these record lengths is
    **49 %** (FACT — computed, §3). The observation is the arithmetic, not the climate.
+   Caveat on how strong that test is: each published 1 % AEP estimate is *fitted to the very record
+   whose maximum is then compared against it*, so the record max is one of the observations that set
+   the quantile. The comparison is a consistency check on the fitting procedure, not a powerful test
+   of stationarity — a real trend would already be partly absorbed into the fitted quantile. It
+   refutes "the 100-year flood keeps happening, therefore the climate has shifted"; it does not, on
+   its own, establish stationarity (INFERENCE).
 
 The one thing a provenance-strict platform *can* do with frequency information is the thing nobody
 does: carry it as a **dated, versioned, method-stamped estimate with its confidence interval and its
@@ -263,7 +269,7 @@ named. They are INFERENCE-grade derivations of FACT-grade inputs, not published 
 | 17C AEP validity range | quantiles **0.10 to ~0.002**; below 0.005 "generally require augmentation"; below 0.002 needs >1,000-year historical/paleoflood records | p. 4, p. 36 | Bulletin 17C |
 | 17C applicability | applies "only to portions of the flood frequency curve for AEPs less than 0.10" | p. 36 | Bulletin 17C |
 | Risk over a design life at p=0.01 | 22 % / 25 yr · 40 % / 50 yr · 63 % / 100 yr · 26 % / 30 yr | quoted verbatim in 17C | Bulletin 17C p. 4–5 |
-| PNW regional skew (17C-compliant) | **G = −0.07**, MSE = **0.180**, GSE = 0.4243 | constant model, best for the whole PNW; 290 gauges ≥35 yr in ID/OR/WA/western MT | [SIR 2016–5118](https://pubs.usgs.gov/sir/2016/5118/sir20165118.pdf) p. 23, p. 46 |
+| PNW regional skew (B-WLS/B-GLS, the method 17C later recommended) | **G = −0.07**, MSE = **0.180**, GSE = 0.4243 | constant model, best for the whole PNW; 290 gauges ≥35 yr in ID/OR/WA/western MT | [SIR 2016–5118](https://pubs.usgs.gov/sir/2016/5118/sir20165118.pdf) p. 23, p. 46 |
 | Superseded national skew map | MSE = **0.3025** | Bulletin 17B plate 1; 17C explicitly does not recommend it | SIR 2016–5118; Bulletin 17C |
 | WA regional-regression standard error | **43.2–58.0 %** (western WA, Regions 3–4); 69.1–119.6 % (eastern WA) | ungauged-site estimates | SIR 2016–5118 abstract |
 | WA regional-regression pseudo-R² | **92.35–95.44** (Regions 3–4) | western WA is the well-behaved half of the state | SIR 2016–5118 abstract |
@@ -272,7 +278,7 @@ named. They are INFERENCE-grade derivations of FACT-grade inputs, not published 
 | AR share of largest peaks | "nearly all of the top-5 and top-10 peaks on record" even where ARs are only 30–70 % of the record | the upper tail is AR-dominated | Barth et al. 2017 |
 | AR-only vs mixed LP3 quantiles | RPDs commonly negative → AR-only quantile estimates are **higher** than mixed-population estimates | i.e. pooling *dilutes* the tail | Barth et al. 2017 |
 | **Western WA cool-season share of annual peaks** ***(computed here)*** | Skagit@Concrete **80 %**, Skagit@Mount Vernon **86 %**, Snoqualmie@Carnation **95 %**, Skykomish@Gold Bar **95 %** | Oct–Mar vs Apr–Sep, full NWIS peak record | NWIS peak files, §3 method below |
-| **Warm-season peaks in the top 20** ***(computed here)*** | **0 of 20 at all four gauges**; at Concrete 19 warm-season peaks (18 % of record) contribute nothing to the tail | the mixed population is real and the mixture is entirely in the *body* | NWIS peak files |
+| **Warm-season peaks in the top 20** ***(computed here)*** | **0 of 20 at Concrete, Carnation and Gold Bar; 1 of 20 at Mount Vernon** (1959-04-30, 92,300 cfs, rank 16). Also 1 of 20 at Green@Auburn and at NF Nooksack@Glacier | the mixture is *overwhelmingly*, not *entirely*, in the body: warm-season peaks are near-absent from the tail but not categorically absent | NWIS peak files |
 | **Cool/warm mean peak ratio** ***(computed here)*** | Concrete 1.53 · Mount Vernon 1.45 · Carnation 1.67 · Gold Bar 1.88 | two populations, cleanly separated in the mean | NWIS peak files |
 | **Median 95 % CI width on the 1 % AEP, western WA** ***(computed here)*** | **factor 1.66** (IQR 1.53–1.86), 69 gauges with ≥50 yr | e.g. Snoqualmie@Carnation 1 % AEP = 86,700 cfs, CI **69,700–108,000** | SIR 2016–5118 table 8 |
 | **Median 95 % CI width on the 0.2 % AEP, western WA** ***(computed here)*** | **factor 1.98** | the "500-year flood" is known to a factor of two | SIR 2016–5118 table 8 |
@@ -280,15 +286,16 @@ named. They are INFERENCE-grade derivations of FACT-grade inputs, not published 
 | **…exceeding their own 0.2 % AEP** ***(computed here)*** | 6 of 69 (**8.7 %**); expectation **12.8 %** | slightly *fewer* than expected — consistent with the fitted tail being pulled up by the record max | SIR 2016–5118 table 8 |
 | Skykomish @ Gold Bar | published 1 % AEP = **121,000 cfs** (CI 96,300–153,000); observed max **129,000 cfs** (2006-11-06) | the record maximum exceeds the published 100-year flood | SIR 2016–5118 table 8; NWIS |
 | Sauk near Sauk (unregulated) | 1 % AEP = **104,000 cfs** (CI 80,200–136,000); observed max 106,000 | the least-contaminated long record in the Skagit system | SIR 2016–5118 table 8 |
-| **Kendall τ, WA long records through WY2025** ***(computed here)*** | NF Stillaguamish @ Arlington **+0.345 (p<0.0001)**; Sauk nr Sauk **+0.199 (p=0.0038)**; NF Nooksack @ Deming **+0.310 (p<0.0001)**; Skykomish @ Gold Bar +0.168 (p=0.015) | full record, historic peaks excluded | NWIS peak files |
-| **…same gauges restricted to WY1970–2025** ***(computed here)*** | Arlington **+0.092 (p=0.32)**; Sauk **+0.066 (p=0.48)**; Gold Bar +0.100 (p=0.28); **Nooksack +0.362 (p=0.0001)** | three of four significant trends vanish — they are steps, not trends. Nooksack is the exception | NWIS peak files |
+| **Kendall τ, WA long records through WY2025** ***(computed here)*** | NF Stillaguamish @ Arlington **+0.345 (p<0.0001)**; Sauk nr Sauk **+0.199 (p=0.0038)**; NF Nooksack bl Cascade Ck nr Glacier (12205000) **+0.310 (p<0.0001)**; Skykomish @ Gold Bar +0.168 (p=0.015) | full record, historic peaks excluded | NWIS peak files |
+| **…same gauges restricted to WY1970–2025** ***(computed here)*** | Arlington **+0.092 (p=0.32)**; Sauk **+0.066 (p=0.48)**; Gold Bar +0.100 (p=0.28); **Nooksack@Glacier +0.362 (p=0.0001)** | three of four significant trends vanish — they are steps, not trends. Nooksack is the exception | NWIS peak files |
 | **Regulated gauges** ***(computed here)*** | Green @ Auburn **τ = −0.187 (p=0.010)**; Skagit @ Concrete −0.028 (p=0.68); Skagit @ Mount Vernon +0.048 (p=0.51) | a significant *negative* trend at Auburn measures Howard Hanson, not climate | NWIS peak files |
+| **Green @ Auburn is a step, not a trend** ***(computed here)*** | WY1970–2025: τ = **−0.070 (p=0.46)**, not significant. Median annual peak pre-WY1962 **12,900 cfs** (n=25) vs WY1962+ **9,005 cfs** (n=62) | Howard Hanson closed 1961–62; the negative trend is a level shift at impoundment, tested the same way as the four unregulated gauges above | NWIS peak file 12113000 |
 | USGS WA trend result (published) | 21 of 83 long-term sites significant at p≤0.05 (16 positive, 5 negative); max \|τ\| = 0.41; "all sites with increasing trends were on the western side of the Cascade Mountains" | data through WY2014 | SIR 2016–5118 p. 8 |
 | Peaks-above-base frequency trend, WA | τ = 0.125, **p = 0.0897 — not significant**; PDO+SOI regression adj. R² = **0.03**, no variable significant at 0.1 | 65 gauges, WY1930–2014 | SIR 2016–5118 p. 10–11 |
 | WA active trends | 38 sites positive, 21 negative; half the positive ones began after 1965 | trends including WY2014 | SIR 2016–5118 p. 13 |
 | Step trends in WA | positive steps around **1940–1950** and the **late 1960s**, persisting to 2014 | "Flood frequencies computed before and after a step trend will have different magnitudes" | SIR 2016–5118 p. 13 |
 | **Regulation flag density** ***(computed here)*** | Skagit@Concrete **101/107** peaks coded 6; Skagit@Mount Vernon **85/86**; Green@Auburn **62/87**; Snoqualmie@Carnation **22/95** coded 5 | USGS itself flags the record as regulated | NWIS peak files, `peak_cd` |
-| **Snowmelt flag density** ***(computed here)*** | code 9 ("snowmelt, hurricane, ice-jam or debris dam breakup") appears **3 times in the 900 annual peaks** across the ten records checked — 2 at Sauk nr Sauk, 1 at NF Nooksack, zero elsewhere | **USGS peak codes cannot serve as the "objective criterion" 17C demands for mixed-population separation in western WA** | NWIS peak files |
+| **Snowmelt flag density** ***(computed here)*** | code 9 ("snowmelt, hurricane, ice-jam or debris dam breakup") appears **3 times in the 900 annual peaks** across the ten records checked — 2 at Sauk nr Sauk, 1 at NF Nooksack bl Cascade Ck nr Glacier (12205000), zero elsewhere | **USGS peak codes cannot serve as the "objective criterion" 17C demands for mixed-population separation in western WA** | NWIS peak files |
 | Skagit historic peaks, published (revised 2007) | 1815: **510,000** · 1856: **340,000** · 1897: **265,000** · 1909: **245,000** · 1917: **210,000** · 1921: **228,000** cfs | table 1; revisions of −5.8 % to +2.0 % from the previously published values | [SIR 2007–5159](https://pubs.usgs.gov/sir/2007/5159/pdf/sir20075159.pdf) |
 | Skagit historic peaks, prior published | 1815: 500,000 · 1856: 350,000 · 1897: 275,000 · 1909: 260,000 · 1917: 220,000 · 1921: 240,000 cfs | the values in force 1923–2007 | SIR 2007–5159 table 1 |
 | 1921 recalculations | 228,000 cfs (from 1949 n-verification) = **−5.0 %**; 219,000 cfs (from 2003/2006 data) = **−8.8 %**; 225,000 cfs (Flynn & Benson 1952) = −6.2 % | three independent recalculations, all lower than Stewart's 240,000 | SIR 2007–5159 |
@@ -309,7 +316,18 @@ Seasonality: month of `peak_dt`, Oct–Mar vs Apr–Sep; the 1815/1856 rows have
 excluded from both. Trend: Kendall τ on (water year, peak), historic peaks (`peak_cd` containing 7)
 excluded, water year = calendar year + 1 for Oct–Dec. CI ratios and exceedance counts: USGS SIR
 2016–5118 table 8 xlsx (`sir20165118_table8.xlsx`), line 3 (weighted flood discharge), line 4 (95 %
-CI), column "Maximum peak used in analysis". Illustrative LP3: method-of-moments on log₁₀ Q with
+CI), column "Maximum peak used in analysis".
+**Reproducibility note (adversarial re-derivation, 2026-08-24).** An independent re-parse of the same
+workbook under the stated filter (flood region 3 or 4, column E ≥ 50 systematic peaks) returned **76**
+gauges, not 69 — median record 68 yr (matches), median 95 % CI ratio **1.63** at 1 % AEP and **1.94**
+at 0.2 % AEP, **40 of 76 (52.6 %)** exceeding their own 1 % AEP against a binomial expectation of
+49.5 %, and 7 of 76 (9.2 %) at 0.2 % AEP against 12.9 %. No variant of the filter (section A only,
+other record-length thresholds from 48 to 59) reproduces a denominator of 69, and the median CI ratio
+is stable at 1.61–1.63 across all of them — never 1.66. **The gauge count and the second decimal place
+of the CI ratios should be treated as unconfirmed; the substantive result is unchanged** — a factor of
+~1.6–1.7 at 1 % AEP, ~1.9–2.0 at 0.2 % AEP, and observed exceedance ≈ binomial expectation.
+
+Illustrative LP3: method-of-moments on log₁₀ Q with
 Wilson–Hilferty `K`, station skew weighted to the PNW regional skew −0.07 (MSE 0.180) using the
 Bulletin 17B `MSE_Ĝ` approximation. **This is deliberately not an EMA/MGBT analysis** — its purpose
 is to show the size of the sensitivity, not to produce a number anyone should use.
@@ -355,17 +373,42 @@ is to show the size of the sensitivity, not to produce a number anyone should us
   Serinaldi & Kilsby (2015) argued "stationarity is undead: uncertainty dominates the distribution
   of extremes", finding that model-complexity uncertainty can swamp any gain; Luke et al. (2017)
   split-sampled 1,250 US annual-maximum records and found the **stationary approach superior in
-  out-of-sample prediction while the non-stationary approach won only within-sample**. *(Serinaldi &
-  Kilsby, Milly, Montanari & Koutsoyiannis, and the Luke et al. full text were **not independently
-  fetched** — ScienceDirect and Wiley returned 403. The characterisations above are from search-result
-  summaries and from Slater et al. 2021, which I did fetch and which states the same conclusion in its
-  own words. Treat the Luke numbers as INFERENCE pending a fetched copy.)*
+  out-of-sample prediction while the non-stationary approach won only within-sample**.
+  **Luke et al. was subsequently fetched in full** (eScholarship copy of WRR 53(7):5469–5494) and that
+  characterisation is confirmed verbatim: "Our analysis shows that the ST predictions are preferred,
+  overall. NS model parameter extrapolation is rarely preferred" (FACT). **But it carries a carve-out
+  that applies directly to this platform's basins and was omitted above:** "if fitting period
+  discharges are influenced by physical changes in the watershed, for example from anthropogenic
+  activity, the uST model is strongly preferred relative to ST and NS predictions. The uST model is
+  therefore recommended for evaluation of current flood risk in watersheds that have undergone
+  physical changes" (FACT, quoted) — uST being an *updated stationary* model fitted with the
+  non-stationary parameter values at the end of the record. Skagit, Green, White and Cedar are
+  watersheds that have undergone exactly such physical change, so Luke et al. does **not** license
+  "fit the whole record as stationary" for them; it licenses refitting stationary parameters to the
+  post-change period. *(Serinaldi & Kilsby, Milly, and Montanari & Koutsoyiannis full texts were
+  **not independently fetched** — ScienceDirect and Wiley returned 403 — though each was confirmed to
+  exist with the stated authors, journal, volume and pages. Their characterisations are from
+  search-result summaries and from Slater et al. 2021, which I did fetch.)*
 - **Are western Washington peak flows actually a mixed population requiring separate treatment?**
   Barth et al. (2017) say the AR/non-AR split matters for quantile estimation in the western US.
   USGS SIR 2016–5118 — the authoritative Washington study, published the year before — inspected the
   frequency plots and concluded: "no streamgages had substantially diverging distributions that
-  required a mixed-population analysis" (FACT, quoted, p. 23). **Both are USGS-affiliated, both are
-  post-17C, and they disagree about our state.** Neither has been revisited.
+  required a mixed-population analysis" (FACT, quoted, p. 23). Read the whole passage, though: the
+  same page first concedes "many of the streamgages in the flood frequency analyses **do** have a
+  mixed population of peak flows", and rejects only *separate treatment*, on the grounds that "the
+  single log-Pearson Type III distribution seemed to capture both populations reasonably well"
+  (FACT, quoted, p. 23). The disagreement with Barth et al. is therefore about the *criterion*
+  (visual divergence of a fitted curve vs. quantile difference under an event catalogue), not about
+  whether a mixture exists — both agree it does. **Both are USGS-affiliated and they disagree about our state.** One further qualification on the
+  worked example: Stehekin River (12451000) sits in the report's **flood region 2**, not regions 3–4 —
+  an east-slope, Lake Chelan, snowmelt-dominated basin, a different hydroclimate from the maritime
+  western-Washington basins this platform covers (FACT — table 8, region column). The report's
+  *conclusion* is stated for every streamgage in the study and so does cover western Washington, but
+  its *demonstration* is not a western Washington river. Note both *predate* Bulletin 17C
+  (England and others, 2018): SIR 2016–5118 states it "follows the methodology set by Bulletin 17B …
+  except for the use of the Expected Moments Algorithm (EMA) and the Multiple Grubbs-Beck (MGB)
+  low-outlier test", and Barth and others frame their analysis against "the Bulletin 17B framework".
+  Neither has been revisited.
 - **The Skagit historic peaks.** USGS wrote in October 2006 that 240,000 cfs was the best value and
   that "it would be improper to use a lesser value"; in 2007 USGS published 228,000 cfs and revised
   all five other historic peaks. The dispute is regulatory (it sets the USACE design flood and the
@@ -375,7 +418,7 @@ is to show the size of the sensitivity, not to produce a number anyone should us
   significant positive trends concentrated in western Washington, but also identifies **step changes
   around 1940–1950 and the late 1960s** and notes that Cohn & Lins (2005) long-term persistence
   inflates significance. My own computation through WY2025 (§3) shows that three of four significant
-  full-record trends **become insignificant when restricted to 1970–2025**. NF Nooksack at Deming is
+  full-record trends **become insignificant when restricted to 1970–2025**. NF Nooksack below Cascade Creek near Glacier (12205000) is
   the exception (τ = +0.362, p = 0.0001 post-1970) — and it drains Mount Baker, where sediment supply
   and channel aggradation are a competing explanation for rising *stage* and possibly for rating-derived
   *discharge* (INFERENCE; see the sediment discussion in `flood-genesis-mechanisms-2026-08-24.md` §6.3).
@@ -388,7 +431,8 @@ is to show the size of the sensitivity, not to produce a number anyone should us
 
 - Bulletin 17C's *machinery* (EMA, interval data, perception thresholds, MGBT, weighted skew) is
   distribution-agnostic bookkeeping and applies anywhere.
-- The 17C-compliant **PNW regional skew of −0.07 (MSE 0.180)** was developed specifically for
+- The **PNW regional skew of −0.07 (MSE 0.180)** — developed by B-WLS/B-GLS, the regionalisation 17C
+  later recommended, though published two years before 17C — was developed specifically for
   ID/OR/WA/western MT from 290 gauges — this is a regionally correct parameter, not an import.
 - Barth et al.'s AR-dominance finding is *strongest* in our region (>80 %, ~100 % at some sites), so
   the mixed-population critique transfers with extra force, not less.
@@ -524,7 +568,7 @@ frequency claim:
 | Source | Why | Buildable now |
 |---|---|---|
 | **USGS NWIS peak file** (`nwis.waterdata.usgs.gov/nwis/peak?...&format=rdb`) per gauge | rank-in-record, historic crest provenance, qualification codes, the honest alternative to a return period | yes — plain RDB, no auth, one request per site |
-| **USGS SIR 2016–5118 table 8** (`sir20165118_table8.xlsx`) | the *only* 17C-compliant published AEP estimates with 95 % CIs for Washington; useful as a labelled external reference and as the source of the CI-width honesty statement | yes — static xlsx, but ingest only if §6.2 option 2 is adopted |
+| **USGS SIR 2016–5118 table 8** (`sir20165118_table8.xlsx`) | the only published AEP estimates with 95 % CIs for Washington computed with EMA + MGBT + a B-GLS regional skew (17C's machinery, though the report itself is written against Bulletin 17B and predates 17C); note it **excludes regulated streamgages by design** — 12194000 and 12200500 are absent from table 8; useful as a labelled external reference and as the source of the CI-width honesty statement | yes — static xlsx, but ingest only if §6.2 option 2 is adopted |
 | **NOAA Atlas 15 Volume 1 (CONUS preliminary, Sept 2026)** | will supersede Atlas 2 (1973) as Washington's precipitation-frequency basis; the platform's first chance to hold a non-stationary frequency product with a stated vintage | **not yet — watch item, ~1 month out.** Do not design against the pilot format |
 | **NOAA Atlas 2 Vol 9 (1973) / TP-49 (1964)** | the *current* standard, for context only | no — do not ingest; a 1973 design storm has no operational use here |
 | **A Cascade-computed FFA** | — | **no. Do not build.** 17C excludes regulated basins, provides no evaluated mixed-population method, and the platform has no calibrated basis to deviate. This would be a fabricated certainty of exactly the kind the doctrine exists to prevent |
@@ -554,7 +598,7 @@ frequency claim:
 | 2 | `DATA_DOCTRINE.md` §2, closed `source_kind` taxonomy | **Incomplete for this domain.** A published frequency quantile fits no existing kind; see §6.2 | Bulletin 17C; SIR 2016–5118 table 8 structure |
 | 3 | `DATA_DOCTRINE.md` §9(c): probabilities allowed if "(a) issued by an authority" | **Too permissive.** Admits a 1 %-AEP quantile with a factor-1.66 CI as if it were an issued forecast probability | §3 CI computation; §6.6 |
 | 4 | `HYDROLOGY.md` §5: "Thresholds are official NWS categories… Reach-level thresholds without an official forecast point are a later, clearly-labeled derivation" | **Confirmed and strengthened.** NWPS carries *no* recurrence field at any of MVEW1/CONW1/CRNW1/AUBW1, so there is no official recurrence object to inherit even if the platform wanted one. Also confirms the flow/stage split (AUBW1 flow-defined, others stage-defined) with `-9999` sentinels on the unused basis | NWPS v1 API, fetched 2026-08-24 |
-| 5 | `HYDROLOGY.md` §2: "regulation_class (natural / partially regulated / regulated) is a domain attribute that changes how every downstream quantity is interpreted" | **Confirmed, and now load-bearing for statistics too.** Bulletin 17C's scope exclusion makes regulation_class a *legal* gate on FFA, not only an interpretive one. Green at Auburn's significant negative τ is the demonstration | Bulletin 17C p. 2; τ computed §3 |
+| 5 | `HYDROLOGY.md` §2: "regulation_class (natural / partially regulated / regulated) is a domain attribute that changes how every downstream quantity is interpreted" | **Confirmed, and now load-bearing for statistics too.** Bulletin 17C's scope exclusion makes regulation_class a *scope* gate on FFA, not only an interpretive one. (Not a *legal* one: 17C says federal agencies are "requested to use these Guidelines" and provides an explicit deviation clause — "deviations must be supported by appropriate study and accompanied by a comparison of results using the recommended procedures", p. 4. And USGS code 6 is a binary "affected by regulation or diversion" flag carrying no magnitude threshold, so code-6 density evidences regulation but does not by itself establish 17C's predicate of flows "appreciably altered".) Green at Auburn's significant negative τ is the demonstration | Bulletin 17C p. 2; τ computed §3 |
 | 6 | `HYDROLOGY.md` §12: Event Zero record crest at Mount Vernon | **Qualified.** Correct as a *stage* record and correctly separated from flow in the existing text — but the December 2025 peak is **not yet in the USGS annual peak series** (which ends WY2025) and is `preliminary: "P"` in NWPS. "Record" must name its series and its approval state | NWIS peak file 12200500; NWPS MVEW1 |
 | 7 | `HYDROLOGY.md` §8: percentiles "labeled as derived from the product's own reanalysis with the period stated" | **Confirmed, and one field short.** The period is necessary but not sufficient at a regulated gauge; regulation status belongs in the same label | `susceptibility.py`; peak_cd census §3 |
 | 8 | `flood-genesis-mechanisms-2026-08-24.md` §6.7: "NOAA is replacing Atlas 14 with NOAA Atlas 15" | **Qualified — the premise is wrong for Washington.** Washington was never in Atlas 14. It is on **NOAA Atlas 2 Vol 9 (1973)**. Atlas 15 will be the first update in 53 years, not an incremental replacement | NWS OWP current-PF-documents page, fetched 2026-08-24 |
@@ -576,7 +620,7 @@ frequency claim:
    catalogue could, but its own uncertainty then enters the frequency estimate, and 17C forbids using
    the regional skew unless it too was developed for the separated populations. (Census: code 9 occurs
    3 times in the 900 annual peaks across the ten Washington records checked.)
-3. **Is NF Nooksack at Deming's persistent post-1970 trend (τ = +0.362, p = 0.0001) hydrologic or
+3. **Is NF Nooksack below Cascade Creek near Glacier's (12205000) persistent post-1970 trend (τ = +0.362, p = 0.0001) hydrologic or
    hydraulic?** Rising rating-derived discharge on a river aggrading from Mount Baker sediment is
    ambiguous. Needs the USGS station analysis and rating-shift history, which is not in the peak file.
 4. **What is the stage-frequency object at a tidally influenced point?** Mount Vernon and Ferndale
@@ -591,9 +635,11 @@ frequency claim:
 7. **Do the 1815 and 1856 Skagit peaks have independent physical evidence** (tree scars, deposits,
    accounts) that would give them defensible *perception thresholds* under 17C, or do they exist only
    as points on an extrapolated rating? SIR 2007-5159 documents only the rating extension.
-8. **Not fetched, and worth fetching later:** Serinaldi & Kilsby (2015), Luke et al. (2017) full text,
-   Milly et al. (2008), Montanari & Koutsoyiannis (2014), Cohn & Lins (2005). All were paywalled or
-   403 today. The claims sourced from them here are labelled INFERENCE.
+8. **Not fetched, and worth fetching later:** Serinaldi & Kilsby (2015), Milly et al. (2008),
+   Montanari & Koutsoyiannis (2014), Cohn & Lins (2005). All were paywalled or 403 today; each was
+   confirmed to exist with the stated authors, journal, volume and pages, but the claims sourced from
+   them here are labelled INFERENCE. (Luke et al. 2017 *was* retrieved on the adversarial re-check and
+   is now FACT-grade — see §4.)
 
 ---
 
@@ -613,6 +659,7 @@ frequency claim:
 - [Barth, Villarini, Nayak & White 2017 — Mixed populations and annual flood frequency estimates in the western United States: The role of atmospheric rivers, WRR 53:257–269](https://agupubs.onlinelibrary.wiley.com/doi/full/10.1002/2016WR019064) — fetched once; a second fetch returned 403, so the AR-fraction and RPD numbers above come from the first retrieval.
 - [Dell'Aira, Cancelliere & Meier 2025 — Generalizations of Langbein's Formula under Non-Stationarity, Mixed Populations, and Over- or Under-Dispersion in the Number of Exceedances, arXiv:2509.23546](https://arxiv.org/abs/2509.23546).
 - [USGS Water Science School — The 100-Year Flood](https://www.usgs.gov/special-topics/water-science-school/science/100-year-flood).
+- [Luke, A., Vrugt, J.A., AghaKouchak, A., Matthew, R. & Sanders, B.F. 2017 — Predicting nonstationary flood frequencies: Evidence supports an updated stationarity thesis in the United States, WRR 53(7):5469–5494](https://escholarship.org/content/qt1cg4j6p6/qt1cg4j6p6.pdf) — Wiley returned 403; the eScholarship PDF was retrieved and text-extracted on the adversarial re-check, 2026-08-24.
 - [UW Climate Impacts Group — Study Review: Trends in Flooding for Washington State (2024-10-15)](https://climate.uw.edu/2024/10/15/study-review-trends-in-flooding-for-washington-state/).
 - [ASFPM — After Brief Delay, NOAA's Atlas 15 Project Moves Ahead](https://www.floods.org/news-views/policy-matters/after-brief-delay-noaas-atlas-15-project-moves-ahead/).
 
@@ -626,7 +673,6 @@ frequency claim:
 **Not independently fetched — claims sourced from them are labelled INFERENCE.**
 
 - Serinaldi, F. & Kilsby, C.G. (2015), *Stationarity is undead: Uncertainty dominates the distribution of extremes*, Advances in Water Resources 77:17–36 — [ScienceDirect](https://www.sciencedirect.com/science/article/pii/S0309170815000020) returned 403.
-- Luke, A., Vrugt, J.A., AghaKouchak, A., Matthew, R. & Sanders, B.F. (2017), *Predicting nonstationary flood frequencies: Evidence supports an updated stationarity thesis in the United States*, WRR 53:5469–5494 — [Wiley](https://agupubs.onlinelibrary.wiley.com/doi/full/10.1002/2016WR019676) and [eScholarship](https://escholarship.org/uc/item/1cg4j6p6) both blocked.
 - Milly, P.C.D. et al. (2008), *Stationarity is dead: whither water management?*, Science 319:573–574.
 - Montanari, A. & Koutsoyiannis, D. (2014), *Modeling and mitigating natural hazards: Stationarity is immortal!*, WRR 50:9748–9756.
 - Cohn, T.A. & Lins, H.F. (2005), *Nature's style: naturally trendy*, GRL 32:L23402 — cited within SIR 2016–5118, which I did fetch.

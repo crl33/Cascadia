@@ -159,7 +159,15 @@ async def test_pipeline_then_api(runtime: Runtime) -> None:
         assert r.json()["type"] == "Feature" and r.json()["properties"]["provenance"]["lod"] == "state"
         r = await c.get("/system/health", params={"as_of": "2026-08-22T13:35:00Z"})
         h = r.json()
-        assert h["status"] == "ok" and h["providers"]["usgs"]["state"] == "healthy" and h["freshness"]["product:usgs-iv"]["state"] == "current"
+        # Health accounts for every REGISTERED job, not for the three this file happens to run.
+        # The other seven have never run here, which is `unknown` — no evidence — and never
+        # `degraded` (nothing failed) nor `ok` (seven jobs are unaccounted for). Before the
+        # finding-C fix this read `ok` while seven jobs were invisible.
+        assert h["providers"]["usgs"]["state"] == "healthy" and h["freshness"]["product:usgs-iv"]["state"] == "current"
+        assert set(h["jobs"]) >= {job.name for job in JOBS}  # plus the queue-only maintenance job
+        assert {h["jobs"][name]["state"] for name in SPIKE_JOB_NAMES} == {"ok"}
+        assert {st["state"] for name, st in h["jobs"].items() if name not in SPIKE_JOB_NAMES} == {"pending"}
+        assert h["status"] == "unknown"
         assert (await c.get("/openapi.json")).status_code == 200
         assert (await c.post("/basins")).status_code == 405
 

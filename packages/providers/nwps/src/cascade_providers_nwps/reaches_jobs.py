@@ -2,12 +2,30 @@
 
 Every 6 h, for each forecast point that carries a `reach_id`: fetch the reach's medium-range
 ensemble, store the provider mean truncated to the 72-hour hazard window as ONE `ForecastRun`,
-and store the per-member crest summary as `derived_feature` rows. The full 240-hour, 7-series
-payload stays in the object store as the RawArtifact and everything else is re-derivable from it.
+and store the member hydrographs over `(cycle, cycle + 96 h]` as ONE `derived_feature` row. The
+full 240-hour, 7-series payload stays in the object store as the RawArtifact and everything else
+is re-derivable from it.
+
+**No crest is computed here** (verification finding B, 2026-08-24). A crest is a maximum over a
+window, the comparison window is only known at `as_of`, and the previous version's frozen
+cycle-anchored crests were compared against an `as_of`-anchored official crest — two different
+windows, offset by the cycle age. `reaches_normalize` carries the full argument; the consequence
+for this job is that it stores series and lets `cascade_hydrology.agreement` take every crest at
+read time over one shared window.
+
+**Measured cost of storing series instead of crests** (live 12Z cycle, six seed reaches, two
+otherwise-identical PostgreSQL 18 databases, 2026-08-24). Raw `values_json` text per cycle grew
+4,932 B -> 69,611 B, but PostgreSQL TOAST-compresses flow arrays about 6.6:1, so what lands on
+disk is 5,612 B -> 10,603 B. Against that, six frozen per-member crest rows per reach stopped
+being written, at ~344 B of row overhead each. Net `derived_feature` bytes per cycle:
+**20,056 B -> 12,632 B, a 37 % reduction**, and rows per cycle 42 -> 6. Monthly, at four cycles a
+day: 2.41 MB -> 1.52 MB and 5,040 -> 720 rows. `forecast_value` is untouched (432 rows/cycle, the
+mean series). The correctness fix therefore *lowers* the free-tier footprint rather than spending
+against it; design §3.5's ~57 k rows/month becomes ~52.6 k.
 
 Idempotency is the same rule the official-forecast job uses: one run per
 (product, forecast point, issued_at); an already-stored cycle is a no-op, and because the
-derived rows are written in the same branch they cannot be duplicated either.
+derived row is written in the same branch it cannot be duplicated either.
 
 This job writes a MODELED product into the same table as the official forecast. That is safe
 only because the read path filters by product (`Knowledge.latest_forecast_run`) and resolves
@@ -49,8 +67,10 @@ from cascade_core.models import (
 from cascade_core.registry import PRODUCT_NWM_MR
 from cascade_providers_nwps.reaches_client import fetch_medium_range
 from cascade_providers_nwps.reaches_normalize import (
-    EnsembleCrestSummary,
-    crest_summary,
+    SERIES_SCHEMA,
+    EnsembleWindow,
+    encode_series,
+    member_window,
     model_run_from_ensemble,
 )
 from cascade_providers_nwps.reaches_parser import parse_medium_range
@@ -64,36 +84,38 @@ class EmptyCycleError(RuntimeError):
 JOB_NAME = "nwm.fetch_reach_medium_range"
 CADENCE_SECONDS = 6 * 3600  # NWM medium range runs 00/06/12/18Z (DATA_SOURCES H6)
 
-#: The method that reads a crest out of a model member's hydrograph. Version it, not the code:
-#: a change to the window or to the median rule is a new method id and therefore new rows.
-METHOD_MEMBER_CREST = "method:nwm-member-crest@1.0.0"
-FEATURE_MEMBER_CREST = "nwm_mr_crest_flow"  # + "_member3" per member
-FEATURE_CREST_SUMMARY = "nwm_mr_crest_flow_members"
+#: The method that clips the member hydrographs to the stored coverage window. Version it, not
+#: the code: a change to the coverage, the encoding or what is stored is a new method id and
+#: therefore new rows. `@2.0.0` is the series form — `@1.0.0` froze a cycle-anchored crest per
+#: member, which is the bug this replaced, so the two must never be read as the same quantity.
+METHOD_MEMBER_SERIES = "method:nwm-member-series@2.0.0"
+FEATURE_MEMBER_SERIES = "nwm_mr_member_flow_series"
+
+#: What this row is not: it carries no crest, no median and no central value. Recorded in the
+#: row itself so anyone reading the table sees the reason without reading this file.
+SERIES_NOTE = (
+    "Member hydrographs as published, clipped to the cycle's coverage window. No crest is frozen "
+    "here: a crest is a maximum over a window, and the comparison window is only known at read "
+    "time (cascade_hydrology.agreement). The NWPS-computed mean is not a member and is not here."
+)
 
 
-def _summary_values(summary: EnsembleCrestSummary) -> dict[str, object]:
-    """The whole member ladder in one JSON column, so the read path needs exactly one row.
+def _series_values(window: EnsembleWindow) -> dict[str, object]:
+    """The whole member ensemble in one JSON column, so the read path needs exactly one row.
 
-    `median_rule` and `member_count` are recorded with the values because a member fraction
-    whose denominator is not stated is not a number anyone can check (design §7 item 4)."""
+    `member_count` is recorded with the values because a member fraction whose denominator is not
+    stated is not a number anyone can check (design §7 item 4), and `coverage_h` is recorded
+    because the read path must know how far past the cycle the series actually reaches before it
+    decides which window the two forecasts can share."""
     return {
-        "window_h": summary.window_h,
-        "unit": summary.unit,
-        "member_count": summary.member_count,
-        "median_rule": "lower_median_member",
-        "median_member": None if summary.median_member is None else summary.median_member.member,
-        "members": {
-            c.member: {"crest": c.value, "valid_time": c.valid_time.isoformat()} for c in summary.members
-        },
-        "provider_mean_crest": (
-            None
-            if summary.provider_mean_crest is None
-            else {
-                "crest": summary.provider_mean_crest.value,
-                "valid_time": summary.provider_mean_crest.valid_time.isoformat(),
-                "note": "NWPS-computed mean of its own members; not a member and never blended with an official forecast",
-            }
-        ),
+        "schema": SERIES_SCHEMA,
+        "cycle": window.issued_at.isoformat(),
+        "coverage_h": window.coverage_h,
+        "hazard_window_h": window.hazard_window_h,
+        "unit": window.unit,
+        "member_count": window.member_count,
+        "series": {m.member: encode_series(m.points) for m in window.members},
+        "note": SERIES_NOTE,
     }
 
 
@@ -156,42 +178,30 @@ async def run_fetch_medium_range(session: AsyncSession, fetcher: ArchivingFetche
             session.add(ForecastValue(run_id=run.id, valid_time=v.valid_time, stage=None, flow=v.flow))
         written += 1 + len(rec.values)
 
-        summary = crest_summary(ensemble)
-        if summary is None:
+        window = member_window(ensemble)
+        if window is None:
             continue
-        common = {
-            "scope_kind": "forecast_point",
-            "scope_id": fp.id,
-            "window": f"{summary.window_h}h",
-            "issued_at": summary.issued_at,
-            "computed_at": result.fetched_at,
-            "available_at": rec.available_at,
-            "method_id": METHOD_MEMBER_CREST,
-            "product_id": PRODUCT_NWM_MR,
-            "unit": summary.unit,
-            "confidence_label": "unknown",  # a faithful readout of an uncalibrated model
-            "inputs": [{"table": "raw_artifact", "id": result.artifact_id}],
-            "raw_inputs_hash": result.sha256,
-            "raw_artifact_id": result.artifact_id,
-        }
-        for crest in summary.members:
-            session.add(
-                DerivedFeature(
-                    feature=f"{FEATURE_MEMBER_CREST}_{crest.member}",
-                    valid_time=crest.valid_time,
-                    value=crest.value,
-                    **common,
-                )
-            )
-            written += 1
-        median = summary.median_member
         session.add(
             DerivedFeature(
-                feature=FEATURE_CREST_SUMMARY,
-                valid_time=median.valid_time if median is not None else summary.issued_at,
-                value=None if median is None else median.value,
-                values_json=_summary_values(summary),
-                **common,
+                feature=FEATURE_MEMBER_SERIES,
+                # The row is about a cycle, not about an instant, so `valid_time` is the cycle.
+                # Anything else would be a crest time, and this row deliberately has no crest.
+                valid_time=window.issued_at,
+                value=None,
+                values_json=_series_values(window),
+                scope_kind="forecast_point",
+                scope_id=fp.id,
+                window=f"{window.coverage_h}h",
+                issued_at=window.issued_at,
+                computed_at=result.fetched_at,
+                available_at=rec.available_at,
+                method_id=METHOD_MEMBER_SERIES,
+                product_id=PRODUCT_NWM_MR,
+                unit=window.unit,
+                confidence_label="unknown",  # a faithful readout of an uncalibrated model
+                inputs=[{"table": "raw_artifact", "id": result.artifact_id}],
+                raw_inputs_hash=result.sha256,
+                raw_artifact_id=result.artifact_id,
             )
         )
         written += 1

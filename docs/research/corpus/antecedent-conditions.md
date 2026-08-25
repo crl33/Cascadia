@@ -16,10 +16,13 @@ here), INFERENCE, ASSUMPTION or OPEN QUESTION.
 **Antecedent wetness is a large multiplier on flood response almost everywhere on the U.S. West
 Coast — and western Washington is one of the places where it is *least* informative, because the
 basins are already at the top of their storage range for most of the flood season.** The
-peer-reviewed West Coast synthesis (Webb et al. 2025) explicitly classifies Washington and the
-interior ranges as the low-sensitivity group; two independent lines of primary evidence computed
-for this entry agree: (a) at Cayuse Pass SNOTEL, 96.1 % of all November–February days over 15
-years sit within 2 percentage points of the station's record-maximum 20-inch soil moisture, with a
+peer-reviewed West Coast synthesis (Webb et al. 2025) classifies Washington as the low-sensitivity
+group — "uniform low responsiveness to ASM" — **but low is 2×, not zero**: that group's mean ASM
+sensitivity is 103 %, and it is the 2 end of the paper's 2–4.5× range, established while controlling
+for storm-total precipitation. So the finding is *half the West Coast effect*, not *no effect*. Two
+further lines of primary evidence computed for this entry are consistent with a small effect (they
+are uncontrolled for precipitation, so they bound it loosely rather than confirming a null):
+(a) at Cayuse Pass SNOTEL, 96.1 % of all November–February days over 15 years sit within 2 points of the station's record-maximum 20-inch soil moisture, with a
 November–February interquartile range of **0.50 percentage points**; (b) across the six gauges
 Cascadia Papsukkal actually reads, the day-of-year streamflow percentile has a Spearman
 correlation of only 0.46–0.71 with the following week's maximum flow, and raises the probability
@@ -29,7 +32,7 @@ The operational consequence is sharp and specific. Replaying Event Zero with a c
 excludes 2025, `method:susceptibility-index@0.1.0` would have read **LOW in four of six basins on
 3–4 December 2025 and MODERATE in all six on 5 December** — the day NWS Seattle issued its first
 Flood Watch, 6.5 days before the record Mount Vernon crest. It first read VERY HIGH on 8–10
-December, when the rivers were already in flood. Across the full record, **45–76 % of all VERY
+December, when the rivers were already in flood. Across the full record, **45–75 % of all VERY
 HIGH readings occur on days when flow is already more than 25 % above its value three days
 earlier.** The surface as built is predominantly a *concurrent high-flow detector*, not an
 antecedent-state estimator. It should be kept — it is honest about being an index and it is the
@@ -87,9 +90,10 @@ Two consequences follow directly, and they are the intellectual core of this ent
 2. **The assumption that `f` is single-valued is the weak link.** The empirical literature is
    consistent that storage–discharge relations are **hysteretic**: discharge depends not only on
    current storage but on the history of wetting and drying, with storage rising on one trajectory
-   during wetting and falling on another during recession (FACT — Hydrological Processes,
-   "Hysteresis and scale in catchment storage, flow, and transport", abstract read via search
-   result; the full text was not independently fetched). Documented causes include antecedent
+   during wetting and falling on another during recession (FACT — Davies & Beven 2015,
+   "Hysteresis and scale in catchment storage, flow and transport", *Hydrological Processes* 29,
+   doi 10.1002/hyp.10511; abstract read via search result, full text not independently fetched;
+   authors/venue verified against Crossref 2026-08-24). Documented causes include antecedent
    storage-deficit profiles, preferential flow paths, changing contributing areas between wetting
    and drying, changing flow-path connectivity, and fill-and-spill itself.
 
@@ -203,8 +207,10 @@ rather than against an absolute saturation value.
 | AR events analysed for the ASM–streamflow relation | 43,000+ across 122 West Coast watersheds, 1980–2023 | soil moisture from **WLDAS**; Rutz AR catalog; GAGES-II attributes | Webb et al. 2025 (JHM) |
 | Watersheds with a robust non-linear ASM–streamflow relation | **89 %**; 108 of 122 with a statistically significant threshold | 14 showed no significant relationship | Webb et al. 2025 / CW3E notice |
 | Event maximum streamflow above vs below the critical ASM threshold | **2× to 4.5× larger** | watershed-specific inflection point | Webb et al. 2025 |
-| Regions of **high** ASM sensitivity | California and **southwestern Oregon** | shallow clay-rich soils, lower winter precipitation, higher evaporation, limited storage | CW3E / DRI summaries of Webb et al. 2025 |
-| Regions of **low** ASM sensitivity | **Washington** and the interior ranges | deeper soils with snowpack, consistently wet winters, greater storage, reduced SM variability; soil moisture accounting "less valuable for flood management because soils are consistently wet or insulated by snow" | DRI summary of Webb et al. 2025 |
+| Regions of **high** ASM sensitivity | n = 52, "on the coast of California and in Oregon"; mean ASM importance 0.73, mean ASM sensitivity **357 %** (≈ 4.5×) | shallow clay-rich soils, lower cold-season precipitation, higher evaporation, lower snow fraction, limited storage | Webb et al. 2025 §4c/§5b (full text) |
+| Regions of **low** ASM sensitivity | n = 56, "In Washington, watersheds exhibit a uniform low responsiveness to ASM"; mean ASM importance 0.46, mean ASM sensitivity **103 %** (≈ 2×) | deeper soils, higher snow fraction, consistently wet cold seasons, intraseasonal ASM σ as low as 4 %. **2× is Washington's end of the 2–4.5× range, not zero** | Webb et al. 2025 §4c/§5b (full text) |
+| Watersheds with **no** significant ASM relationship | n = 14, "mostly in the Cascade Range" (three in the Sierra Nevada) | excluded from the clustering for lack of significant ASM importance and/or sensitivity | Webb et al. 2025 §4c |
+| Webb 2025 threshold method | two-phase hinge regression (R `chngpt`), **controlling for storm-total precipitation**; ASM thresholds 29–83 % relative saturation, median 64 %, r = 0.94 with mean cold-season saturation | this is why Webb's regional result is stronger evidence than the flow-only computations in §3.1 | Webb et al. 2025 §3d/§4b |
 | SSPI accumulation window and reference | 90-day rolling total, Gamma fit to totals **ending in the cool season**, ERA5-Land daily precipitation 1950–2023 via GEE, evaluated 2 days before AR landfall | chosen for "consistent performance across hydroclimatic settings and hydrologic interpretability" | Webb et al. 2026 (Nat. Commun.) |
 | SSPI promote/demote rule | promote one AR rank at **SSPI ≥ 0.5**, demote one rank at **SSPI ≤ −0.5**, no change in between; thresholds optimised to maximise Spearman ρ | | Webb et al. 2026 |
 | Flood-generating ARs flagged hazardous (AR4–5) | California 63 % → **81 %**; central Chile 47 % → **64 %** | 142 catchments (97 CA, 45 Chile); **70,585 AR landfalls** 1950–2023 | Webb et al. 2026 |
@@ -222,9 +228,543 @@ rather than against an absolute saturation value.
 | Best single product of the 18 | **HBV-MSWEP, median R = 0.78** — a calibrated bucket model driven by good precipitation | calibration alone added **+0.12** median R | Beck et al. 2021 |
 | Best single-sensor satellite product | SMAP L3E with SWI filter, median R = 0.72 | SMAP **L4** ranked 4th of the 6 DA products | Beck et al. 2021 |
 | ERA5 (assimilates ASCAT SM) vs open-loop | ERA5 **0.68** < ERA5-Land **0.72** < HBV-ERA5 **0.74** | assimilating satellite SM helped less than raising resolution or improving the model | Beck et al. 2021 |
-| Satellite SM degradation with vegetation and terrain | markedly lower R where mean **LAI > 2 m² m⁻²**; most satellite products worse over steep terrain | western Washington is both | Beck et al. 2021 §3.3 |
-| SMAP L4 formal accuracy | ubRMSE **0.039 m³ m⁻³** (surface) and **0.029 m³ m⁻³** (root zone) at 9 km, below the 0.04 requirement, at core validation sites | but SMAP observations are used efficiently "in western North America ... but not in many forested regions" | SMAP L4 v4 assessment report (NASA) |
+| Satellite SM degradation with vegetation and terrain | **AMSR2 and SMOS** (with and without SWI filter) show markedly lower R where mean **LAI > 2 m² m⁻²**; most satellite products worse over steep terrain; all single-sensor products lower in cold climates | western Washington is dense-canopy, steep and cool. **The LAI > 2 finding is named for AMSR2/SMOS, not for SMAP** — do not cite it against SMAP | Beck et al. 2021 §3.3 |
+| SMAP L4 formal accuracy | ubRMSE **0.038 m³ m⁻³** (surface) and **0.030 m³ m⁻³** (root zone) at 9 km, meeting the pre-launch 0.04 requirement, at core validation sites | **The requirement is stated as applying "excluding regions of snow and ice, frozen ground, mountainous topography, open water, urban areas, and vegetation with water content greater than 5 kg m⁻²"** — i.e. it is not claimed for the western Cascades in winter. SMAP observations are also used efficiently "in western North America … but not in many forested regions" | Reichle et al., SMAP L4_SM global assimilation-diagnostics assessment (PMC6196324), fetched 2026-08-24 |
 | Soil moisture deficit refill time after onset of winter rains | **48 days** (average) | 60-ha forested watershed, western Cascades, Oregon; soil moisture explained > 80 % of streamflow variance at all scales | Moore, Jones & Bond 2011 |
-| AR control on the runoff ratio in the Northwest | runoff-to-precipitation ratio "primarily controlled by antecedent soil moisture", but **almost doubles in the northwestern watersheds** due to intensified snow ablation during ARs; ARs explain **30–60 %** of annual runoff variability | high-resolution regional climate simulation, western U.S. | Huang et al. 2019 (JGR-A) |
+| AR control on the runoff ratio in the Northwest | runoff-to-precipitation ratio "primarily controlled by antecedent soil moisture", but **almost doubles in the northwestern watersheds** due to intensified snow ablation during ARs; ARs explain **30–60 %** of annual runoff variability | high-resolution regional climate simulation, western U.S. | Chen et al. 2019 (JGR-A) |
 | Flood-generation mechanism attribution, CONUS | across 420 catchments, soil-moisture-dependent precipitation excess, snowmelt and rain-on-snow are "much better predictors" of flood seasonality and magnitude than rainfall characteristics alone | | Berghuijs et al. 2016 (GRL) |
 | Event severity vs antecedent control | for less extreme events flood timing tracks soil moisture timing; **rainfall timing dominates as severity increases** | 221 Australian catchments | Wasko et al. 2020 (WRR) |
+
+### 3.1 Primary computations performed for this entry, 2026-08-24
+
+All of the following are FACT in the sense that the data were fetched from the named public API on
+2026-08-24 and the statistic was computed here; the interpretations that follow each are INFERENCE.
+Method for every streamflow statistic: USGS daily mean discharge (`waterservices.usgs.gov/nwis/dv`,
+parameterCd 00060, statCd 00003), full period of record; day-of-year climatology pooled over a
+**±5-day window** across all years, percentile = (values below + ½ ties) / n. The platform's own
+ladder uses ±2 days and approved-only values (`method:streamflow-doy-climatology@1.0.0`), so the
+numbers below are indicative of behaviour, not byte-identical to what the platform would print.
+
+**(a) SNOTEL soil moisture is absent or unusable in most Cascadia Papsukkal basins.**
+Source: NRCS AWDB REST `v1/stations?stationTriplets=*:WA:SNTL&activeOnly=true&returnStationElements=true`.
+
+- 78 active Washington SNOTEL stations; **24 have any SMS (soil moisture) element registered**;
+  37 lie in HUC 1711 (Puget Sound).
+- Per Cascadia basin: **Nooksack** — one station (MF Nooksack 1011, since 2012). **Skagit** — five
+  (Harts Pass, Rainy Pass, Brown Top, Beaver Pass, Marten Ridge), *all in the regulated upper basin
+  around Ross Lake*; **zero in the Sauk**, the basin the platform actually reads. **Cedar** — one
+  (Meadows Pass 897, registered 2020). **White/Puyallup** — two (Cayuse Pass 1085, Burnt Mountain
+  942). **Stillaguamish, Skykomish/Snohomish, Snoqualmie, Green — zero.**
+- Data availability, 2025-10-01 → 2026-01-31 (123 days), daily SMS:
+  - MF Nooksack: 51/123 days at 2 in — **every one of them 0.0 %** — and 5/123 days at 8 in (all
+    0.0 %) and at 20 in (4 of 5 zero). The 4-inch sensor is the exception: it returned the same
+    51 days with plausible non-zero values up to 40.6 %. Decisive either way, because **no sensor at
+    this station returned anything before 2025-12-12** — nothing at all from 1 October through
+    11 December 2025, i.e. through the entire lead-up to the record Nooksack flood, which crested
+    before the record begins.
+  - Meadows Pass (Cedar): **0 of 123 days**. The element is registered; no data was returned.
+  - Burnt Mountain: 122/123 days, but the 2-inch sensor reads 0.0 % on 44 days and never exceeds
+    7.8 %.
+  - Cayuse Pass: 122/123 days at all depths, physically plausible throughout.
+
+  INFERENCE: the repo's `SOIL_UNAVAILABLE_REASON` is not merely defensible, it is *understated*.
+  For four of the eight named basins there is no mountain soil observation at all; for two more the
+  only station returns physically impossible zeros during the defining event of the record.
+
+**(b) In a maritime Cascade basin, winter root-zone soil moisture has almost no dynamic range.**
+Source: AWDB `v1/data`, station 1085:WA:SNTL (Cayuse Pass, 5,260 ft, HUC 171100140301, White River
+headwaters), element SMS at −20 in, DAILY, 2011-09-01 → 2026-08-23, n = 5,062.
+
+| Window | min | p5/p10 | median | p90/p95 | max |
+|---|---|---|---|---|---|
+| November–February (n = 1,675) | 9.3 % | 39.1 % | **39.9 %** | 40.5 % | 41.1 % |
+| December only (n = 427) | 38.4 % | 39.5 % | 39.9 % | 40.3 % | 40.9 % |
+| September (n = 420) | 19.1 % | 21.7 % | 34.6 % | 39.1 % | 40.6 % |
+
+- November–February **interquartile range: 0.50 percentage points**.
+- **96.1 %** of November–February days sit within 2 percentage points of the 15-year record maximum
+  (41.1 %); **99.8 %** within 5 points.
+- The driest December day in 15 years (38.4 %) is 1.5 points below the median December day.
+
+  INFERENCE: this is what "perpetually wet" looks like as a measurement. A root-zone soil moisture
+  percentile computed here would be a percentile of instrument noise for four months of the year.
+  This is an independent, in-situ confirmation of Webb et al. 2025's classification of Washington
+  as a low-ASM-sensitivity region — arrived at from a completely different data source (a point
+  probe rather than the WLDAS model). Caveats: one station, one depth, one elevation; the site is
+  snow-covered and thermally insulated for much of the winter, which is itself part of the
+  mechanism the DRI summary names.
+
+**(c) The forward skill of the day-of-year flow percentile, at the six gauges the platform reads.**
+Method: all November–February days in each gauge's record; predictor = that day's DOY flow
+percentile; predictand = the maximum daily mean flow over **t+2 … t+7** (the +2 offset deliberately
+excludes the same-day hydrograph).
+
+| Basin (configured gauge) | n days | Spearman ρ | P(top-1 % future flow \| VERY HIGH, pct ≥ 90) | P(top-1 % \| LOW, pct ≤ 25) | VERY HIGH days already mid-event |
+|---|---|---|---|---|---|
+| `basin:skagit` — Sauk nr Sauk 12189500 | 11,905 | 0.552 | **2.1 %** | 0.8 % | **71 %** |
+| `basin:snohomish-snoqualmie` — Snoqualmie nr Carnation 12149000 | 11,664 | 0.474 | 2.7 % | 0.4 % | 75 % |
+| `basin:nooksack` — Nooksack at Ferndale 12213100 | 7,198 | 0.464 | 2.2 % | 0.4 % | 72 % |
+| `basin:cedar` — Cedar at Renton 12119000 | 9,740 | **0.705** | 5.1 % | 0.1 % | 45 % |
+| `basin:green-duwamish` — Green nr Auburn 12113000 | 10,822 | 0.590 | 3.1 % | 0.4 % | 64 % |
+| `basin:puyallup-white` — White at R St 12100490 | 2,044 | 0.549 | 5.0 % | 0.0 % | 52 % |
+
+Base rate for the top-1 % column is 1.0 % by construction. "Already mid-event" = flow on day *t*
+exceeds flow on day *t−3* by more than 25 %.
+
+Median future maximum flow by band, Sauk: 8,940 cfs (VERY HIGH) / 4,520 (middle) / 2,200 (LOW) —
+**a ratio of 4.06×**, and 4.50× on the Skykomish at Gold Bar. INFERENCE, and important: that ratio
+is numerically close to Webb et al. 2025's 2–4.5× but is **not the same quantity**. It is dominated
+by hydrograph persistence — a river that is high today is likely to still be high in three days —
+rather than by storage priming. Conflating the two would be a serious over-claim.
+
+**(d) Antecedent state before the cool-season annual maximum carries almost no magnitude
+information at unregulated gauges.** For each water year, the cool-season (Oct 1 – Mar 31) maximum
+daily mean, and the DOY percentile at lags −3, −5, −7 and −14 days:
+
+| Gauge | n years | Spearman(pct at −5 d, peak Q) | Spearman(−7 d) | median pct at −7 d (IQR) | share of annual maxima with −7 d pct < 25 |
+|---|---|---|---|---|---|
+| Sauk nr Sauk (unregulated) | 99 | **0.098** | **−0.010** | 51.7 (25–72) | 25 % |
+| Skykomish nr Gold Bar (unregulated) | 98 | **−0.037** | **−0.017** | 50.8 (27–74) | 24 % |
+| Skagit at Mount Vernon (upper basin regulated) | 86 | 0.302 | 0.110 | 55.7 (29–74) | 20 % |
+| Green nr Auburn (flood-controlled) | 90 | 0.349 | 0.360 | 49.1 (21–70) | 28 % |
+
+Explicit counter-examples in the top ten peaks of record: Skykomish 2006-11-06, **84,600 cfs**
+(2nd largest in 98 years), antecedent percentile **8** at −5 d and 21 at −7 d; Sauk same date,
+54,400 cfs, percentile **7** at −5 d; Skykomish 2005-01-18, 60,900 cfs, percentile 15/15;
+Skykomish 1932-02-26, 55,600 cfs, percentile 21/3.
+
+  INFERENCE: in unregulated western-Washington basins, a below-normal antecedent state does not
+  preclude a top-3 flood of the historical record. Any presentation that reads a LOW band as
+  reassurance is unsupported by the region's own record.
+
+**(e) The short-lag correlation is an artefact of event contamination.** Of the cool-season annual
+maxima, the fraction for which flow was **already rising by more than 5 % per day** was 47 % (Sauk),
+43 % (Skykomish) and 49 % (Skagit MV) at lag −3 d; 40/33/44 % at −5 d; and 25/23/28 % at −7 d.
+
+  INFERENCE: the rise in ρ from ≈ 0 at −7 d to 0.16–0.32 at −3 d is not skill appearing, it is the
+  event leaking into the "antecedent" measurement. It is largest at Mount Vernon, the gauge with
+  the longest routing lag, exactly as contamination predicts.
+
+**(f) Event Zero replay: what the susceptibility surface would have said.** DOY climatology built
+from each gauge's record **excluding 2025 and later**; bands per `susceptibility.BAND_EDGES`
+(25 / 75 / 90).
+
+| Basin | Dec 3 | Dec 4 | **Dec 5** | Dec 6 | Dec 8 | Dec 10 | Dec 12 |
+|---|---|---|---|---|---|---|---|
+| `basin:skagit` (Sauk) | 25.0 LOW | 24.8 **LOW** | 31.1 MOD | 88.7 HIGH | 94.8 V.HIGH | 99.9 V.HIGH | 99.0 V.HIGH |
+| `basin:snohomish-snoqualmie` | 17.6 LOW | 16.7 **LOW** | 29.8 MOD | 74.1 MOD | 88.3 HIGH | 99.8 V.HIGH | 99.3 V.HIGH |
+| `basin:nooksack` | 24.5 LOW | 23.4 **LOW** | 34.2 MOD | 88.1 HIGH | 83.4 HIGH | 97.8 V.HIGH | 99.8 V.HIGH |
+| `basin:cedar` | 16.6 LOW | 19.1 **LOW** | 26.5 MOD | 30.8 MOD | 88.0 HIGH | 99.9 V.HIGH | 100.0 V.HIGH |
+| `basin:green-duwamish` | 27.0 MOD | 27.5 MOD | 36.3 MOD | 55.0 MOD | 94.3 V.HIGH | 98.8 V.HIGH | 98.8 V.HIGH |
+| `basin:puyallup-white` | 30.7 MOD | 31.2 MOD | 59.9 MOD | 83.0 HIGH | 90.3 V.HIGH | 100.0 V.HIGH | 100.0 V.HIGH |
+
+The Sauk's own trajectory, daily: Dec 3 **25.0** → Dec 4 24.8 → Dec 5 31.1 → Dec 6 **88.7** →
+Dec 8 94.8 → Dec 10 99.9 → Dec 11 100.0 (62,600 cfs, third-largest in 99 years).
+
+NWS Seattle issued the first Flood Watch at **2025-12-05 16:10 PST**, ~2.5 days before the main AR
+and 6.5 days before the Mount Vernon crest (`HYDROLOGY.md` §12).
+
+  INFERENCE — the central operational finding of this entry: on the day the official watch was
+  issued, the platform's susceptibility surface would have shown MODERATE everywhere; two days
+  earlier, LOW in four of six basins. **The signal was not in the level. It was in the derivative:
+  the Sauk moved 64 percentile points in 48 hours (Dec 4 → Dec 6) as the first ARs of the family
+  landed.** That derivative is not currently a driver, is not banded, and is not rendered.
+
+**(g) The climatology itself is non-stationary at regulated points.** Comparing Dec–Jan daily means
+across an upstream storage change. Note for the Skagit that the earlier epoch is **not**
+pre-regulation: Gorge (1924), Lower Baker (1925), Diablo (1930) and Ross (stages 1–2 by 1940, final
+1949) were all already operating through 1941–1952, and the only storage added after the split is
+Upper Baker (1959). The Skagit comparison is therefore partial- versus full-regulation, and the
+change is at least as likely to be climate, hydropower operating practice or rating history:
+
+- **Green at Auburn**, pre-Howard Hanson (1937–1961) vs post (1963–2025): median essentially
+  unchanged (1,600 → 1,610 cfs), p90 rises (3,600 → 4,490 cfs), but the record Dec–Jan maximum
+  **falls from 16,400 to 11,600 cfs**. Flood control truncates the top of the distribution while
+  leaving the middle alone.
+- **Skagit at Mount Vernon**, 1941–1952 vs 1960–2025: Dec–Jan median rises from **11,850 to 16,500
+  cfs (+39 %)**, p90 from 24,700 to 29,770 cfs.
+
+  INFERENCE: a full-record day-of-year ladder at a regulated point mixes two hydrologic regimes.
+  At Mount Vernon it makes today's flow look *higher*-percentile than a like-for-like comparison
+  would; at Auburn it distorts precisely the 90th-percentile edge on which the VERY HIGH band sits.
+  The distortion is concentrated where the banding matters. (Caveat: the pre-regulation samples are
+  short — 12 and 25 years — and confounded with climate variability and with rating-curve history,
+  so the magnitudes are indicative, not attributions.)
+
+**(h) The soil-moisture climatology the platform is missing is already on public S3.** Verified by
+fetching `https://noaa-nwm-retrospective-3-0-pds.s3.amazonaws.com/CONUS/zarr/ldasout.zarr/.zmetadata`
+on 2026-08-24: variable `SOIL_M`, "volumetric soil moisture", units **m³ m⁻³**, shape
+**[128568, 3840, 4, 4608]** — 128,568 three-hourly steps from **1979-02-01T03:00**, 3,840 × 4,608
+grid at 1 km LCC, **4 soil layers**. Sibling stores `gwout.zarr` (groundwater bucket) and
+`rtout.zarr` also exist. Separately, `noaa-nws-aorc-v1-1-1km` carries per-year Zarr from **1979**
+onward — the 1-km forcing archive from which a 90-day SSPI can be computed on the same grid.
+
+  INFERENCE: a basin-mean soil-saturation percentile against a **44-year, 1-km, per-day-of-year
+  climatology** is buildable now, with no new provider agreement, using two sources already in
+  `DATA_SOURCES.md` (H7 retrospective, S6 operational AnA land output). The layer thicknesses
+  (0–10, 10–40, 40–100, 100–200 cm in the standard Noah-MP configuration) are an ASSUMPTION — the
+  Zarr metadata carries no depth coordinate and this was not independently verified.
+
+---
+
+## 4. What is settled, what is emerging, what is contested
+
+**Settled (established).**
+
+1. Antecedent wetness modulates the conversion of precipitation into runoff, strongly and
+   non-linearly, and the relationship has a catchment-specific threshold. Multiple independent
+   lines: hillslope experiment (75×, Panola), continental streamflow analysis (89 % of 122 West
+   Coast watersheds, 2–4.5×), event-model calibration (ignoring antecedent conditions gives
+   *negative* Nash–Sutcliffe), CONUS mechanism attribution (Berghuijs 2016).
+2. Runoff generation in humid forested catchments is saturation-excess and subsurface-stormflow
+   dominated; the state variable is remaining storage, not a binary "saturated".
+3. Streamflow is a legitimate integrator of catchment storage under a first-order dynamical-system
+   assumption (Kirchner 2009), and antecedent-discharge indices do carry real information
+   (R² = 0.67 against a calibrated storage deficit in Tramblay 2012).
+4. In-situ, satellite and model soil-moisture products disagree materially, and the ranking is
+   consistent: a well-forced, calibrated bucket model beats satellite retrievals for temporal
+   dynamics (Beck 2021, median R 0.78 vs 0.53–0.72).
+5. Passive-microwave soil moisture retrieval degrades over dense vegetation and steep terrain, both
+   of which describe the western Cascades.
+
+**Emerging.**
+
+6. The operational recipe — modify a storm-intensity scale by an antecedent-moisture index — now
+   has a published, quantified form (Webb et al. 2026: AR rank ± 1 at SSPI ≷ ±0.5, ρ 0.29 → 0.52).
+   It is one paper old, evaluated in two regions, neither of which is the Pacific Northwest.
+7. That antecedent moisture's *marginal* value is concentrated in weak storms on wet ground
+   (88 % of flood-associated AR1–2 events in California were promoted) rather than in strong
+   storms — i.e. it improves *false-negative* rates more than it improves the top of the range.
+8. That the Pacific Northwest is a low-sensitivity region for antecedent soil moisture. Webb 2025's
+   regional finding is one study, but it is the strongest evidence here because its threshold
+   regression controls for storm-total precipitation. **It reports low sensitivity, not absent
+   sensitivity: a ≈ 2-fold amplification of event maximum streamflow above the local ASM threshold
+   in the Washington group.** This entry's two computations (Cayuse Pass dynamic range;
+   unregulated-gauge antecedent-vs-peak ρ ≈ 0) are consistent with a *small* effect, but neither
+   controls for forcing, so neither can distinguish "the antecedent term is weak" from "a
+   day-of-year *flow* percentile is a poor reading of the antecedent term". They do not independently
+   confirm Webb, and they must not be quoted as if they showed the effect is zero.
+
+**Contested.**
+
+9. **Whether antecedent state matters more or less for the largest events.** Wasko et al. 2020 and
+   Brunner et al. 2021 find its influence *declines* with event magnitude — above a return-interval
+   threshold, precipitation controls. Webb et al. 2025/2026 emphasise the opposite framing: the
+   threshold behaviour means antecedent state can *convert* a modest storm into a flood. Both can be
+   true — the first is about the conditional variance of extremes, the second about the base rate of
+   flood occurrence — but they license opposite operational emphases. **The measurements in §3.1(c)
+   and (d) side with the first for the western-Washington upper tail.**
+10. **Whether satellite soil moisture adds anything operationally in forested terrain.** Beck et al.
+    2021 found assimilating satellite SM into ERA5 helped less than raising model resolution;
+    Tramblay 2012 found ASCAT/AMSR-E reproduced modelled catchment SM at R > 0.9 in a semi-arid
+    catchment. The disagreement tracks vegetation density; western Washington sits at the bad end.
+11. **Whether a proxy should be seasonal.** Webb et al. 2026 chose a *seasonally-referenced* SSPI
+    explicitly to preserve seasonal context; classical SPI and API do not. This matters most in
+    exactly the maritime regime where the seasonal cycle dominates the interannual signal, and there
+    is no consensus recipe.
+12. **Whether declining soil moisture is masking rising precipitation extremes in flood trends** —
+    the Sharma/Wasko/Ivancic line of argument. Widely cited, and the Mediterranean case (Tramblay
+    et al. 2019, 171 basins in southern France) found decreasing soil moisture driving *downward*
+    flood-frequency trends despite rising extreme precipitation. Whether the same mechanism operates
+    in a precipitation-surplus maritime climate is unestablished. OPEN QUESTION for this region.
+
+---
+
+## 5. Western Washington specificity — what transfers and what does not
+
+**What transfers.**
+
+- The *mechanism*: fill-and-spill, connectivity thresholds, saturation-excess generation, and the
+  storage–discharge relation are physics, not regional statistics. They transfer completely.
+- The *ranking of proxies*: SMA bucket > API > antecedent discharge index > fixed 5-day antecedent
+  rainfall (Tramblay 2012, Morocco). The ranking reflects how much of the water balance each
+  estimator carries, which is not regionally contingent, even though the R² values are.
+- The *product-quality ranking*: calibrated bucket > model with satellite DA > satellite with SWI
+  filter > raw satellite retrieval (Beck 2021, global, 826 sensors). The vegetation and terrain
+  penalties transfer *against* western Washington specifically.
+- The *event-severity qualification*: antecedent control weakens as events approach the tail
+  (Wasko 2020, Brunner 2021). This is a general property of threshold systems.
+
+**What does not transfer — and this is the load-bearing regional finding.**
+
+- **The magnitude of the antecedent effect — smaller here, but not absent.** Webb et al. 2025 places
+  Washington in the *low*-responsiveness group: "In Washington, watersheds exhibit a uniform low
+  responsiveness to ASM" (FACT — paper §5b, full text read 2026-08-24). The mechanism it gives is
+  deeper soils, higher snow fraction, consistently wet cold seasons, and correspondingly small
+  soil-moisture variability (intraseasonal standard deviations "as low as 4 %" in much of Washington
+  and Oregon, against up to 14 % in coastal California). **The 2–4.5× headline is the span between
+  the two groups, not a single average: 4.5× is the high group (coastal California and Oregon) and
+  2× is the low group that Washington belongs to.** So the honest regional statement is *half the
+  West Coast effect, precipitation-controlled* — a two-fold amplification of event maximum
+  streamflow above the local ASM threshold — not *no effect*. A further 14 watersheds had no
+  statistically significant relationship at all and are "mostly in the Cascade Range", which is this
+  platform's own terrain. (Note that Webb's threshold regression controls for storm-total
+  precipitation; §3.1(c)–(e) below do not, so they are the weaker of the two evidence lines and must
+  not be read as independently confirming a null.)
+- **The SSPI recipe.** Webb et al. 2026 contains **no Pacific Northwest catchments** — 97 in
+  California and 45 in central Chile, 32–42° latitude. Its six low-improvement catchments are the
+  cooler ones, and the paper says snow-dominated regions "may require AR flood early-warning tools
+  that explicitly account for snow processes at the land surface and will require further
+  investigation." Adopting the ±0.5 rank promotion rule for Skagit or Snoqualmie without a local
+  hindcast would be transferring a calibration across a climate boundary the authors themselves
+  flag. The repo's prior pass already inferred this; the fetched methods section now makes it a
+  documented limitation rather than an inference.
+- **The measurement dynamic range.** §3.1(b): 0.50 percentage points of Nov–Feb IQR at Cayuse Pass.
+  In a California chaparral catchment the same measurement swings tens of points. A percentile-based
+  antecedent index is a fundamentally different instrument in the two settings.
+- **The in-situ network.** §3.1(a): four of eight Cascadia basins have **zero** SNOTEL soil moisture;
+  the Sauk — the basin the Skagit susceptibility surface reads — has none; the single Nooksack
+  station returned nothing through the record flood. This is not a data-plumbing problem to be
+  solved; it is a permanent constraint on method selection. (SW Oregon, Webb's high-sensitivity
+  region, is no better: a HUC-filtered AWDB query over the Rogue and Umpqua returned **no SNOTEL
+  station with a soil moisture element at all**, so even the CA/OR-to-WA in-situ comparison cannot
+  be made from this network.)
+- **The seasonal window of informativeness.** The 48-day autumn refill (Moore et al. 2011) places the
+  maritime Cascades at their winter storage plateau by mid-to-late November — before the
+  November–January flood peak, not during it. The exceptions where antecedent state genuinely
+  discriminates are: October events, the aftermath of an anomalously dry autumn, and March–May.
+- **Snow adds a second antecedent term — it does not replace the soil term.** Chen et al. 2019: the
+  runoff-to-precipitation ratio is "primarily controlled by antecedent soil moisture" across the
+  western U.S., **but almost doubles in the northwestern watersheds because of AR-driven snow
+  ablation.** The paper is explicit that the ranking does *not* invert: "Overall antecedent soil
+  moisture dominates over antecedent snowpack in controlling R/P" (§3.4). The northwestern doubling
+  is snow ablation adding *water flux* to the soil, not snowpack state displacing soil state as the
+  control. `HYDROLOGY.md` §7 is right that SWE is storage, not hazard; this adds that in the
+  Northwest an AR can convert that storage into input on the event timescale, so the *soil* state a
+  Cascadia basin reaches during an AR is partly set by ablation the index never sees. (Corrected
+  2026-08-24: an earlier draft of this entry claimed the antecedent snow term can exceed the
+  antecedent soil term — that is contradicted by the cited paper.)
+- **Event Zero was the clean case and it still failed the index.** December 2025 had near record-low
+  snowpack and 6,000–9,000 ft snow levels, so snow contributed nothing: it was rain on wet soils, the
+  textbook antecedent-moisture flood. The susceptibility surface still read LOW/MODERATE on the day
+  of the official Flood Watch (§3.1(f)). The failure is not attributable to snow confounding — it is
+  attributable to reading the level of a slow variable instead of its rate of change.
+
+---
+
+## 6. What this means for Cascadia Papsukkal
+
+### 6.1 The verdict on the day-of-year streamflow percentile, stated plainly
+
+**It is a defensible antecedent-wetness proxy, it is the right thing to have built first, and it
+claims more than the evidence supports in three specific ways.**
+
+Defensible because: (i) Kirchner's `Q = f(S)` makes a flow percentile a monotone image of a storage
+percentile; (ii) it is an OBSERVED quantity with a multi-decade climatology, 15-minute latency and
+no licensing constraint — no other candidate has all four; (iii) the direct literature comparison
+gives an antecedent discharge index R² = 0.67 against a calibrated storage deficit, which is real
+information, not noise; (iv) the platform already refuses to call it soil moisture, refuses to score
+SWE, and renders soil as UNKNOWN with a reason. That is exactly right and should not change.
+
+Over-claiming in three ways:
+
+1. **"That is the standard antecedent-wetness proxy"** (`susceptibility.py` module docstring). The
+   literature standard is antecedent soil moisture or an SPI-family index; the antecedent discharge
+   index is a recognised but consistently *lower-ranked* alternative (R² 0.67 vs API 0.82 vs SMA
+   0.90 in the one study that ranks all three). Say "a recognised proxy, ranked below API and
+   soil-moisture accounting in the literature that compares them".
+2. **The band as a state description.** 45–75 % of VERY HIGH readings occur when the river is
+   already rising steeply. The band is measuring the event as often as it measures the antecedent
+   state.
+3. **The implied symmetry of LOW.** A LOW reading still carries 0.0–0.8 % probability of a top-1 %
+   flow within the next week against a 1.0 % base rate — a factor of roughly two, not an
+   all-clear — and 24–25 % of the annual maxima at unregulated gauges were preceded by a
+   below-25th-percentile state at −7 days.
+
+### 6.2 Doctrine changes
+
+- `HYDROLOGY.md` §1 currently says "forcing determines how much water enters; state determines how
+  the basin reacts." Add the regional qualification: **in the maritime western Cascades the state
+  term has small variance during the flood season, so its discriminating power is smaller here than
+  in the California-dominated literature.** Cite Webb 2025's regional classification and §3.1(b).
+- `HYDROLOGY.md` §8 should record that SNOTEL soil moisture is **absent** from the Stillaguamish,
+  Skykomish/Snohomish, Snoqualmie and Green basins and from the Sauk, and unusable in the Nooksack
+  and Cedar — with the AWDB station-element evidence.
+- Add to §8 the *hysteresis* caveat: a flow percentile understates storage on the rising limb and
+  overstates it on the recession limb, so the same percentile means different things depending on
+  which way the hydrograph is going. This is the argument for a signed rate-of-change driver.
+- Add a doctrine line: **the platform reports the antecedent state's level and its rate of change,
+  and never renders LOW as an all-clear.** The measured conditional probabilities belong in the
+  method note so the band carries its own evidence.
+
+### 6.3 Method and contract changes, by priority
+
+**P0 — correct what is already displayed.**
+
+1. `packages/hydrology/src/cascade_hydrology/susceptibility.py`: add a driver
+   `streamflow_doy_percentile_delta_48h` (and 24 h), signed, with its own band, and an
+   `in_event` boolean derived from `Q(t) / Q(t−3)`. A VERY HIGH reading that is concurrent with a
+   rising hydrograph must be visually distinct from one that is antecedent — they mean opposite
+   things operationally. Event Zero's entire signal lived in this term (Sauk: +64 percentile points
+   in 48 h).
+2. `susceptibility.METHOD_PARAMETERS`: publish the measured conditional probabilities per band, per
+   gauge, from §3.1(c), and the note that the bands are uncalibrated WaterWatch conventions whose
+   *measured* lift on the extreme tail is ≈ 2–5× on a 1 % base rate. A band that ships its own skill
+   number cannot be misread as a probability.
+3. `packages/providers/usgs/src/cascade_providers_usgs/climatology.py`: record the **regulation
+   epoch** in the ladder's provenance and, on regulated gauges, either restrict the climatology to
+   the post-regulation epoch or emit an explicit non-stationarity flag. Green at Auburn and Skagit at
+   Mount Vernon both mix regimes; the distortion is concentrated at the 90th-percentile edge
+   (§3.1(g)).
+4. `MAX_DAILY_MEAN_AGE = 48 h` is too loose for a state that moves 64 percentile points in 48 hours.
+   Either shorten it during the cool season or carry the age as a first-class confidence input
+   rather than a binary cutoff.
+
+**P1 — build the thing the doctrine already promises.**
+
+5. **Basin soil-saturation percentile from NWM.** `HYDROLOGY.md` §3 already lists "soil water
+   storage / saturation percentile — NWM land output (modeled)" as a susceptibility input. It is
+   buildable now: NWM v3.0 retrospective `ldasout.zarr` (SOIL_M, 4 layers, m³ m⁻³, 3-hourly,
+   1979-02 → 2023, 1 km) for the day-of-year climatology, and the operational NWM AnA land output
+   (S6, hourly, ~1–2 h latency) for the current value. Both are already in `DATA_SOURCES.md`.
+   Badge MODELED, name the model version, and — critically — **report the disagreement between the
+   NWM soil percentile and the streamflow percentile rather than averaging them** (DATA_DOCTRINE
+   §10). That disagreement is the platform's honest expression of the hysteresis in §2.2.
+   Known hazard: the retrospective is v3.0 and the operational stream is v3.1, and there is an
+   archive gap between 2023-02 and 2025-01. A percentile computed against a different model
+   version's climatology must say so.
+6. **90-day SSPI from AORC.** `noaa-nws-aorc-v1-1-1km` carries per-year Zarr from 1979 at 1 km —
+   enough for the Gamma reference distribution over cool-season-ending 90-day totals. Implement it
+   as a *displayed feature* first, not as a forcing modifier. Do **not** ship the Webb 2026
+   promote/demote rule until it has been hindcast in these basins: the paper contains no PNW
+   catchments and names snow-dominated regions as a limitation.
+7. **Hindcast experiment, publishable either way.** Score four antecedent formulations —
+   DOY flow percentile, its 48 h delta, NWM SOIL_M percentile, 90-day SSPI — against cool-season
+   peaks in the six configured basins, conditioned on basin QPF/QPE so the test is "does antecedent
+   state add skill *given* the forcing" rather than "does high flow follow high flow". A null result
+   for western Washington is a genuine scientific finding and belongs in `HYDROLOGY.md`, not in a
+   drawer. Exit criterion for the susceptibility surface losing its EXPERIMENTAL badge.
+
+**P2 — cleanup and options.**
+
+8. Permanently close the SNOTEL-soil-moisture path for the Cascadia basins and record the AWDB
+   evidence in `DATA_SOURCES.md` (S1) so the decision is not relitigated. Keep Cayuse Pass as
+   *context* for the White only, never scored.
+9. Consider a transparent SMA storage-deficit index (AORC precipitation minus a reference PET,
+   single production store) as a fallback with no model dependency — Tramblay 2012 puts this family
+   at the top of the estimator ranking (R² = 0.90), and Beck 2021 puts a calibrated bucket at the
+   top of 18 global soil-moisture products (median R = 0.78).
+10. Investigate groundwater levels as a slow-store proxy in the lowland basins (USGS active
+    groundwater network). OPEN — no western-Washington well suitability assessment was performed for
+    this entry.
+
+### 6.4 What *not* to do
+
+- Do not ingest SMAP L4 as a Cascadia susceptibility input. Formal accuracy is fine
+  (ubRMSE 0.030 m³ m⁻³ root zone) **but that accuracy requirement explicitly excludes snow, frozen
+  ground and mountainous topography — the Cascades in winter are outside the product's own claimed
+  validity envelope.** SMAP observations are also used inefficiently over forest, most
+  satellite products degrade over steep terrain and all single-sensor products degrade in cold
+  climates (Beck 2021 §3.3), latency is ~2.66 days against a state that can move 64 percentile points
+  in 48 hours, and SMAP L4 ranked 4th of 6 DA products in the largest independent evaluation. The
+  cost/benefit is poor and the failure mode is silent. (Corrected 2026-08-24: an earlier draft added
+  "retrievals degrade above LAI 2" to this list. Beck 2021 attributes the LAI > 2 degradation to
+  AMSR2 and SMOS specifically, and SMAP L4 is a Catchment-model assimilation product rather than a
+  raw retrieval, so that argument does not apply to it. The remaining reasons stand.)
+- Do not average the flow percentile with a soil percentile into a single "wetness" number.
+- Do not convert any of this to a probability. Nothing here is calibrated.
+
+---
+
+## 7. What this domain contradicts or qualifies in the current repo doctrine
+
+| # | Repo claim / behaviour | Verdict | Evidence |
+|---|---|---|---|
+| 1 | `HYDROLOGY.md` §1: "state determines how the basin reacts" | **Qualified — regionally overstated** | Webb 2025 classifies WA as low-ASM-sensitivity; Cayuse Pass Nov–Feb IQR 0.50 pp; Spearman(antecedent pct at −7 d, cool-season peak) = −0.010 (Sauk) and −0.017 (Skykomish) |
+| 2 | `susceptibility.py` docstring: DOY flow percentile is "the standard antecedent-wetness proxy" | **Contradicted as stated** | The comparative literature ranks it *below* API and soil-moisture accounting: R² 0.67 vs 0.82 vs 0.90 (Tramblay et al. 2012). It is *a* recognised proxy, not *the* standard |
+| 3 | The surface is described as antecedent state | **Materially qualified** | 45–75 % of VERY HIGH readings occur with flow already > 25 % above its t−3 value; the short-lag correlation with peaks is event contamination (47–49 % of annual maxima already rising at −3 d) |
+| 4 | `BAND_EDGES` 25 / 75 / 90 as LOW…VERY HIGH | **Qualified** | Measured lift on the top-1 % of Nov–Feb flows is only 2.1–5.1 % vs a 1.0 % base rate; LOW retains 0.0–0.8 %. The banding is monotone and reproducible, as the repo claims — and nearly flat where it matters |
+| 5 | `HYDROLOGY.md` §3 lists a soil-saturation percentile from NWM land output as a susceptibility input | **Promise outruns the code — and the data are already public** | NWM v3.0 retrospective `ldasout.zarr` SOIL_M verified on S3, 1979-02 → 2023, 1 km, 4 layers; operational AnA land output already inventoried as S6 |
+| 6 | `SOIL_UNAVAILABLE_REASON` (SNOTEL SMS "returns no climatology, inconsistent depths and `no profile` flags") | **Confirmed and understated** | 4 of 8 basins have zero SMS stations; the Sauk has none; MF Nooksack returned 51/123 days, all 0.0 %, and nothing at all before 12 Dec 2025; Meadows Pass returned 0/123 |
+| 7 | Confidence ceilings: Green and White capped **low** for regulation; Snoqualmie **high** | **Right decision, wrong stated reason** | The regulated gauges have the *highest* statistical persistence (Cedar ρ = 0.705, lowest mid-event share 45 %). Regulation makes the percentile *more* autocorrelated, not less predictive — the cap is justified because the signal is an operating decision, not because it is noisier |
+| 8 | `MAX_DAILY_MEAN_AGE = 48 h` | **Too loose for the regime** | The Sauk moved from percentile 24.8 to 88.7 in 48 h on 4–6 Dec 2025 |
+| 9 | `climatology.py` builds a full-record ladder from approved daily means | **Qualified: non-stationary at regulated points** | Skagit at Mount Vernon Dec–Jan median 11,850 → 16,500 cfs (+39 %) between the 1941–1952 and 1960–2025 epochs (not attributable to regulation — see §3.1(g)); Green at Auburn Dec–Jan record max 16,400 → 11,600 cfs |
+| 10 | Prior pass's recommendation to adopt the Webb 2026 SSPI ± 0.5 rank rule as "the single largest available skill gain" | **Qualified — do not ship without a local hindcast** | Now that the methods section has been read: 97 California + 45 central Chile catchments, **zero PNW**; the paper names cooler catchments as the low-improvement group and snow-dominated regions as needing different tools |
+| 11 | `HYDROLOGY.md` §7 snow doctrine (SWE is storage, not hazard) | **Confirmed and extended** | Chen et al. 2019: runoff-to-precipitation ratio is primarily controlled by antecedent soil moisture *but almost doubles in northwestern watersheds* because of AR-driven snow ablation. The same paper states soil moisture "dominates over antecedent snowpack in controlling R/P", so snow is an additional input pathway during the event, not a replacement control |
+| 12 | `HYDROLOGY.md` §5 ordering (official forecast first) | **Strongly confirmed, with a new reason** | NWRFC CHPS carries SNOW-17 + SAC-SMA states per elevation zone, human-adjusted to match observations before each run. The official forecast is the best antecedent-state-conditioned product available for these basins, and the platform cannot reproduce its state vector |
+
+Nothing in `HYDROLOGY.md` was found to be **wrong**. One method docstring claim (#2) is wrong as
+written, one displayed surface (#3, #4) claims more than its measured skill supports, and one
+doctrine promise (#5) is unbuilt while the data sit in a public bucket.
+
+---
+
+## 8. Open questions
+
+1. **Does antecedent state add skill in western Washington *conditional on forcing*?** Every
+   computation in §3.1 is flow-only, so it cannot separate "the basin was primed" from "it had been
+   raining". The decisive experiment needs basin QPE/QPF joined to the antecedent index. Until it is
+   run, the strength of the null result here is bounded.
+2. **Is the Nooksack at Ferndale daily mean tide-contaminated?** The seed flags this as unchecked and
+   caps confidence at moderate. It remains unchecked. A tidal signal in a *daily mean* would be
+   small but a datum-referenced stage record would settle it.
+3. **What is the right rate-of-change window?** 24 h, 48 h, 72 h, or the slope of the percentile? The
+   Event Zero signal is unambiguous at 48 h but n = 1.
+4. **Does an NWM soil percentile disagree with the flow percentile in a *useful* way in these basins,
+   or does it just track it?** If SOIL_M is also pinned near saturation from November (which §3.1(b)
+   suggests it will be), the new feature buys nothing and the honest answer is to say so.
+5. **What is the actual soil-layer geometry of NWM v3.x `SOIL_M`, and does the 0–200 cm column even
+   contain the storage that matters** in basins where the active store is a deep, permeable
+   colluvial mantle over bedrock? Noah-MP's 2 m column may be the wrong control volume for the
+   western Cascades.
+6. **Is a fill-and-spill "distance to threshold" estimable from streamflow alone** in these basins —
+   e.g. by fitting Kirchner's sensitivity function `g(Q)` per basin and locating the knee? That
+   would replace an uncalibrated percentile band with a physically-motivated one.
+7. **Do groundwater levels in the lowland Puget basins lead the flow percentile?** No western-WA well
+   assessment was performed here.
+8. **How should the antecedent index behave in October and in March–May**, the two windows where
+   §2.4 predicts it is genuinely informative? Those may deserve a different banding than the flood-
+   season one.
+9. **Is there a published western-Washington antecedent-precipitation threshold** (the Seattle-area
+   landslide literature uses cumulative 3-day and 15-day antecedent rainfall) that could serve as a
+   locally-calibrated anchor? Not investigated for this entry.
+10. **Non-stationarity of the climatology under climate change.** Webb et al. 2026 flag that
+    SSPI relies on historical baselines that may shift and "may require non-stationary approaches".
+    The same applies to a day-of-year flow ladder built from a 99-year record.
+
+---
+
+## 9. Sources
+
+Primary datasets fetched and computed on 2026-08-24:
+
+- USGS daily mean discharge, `https://waterservices.usgs.gov/nwis/dv/` — sites 12189500 (Sauk nr
+  Sauk), 12134500 (Skykomish nr Gold Bar), 12200500 (Skagit nr Mount Vernon), 12113000 (Green nr
+  Auburn), 12149000 (Snoqualmie nr Carnation), 12213100 (Nooksack at Ferndale), 12119000 (Cedar at
+  Renton), 12100490 (White at R St), full period of record.
+- NRCS AWDB REST API, `https://wcc.sc.egov.usda.gov/awdbRestApi/services/v1/stations` and
+  `/v1/data` — all 78 active Washington SNOTEL stations with station elements; SMS daily series for
+  1011:WA:SNTL, 897:WA:SNTL, 942:WA:SNTL, 1085:WA:SNTL; HUC-filtered query over the Rogue/Umpqua.
+- NOAA NWM v3.0 retrospective Zarr metadata,
+  `https://noaa-nwm-retrospective-3-0-pds.s3.amazonaws.com/CONUS/zarr/ldasout.zarr/.zmetadata`.
+- NOAA AORC v1.1 1-km bucket listing, `https://noaa-nws-aorc-v1-1-1km.s3.amazonaws.com/`.
+
+Literature and agency documents:
+
+- [Webb, Albano, Harpold, Wagner & Wilson 2025 — Wet Antecedent Soil Moisture Increases Atmospheric River Streamflow Magnitudes Nonlinearly, *J. Hydrometeorology* 26(6):741–758, doi 10.1175/JHM-D-24-0078.1](https://journals.ametsoc.org/view/journals/hydr/26/6/JHM-D-24-0078.1.xml) — **full text fetched and read 2026-08-24 during adversarial review** (open access; `https://journals.ametsoc.org/downloadpdf/view/journals/hydr/26/6/JHM-D-24-0078.1.pdf` returns 200 with a browser user agent, though the `/view/` HTML returns 403). Confirmed in the paper itself: 43,445 cold-season AR events; statistically significant ASM thresholds at 108 of 122 watersheds via a `chngpt` two-phase hinge model **controlling for storm-total precipitation**; ASM thresholds 29–83 % relative saturation, median 64 %; three groups — high responsiveness n = 52 ("on the coast of California and in Oregon", mean ASM importance 0.73, mean ASM sensitivity 357 %, ≈ 4.5× amplification), low responsiveness n = 56 ("In Washington, watersheds exhibit a uniform low responsiveness to ASM"; mean ASM importance 0.46, mean sensitivity 103 %, i.e. **≈ 2-fold amplification, not zero**), and NA n = 14 with no significant relationship, "mostly in the Cascade Range". The 2–4.5× headline is the span between the low and high groups, so **2× is Washington's own number**. The sentence "less valuable for flood management because soils are consistently wet or insulated by snow" is **DRI press-office wording and does not appear in the paper**; the paper's own equivalent is the "uniform low responsiveness" finding. Prior secondary reads retained for provenance: [CW3E publication notice](https://cw3e.ucsd.edu/cw3e-publication-notice-wet-antecedent-soil-moisture-increases-atmospheric-river-streamflow-magnitudes-non-linearly/), [DRI summary](https://www.dri.edu/wet-soils-increase-flooding-during-atmospheric-river-storms/), and the [HydroShare data resource](https://www.hydroshare.org/resource/0871c3b8775d4153a024f532be34ecd9/) (which names WLDAS, the Rutz AR catalog and GAGES-II).
+- [Webb et al. 2026 — Antecedent moisture enhances early warning of atmospheric river flood hazards, *Nature Communications*](https://pmc.ncbi.nlm.nih.gov/articles/PMC13009374/) — full text fetched and read via PMC (doi 10.1038/s41467-026-69286-3).
+- [Tramblay, Bouaicha, Brocca et al. 2012 — Estimation of antecedent wetness conditions for flood modelling in northern Morocco, *HESS* 16:4375–4386](https://hess.copernicus.org/articles/16/4375/2012/) — PDF downloaded and read in full.
+- [Beck, Pan, Miralles et al. 2021 — Evaluation of 18 satellite- and model-based soil moisture products using in situ measurements from 826 sensors, *HESS* 25:17–40](https://hess.copernicus.org/articles/25/17/2021/hess-25-17-2021.pdf) — PDF downloaded and read.
+- [Kirchner 2009 — Catchments as simple dynamical systems, *WRR* 45, W02429](https://agupubs.onlinelibrary.wiley.com/doi/full/10.1029/2008WR006912) — **Wiley returned HTTP 403; abstract only, via OpenAlex.**
+- [Moore, Jones & Bond 2011 — How soil moisture mediates the influence of transpiration on streamflow at hourly to interannual scales in a forested catchment, *Hydrol. Process.* 25(24):3701–3710](https://research.fs.usda.gov/treesearch/47598) — record and results fetched from USFS Treesearch; journal text not fetched.
+- [Chen, Leung, Wigmosta & Richmond 2019 — Impact of Atmospheric Rivers on Surface Hydrological Processes in Western U.S. Watersheds, *JGR-Atmospheres* 124:8896–8916](https://doi.org/10.1029/2019JD030468) — full text fetched and read via the OSTI accepted manuscript, 2026-08-24. (Corrected 2026-08-24: an earlier draft of this entry attributed this DOI to "Huang, Rhoades, Ullrich, Zarzycki et al." — wrong author list, right paper.)
+- [Berghuijs, Woods, Hutton & Sivapalan 2016 — Dominant flood generating mechanisms across the United States, *GRL* 43:4382–4390](https://agupubs.onlinelibrary.wiley.com/doi/full/10.1002/2016GL068070) — **Wiley returned HTTP 403; abstract only, via OpenAlex.**
+- [Wasko, Nathan & Peel 2020 — Changes in Antecedent Soil Moisture Modulate Flood Seasonality in a Changing Climate, *WRR*](https://doi.org/10.1029/2019WR026300) — abstract via OpenAlex; **full text not independently fetched.**
+- [Brunner et al. 2021 — An extremeness threshold determines the regional response of floods to changes in rainfall extremes, *Commun. Earth Environ.* 2:173](https://www.nature.com/articles/s43247-021-00248-x.pdf) — abstract via OpenAlex.
+- [Tarasova, Merz, Kiss, Basso et al. 2019 — Causative classification of river flood events, *WIREs Water*](https://onlinelibrary.wiley.com/doi/pdfdirect/10.1002/wat2.1353) — abstract via OpenAlex; identifies antecedent catchment state as one of three classification perspectives and calls for indicators of antecedent wetness in classification schemes.
+- [Tramblay et al. 2019 — Detection and attribution of flood trends in Mediterranean basins, *HESS* 23:4419](https://hess.copernicus.org/articles/23/4419/2019/) — abstract via OpenAlex; decreasing soil moisture as a driver of *downward* flood trends despite rising extreme precipitation.
+- [Ivancic & Shaw 2015 — Examining why trends in very heavy precipitation should not be mistaken for trends in very high river discharge, *Climatic Change* 133:681–693](https://doi.org/10.1007/s10584-015-1476-1) — **paywalled at Springer; abstract elided by the publisher on Semantic Scholar and absent from Crossref. Not independently fetched.** A search-engine summary attributes to this literature the figures "62 % of 99th-percentile precipitation produces 99th-percentile discharge during wet periods and only 13 % during dry periods"; **treat as unverified.**
+- [Konrad & Dettinger 2017 — Flood Runoff in Relation to Water Vapor Transport by Atmospheric Rivers Over the Western United States, 1949–2015, *GRL* 44, doi 10.1002/2017GL075399](https://agupubs.onlinelibrary.wiley.com/doi/pdfdirect/10.1002/2017GL075399) — abstract via OpenAlex, author list verified against Crossref 2026-08-24 (an earlier draft of this entry wrote "Neiman/Dettinger et al."; Neiman is not an author) (forcing-side context: P(AR generates 50 mm/d runoff) rises 12 % → 54 % as daily-mean vapour transport rises from > 300 to > 600 kg m⁻¹ s⁻¹).
+- [NWRFC — Ensemble Streamflow Prediction / Water Supply Forecast Procedure webinar, 18 May 2016](https://www.nwrfc.noaa.gov/presentations/html/wy2016_ws/ESP_Description_Webinar_20160518.pdf) — PDF fetched and read; source for the CHPS/SNOW-17/SAC-SMA state description and the 67-trace 1948–2015 ESP configuration.
+- [NASA SMAP Project Assessment Report for Version 4 of the L4_SM Data Product](https://ntrs.nasa.gov/citations/20180007707) — the report PDF itself was **not independently fetched**. The ubRMSE figures used here now come from the [global assimilation-diagnostics assessment](https://pmc.ncbi.nlm.nih.gov/articles/PMC6196324/), fetched 2026-08-24: 0.038 / 0.030 m³ m⁻³ at 9 km, 0.035 / 0.026 at 36 km, against a 0.04 requirement whose own scope statement **excludes snow, frozen ground, mountainous topography and high-water-content vegetation**. (Corrected 2026-08-24: an earlier draft quoted 0.039 / 0.029 from a search summary.)
+- [UW Climate Impacts Group — December 8–11, 2025 Heavy Rainfall and Flooding: Historical Context and a Note on Snow Drought](https://climate.uw.edu/2026/01/13/december-8-11-2025-heavy-rainfall-and-flooding-historical-context-and-a-note-on-snow-drought/) — fetched; "early December rains set us up for bigger floods because the soils were already wet"; the 4-day event ranks 5th since 1981, the 1-day total 7th.
+- [Snoqualmie Valley Record — Flood science: how December's atmospheric river soaked Washington, 5 Jan 2026](https://www.valleyrecord.com/2026/01/05/flood-science-how-decembers-atmospheric-river-soaked-wa/) — fetched; Cascade soil moisture "above normal" preceding the event; snowmelt "negligible".
+- Repo internal: `docs/HYDROLOGY.md`, `docs/DATA_DOCTRINE.md`, `docs/DATA_SOURCES.md`,
+  `docs/research/flood-genesis-mechanisms-2026-08-24.md`,
+  `packages/hydrology/src/cascade_hydrology/susceptibility.py`,
+  `packages/providers/usgs/src/cascade_providers_usgs/climatology.py`,
+  `packages/core/src/cascade_core/seed/p3_surfaces.json`.
+
+Sources cited by the prior pass and inherited here without re-fetching: Tromp-van Meerveld &
+McDonnell 2006 (55 mm threshold, 75×), McDonnell et al. 2021 (fill-and-spill), Kirchner 2003
+(double paradox), Jennings & Jones 2015 (H.J. Andrews), Neiman et al. 2011, Barth et al. 2017.

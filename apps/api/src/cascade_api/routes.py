@@ -11,23 +11,57 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from cascade_contracts import SceneSummary
 from cascade_contracts.common import CONTRACT_VERSION
-from cascade_core.freshness import compute_freshness
-from cascade_core.knowledge import Knowledge, as_known_at
+from cascade_core.freshness import DEGRADED_MULTIPLIER, compute_freshness
+from cascade_core.knowledge import as_known_at
 from cascade_core.registry import (
-    PRODUCT_NWPS_FORECAST,
-    PRODUCT_NWPS_THRESHOLDS,
+    EXPECTED_PRODUCTS,
+    JOBS,
     PRODUCT_USGS_IV,
+    PRODUCT_WRITERS,
 )
 from cascade_core.timeutils import parse_iso, utcnow
-from cascade_hydrology.assemble import basin_envelope, forecast_run_ref, river_envelope
+from cascade_hydrology import agreement
+from cascade_hydrology.assemble import (
+    assess_point,
+    basin_envelope,
+    forecast_run_ref,
+    river_envelope,
+)
 
 router = APIRouter()
 
 BASIN_ID = r"^basin:[a-z0-9-]+$"
 LID = r"^[A-Z0-9]{3,8}$"
 STATION_ID = r"^station:[a-z]+:[A-Za-z0-9._-]+$"
-JOB_TO_PROVIDER = {"usgs.fetch_iv": "usgs", "nwps.fetch_thresholds": "nwps", "nwps.fetch_forecast": "nwps"}
-HEALTH_PRODUCTS = (PRODUCT_USGS_IV, PRODUCT_NWPS_FORECAST, PRODUCT_NWPS_THRESHOLDS)
+
+# --- /system/health vocabulary -----------------------------------------------------------------
+# Both maps are DERIVED from cascade_core.registry.JOBS. They used to be written out here, three
+# jobs of ten and the same three products, which is how `nbm.fetch_core_snowlvl` failed on every
+# cycle while this endpoint answered `ok` (pg-migration-verification-2026-08-24 §P3.6 finding C).
+# A hand-kept list falls behind silently; a derived one cannot. cascade_api may not import the
+# worker (that would pull the provider adapters in and break the import contract), so
+# tests/unit/test_job_registry.py imports the scheduler and the registry together and fails if a
+# registered job is missing from the catalogue these are built from.
+JOB_TO_PROVIDER: dict[str, str] = {job.name: job.provider for job in JOBS}
+HEALTH_PRODUCTS: tuple[str, ...] = EXPECTED_PRODUCTS
+
+#: A job counts as late when its last SUCCESS is older than this many cadences. Same multiplier as
+#: the freshness DEGRADED rule so the two halves of the payload cannot disagree about the same
+#: silence, and loose enough that one skipped cycle is not an alarm.
+JOB_LATE_MULTIPLIER = DEGRADED_MULTIPLIER
+#: A failing job is `down` rather than `failing` once no success is left inside this window.
+JOB_RECOVERY_SECONDS = 24 * 3600
+
+#: Job state -> the provider vocabulary the clients already know. `pending` is deliberately
+#: `unknown`, not `degraded`: a job that has never run has not failed, and a fresh deployment
+#: must not raise an alarm about work nothing has asked for yet.
+PROVIDER_STATE_BY_JOB_STATE = {"ok": "healthy", "pending": "unknown", "late": "degraded", "failing": "degraded", "down": "down"}
+#: The job states that are evidence of something being WRONG (as opposed to unknown).
+ALARMING_JOB_STATES = frozenset({"late", "failing", "down"})
+PROVIDER_RANK = {"healthy": 0, "unknown": 1, "degraded": 2, "down": 3}
+#: Freshness states that mean data arrived and then stopped / went old — an alarm. `missing` is
+#: NOT here: nothing has ever arrived, which is unknown, not broken.
+ALARMING_FRESHNESS_STATES = frozenset({"stale", "degraded"})
 
 
 async def get_session(request: Request):
@@ -282,16 +316,82 @@ async def search(session: Session, as_of: AsOf, q: Annotated[str, Query(min_leng
     return {"items": items[:50]}
 
 
-def _provider_state(k: Knowledge, last, last_ok) -> dict:
-    if last is None:
-        return {"state": "unknown", "last_success_at": None, "last_error": None}
-    if last.ok:
-        state = "healthy"
-    elif last_ok is not None and (k.as_of - last_ok.started_at).total_seconds() <= 24 * 3600:
-        state = "degraded"
-    else:
-        state = "down"
-    return {"state": state, "last_success_at": last_ok.started_at if last_ok else None, "last_error": None if last.ok else last.error}
+def _job_health(spec, last, last_ok, now: datetime) -> dict:
+    """One registered job's state, with the reason in words, from its job_run history.
+
+    Four distinctions the old three-line version could not make, each of which reads the same on a
+    dashboard and means something different:
+
+    - `pending`  — no run recorded. Not a failure: nothing has been asked of it yet.
+    - `ok`       — succeeded inside its cadence.
+    - `late`     — last success is older than JOB_LATE_MULTIPLIER cadences. The scheduler is
+                   behind, or the cron never fired; nothing has failed, but nothing is arriving.
+    - `failing`  — the last run failed and a success still stands inside JOB_RECOVERY_SECONDS.
+    - `down`     — the last run failed with no recent success, or none ever.
+
+    A run still in flight has `ok IS NULL` (`run_job` writes the row before calling the job), so
+    it is not read as a failure; the job is judged on its last completed success instead.
+    """
+    late_after = spec.cadence_seconds * JOB_LATE_MULTIPLIER
+    common = {
+        "provider": spec.provider,
+        "cadence_seconds": spec.cadence_seconds,
+        "late_after_seconds": late_after,
+        "last_run_at": last.started_at if last is not None else None,
+        "last_success_at": last_ok.started_at if last_ok is not None else None,
+        "last_error": None if last is None or last.ok else last.error,
+    }
+    age = None if last_ok is None else int((now - last_ok.started_at).total_seconds())
+    if last is not None and last.ok is False:
+        if last_ok is None:
+            return {**common, "state": "down", "age_seconds": None, "reason": f"the last run failed and this job has never succeeded: {last.error}"}
+        if age is not None and age > max(JOB_RECOVERY_SECONDS, late_after):
+            return {**common, "state": "down", "age_seconds": age, "reason": f"the last run failed and the last success was {age} s ago: {last.error}"}
+        return {**common, "state": "failing", "age_seconds": age, "reason": f"the last run failed: {last.error}"}
+    if last_ok is not None:
+        if age is not None and age > late_after:
+            return {**common, "state": "late", "age_seconds": age, "reason": f"the last success started {age} s ago, more than {JOB_LATE_MULTIPLIER} cadences ({late_after} s)"}
+        return {**common, "state": "ok", "age_seconds": age, "reason": None}
+    if last is not None:  # a run exists but recorded no outcome: in flight, or the process died
+        in_flight = int((now - last.started_at).total_seconds())
+        if in_flight > late_after:
+            return {**common, "state": "down", "age_seconds": None, "reason": f"a run started {in_flight} s ago never recorded an outcome and this job has never succeeded"}
+        return {**common, "state": "pending", "age_seconds": None, "reason": f"a run started {in_flight} s ago has not recorded an outcome yet"}
+    return {**common, "state": "pending", "age_seconds": None, "reason": "registered, never run: no job_run row exists at this knowledge time"}
+
+
+@router.get("/explanations/{basin_id}/agreement")
+async def agreement_explanation(session: Session, as_of: AsOf, basin_id: Annotated[str, Path(pattern=BASIN_ID)]) -> dict:
+    """The structured record behind an agreement level — the target of `AgreementState.explanation_ref`.
+
+    The panel shows one sentence; this is the long form it was reduced from: the window both
+    crests were taken over, both hydrograph shapes, the band parameters WITH the sentence saying
+    they are uncalibrated assumptions, and the full text of every quality flag that did not fit
+    in two clauses. Recomputed at the requested knowledge time rather than stored, so the
+    explanation can never describe a different reading than the one being explained.
+
+    Structured features only — nothing here is generated prose (DATA_DOCTRINE §11).
+    """
+    k = as_known_at(session, as_of)
+    basin = await k.basin(basin_id)
+    if basin is None:
+        raise HTTPException(status_code=404, detail="unknown basin")
+    outlet = await k.forecast_point_by_lid(basin.outlet_fp_id.split(":")[-1]) if basin.outlet_fp_id else None
+    if outlet is None:
+        raise HTTPException(status_code=404, detail=f"{basin_id} has no outlet forecast point to compare forecasts at")
+    products = await k.products()
+    pa = await assess_point(k, outlet, basin, products)
+    ag = await agreement.assess(k, outlet, thresholds=pa.thresholds)
+    return {
+        "basin_id": basin_id,
+        "surface": "agreement",
+        "as_of": k.as_of,
+        "forecast_point_id": outlet.id,
+        "state": ag.state.state.value,
+        "reason": ag.state.reason,
+        "method": ag.result.method_record,
+        "quality": list(ag.result.quality),
+    }
 
 
 @router.get("/system/version")
@@ -312,20 +412,80 @@ async def version(request: Request) -> dict:
 
 @router.get("/system/health")
 async def health(session: Session, as_of: AsOf) -> dict:
+    """Every registered job and every expected product, or the reason there is nothing to say.
+
+    Derived from `cascade_core.registry.JOBS` and its product sets, never from a list kept here.
+    The list kept here knew about three jobs of ten, which is precisely how `nbm.fetch_core_snowlvl`
+    failed on every single cycle while this endpoint answered `status: ok`
+    (pg-migration-verification-2026-08-24 §P3.6 finding C).
+
+    `status` is three-valued, because two values could not tell "nothing has run yet" from
+    "something is broken" without lying in one direction or the other:
+
+    - `degraded` — evidence of failure: a job is late, failing or down, or a product that WAS
+      arriving has gone stale.
+    - `unknown`  — no evidence yet: a registered job has never run, or an expected product has
+      never been ingested. A fresh deployment reads `unknown`, never `degraded`, and stays there
+      until the first cycle completes rather than raising an alarm nobody can act on. Every such
+      gap is named in `reasons`, so `unknown` is a list of what is missing, not a shrug.
+    - `ok`       — every registered job has succeeded inside its cadence and every expected
+      product is current.
+
+    Nothing here is aggregated away: `jobs` carries all ten, with a reason in words, whatever the
+    summary says. `providers` keeps the pre-existing shape and vocabulary (healthy / degraded /
+    down / unknown), rolled up as the worst job of that provider.
+    """
     k = as_known_at(session, as_of)
     runs = await k.latest_job_runs()
+    jobs: dict[str, dict] = {}
     providers: dict[str, dict] = {}
-    rank = {"healthy": 0, "unknown": 1, "degraded": 2, "down": 3}
-    for job, provider in JOB_TO_PROVIDER.items():
-        st = _provider_state(k, *runs.get(job, (None, None)))
-        cur = providers.get(provider)
-        providers[provider] = st if cur is None or rank[st["state"]] > rank[cur["state"]] else cur
+    reasons: list[str] = []
+    for spec in JOBS:
+        st = _job_health(spec, *runs.get(spec.name, (None, None)), now=k.as_of)
+        jobs[spec.name] = st
+        if st["reason"] is not None:
+            reasons.append(f"{spec.name}: {st['reason']}")
+        provider_state = {"state": PROVIDER_STATE_BY_JOB_STATE[st["state"]], "last_success_at": st["last_success_at"], "last_error": st["last_error"]}
+        cur = providers.get(spec.provider)
+        if cur is None or PROVIDER_RANK[provider_state["state"]] > PROVIDER_RANK[cur["state"]]:
+            providers[spec.provider] = provider_state
+
     products = await k.products()
-    freshness = {}
+    anchors = await k.product_freshness_anchors()
+    freshness: dict[str, dict] = {}
     for pid in HEALTH_PRODUCTS:
         p = products.get(pid)
-        v, r = await k.product_freshness_anchor(pid)
-        f = compute_freshness(expected_cadence_seconds=p.expected_cadence_seconds if p else None, grace_seconds=p.grace_seconds if p else None, valid_time=v, retrieved_at=r, now=k.as_of)
-        freshness[pid] = {"age_seconds": f.age_seconds, "state": f.state.value}
-    ok = all(p["state"] == "healthy" for p in providers.values()) and all(f["state"] == "current" for f in freshness.values())
-    return {"status": "ok" if ok else "degraded", "providers": providers, "freshness": freshness}
+        a = anchors.get(pid)
+        f = compute_freshness(
+            expected_cadence_seconds=p.expected_cadence_seconds if p else None,
+            grace_seconds=p.grace_seconds if p else None,
+            valid_time=a.valid_time if a else None,
+            retrieved_at=a.retrieved_at if a else None,
+            now=k.as_of,
+        )
+        writers = PRODUCT_WRITERS.get(pid, ())
+        if p is None:
+            reason = "registered in cascade_core.registry but not seeded in this database (no source_product row)"
+        elif a is None:
+            # Registered, expected, never ingested. Reported rather than dropped: an expected
+            # product that never arrives is exactly the thing a shorter list would hide.
+            reason = f"expected but never ingested at this knowledge time; written by {', '.join(writers)}"
+        elif f.state.value in ALARMING_FRESHNESS_STATES:
+            reason = f"{f.state.value}: {f.age_seconds} s old against a {p.expected_cadence_seconds} s cadence (+{p.grace_seconds} s grace)"
+        else:
+            reason = None
+        if reason is not None:
+            reasons.append(f"{pid}: {reason}")
+        freshness[pid] = {
+            "age_seconds": f.age_seconds,
+            "state": f.state.value,
+            "expected_cadence_seconds": p.expected_cadence_seconds if p else None,
+            "anchor": a.kind if a else None,
+            "writers": list(writers),
+            "reason": reason,
+        }
+
+    alarming = any(j["state"] in ALARMING_JOB_STATES for j in jobs.values()) or any(f["state"] in ALARMING_FRESHNESS_STATES for f in freshness.values())
+    unknown = any(j["state"] == "pending" for j in jobs.values()) or any(f["state"] in ("missing", "unknown") for f in freshness.values())
+    status = "degraded" if alarming else ("unknown" if unknown else "ok")
+    return {"status": status, "as_of": k.as_of, "reasons": reasons, "jobs": jobs, "providers": providers, "freshness": freshness}

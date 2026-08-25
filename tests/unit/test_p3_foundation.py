@@ -190,9 +190,19 @@ def test_no_model_source_may_be_badged_official():
 
 
 def test_p3_product_cadences_match_the_measured_design_values() -> None:
+    """Cadence describes how often the STORED anchor refreshes, not how often NOAA publishes.
+
+    `product:nbm-v5-core` was pinned at PT1H here because NBM `core` is published hourly. But
+    `nbm.fetch_core_snowlvl` runs 6-hourly and takes its cycle 7.5 h in arrears
+    (`client.latest_qmd_cycle`), so the anchor Cascade stores is 7.5–13.5 h old at all times and
+    the product was STALE on every cycle: measured live 2026-08-25 on a fresh database with every
+    job green, `/system/health` answered `degraded` naming this product alone, 47,760 s against a
+    3,600 s cadence (pg-migration-verification-2026-08-24 §P3.9). It now matches qmd, which the
+    same job cadence and the same cycle selector make the right comparison.
+    """
     by_id = {p["id"]: p for p in PRODUCTS}
     assert (by_id[PRODUCT_NBM_QMD]["expected_cadence_seconds"], by_id[PRODUCT_NBM_QMD]["grace_seconds"]) == (21600, 28800)
-    assert (by_id[PRODUCT_NBM_CORE]["expected_cadence_seconds"], by_id[PRODUCT_NBM_CORE]["grace_seconds"]) == (3600, 3600)
+    assert (by_id[PRODUCT_NBM_CORE]["expected_cadence_seconds"], by_id[PRODUCT_NBM_CORE]["grace_seconds"]) == (21600, 28800)
     assert (by_id[PRODUCT_NWM_MR]["expected_cadence_seconds"], by_id[PRODUCT_NWM_MR]["grace_seconds"]) == (21600, 28800)
     assert by_id[PRODUCT_USGS_OGC_DAILY]["expected_cadence_seconds"] == 86400
     assert by_id[PRODUCT_AWDB_DAILY]["expected_cadence_seconds"] == 86400

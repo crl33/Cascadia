@@ -89,7 +89,19 @@ when a milestone closes; delete lines that stop being true.
 > (VISUAL_TRUTH_DOCTRINE §5.6). `/system/version` plus a stamped `CASCADE_GIT_REVISION` make the
 > deployed build checkable against the repository; HEAD and production were reconciled at close.
 
-### P3 — Live intelligence surfaces v0 (M) — **BUILT 2026-08-24**, design and verification in `research/p3-surfaces-design-2026-08-24.md`
+### P3 — Live intelligence surfaces v0 (M) — **LANDED 2026-08-25**
+
+> P3 close-out (2026-08-25): all three surfaces compute live. Adversarial verification found
+> seven places where a surface claimed more than its inputs supported; all were fixed or
+> disclosed. Open, deliberately: (a) the agreement bands (25 %/60 % magnitude, 6 h/18 h timing,
+> 5 % crest prominence) are **uncalibrated assumptions** — they belong to the hindcast
+> calibration work (ADR-0008), and a dry-summer sample has never once exercised the timing
+> bands because nothing crests; (b) `RiverVisualizationState.agreement` is still null at river
+> items though design §3.3 gives the per-point state one; (c) `high` is reachable at a 29 %
+> crest difference because the denominator is floored by the action flow threshold — defensible
+> (both models say "nowhere near flooding") and the sentence names the denominator, but it is a
+> calibration question a hindcast should settle.
+ — **BUILT 2026-08-24**, design and verification in `research/p3-surfaces-design-2026-08-24.md`
 - Forcing v0 from NBM QPF percentiles at basin scale (EXPERIMENTAL badge, documented method);
   susceptibility v0 from streamflow percentile + (when SNOTEL adapter lands) SWE context;
   agreement v0 from NWM blend-vs-NWRFC crest comparison at forecast points. All labeled,
@@ -146,8 +158,13 @@ now says which input is missing:
    the now-false "not implemented in the spike" sentences
    (`packages/contracts/fixtures/basin_skagit_envelope.json` → `scripts/sync-pages-fixtures.sh`).
    Recapturing that fixture from a real `/viz/basins` response is a small, separate change.
-5. **`/system/health` does not yet report the P3 products**, and the three new canaries
-   (`nbm`, `nwm-via-nwps`, `awdb`/susceptibility) are not folded into the scheduled canary run.
+5. **The three new canaries** (`nbm`, `nwm-via-nwps`, `awdb`/susceptibility) are not folded into
+   the scheduled canary run. (`/system/health` itself now reports every registered job and every
+   expected product — verification finding C, fixed 2026-08-24: the job catalogue is
+   `cascade_core.registry.JOBS`, health is derived from it, and `tests/unit/test_job_registry.py`
+   fails if a job registered on the worker is missing from it. `status` gained a third value,
+   `unknown`, for "no evidence yet" — a fresh deployment reads `unknown` with the pending jobs
+   named, not `degraded`, and not `ok`.)
 6. **Open provider questions the canaries now watch**: whether `filter_blend.pl` survives an NBM
    version change, whether NWM `medium_range` stays at 6 members, NWPS `/reaches` rate limits,
    and the intermittent empty `mediumRange` responses (6/6 reaches answered at 22:05Z, 1/6

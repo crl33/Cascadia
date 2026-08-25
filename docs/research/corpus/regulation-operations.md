@@ -19,8 +19,10 @@ platform does not currently carry.** On the Skagit, Ross and Upper Baker control
 drainage area at Mount Vernon and hold **194,000 acre-feet** of allocated flood storage; the peak
 reduction they deliver rises from **0 % at the 2-year event to ~18 % at the 25-year event and falls
 back to ~11 % at the 500-year event**. And the buffer that actually mattered in December 2025 was not
-the allocated pool at all: Ross entered the storm **7.6 ft below** its required rule curve and absorbed
-**110,900 acre-feet** — 92 % of a full flood pool's worth — while occupying only **25 %** of its
+the allocated pool at all: Ross entered the storm **7.6 ft below** its required rule curve (a figure
+that assumes the A2W elevation series is in SCL datum, not the NGVD29 its own `vertical_datum` field
+reports — see §6.5 and open question 7; if the field were right the gap would be 5.8 ft) and absorbed
+**110,900 acre-feet** — 92 % of a full flood pool's worth — while occupying only **~22 %** of its
 *designated* flood pool. Any gauge that reports "percent of flood pool used" against the rule curve
 alone would have shown a quarter-full reservoir during the most consequential regulation event in the
 basin's modern record.
@@ -175,6 +177,18 @@ inflow of **252,000 cfs to an outflow of 245,000 cfs** — the project passes **
 flood (FACT — MMD WCM §8.02a(2)). Howard Hanson's PMF routing yields a maximum spillway outflow of
 **108,000 cfs** at surcharge elevation 1,223.9 ft (FACT).
 
+**Read the DRS quote carefully, because it is easy to invert** (flagged in adversarial review
+2026-08-24): the phrase "discharges exceeding the peak that would have occurred under pre-project
+conditions" describes the outcome the DRS exists to **prevent**, not one it licenses. The DRS raises
+releases *earlier* so the pool does not fill prematurely and force that outcome later. Likewise the
+97 %-pass-through figure below is a **spillway-design/PMF-class routing with surcharge** — a dam-safety
+calculation — not a DRS operating result. The honest statement is: *attenuation decays toward
+pass-through as forcing grows, and the mechanisms are distinct (DRS operationally, spillway capacity
+structurally)* — not "the manual accepts making the flood worse". Note also that the 2013 Skagit study
+attributes the regulated curve's failure to merge back into the unregulated curve to "continued peak
+flow reductions as project releases follow the gate regulation schedules" — i.e. gate schedules are
+why reduction *persists* at the extreme, not why it decays.
+
 This is the mechanism behind the shape of the regulated frequency curve in §2.8 and behind the single
 most important safety statement the platform can make about a dam: **at sufficiently extreme forcing a
 flood-control reservoir stops attenuating and begins transmitting.** It is also why "the dam will
@@ -236,8 +250,12 @@ Sound Energy), Wynoochee (Tacoma Public Utilities)** (FACT — USACE December 20
 ### 2.8 Regulation breaks flood-frequency analysis, and the break is structured
 
 Bulletin 17C's procedures "do not cover watersheds where flood flows are appreciably altered by
-reservoir regulation, watershed changes, or hydrologic nonstationarities" (FACT — Bulletin 17C, via
-the fetched search summary of the USGS TM 4-B5 text; the PDF itself was not fetched). The Skagit study
+reservoir regulation, watershed changes, or hydrologic nonstationarities" (FACT — Bulletin 17C,
+USGS TM 4-B5 v1.1 (May 2019), p. 2; **verified verbatim in the fetched PDF** during adversarial
+review 2026-08-24, superseding the earlier search-summary-only sourcing. Full sentence: "The
+procedures do not cover watersheds where flood flows are appreciably altered by reservoir
+regulation, watershed changes, or hydrologic nonstationarities, or where the possibility of unusual
+events, such as dam failures, must be considered."). The Skagit study
 states the practical consequence flatly: **"regulated peak flow data do not fit any statistical
 distribution such as the Log Pearson type III (used to fit unregulated peak flow data)"** (FACT).
 
@@ -264,7 +282,7 @@ Forecast-Informed Reservoir Operations replaces (or augments) a fixed guide curv
 conditioned on a streamflow forecast. The best-documented implementation, **Ensemble Forecast
 Operations (EFO)**, models reservoir operations *for each ensemble member individually*, computes the
 probability of reaching a critical threshold, and releases only enough to hold that risk below a
-declared tolerance (FACT — Delaney, Mendoza, Whitin & Hartman 2020, *WRR* 10.1029/2019WR026604; the
+declared tolerance (FACT — Delaney, Hartman, Mendoza, Dettinger, Delle Monache, Jasperse, Ralph, Talbot, Brown, Reynolds & Evett 2020, *WRR* 56(9), 10.1029/2019WR026604; the
 Wiley full text returned 403, so the quantitative summary below is from the CW3E publication notice and
 the FVA, both fetched).
 
@@ -449,7 +467,7 @@ USACE Seattle District preliminary analysis (published ~2026-07, FACT — DVIDS 
 | **Ross volume absorbed during the event** | **110,900 ac-ft** (= 92 % of the 120,000 ac-ft allocated pool) | FACT (computed) |
 | Ross position relative to its Dec 1 rule curve (1,592.11 ft) on Dec 9 | **7.6 ft below** it | INFERENCE (computed vs Table 15) |
 | Ross space below top of flood at Dec 9 | ≈ **201,000 ac-ft** ≈ **1.67×** the required 120,000 | INFERENCE (linear extrapolation of the fetched elev–storage pair 1,601.78 ft = 1,043,715 ac-ft at 11,260 ac-ft/ft) |
-| **Fraction of Ross's *designated* flood pool occupied at peak** | **≈ 25 %** | INFERENCE (computed) |
+| **Fraction of Ross's *designated* flood pool occupied at peak** | **≈ 22 %** (≈ 22.4 % from observed elev–storage pairs; 23.3 % on elevation alone) | INFERENCE (computed; **revised down from "≈ 25 %" in adversarial review 2026-08-24** — recomputing S(1,592.11 ft) by interpolating the fetched elev–storage pairs gives ≈ 935,200 ac-ft, so (962,083 − 935,200)/120,000 = 22.4 %. The qualitative point — "about a quarter full" — is unchanged) |
 | Ross peak inflow / minimum outflow | **50,099 cfs** (Dec 11 09Z) / **389 cfs** — 99.2 % of peak inflow withheld | FACT (computed); matches USACE's public "held back ~99 %" |
 | Upper Baker pool / storage, minimum → peak (Dec 12 01Z) | 698.41 → **712.59 ft**; 90,161 → **143,355 ac-ft** | FACT (computed) |
 | **Upper Baker volume absorbed** | **53,194 ac-ft** (= 72 % of its 74,000 ac-ft pool) | FACT (computed) |
@@ -621,17 +639,66 @@ release continues" — because it does not (§2.6). Worked example in §3.5: How
 The A2W location endpoint returns each project's operating levels, and **"Bottom of Flood Control" /
 "Bottom of Flood" is typed `REGULAR` (time-varying) while the others are `CONSTANT`** (FACT, fetched
 2026-08-24). On 2026-08-24 it read **1,603 ft for Ross** and **727.70 ft for Upper Baker** — both
-essentially at full pool, exactly as Tables 15 and 10 require on 1 October (0 ac-ft of flood storage).
-**The REGULAR level *is* the rule curve, published as a current value.**
+essentially at full pool, consistent with Tables 15 and 10 in the autumn (0 ac-ft of flood storage
+required). **The REGULAR level *is* the rule curve, published as a current value** — confirmed by the
+CWMS seasonal array in the correction box below, which shows the A2W value to be that array evaluated
+today and rounded to whole feet. Two scope limits found in adversarial review: **Mud Mountain has no
+`REGULAR` level at all** (every MMD level is `CONSTANT`, correctly — a dry single-purpose reservoir has
+no rule curve to publish), and **Howard Hanson's `REGULAR` level read 1,206 ft on 2026-08-24 — its
+*top of flood*, i.e. no constraint at all**, because the HHD curve is degenerate from ~2 May to
+~2 October. A single late-August observation therefore cannot by itself distinguish "this level tracks
+the rule curve" from "this level is a static placeholder near full pool"; the CWMS seasonal array is
+what actually settles it.
 
-There is no endpoint that returns it as a series: `/cda/reporting/providers/nws/timeseries?name=ROS.Elev-Forebay.Inst.0.Bottom of Flood Control`
-returns an empty body, CWMS `/levels?office=NWDP&level-id-mask=ROS.*` returns `total: 0`, and
-`/levels/{level-id}` returns HTTP 500 (FACT, all three fetched). **Therefore: poll
-`/providers/nws/locations/{slug}` daily and persist the REGULAR levels as rows with `retrieved_at`.**
-That reconstructs the rule curve with correct knowledge time and is the only way a hindcast will ever
-know what the curve said on 2025-12-08. `DATA_SOURCES.md` R2 already anticipates
-`flood_control_rule_curve` rows; this finding says *which* levels are the curve and that the history
-must be built by us, starting now.
+> **CORRECTION (adversarial review, 2026-08-24).** The paragraph that stood here claimed the rule
+> curve is *not* retrievable as a series and that CWMS `/levels?office=NWDP&level-id-mask=ROS.*`
+> returns `total: 0`. **That is wrong.** Re-fetched on 2026-08-24, that exact query returns
+> `total: 22`, and `ROS.Elev-Forebay.Inst.0.Bottom of Flood Control` carries the **entire seasonal
+> rule curve** as a structured `seasonal-values` array (`interval-months: 12`,
+> `interval-origin: 2021-12-01T08:00:00Z`, `level-units-id: "m"`). Converted from metres it is
+> Table 15 rounded to whole feet:
+>
+> | Seasonal offset | CWMS value | Table 15 |
+> |---|---|---|
+> | +0 mo (Dec 1) | 1,592 ft | 1,592.11 ft |
+> | +3 mo +20160 min (~Mar 15) | 1,592 ft | 1,592.11 ft |
+> | +3 mo +21600 min (~Mar 16) | 1,603 ft | — |
+> | +10 mo (Oct 1) | 1,603 ft | 1,602.50 ft |
+> | +10 mo +20160 min (~Oct 15) | 1,601 ft | 1,600.80 ft |
+> | +11 mo (Nov 1) | 1,599 ft | 1,598.84 ft |
+> | +11 mo +20160 min (~Nov 15) | 1,597 ft | 1,597.37 ft |
+>
+> `UBK.Elev.Inst.0.Bottom of Flood Control` and `HAH.Elev.Inst.0.Bottom of Flood` carry the same
+> structure. **So the rule curve is a published, machine-readable seasonal function — not something
+> that has to be reconstructed by polling.** Only `/levels/{level-id}` (the single-level path) still
+> returns HTTP 500, and the A2W timeseries path for a level still returns an empty body; the *list*
+> path is the one that works. Two consequences: (a) the A2W `REGULAR` `latest_value` is simply this
+> seasonal function evaluated today, **rounded to whole feet** (1,603 not 1,602.5), so A2W is the
+> lossy view and CWMS the authoritative one; (b) **Open question 1 below is answered** — the curve on
+> 2025-12-08 was the Dec-1–Mar-15 value, 1,592 ft, derivable today without any stored history.
+>
+> Two substantive disagreements with the manuals show up only in the CWMS series, and they matter
+> more than the endpoint question:
+>
+> - **Upper Baker's live curve is far more conservative than Table 10.** CWMS steps to 711.60 ft on
+>   **2 October** and holds it to ~3 March. Table 10 (2013) phases down 727.77 → 724.53 (Oct 15–Nov 1)
+>   → 711.70 (Nov 15–Mar 1). The live curve therefore requires the **full ~74,000 ac-ft from early
+>   October**, not from 15 November. This substantially weakens §2.2's structural consequence 1
+>   *for Upper Baker* — the "storage is not available when the season says it is" gap that the 2013
+>   study documented appears to have since been closed at that project. Seed the curve from CWMS,
+>   never from Table 10.
+> - **Howard Hanson's live winter curve reads 1,060 ft, not the manual's 1,075 ft** (and 1,206 ft —
+>   i.e. top of flood, no constraint — from ~2 May to ~2 October). The 1,075 ft figure quoted in §2.2
+>   and §3.1 is the 2011 manual's; it is not what the live level says.
+>
+> **Therefore: read the seasonal curve from CWMS `/levels` (list path) as the primary source, carry
+> `interval-origin` and the offsets, and treat A2W's `REGULAR` value as a rounded cross-check.**
+> Persisting daily snapshots is still worth doing — but as a *change-detection* record on a policy
+> artifact, not as the only way to know the curve. `DATA_SOURCES.md` R2's
+> `flood_control_rule_curve` rows should be populated from the CWMS seasonal array.
+
+The superseded claim, retained for the audit trail: *"There is no endpoint that returns it as a
+series … therefore poll `/providers/nws/locations/{slug}` daily … the history must be built by us."*
 
 Constant levels worth seeding (FACT, fetched): HAH top of flood 1,206 ft / 104,266 ac-ft, bottom of
 flood pool 103,561 ac-ft, top of dam 1,228 ft; MMD top of flood 1,215 ft / 106,000 ac-ft (spillway
@@ -649,8 +716,20 @@ ordinary gauge objects (FACT, fetched 2026-08-24):
 
 - `GET https://api.water.noaa.gov/nwps/v1/gauges/RODW1/stageflow` → `forecast.issuedTime`
   **2026-08-24T15:10:00Z**, **30 six-hourly points to 2026-09-01T00:00Z**, units **kcfs**, pedts
-  `QIIFZ` (inflow, forecast). Same shape for `UBDW1`, `HHDW1`, `MORW1`, `TLRW1`; `MMRW1` is
-  **outflow** (`QRIRZ`/`QRIFZ`).
+  `QIIFZ` (inflow, forecast). `MORW1` and `TLRW1` return the same shape; `MMRW1` is **outflow**
+  (`QRIRZ`/`QRIFZ`) and also returns 30 points.
+  > **CORRECTION (adversarial review, 2026-08-24).** This bullet previously read "Same shape for
+  > `UBDW1`, `HHDW1`, `MORW1`, `TLRW1`". **`UBDW1` and `HHDW1` do not currently return a forecast.**
+  > Both advertise the `QIIFZ` pedts and the full metadata block, but serve `"data": []` with a stale
+  > `issuedTime` — **2026-08-03T16:35:00Z** for Upper Baker and **2026-08-11T15:51:00Z** for Howard
+  > Hanson, three weeks old at fetch time. Observed (`QIIRZ`) inflow is served normally for both.
+  > This is very likely seasonal — the RFC issues reservoir-inflow forecasts when flows warrant — but
+  > it has a hard consequence: **an empty `data` array with a live-looking metadata block is exactly
+  > the shape that silently renders as "no flood risk".** The ingest must distinguish
+  > *forecast absent* from *forecast of low flow*, and must treat `issuedTime` age as a first-class
+  > staleness signal, or the two projects with the largest allocated flood pools in the platform will
+  > read as calm when they are simply unforecast. Availability must be re-tested in the wet season
+  > before any doctrine change rests on it.
 - `MMRW1` carries **official flow-defined categories: action 4,500 / minor 9,000 / moderate 12,000 /
   major 14,000 cfs**, with historic crests 15,200 cfs (1986-11-24), 14,800 (1977-12-02), 14,100
   (1990-01-09). The other reservoir LIDs return `-9999` for all categories — correctly, because a pool
@@ -758,9 +837,15 @@ USGS 12189500 — which `susceptibility.py` already reads for a different and co
    **conditional on an assumed regulation plan**, or it will present an operator decision as a river
    prediction.
 
-3. **`HYDROLOGY.md` §10 — "otherwise the reservoir's future state is UNKNOWN."** Too pessimistic.
-   Official NWRFC inflow forecasts are served for RODW1, UBDW1, HHDW1, MORW1, TLRW1 and outflow for
-   MMRW1 (FACT, §6.3). Reservoir future state should be UNKNOWN only in the *release* dimension.
+3. **`HYDROLOGY.md` §10 — "otherwise the reservoir's future state is UNKNOWN."** Partly too
+   pessimistic, but **less so than this entry originally claimed.** Official NWRFC inflow forecasts
+   were served with live data on 2026-08-24 for **RODW1, MORW1, TLRW1** and outflow for **MMRW1**;
+   **UBDW1 and HHDW1 returned empty `data` arrays with three-week-old `issuedTime`s** (§6.3
+   correction). So the doctrine should read: reservoir future state is UNKNOWN in the *release*
+   dimension always, and UNKNOWN in the *inflow* dimension **whenever the NWPS forecast block is
+   empty or stale** — which, for the two largest allocated flood pools in scope, it currently is.
+   Do not hard-code the assumption that an inflow forecast exists per project. *(Corrected 2026-08-24
+   in adversarial review.)*
 
 4. **`HYDROLOGY.md` §2 — the regulation bullet.** Materially right, three corrections/additions:
    (a) Ross and Upper Baker control **39 %** of the area at Mount Vernon, and this number belongs in
@@ -785,8 +870,10 @@ USGS 12189500 — which `susceptibility.py` already reads for a different and co
    explicit.
 
 7. **`DATA_SOURCES.md` R1/R2.** Three corrections from live fetches on 2026-08-24: (a) the CWMS `/levels`
-   endpoint returns `total: 0` for `office=NWDP` and `/levels/{id}` returns HTTP 500 — the levels are
-   reachable **only** through A2W `/locations/{slug}`; (b) several `-FCST` series (including forecast
+   endpoint returns `total: 22` for `office=NWDP&level-id-mask=ROS.*` and **serves the full seasonal
+   rule curve** as `seasonal-values`; only `/levels/{id}` returns HTTP 500. *(Corrected 2026-08-24 in
+   adversarial review — this bullet previously asserted `total: 0` and that A2W was the only route.
+   See the correction box in §6.2.)* (b) several `-FCST` series (including forecast
    forebay elevation and eleven HydroForecast quantiles) are catalogued with future extents but return
    **zero values** on CDA, A2W and Dataquery; (c) `vertical_datum` in A2W responses reads `NGVD29`
    uniformly and disagrees with the projects' own documents (Upper Baker NAVD88, Ross SCL datum) — do
@@ -805,8 +892,11 @@ USGS 12189500 — which `susceptibility.py` already reads for a different and co
 
 ## 8. Open questions
 
-1. **What did the rule curves actually say on 2025-12-08?** Without a stored history of the A2W REGULAR
-   levels, the hindcast cannot state required buffer at knowledge time. Start persisting today.
+1. ~~**What did the rule curves actually say on 2025-12-08?**~~ **ANSWERED 2026-08-24 (adversarial
+   review):** 1,592 ft at Ross, from the CWMS `/levels` seasonal array (Dec 1 – Mar 15 value). No
+   stored history was needed. The *remaining* open question is narrower and harder: the seasonal array
+   carries no version history, so if the Corps revises a curve there is no way to know what it said at
+   a past knowledge time. Snapshot it daily for change detection, and treat any change as an event.
 2. **Is there any public feed for Section 7 status, deviation grants, or the Corps' Reservoir Control
    Center directives?** None found. If not, Section 7 state must be a curated, dated CONFIGURED series
    with a citation per transition.
@@ -854,7 +944,7 @@ USGS 12189500 — which `susceptibility.py` already reads for a different and co
 
 - [Lake Mendocino FIRO Steering Committee, *Final Viability Assessment*, 2021 (CW3E)](https://cw3e.ucsd.edu/FIRO_docs/LakeMendocino_FIRO_FVA.pdf) — 141 pp, text-extracted; Table E.1, Fig. E.2, §§1.x, 2.1–2.2 used. Also at [eScholarship](https://escholarship.org/uc/item/3b63q04n).
 - [CW3E, FIRO programme index](https://cw3e.ucsd.edu/firo/) · [Howard A. Hanson Dam FIRO](https://cw3e.ucsd.edu/firo_hhd/) · [Prado Dam FIRO](https://cw3e.ucsd.edu/firo_prado/) · [Willamette Valley FIRO](https://cw3e.ucsd.edu/firo_willamette/) — all fetched 2026-08-24.
-- [CW3E publication notice for Delaney, Mendoza, Whitin & Hartman (2020), *WRR* 10.1029/2019WR026604](https://cw3e.ucsd.edu/cw3e-publication-notice-forecast-informed-reservoir-operations-using-ensemble-streamflow-predictions-for-a-multi-purpose-reservoir-in-northern-california/) — **the Wiley full text returned HTTP 403; the +33 %, 61-member, 15-day and 1985–2010 figures are from this notice, not from the paper.**
+- [CW3E publication notice for Delaney, Hartman, Mendoza et al. (2020), *WRR* 56(9), 10.1029/2019WR026604](https://cw3e.ucsd.edu/cw3e-publication-notice-forecast-informed-reservoir-operations-using-ensemble-streamflow-predictions-for-a-multi-purpose-reservoir-in-northern-california/) — **the Wiley full text returned HTTP 403.** Corrected 2026-08-24 in adversarial review: the author list previously given here ("Delaney, Mendoza, Whitin & Hartman") was wrong — Crossref gives 11 authors, Delaney, Hartman, Mendoza, Dettinger, Delle Monache, Jasperse, Ralph, Talbot, Brown, Reynolds & Evett; there is no author named Whitin on this paper. The +33 %, 61-member, 15-day, 1985–2010 and "no marked changes in flood frequency" figures are all confirmed verbatim in the **published abstract** retrieved via the Crossref API for that DOI.
 - USBR, *Lake Mendocino: Economic Benefits of Alternative Reservoir Operations* — **PDF fetched but not text-extractable; not used.**
 
 **December 2025 event:**
@@ -876,7 +966,7 @@ USGS 12189500 — which `susceptibility.py` already reads for a different and co
 
 **Not independently fetched (claims relying on them are labelled INFERENCE or flagged):**
 
-- Bulletin 17C (USGS TM 4-B5) — the scope-exclusion sentence for regulated watersheds is quoted from a search-result summary, not from the fetched PDF.
+- ~~Bulletin 17C (USGS TM 4-B5)~~ — **now fetched and verified** (adversarial review 2026-08-24): the scope-exclusion sentence is on p. 2 of TM 4-B5 v1.1, quoted verbatim in §2.8. 17C also has a dedicated "Regulated Flow Frequency" section (p. 36) naming regulated flood-frequency estimation as an area of *future work needing national guidance*, and citing Kubik (1990), Sanders and others (1990), Asquith (2001) and Durrans (2002) as existing approaches — i.e. 17C does not merely exclude regulated watersheds, it explicitly declines to standardise a method for them.
 - USACE EM 1110-2-1415 / 1110-2-1417 — referenced, not fetched.
 - Di Baldassarre et al., "reservoir effect" / levee effect literature — **not fetched; the session's web-search budget was exhausted before this thread could be pursued.** No claim in this corpus rests on it.
 - Ross and Upper Baker Water Control Manuals (including the Special Gate Regulation Schedule) — not located as public documents; all rules quoted are as paraphrased in the 2013 USACE study.

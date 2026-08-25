@@ -21,11 +21,12 @@ from cascade_core.models import (
     ForecastValue,
     JobRun,
     Observation,
+    RawArtifact,
     SourceProduct,
     Station,
     Threshold,
 )
-from cascade_core.registry import PRODUCTS, SOURCES
+from cascade_core.registry import METADATA_ONLY_PRODUCTS, PRODUCTS, SOURCES
 from cascade_core.timeutils import to_utc
 
 # Which products are an OFFICIAL forecast, resolved from the registry rather than listed here
@@ -37,6 +38,17 @@ _SOURCE_KIND: dict[str, str] = {str(s["id"]): str(s["kind"]) for s in SOURCES}
 OFFICIAL_FORECAST_PRODUCTS: frozenset[str] = frozenset(
     str(p["id"]) for p in PRODUCTS if _SOURCE_KIND.get(str(p["source_id"])) == "OFFICIAL_FORECAST"
 )
+
+
+@dataclass(frozen=True)
+class FreshnessAnchor:
+    """The timestamps `/system/health` computes a product's freshness from, plus which table they
+    came from. `kind` is part of the answer, not decoration: "current because values landed" and
+    "current because bytes were fetched" are different claims about the same product."""
+
+    kind: str
+    valid_time: datetime | None
+    retrieved_at: datetime | None
 
 
 @dataclass(frozen=True)
@@ -232,23 +244,61 @@ class Knowledge:
             out[row.job] = (row, row if row.ok else last_ok)
         return out
 
-    async def product_freshness_anchor(self, product_id: str) -> tuple[datetime | None, datetime | None]:
-        """(latest valid/issued time, latest retrieved_at) known at T for a product, for /system/health."""
-        if product_id == "product:usgs-iv":
-            q = select(func.max(Observation.valid_time), func.max(Observation.retrieved_at)).where(
-                Observation.product_id == product_id, Observation.available_at <= self.as_of
-            )
-        elif product_id == "product:nwps-forecast":
-            q = select(func.max(ForecastRun.issued_at), func.max(ForecastRun.retrieved_at)).where(
-                ForecastRun.product_id == product_id, ForecastRun.available_at <= self.as_of
-            )
-        else:
-            q = select(func.max(Threshold.retrieved_at), func.max(Threshold.retrieved_at)).where(
-                Threshold.product_id == product_id, Threshold.effective_from <= self.as_of
-            )
-        v, r = (await self.session.execute(q)).one()
+    async def product_freshness_anchors(self) -> dict[str, FreshnessAnchor]:
+        """Per product id: the freshness anchor known at T, for /system/health.
+
+        Table-agnostic on purpose. A product's values land in whichever table suits them —
+        `observation`, `forecast_run`, `threshold` or `derived_feature` — and the old
+        product-id-by-product-id branch covered exactly three ids, so every product added after
+        the spike silently anchored on the threshold table and read `missing` forever. One
+        grouped query per table, unioned, means a newly registered product is anchored the
+        moment its first row lands (pg-migration-verification-2026-08-24 §P3.6 finding C).
+
+        The value anchor is the time the SOURCE says the information is about, which for anything
+        issued in cycles is the issue time, not the valid time: a forecast valid 72 h from now is
+        not fresh because its valid_time is in the future. Hence `issued_at` where there is one
+        and `valid_time` otherwise.
+
+        `raw_artifact` is a fallback for the registry's `METADATA_ONLY_PRODUCTS` and nothing else,
+        and `kind` says which was used. Those products store no value rows at all (station
+        metadata) and would otherwise read `missing` while being fetched every day. Every other
+        product is judged on its rows, because bytes can keep arriving while the step that turns
+        them into values fails — and `nbm.build_grid_masks` fetches a `product:nbm-v5-core` file
+        of its own, so an unrestricted fallback answered `current` for a product whose own job had
+        never once succeeded (measured 2026-08-25, §P3.9 of the pg-migration verification).
+        """
+        anchors: dict[str, FreshnessAnchor] = {}
         fix = lambda x: None if x is None else (x if x.tzinfo else x.replace(tzinfo=self.as_of.tzinfo))  # noqa: E731
-        return fix(v), fix(r)
+
+        def newer(a: datetime | None, b: datetime | None) -> datetime | None:
+            return b if a is None else (a if b is None else max(a, b))
+
+        async def collect(kind: str, value_col, retrieved_col, table, knowledge_col) -> None:
+            q = select(table.product_id, func.max(value_col), func.max(retrieved_col)).where(knowledge_col <= self.as_of).group_by(table.product_id)
+            for pid, v, r in (await self.session.execute(q)).all():
+                if pid is None:
+                    continue
+                have = anchors.get(pid)
+                if kind == "raw_artifact" and (have is not None or pid not in METADATA_ONLY_PRODUCTS):
+                    # Value rows win, and for a product that is SUPPOSED to yield values, having
+                    # none is `missing` — not `current` on the strength of bytes that never
+                    # parsed. Only the registry's metadata-only products anchor on bytes.
+                    continue
+                if have is None:
+                    anchors[pid] = FreshnessAnchor(kind=kind, valid_time=fix(v), retrieved_at=fix(r))
+                else:  # the same product writes into more than one table: latest of both
+                    anchors[pid] = FreshnessAnchor(
+                        kind=f"{have.kind}+{kind}",
+                        valid_time=newer(have.valid_time, fix(v)),
+                        retrieved_at=newer(have.retrieved_at, fix(r)),
+                    )
+
+        await collect("observation", Observation.valid_time, Observation.retrieved_at, Observation, Observation.available_at)
+        await collect("forecast_run", ForecastRun.issued_at, ForecastRun.retrieved_at, ForecastRun, ForecastRun.available_at)
+        await collect("threshold", Threshold.retrieved_at, Threshold.retrieved_at, Threshold, Threshold.effective_from)
+        await collect("derived_feature", func.coalesce(DerivedFeature.issued_at, DerivedFeature.valid_time), DerivedFeature.computed_at, DerivedFeature, DerivedFeature.available_at)
+        await collect("raw_artifact", RawArtifact.fetched_at, RawArtifact.fetched_at, RawArtifact, RawArtifact.fetched_at)
+        return anchors
 
 
 def as_known_at(session: AsyncSession, as_of: datetime) -> Knowledge:

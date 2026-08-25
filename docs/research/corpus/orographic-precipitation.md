@@ -147,7 +147,10 @@ M = N h / U           (= 1/Fr).      Blocking is favoured when M > 1.
 When M is small the flow rises over the barrier and the linear/upslope relation holds; when M is
 large the low-level flow is blocked, deflected around the barrier, stagnant or reversed, and the
 precipitation maximum shifts upstream while precipitation over the upper windward slope is reduced
-(FACT, Minder & Roe; Houze 2012 as cited therein). Agreement between dynamical models and the
+(FACT, Minder & Roe, citing “Houze and Rotunno, 2008” in their body text — not Houze 2012. Their own
+reference list resolves this to **Rotunno & Houze 2007**, *Q. J. R. Meteorol. Soc.* 133, 811–830, and the
+published author order is Rotunno then Houze; Minder & Roe reverse it and mistype the year. Cite
+Rotunno & Houze 2007). Agreement between dynamical models and the
 linear prediction is near-perfect at high Froude number and "degrades dramatically" as it falls
 (FACT, as recorded in `docs/research/flood-genesis-mechanisms-2026-08-24.md` §2.3).
 
@@ -155,14 +158,17 @@ linear prediction is near-perfect at high Froude number and "degrades dramatical
 textbook criterion to an operational flag (FACT, Purnell & Kirshbaum 2018, MWR 146, Table 4,
 fetched):
 
-| Sector | mean \|u_m\| (m s⁻¹) | mean IVT (kg m⁻¹ s⁻¹) | mean **M** | CAPE (J kg⁻¹) |
+| Sector | mean \|u_m\| (m s⁻¹) | mean IVT (kg m⁻¹ s⁻¹) | mean **M** (per-event range) | mean CAPE (J kg⁻¹) |
 |---|---|---|---|---|
-| Warm-frontal (6 events) | 22 | 525 | **1.1** | ~1 |
-| Warm-sector (6 events) | 23 | 640 | **0.7** | ~3 |
-| Post-frontal (6 events) | 7–13 | 92–178 | **2.4–3.2** | 61–116 |
+| Warm-frontal (6 events) | 22 | 525 | **1.1** (0.8–1.5) | 1 |
+| Warm-sector (6 events) | 23 | 640 | **0.7** (0.5–0.9) | 3 |
+| Post-frontal (6 events) | 11 | 139 | **2.5** (1.2–3.9) | 74 |
 
-Warm sectors are the unblocked, high-IVT, high-enhancement regime; post-frontal flow is blocked
-(M ≫ 1) and weakly forced. Latent heating during ascent reduces effective stratification, so flows
+Warm sectors are the unblocked, high-IVT, high-enhancement regime; post-frontal flow is on average
+blocked (mean M = 2.5) and weakly forced — **but the per-event spread matters and forbids treating
+frontal sector as a proxy for M**: two of the six post-frontal periods had M ≤ 1.5 (PF4 = 1.2,
+PF3 = 1.5) and one warm-frontal period reached M = 1.5. M must be computed, not inferred from
+storm type. Latent heating during ascent reduces effective stratification, so flows
 that would be blocked in dry air often surmount the barrier when condensation occurs (FACT, Minder
 & Roe, citing Jiang 2003) — the "effective M" is lower than an upstream dry calculation implies.
 
@@ -183,7 +189,14 @@ stability collapses the drying ratio (FACT, their Table 6, fetched):
 | WS.control | 0.20 | 0.11 | 0.14 |
 | **WS.noforce** | **0.06** | 0.06 | 0.04 |
 
-A twentyfold (warm-frontal) or threefold (warm-sector) reduction. Separately, adding a uniform
+A twentyfold (warm-frontal) or threefold (warm-sector) reduction **in DR** — but read the DR\*
+column before quoting that. DR includes the upstream/background rain, which the no-forcing runs
+remove by construction (r_up goes 1.5 → 0.0 mm h⁻¹), so most of the twentyfold collapse is the
+background disappearing, not the enhancement. The orographic-only metric DR\* — the one §2.8 uses —
+falls **0.06 → 0.01 (WF, factor 6)** and only **0.11 → 0.06 (WS, factor 1.8)**. In the warm sector,
+i.e. the regime that floods this region, removing all synoptic forcing still leaves roughly half the
+orographic extraction. The honest statement is that orography alone produces little *total*
+precipitation, not that the orographic *enhancement* vanishes. Separately, adding a uniform
 mid/upper-tropospheric ascent of only **0.2 m s⁻¹** to trigger seeder–feeder growth produced "more
 than a factor-of-three increase in the windward-slope precipitation" (FACT, as reported in Tierney
 & Durran 2024). Orographic enhancement is a *multiplier on a storm*, and the multiplier is the
@@ -196,7 +209,8 @@ part models get least wrong; the storm is the part they get wrong.
   At 20 m s⁻¹ cross-barrier wind, a snowflake falling 3 km at 1 m s⁻¹ drifts **60 km**; a raindrop
   falling the same distance at 8 m s⁻¹ drifts 7.5 km. Precipitation phase therefore relocates the
   precipitation, not merely its form.
-- Hobbs et al. (1975) simulated a winter orographic storm at varying cloud-ice concentration: at low
+- Hobbs, Easter & Fraser (1973, *J. Atmos. Sci.* 30, 813; miscited as "Hobbs et al. 1975" in Minder
+  & Roe's body text) simulated a winter orographic storm at varying cloud-ice concentration: at low
   concentration snow grew fast and fell on the windward slopes; at high concentration growth was slow
   and snow was blown **nearly 100 km into the lee** (FACT, Minder & Roe).
 - Consequence: the *same* model with a different microphysics scheme produces a different basin QPF.
@@ -216,7 +230,8 @@ part models get least wrong; the storm is the part they get wrong.
   against warming, and it depends substantially on the microphysics scheme used (FACT, Minder,
   Durran & Roe 2011, JAS 68, fetched abstract).
 - Melting-level depression over windward slopes "can amount to **0.5 km or more**" (FACT, Minder &
-  Roe, citing Marwitz 1981).
+  Roe, citing “Marwitz, 1981” in their body text; their reference list contains only **Marwitz 1987**,
+  *J. Atmos. Sci.* 44, 159–173, so treat 1987 as the intended source until 1981 is independently verified).
 - **An NWS Seattle document gives the offset directly.** In a WFO Seattle case study, the Quillayute
   sounding indicated a **freezing level of 3,500 ft** and "an ambient snow level of around
   **2,500 ft**", with the note that evaporational cooling inside heavier convergence-zone
@@ -251,8 +266,17 @@ part models get least wrong; the storm is the part they get wrong.
   *event-scale, single-massif* drying ratios measured over the Olympics during OLYMPEX are much
   smaller: DR = **0.25 (WF) / 0.22 (WS) / 0.18 (PF)** including background precipitation, and the
   purely orographic component DR\* = **0.03 (WF) / 0.12 (WS) / 0.01 (PF)** (FACT, Purnell &
-  Kirshbaum 2018, Table 4). By S&B04's own criterion (DR < 0.3) linear theory is inside its validity
-  window for single western-WA massifs at event scale.
+  Kirshbaum 2018, Table 4). **Read those DR\* means as means, not bounds: three of the eighteen observed
+periods have a *negative* orographic drying ratio (WF2 = −0.23, PF2 = −0.07, PF6 = −0.11, Table 4), i.e.
+the retrieved precipitation over the control volume was *less* than the unperturbed upstream rate.** A
+per-event orographic extraction of "1–12 % of the impinging flux" is therefore a sector-mean statement
+with an event spread of roughly −0.23 to +0.20; it is not a floor. By S&B04's own criterion (DR < 0.3) linear theory is inside its validity
+  window for the *sector means* over a single western-WA massif at event scale — but the individual
+  events are not uniformly inside it (WF1 DR = 0.40, WS1 = 0.31, PF6 = 0.31), and the whole-barrier
+  Cascade DR of ~48 % is on the far side of S&B04's "less appropriate" threshold of 0.5. **This is
+  an INFERENCE, not a result:** a control-volume DR diagnosed from a WRF run is not the same
+  quantity as the DR of S&B04's own analytic solution, and no one has shown the criterion transfers.
+  Do not use it to license S&B04 over the Cascade front.
 
 ### 2.9 The Puget Sound Convergence Zone — a different mechanism entirely
 
@@ -295,10 +319,18 @@ The naïve "precipitation increases with elevation" is wrong in detail here, in 
    ridge flanks (§2.5), not elevation per se.
 2. **Range-scale maxima sit well below the crest and well upwind of it.** S&B04's Olympics
    calculation puts the maximum *upwind* of Mount Olympus and predicts the high north-east peaks
-   collect none (FACT). Washington's climatological wettest recorded station is **Wynoochee Oxbow,
-   184 inches (4,670 mm) per year, at an elevation of only 600 ft (183 m)** (FACT, WRCC Washington
-   climate narrative, fetched) — a station well below the Olympic crest that beats everything above
-   it. On the west Cascade slope, WRCC gives **90 inches at 800–1,000 ft**, **60–100 inches or more**
+   collect none — but note S&B04 say of this run "our intention in this section is not to test the
+   model, but only to exhibit its behavior", and Purnell & Kirshbaum's (2018) WRF runs put their
+   Olympics maxima *farther inland* than Picard & Mass's upstream maxima. Treat the upwind
+   displacement as a linear-theory property, not a verified fact about the Olympics.
+   WRCC records **184 inches (4,670 mm) at Wynoochee Oxbow, elevation 600 ft (183 m)** — but read
+   the wording: that is "the greatest annual precipitation **recorded** in the 'rainforest' area",
+   a record single year at a low-elevation station, and the same narrative gives **150 inches or
+   more** as the *mean annual* along the windward slopes above it (FACT, WRCC Washington climate
+   narrative, fetched). It is therefore **not** evidence that a 600 ft station beats everything
+   above it; the mean-annual maximum is still on the slopes. Use it only for the weaker and true
+   point that a low-elevation windward site can be extraordinarily wet.
+   On the west Cascade slope, WRCC gives **90 inches at 800–1,000 ft**, **60–100 inches or more**
    generally, and **140 inches** in the wetter areas in a 1-in-10 year (FACT, ibid.). The
    north-east-Olympic rain shadow reaches **~18 inches** at Sequim/Port Townsend/Coupeville (FACT,
    ibid.) — a ratio of **>10:1** across ~80 km.
@@ -317,8 +349,8 @@ The naïve "precipitation increases with elevation" is wrong in detail here, in 
 | Upslope flow → rain rate, whole season | **31 %, 41 %, 48 %**; **56 %** for LLJ periods | same sites, season-long | Neiman et al. 2002 (FACT) |
 | Unblocked vs blocked correlation | r = **0.874–0.939** vs **0.761–0.832** | CALJET case studies | Neiman et al. 2002 (FACT) |
 | Blocking criterion | **M = Nh/U > 1** | standard | Minder & Roe (FACT) |
-| Measured M, Olympics, by sector | WF **1.1**, WS **0.7**, PF **2.4–3.2** | 18 OLYMPEX frontal periods | Purnell & Kirshbaum 2018 (FACT) |
-| Mean IVT by sector, Olympics | WF **525**, WS **640**, PF **92–178** kg m⁻¹ s⁻¹ | same | Purnell & Kirshbaum 2018 (FACT) |
+| Measured M, Olympics, by sector | means WF **1.1**, WS **0.7**, PF **2.5**; per-event ranges 0.8–1.5 / 0.5–0.9 / 1.2–3.9 | 18 OLYMPEX frontal periods, Table 4 | Purnell & Kirshbaum 2018 (FACT) |
+| Mean IVT by sector, Olympics | WF **525**, WS **640**, PF **139** kg m⁻¹ s⁻¹ (PF per-event 78–209) | same | Purnell & Kirshbaum 2018 (FACT) |
 | Event drying ratio, Olympics | DR **0.25/0.22/0.18** (WF/WS/PF); DR\* **0.03/0.12/0.01** | orographic-only DR\* excludes background rain | Purnell & Kirshbaum 2018 (FACT) |
 | Barrier-scale drying ratio | **48 % ± 2 %** (Sierras + Cascades); 30–50 % from δD | soundings / isotopes, climatological | R. B. Smith, AMS 19MountMet (FACT) |
 | Orographic enhancement without synoptic forcing | DR falls **0.21 → 0.01** (WF), **0.20 → 0.06** (WS) | identical upstream wind/moisture/stability | Purnell & Kirshbaum 2018 (FACT) |
@@ -328,18 +360,18 @@ The naïve "precipitation increases with elevation" is wrong in detail here, in 
 | Raw upslope model error at fine scale | **overestimates by ≥5×** at terrain scales ≤20 km; needs **≥30 km** smoothing | why DEM-based upslope downscaling fails | Smith & Barstad 2004 (FACT) |
 | Ridge–valley precipitation contrast, Olympics | **+50 %** measured (gauges); **50–70 %** annual mean; **50–300 %** in MM5; 200–300 % local, 10–35 % net (Colle 2008) | ~10 km wide, ~800 m high ridges | Anders et al. 2007; Minder et al. 2008 (FACT) |
 | Rain-shadow ratio, Cascades | **>4 m** west ridges vs **<25 cm** Columbia basin | annual | Siler et al. 2013 (FACT) |
-| Rain-shadow ratio, Olympics | **184 in** (Wynoochee Oxbow, 600 ft) vs **~18 in** (Sequim) | annual, ~80 km apart | WRCC (FACT) |
+| Rain-shadow ratio, Olympics | **184 in** (Wynoochee Oxbow, 600 ft — *record year*, not a mean) vs **~18 in** (Sequim, mean annual); like-for-like the windward mean is **150 in +** | ~80 km apart; do not quote 184:18 as a ratio | WRCC (FACT) |
 | Rain-shadow interannual variance explained | index explains up to **31 %**; **~70 %** of shadow variability from large-scale circulation | SNOTEL-based | Siler et al. 2013; Siler & Durran 2016 (FACT) |
 | Storm concentration, Olympics | **50 % of annual precipitation in 7–12 storms** per year (2003–06) | | Minder et al. 2011 via Tierney & Durran 2024 (FACT) |
 | Melting level below free-air 0 °C | **200–400 m** | used operationally in NARR compositing | Neiman et al. 2011 (FACT) |
 | Snow level below freezing level, NWS Seattle case | **1,000 ft** (3,500 ft FL → 2,500 ft SL) | Quillayute sounding, 16 May 2003 | McDonnal & Colman, WFO Seattle (FACT) |
-| Melting-level depression over windward slopes | **≥0.5 km** | | Marwitz 1981 via Minder & Roe (FACT) |
+| Melting-level depression over windward slopes | **≥0.5 km** | | Marwitz (1987, per Minder & Roe's reference list; their body text says 1981) via Minder & Roe (FACT) |
 | Composite melting level, top-10 flood days | **~1.9 km MSL** (range 1.5–2.3), ~1 km above the **0.95 km** in-storm climatology | Green, Sauk, Satsop, Queets; 28 yr Quillayute climatology | Neiman et al. 2011 (FACT) |
 | 2-day precipitation, top-10 peak flows | **85–150 mm** (Green, Sauk — Cascades); **100–175 mm** (Satsop, Queets — Olympics) | NARR composites | Neiman et al. 2011 (FACT) |
-| AR fraction of annual peak daily flows | **46 of 48**; other two were snowmelt | 4 western-WA basins | Neiman et al. 2011 (FACT) |
+| AR fraction of annual peak daily flows | **46 of 48**; other two were spring snowmelt | 4 western-WA basins × 12 water years (WY1998–2009), the satellite-IWV era only | Neiman et al. 2011 (FACT) |
 | Basin-specific flood wind direction | Green: **245°–275° only**; Sauk: rain-shadowed except southwesterly; Queets/Green flood on near-westerly, Sauk/Satsop on southwesterly, separation significant at **>95 %** | the sharpest single result for this platform | Neiman et al. 2011 (FACT) |
 | Interannual peak-flow range | Queets varies by **3.5×**, Green by **an order of magnitude** | consequence of the narrow direction window | Neiman et al. 2011 (FACT) |
-| Radar coverage, coastal western US | only **¼ to ⅓** of land surface adequately covered for QPE; **<¼** excluding partially blocked; coverage absent over **⅔** even counting partial | terrain blockage + shallow precipitation + low freezing levels | Westrick, Mass & Colle 1999 (FACT) |
+| Radar coverage, coastal western US | only **¼ to ⅓** of land surface adequately covered for QPE; **<¼** excluding partially blocked; coverage absent over **⅔** even counting partial | terrain blockage + shallow precipitation + low freezing levels. **1999 assessment, pre-KLGX (2011) and pre-dual-pol (2013)** — the regional fraction is stale even if the Cascade-headwater conclusion is not | Westrick, Mass & Colle 1999 (FACT) |
 | Radar QPE error in heavy precipitation | **<50 % of rain-gauge values** | Portland radar, February 1996 flood | Westrick et al. 1999 (FACT) |
 | Radar coverage vs precipitation climatology | "little radar coverage over the regions of heaviest climatological precipitation"; **Snoqualmie and Chehalis** basins named as poor-or-nonexistent | 1999, pre-KLGX | Westrick et al. 1999 (FACT) |
 | Radar generally in complex terrain | "frequently report less than 50 % of observed precipitation" | review | Lundquist et al. 2019 (FACT) |
@@ -482,8 +514,12 @@ RQI-weighted basin mean is computable and auditable.
 
 **P1 — record which MRMS engine produced each cell.** Where MRMS falls back to **Mountain Mapper**,
 the value is *PRISM climatology re-scaled by an inverse-distance-weighted (b = 2, D = 200 km) ratio
-to low-elevation gauges*. Its stated failure mode is "large errors when real-time precipitation
-gradients diverge significantly from PRISM climatology" — which is precisely the blocked, warm-frontal
+to low-elevation gauges*. Its stated failure modes are that "when the real-time precip gradient strongly differs from the
+PRISM climatology, large errors can occur", that "when the gauge network is sparse, the
+interpolation is far-reaching and can cause errors", and that it performs poorly for "small-scale
+convective precipitation and winter weather; so it is only applied to stratiform rain" — the last
+of which means Mountain Mapper is *not applied at all* in the frozen-precipitation season over the
+upper basins, leaving a third fill path to identify — which is precisely the blocked, warm-frontal
 and convergence-zone cases. This is a `source_kind` and lineage question, not a footnote: a
 Mountain-Mapper cell is a *climatological downscaling of a distant gauge*, and the platform's one
 rule ("what transformed it") requires saying so.
@@ -504,7 +540,13 @@ attachment) documents a Quillayute freezing level of 3,500 ft with an ambient sn
 ~2,500 ft — a 1,000 ft offset in an NWS-Seattle-authored source; (b) **Neiman et al. (2011, JHM)**
 subtract **300 m** from NARR 0 °C heights on the basis that the melting level is **200–400 m** below
 the isotherm (Stewart et al. 1984; White et al. 2002). The repo's 1,000 ft default with a
-500–1,500 ft sensitivity range survives both, and can now be sourced peer-reviewed.
+500–1,500 ft sensitivity range survives both. Two caveats before this closes W8: the WFO Seattle
+attachment is a **Western Region Technical Attachment, not peer-reviewed**, and its 1,000 ft offset
+comes from a *single* mid-May post-frontal convergence-zone case with CAPE 300–500 J kg⁻¹ — a
+different regime from the cool-season warm-sector ARs the platform cares about. Only (b), Neiman
+et al. (2011)'s 200–400 m, is peer-reviewed, and it is a free-air melting-level offset, not a
+mountainside snow-line offset (Minder, Durran & Roe 2011 say the mountainside depression is a
+*further* "hundreds of metres"). Cite them as two separate quantities, not one corroborated number.
 
 **P1 — the forcing bands need a sanity check against observed flood forcing.**
 `forcing.FORCING_BANDS` uses 25 / 75 / 150 mm per 72 h (LOW/MODERATE/HIGH/VERY_HIGH), documented as
@@ -681,7 +723,7 @@ Cited but **not independently fetched** (claims drawn from them are labelled INF
 - Rasmussen et al. 2012 — How Well Are We Measuring Snow?, *BAMS* 93. AMS page 403 on direct fetch.
 - Henn et al. 2018 — An assessment of differences in gridded precipitation datasets in complex terrain, *J. Hydrol.* (ScienceDirect paywall). Numbers quoted are those restated in Lundquist et al. 2019 plus a search-result summary.
 - Garvert, Colle & Mass 2005 — IMPROVE-2 Oregon Cascades microphysics sensitivity (AMS 403).
-- Picard & Mass 2017; Kirshbaum & Smith 2008; Colle 2008; Hobbs et al. 1975; Marwitz 1981; Bergeron 1969; Stewart et al. 1984; White et al. 2002; Kingsmill et al. 2016; Zagrodnik et al. 2018/2019/2021; McMurdie et al. 2018 — reached only as citations inside the fetched papers.
+- Picard & Mass 2017; Kirshbaum & Smith 2008; Colle 2008; Hobbs et al. 1975; Marwitz 1981/1987; Bergeron 1968/1969; Stewart et al. 1984; White et al. 2002; Kingsmill et al. 2016; Zagrodnik et al. 2018/2019/2021; McMurdie et al. 2018 — reached only as citations inside the fetched papers.
 - Hamill et al. 2023 — Improving NBM Probabilistic Precipitation Forecasts, Parts I & II, *Mon. Wea. Rev.* 151 (AMS 403 on the Part I XML; Part II PDF not extracted).
 - Ralph et al. 2013 — the 74 % storm-total figure, taken from `docs/research/flood-genesis-mechanisms-2026-08-24.md` and a search summary.
 - Houze 2012 — Orographic effects on precipitating clouds, *Rev. Geophys.* 50 (already cited in the prior repo research file).

@@ -813,3 +813,311 @@ with no crest to time, over two mismatched windows — is the one place where a 
 more than its inputs support, and it needs an owner decision rather than a patch. The
 `/system/health` blind spot (finding C) is what let the only hard production failure hide, and
 should be closed before the next deploy.
+
+---
+
+## P3.9 — Re-verification of the findings A/B/C fixes, adversarial, live (2026-08-25)
+
+Independent re-verification of the two fix passes (agreement findings A + B; `/system/health`
+finding C) against live NWPS / NWM / NBM / USGS / AWDB data. Nothing below is taken from the
+fixers' own test names. Environment: macOS, Python 3.14.6, PostgreSQL 18 + PostGIS 3.6 in the
+local `cascadia-pg` container (port 5433). **Two freshly created databases, both dropped at the
+end**: `cascadia_p3_adv` (migrate → seed → live ingest → API on :8012) and `cascadia_p3_adv_pg`
+(the pg-marked suite). The shared `cascadia` database was never connected to and remains at
+revision `0001`.
+
+### P3.9.0 — Headline
+
+**A and B are closed; C is closed as designed but was, on live data, immediately re-opened in the
+mirror direction by a registry value.** Three further defects were found and fixed here. All are
+of the same family as the originals: the arithmetic was right and the sentence was not.
+
+| # | What a surface claimed | What the data says | Status |
+|---|---|---|---|
+| A | `agreement = low` from a timing term with nothing to time | No live point reads `low` for an agreeing pair any more; `Δt` is `null` at all five comparable points with `direction: neither_forecast_crests_in_window` / `only_one_forecast_crests_in_window` | **CLOSED, verified live** |
+| B | official and model crests taken over different windows | One `ComparisonWindow` object, bounds **identical** for both sides at all six points, `lost_tail 0.00 h` | **CLOSED, verified by measurement** |
+| C | `/system/health: ok` while a job failed every cycle | 11/11 registered jobs and 10/10 expected products reported; a deliberately failing job forces `degraded`; a never-run database reads `unknown` | **CLOSED, verified over HTTP** |
+| D | `"peaks 1% above the NWRFC forecast"` at AUBW1 while the two crests were **28.7 %** apart | The 1 % was a fraction of the 6,000 cfs *action flow*, not of the forecast — wrong by a factor of 20, and the clause that would have explained it fired only when the floor was absent (i.e. only when the sentence was already true) | **FIXED here** |
+| E | `/system/health: degraded` on a fresh database with **all ten jobs green** | `product:nbm-v5-core` was registered PT1H·PT1H because NOAA publishes `core` hourly, while the job that writes it runs 6-hourly on a 7.5 h-lagged cycle — so it was stale on every cycle, forever | **FIXED here** |
+| F | `product:nbm-v5-core: {"state": "current", "anchor": "raw_artifact", "reason": null}` on a database where its job had **never once succeeded** | `nbm.build_grid_masks` fetches a `core` file of its own, so bytes exist for a product of which not one value was ever produced. `state: current` is a claim about data | **FIXED here** |
+| G | Both crests presented as one like-for-like magnitude comparison | Official 6-hourly / 13 points vs model hourly / 78 points over the same window, at **all five** comparable points, and the `official_series_coarser_than_model` flag was recorded at **none** of them (it fired only on the timing axis) | **FIXED here** (recorded; see §P3.9.7 for what still does not reach a reader) |
+
+### P3.9.1 — Gates (exact tails)
+
+| Gate | Result |
+|---|---|
+| `python -m pytest -q` (offline, zero network) | **277 passed, 8 skipped in 132.77s** (was 227/8 at §P3.1; +42 from the two fix passes, +8 added here) |
+| `ruff check` | `All checks passed!` |
+| `lint-imports` | `Contracts: 5 kept, 0 broken.` (112 files, 505 dependencies) |
+| contracts drift (`export_schema` vs `packages/contracts/schema`) | **identical**, both before and after this pass; `packages/contracts` untouched |
+| pg-marked suite, fresh `cascadia_p3_adv_pg` | **8 passed, 276 deselected in 13.49s** |
+| `apps/web`: `tsc -p tsconfig.json --noEmit` | exit 0, no output |
+| `apps/web`: `npm run lint` (eslint src) | clean |
+| `apps/web`: `npx vitest run` | **19 passed \| 1 skipped (20 files); 135 passed \| 9 skipped (144 tests)** |
+| `apps/web`: `npm run contracts:check` | `contracts:check OK` |
+| `apps/web`: `npm run build` | `✓ built in 1.78s`; `index-CLy0zdAO.css 36.84 kB`, `index-CBkJTMQA.js 4,503.63 kB` (gzip 1,221.41 kB) |
+| `apps/web`: `npm run e2e` (Playwright, stale :4173/:8000 killed first) | **15 passed (1.8m)**, all specs including the three Event Zero replays and the basin-scene screenshot |
+
+Fresh-database provenance, `cascadia_p3_adv`:
+
+```
+docker exec cascadia-pg psql -U postgres -c "CREATE DATABASE cascadia_p3_adv;"
+bash scripts/migrate.sh          -> upgrade 0001, 0002; {"schema": "applied"}
+python -m cascade_worker seed    -> {"sources": 9, "products": 11, "basins": 6, "stations": 7,
+                                     "forecast_points": 6, "basin_geometries": 12}
+python -m cascade_worker run-once  (live network, 2026-08-25T01:13:23Z -> 01:15:48Z)
+```
+
+All ten scheduler jobs `ok=true` on the first attempt: thresholds 24, forecast 216, usgs.fetch_iv
+3 992, grid masks 6, qmd 108, **core_snowlvl 36** (the §P3.2 horizon fix holds on a new cycle),
+`nwm.fetch_reach_medium_range` **444**, climatology 12, daily percentile 6, AWDB 12. The
+eleventh, queue-only `maintenance.ensure_observation_partitions`, was run once through `run_job`
+(`ok=True, rows=8`) to reach the `ok` baseline — see §P3.9.4.
+
+### P3.9.2 — Finding B closed by measurement, not by intent
+
+`comparison_window(as_of, issued_at, coverage_h)` builds one `ComparisonWindow`, and `clip()` and
+`ensemble_from_feature()` are both handed **that object**. Measured at
+`as_of = 2026-08-25T01:30:00Z`, printing both sides' bounds and every point's timestamp:
+
+```
+hazard window     : (2026-08-24T19:30:00Z, 2026-08-28T01:30:00Z]   78.00 h
+COMPARISON window : (2026-08-24T19:30:00Z, 2026-08-28T01:30:00Z]   78.00 h     <- both sides
+model cycle       :  2026-08-24T18:00:00Z   age 7.50 h   coverage 96 h   lost_tail 0.00 h
+```
+
+| LID | official points (n, first, last) | model members (n, first, last) | every point of BOTH sides inside the one window |
+|---|---|---|---|
+| RNTW1 | 13, 2026-08-25T00:00Z, 2026-08-28T00:00Z | 6 × 78, 2026-08-24T20:00Z, 2026-08-28T01:00Z | **True** |
+| MVEW1 | 13, same | 6 × 78, same | **True** |
+| NKSW1 | 13, same | 6 × 78, same | **True** |
+| AUBW1 | 13, same | 6 × 78, same | **True** |
+| WRAW1 | 13, same | 6 × 78, same | **True** |
+| CRNW1 | — (no flow column) | 6 × 78, same | window built, comparison correctly refused |
+
+Compare §P3.6's before-state, where the model's crest sat **2 h 43 m before the official window
+opened**. The `COVERAGE_HORIZON_H = 96 h` choice is doing exactly the work it was sized for:
+AUBW1's stored cycle was `12:00Z` (13.5 h old at this `as_of`) and `12:00Z + 96 h` still clears
+`hazard_end`, so `lost_tail = 0.00 h` even on the oldest cycle in the sample.
+
+The as_of sweep proves the degradation is honest rather than silent:
+
+| `as_of` | behaviour |
+|---|---|
+| +11 h (`2026-08-26T12:00Z`) | still compared; reason gains *"the NWM cycle covers only the first 60 h of that window"* |
+| +41 h (`2026-08-27T18:00Z`) | still compared; *"…only the first 30 h…"* |
+| +53 h (`2026-08-28T06:00Z`) | **all five UNKNOWN**: *"The newest NWM cycle for MVEW1 is 84 h old, so it and the official forecast share only 18 h of the 72-hour hazard window — too little for either maximum to be the crest of the same event."* |
+
+### P3.9.3 — Finding A closed: the live agreement table over HTTP
+
+`GET /viz/basins` on `127.0.0.1:8012`, `as_of = 2026-08-25T01:44:30Z`, after the §P3.9.5 fix:
+
+| basin (point) | official crest | NWM median-member crest | \|Δ\| cfs | \|Δ\| % of official crest | Δt | level | reason chars |
+|---|---|---|---|---|---|---|---|
+| cedar (RNTW1) | 120.0 | 195.6 | 75.6 | 63.00 % | **none** | `low` | 248 |
+| green-duwamish (AUBW1) | 294.7 | 379.3 | 84.6 | 28.71 % | **none** | `high` | 209 |
+| nooksack (NKSW1) | 1,250.0 | 1,269.9 | 19.9 | 1.59 % | **none** | `high` | 226 |
+| puyallup-white (WRAW1) | 637.1 | 589.0 | 48.1 | 7.55 % | **none** | `moderate` | 219 |
+| skagit (MVEW1) | 8,000.0 | 6,780.1 | 1,219.9 | 15.25 % | **none** | `moderate` | 243 |
+| snohomish-snoqualmie (CRNW1) | — | — | — | — | none | `unknown` | 193 |
+
+**No basin reports a disagreement it does not have.** The §P3.6 pathology — MVEW1 agreeing to
+0.6 % and reading `low` because `Δt = 75 h` — cannot recur: `Δt` is `null` at every point in this
+sample, carried out as `direction: neither_forecast_crests_in_window` (four points) and
+`only_one_forecast_crests_in_window` (RNTW1) rather than as a number. The single `low` is RNTW1,
+where the two crests really are 63 % apart on a 120 cfs summer flow, and the reason says so.
+**CRNW1 is still `unknown` with the flow-column reason, verbatim as §3.6 of the design requires.**
+
+Provenance, 48 refs on the envelope, **0 unresolved**: `nwm-mr-*` resolve `MODELED` /
+`src:nwm-v3.1` / `product:nwm-mr-via-nwps`, `nwps-forecast-*` resolve `OFFICIAL_FORECAST` /
+`src:nwps-v1`. No model run is badged official; CRNW1 cites no NWM run at all, because it used
+none.
+
+Reason strings, verbatim, 193–248 characters — one sentence with at most two clauses:
+
+```
+cedar (RNTW1) low, 248: "The NWM median member peaks 63% above the NWRFC forecast, and only NWM
+  crests inside this window; official flood categories here are stage-only so none could be
+  compared and the percentage is scaled by the official crest rather than an action flow."
+green-duwamish (AUBW1) high, 209: "The NWM median member peaks 85 cfs above the NWRFC forecast
+  (1% of this point's 6,000 cfs action flow), and neither crests inside this window (official
+  flat, NWM rising); all 6 NWM members reach the same peak."
+nooksack (NKSW1) high, 226: "The NWM median member peaks 2% above the NWRFC forecast, and neither
+  crests inside this window (both receding); official flood categories here are stage-only so
+  none could be compared and all 6 NWM members reach the same peak."
+puyallup-white (WRAW1) moderate, 219: "The NWM median member peaks 48 cfs below the NWRFC
+  forecast (under 1% of this point's 5,500 cfs action flow), and neither crests inside this
+  window (official rising, NWM receding); all 6 NWM members reach the same peak."
+skagit (MVEW1) moderate, 243: "The NWM median member peaks 15% below the NWRFC forecast, and
+  neither crests inside this window (official rising, NWM receding); official flood categories
+  here are stage-only so none could be compared and all 6 NWM members reach the same peak."
+snohomish-snoqualmie (CRNW1) unknown, 193: "The NWRFC forecast for CRNW1 carries no flow column
+  (every secondary value is the −9999 sentinel); NWM produces flow only, so the two cannot be
+  compared without a rating conversion (not in v0)."
+```
+
+### P3.9.4 — Finding C closed, tested in both directions over HTTP
+
+| Scenario, on `cascadia_p3_adv` | `/system/health` answered |
+|---|---|
+| **Fresh, migrated, seeded, never run** | `status: unknown`; 11 jobs all `pending`, 10 products all `missing`, **21 reasons**, every provider `unknown`. **NOT `degraded`** ✔ |
+| All 10 scheduler jobs green + the queue-only maintenance job run once | `status: ok`, `reasons: []`, 11/11 jobs `ok`, 10/10 products `current`, 8/8 providers `healthy` ✔ |
+| **One deliberately failing `job_run` row injected** (`nbm.fetch_core_snowlvl`, error text carrying "DELIBERATE FAILURE") | `status: degraded`; that job `state: failing`, `age_seconds: 613`, `last_success_at` retained, the error quoted in `reasons`; `providers.nbm: degraded`. **NOT `ok`** ✔ |
+| **The §P3.6 scenario exactly**: eight consecutive failures, no success ever | `status: degraded`; job `state: down`, `last_success_at: null`, `providers.nbm: down` ✔ |
+
+The endpoint sees **11** jobs (including the queue-only `maintenance.ensure_observation_partitions`
+that `scheduler.JOBS` does not carry) and **10** products, against 3 and 3 before.
+
+**Operational note, confirmed rather than theoretical.** A fresh deployment reads `unknown` until
+`maintenance.ensure_observation_partitions` has run once; `python -m cascade_worker run-once`
+covers the other ten. Reaching the `ok` above needed one explicit deferral of that task. That
+belongs in RUNBOOK-deploy §7 (not edited here).
+
+### P3.9.5 — Fixes applied in this pass
+
+Five changes, listed in full.
+
+**1. `packages/hydrology/src/cascade_hydrology/agreement.py` — the percentage named the wrong
+denominator (finding D).** `Δ = (C_nwm − C_off) / max(C_off, floor)`, and at the two points with
+an official action FLOW the floor wins that max by 20×. Live at AUBW1: crests 294.7 and 379.3 cfs,
+**28.7 % of the official crest apart**, and the sentence read *"The NWM median member peaks 1%
+above the NWRFC forecast"*, level `high`. The floor is the right denominator for the **band** (85
+cfs on a river that acts at 6,000 cfs is hydrologically nothing) and the wrong thing to attribute
+to the forecast. `_magnitude_phrase` now states the difference in cfs when the floor is the
+denominator, a new `_basis_phrase` names the action flow the percentage is a fraction of, and
+`method_record["magnitude"]` carries `difference_cfs`, `denominator_cfs` and `denominator_basis`.
+Unchanged where the official crest *is* the denominator — including a flow point whose crest is
+above its own action flow. WRAW1 moved the same way: `"within 1% of"` → `"48 cfs below … (under
+1% of this point's 5,500 cfs action flow)"`. **No level changed.**
+
+**2. `packages/core/src/cascade_core/registry.py` — `product:nbm-v5-core` PT1H·PT1H → PT6H·PT8H
+(finding E).** Measured on the fresh database with every job green:
+`{"status": "degraded", "reasons": ["product:nbm-v5-core: stale: 47760 s old against a 3600 s
+cadence (+3600 s grace)"]}`. NOAA publishes NBM `core` hourly, but freshness is computed against
+the anchor Cascade *stores*, and `nbm.fetch_core_snowlvl` runs 6-hourly and selects its cycle with
+`client.latest_qmd_cycle` (7.5 h latency), so the stored anchor is **7.5–13.5 h old at all times**
+and could never be inside a 2 h tolerance. `/system/health` would have read `degraded` on roughly
+every cycle forever — finding C in the mirror: an endpoint that says `degraded` whatever happens
+hides a real failure exactly as well as one that says `ok`. `docs/DATA_SOURCES.md` line 249 was
+the source of the PT1H·PT1H figure and is corrected with the reason.
+
+**3. `packages/core/src/cascade_core/knowledge.py` + `registry.py` — bytes are not values
+(finding F).** `product_freshness_anchors` fell back to `raw_artifact` for **any** product with no
+value rows. `nbm.build_grid_masks` fetches a `product:nbm-v5-core` file of its own, so on a
+database where `nbm.fetch_core_snowlvl` has never once succeeded the endpoint answered
+`{"state": "current", "anchor": "raw_artifact", "reason": null}` — reproduced live before the fix.
+The fallback is now restricted to a new `registry.METADATA_ONLY_PRODUCTS`
+(`{product:awdb-stations}` — station metadata, which legitimately stores no value rows and would
+otherwise read `missing` while being fetched daily). Verified live afterwards:
+`product:nbm-v5-core → {"state": "missing", "anchor": null, "reason": "expected but never
+ingested at this knowledge time; written by nbm.fetch_core_snowlvl"}`, while `awdb-stations` keeps
+its `raw_artifact` anchor. **`tests/unit/test_system_health.py::test_everything_green_still_reads_ok`
+was itself relying on the loophole** — it made every product `current` with `RawArtifact` rows and
+no values — and was rewritten to write value rows.
+
+**4. `agreement.py` — the sampling asymmetry is recorded on the magnitude axis (finding G).**
+`QUALITY_COARSE_OFFICIAL_STEP` was appended only inside `if timing_assessable:`. Measured live,
+the official series is 6-hourly (13 points) and the members hourly (78 points) over the same 78 h
+window at **all five** comparable points, and because none of them crests, the flag was recorded
+at **none** of them — while the magnitude comparison, which is what the level rested on, was the
+asymmetric one. It is now recorded whenever the official step is coarser, and its note says what
+that costs: on a peaked hydrograph the coarser series can step over a crest the finer one
+resolves, biasing the difference toward *"the model exceeds the official forecast"*.
+
+**5. Tests (all offline, no network).** `tests/unit/test_agreement.py`:
+`test_the_percentage_in_the_reason_names_the_denominator_it_was_divided_by` (three cases: floored,
+unfloored, and a flow point whose crest exceeds its action flow) and
+`test_the_sampling_asymmetry_is_recorded_even_when_neither_side_crests`.
+`tests/unit/test_job_registry.py`:
+`test_no_product_expects_to_refresh_faster_than_the_job_that_writes_it` — the class-level
+invariant behind finding E, which bites on exactly one product today and would bite on the next
+one. `tests/unit/test_system_health.py`: `test_bytes_alone_never_make_a_product_current`, plus the
+rewrite above. `tests/unit/test_p3_foundation.py`: the pinned NBM core cadence updated with the
+reason.
+
+### P3.9.6 — Storage delta from the member-series change, against design §8
+
+Measured with `pg_column_size` on `cascadia_p3_adv` after one live cycle (6 reaches), projected at
+4 cycles/day × 30 days = 120 cycles/month.
+
+| | per cycle | rows/month | heap/month |
+|---|---|---|---|
+| `method:nwm-member-series@2.0.0` (**new**) | **6 rows, 12,060 B** (1,492–2,628 B/row; `values_json` 1,156–2,286 B compressed from 10.6–12.2 kB of JSON text) | 720 | **1.45 MB** |
+| `method:nwm-member-crest@1.0.0` (old, §P3.7) | 42 rows, 20,076 B | 5,040 | 2.41 MB |
+| **delta** | **−36 rows, −8,016 B (−40 %)** | **−4,320 (−86 %)** | **−0.96 MB** |
+| `forecast_value` (NWM `mean`, unchanged) | 432 rows, 20,736 B (48 B/row) | 51,840 | 2.49 MB |
+
+**Agreement surface totals:** 53,280 rows/month and **3.94 MB heap/month**, against design §8's
+~57 k rows and ~10 MB — **inside budget on both**, and 0.96 MB/month cheaper than the pre-fix
+shape. **P3 total Neon heap: ~20.6 MB/month (§P3.7) → ~19.6 MB/month.** With the pre-existing
+~30 MB/month USGS IV write the combined figure is ~50 MB/month against Neon's 0.5 GB free tier —
+the ~10-month horizon §P3.7 flagged is unchanged; this fix bought about two weeks of it.
+
+**R2 is untouched by the change** — the same 157 kB JSON is fetched and archived either way.
+Measured this cycle: `product:nwm-mr-via-nwps` 6 artifacts, **958,074 B** (+1.5 % on design §3.5's
+944,076), → 3.83 MB/day → **115.0 MB/month** against §3.5's ~114 MB. Whole-run raw bytes
+reproduced §P3.7 to within 0.03 %: qmd 1,816,540 (exact), core **550,321** = 378,594 (2 horizons)
++ 171,727 (the mask build's own f024 fetch — the byte trail behind finding F), susceptibility
+133,563/day, one-time climatology 4,509,545. **P3 total 12.92 MB/day**, design 13.2.
+
+### P3.9.7 — What still claims more than its inputs support
+
+Not fixed. Each is a decision, not a patch.
+
+1. **`explanation_ref` is a 404, and the method record it points at is not served.** Every basin
+   emits `"explanation_ref": "/explanations/basin:skagit/agreement"`; `GET` on it returns **404**.
+   That route is where `AgreementResult.method_record` — the window bounds, both shapes and their
+   prominences, the band parameters and their ASSUMPTION sentence, and the **full text of every
+   quality flag** — is supposed to live. The reason sentence carries at most **2** clauses of up
+   to **6** flags, so on live data the ensemble-degeneracy note, the timing-not-assessable note,
+   the trend note and the new sampling-asymmetry note are computed, tested, and reach nobody.
+   `AgreementState` has no field for the record, so this needs a contract change plus a route.
+   **This is the single largest gap in the slice: a surface that offers a reader an explanation
+   link that does not resolve.**
+2. **The magnitude comparison is 6-hourly against hourly and the dry-summer sample cannot show
+   what that costs.** The flag is now recorded (§P3.9.5 item 4), but the bias only bites on a
+   peaked hydrograph, and not one of the five comparable points crests inside the window in this
+   sample. Neither the timing bands (6 h / 18 h) nor the crest-prominence threshold has ever been
+   exercised by live data — only by unit tests. Hindcast calibration (ADR-0008) has to cover the
+   sampling asymmetry alongside the 0.25/0.60 and 6 h/18 h bands.
+3. **`high` is reachable while the two forecasts disagree about direction.** At AUBW1 the official
+   run is *flat* (range 3.35 cfs over 294.7, 1.1 %) and the model *rises* to 28.7 % above it across
+   the window; `QUALITY_TREND_DISAGREEMENT` caps at MODERATE only for `{rising, receding}`, and
+   "flat" is treated as having no trend to contradict even when the other side moves 29 % away
+   from it. The reason does say *"(official flat, NWM rising)"*, so the sentence is honest and the
+   level is generous. Whether that asymmetry is right is a calibration question, not a bug.
+4. **`RiverVisualizationState.agreement` is still `null`** at every river item, though design §3.3
+   says the per-point state gets it. Verified live on `/viz/rivers`.
+5. **Carried forward from the fixers, re-confirmed here:** `docs/DATA_SOURCES.md` lines 182/187
+   still describe the superseded `method:nwm-member-crest@1.0.0` / `method:model-agreement@0.1.0`
+   shape (reality: one row per reach under `method:nwm-member-series@2.0.0`, and
+   `method:model-agreement@0.2.0`); design §3.2 step 4 and §3.4 are superseded on the precomputed
+   crest summary and on Δt as an unconditional term; the stored `mean` series is still 72 h while
+   the member series is 96 h. The `MODERATE` cap for opposing trends
+   (`QUALITY_TREND_DISAGREEMENT`) remains a judgement call beyond the design and is visible live
+   at MVEW1 and WRAW1.
+6. **Smaller.** `usgs.build_climatology` has an annual cadence and `JOB_LATE_MULTIPLIER = 4`, so
+   the *job* half of health would not call it late for four years — but
+   `product:usgs-daily-stats` (P1Y + P30D grace) catches the same silence at ~395 days, so the
+   payload is covered. `/system/health` `reasons` is unbounded (21 entries on a fresh database);
+   fine to read, worth a cap if a client ever renders it raw.
+
+### P3.9.8 — Cleanup
+
+`cascadia_p3_adv` and `cascadia_p3_adv_pg` dropped; uvicorn on :8012 stopped; stale :4173/:8000
+listeners killed before and after the Playwright run. Raw artifacts were written to the session
+scratchpad (`CASCADE_RAW_DIR`), outside the repository. **The shared `cascadia` database was never
+connected to and remains at revision `0001`.** Nothing committed, nothing pushed, no secrets
+written.
+
+### Verdict
+
+Findings A, B and C are closed and each is proved by measurement rather than by intent: one window
+object with identical bounds on both sides, `Δt` absent where there is no crest to time, and a
+health endpoint that answers `unknown` / `ok` / `degraded` for the three situations that are
+actually different. Three further defects of the same family were found live and fixed — a
+percentage attributed to the wrong denominator, a product cadence that made `degraded` permanent,
+and a freshness fallback that called bytes data. What remains is one route that does not exist:
+the explanation the reason sentence promises, carrying the caveats there is no room for in one
+sentence. Everything else on the list is calibration, which needs an event this sample does not
+contain.

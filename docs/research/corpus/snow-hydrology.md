@@ -14,7 +14,7 @@ NRCS AWDB for this entry and the arithmetic is reproduced so it can be re-run.
 **In the maritime Cascades the snowpack is a small, leaky, energy-limited buffer, not a reservoir of
 flood water: for the archetypal western-Washington rain-on-snow flood, snowmelt supplies on the
 order of 19–35 % of the water reaching the ground and rain supplies the rest, the pack's combined
-cold-content and liquid-water buffer is worth roughly 10–30 mm against a 200–400 mm atmospheric
+cold-content and liquid-water buffer is worth roughly 30–45 mm against a 200–400 mm atmospheric
 river, and the flood-relevant quantity is therefore not "percent of normal SWE" but *how much snow
 sits below the storm's mountainside snow line, how much energy is available to ripen it, and how
 synchronised its outflow is with the rain*.** Every one of those four quantities is unobserved by
@@ -24,7 +24,7 @@ are made.
 
 The quantitative proof of the last sentence, computed for this entry from NRCS AWDB on 2026-08-24:
 on **2025-12-11**, the day before the record Skagit crest at Mount Vernon, the twenty western-
-Washington Cascade SNOTEL sites below 4,500 ft held **14 % of median SWE** and twelve of them read
+Washington Cascade SNOTEL sites below 4,500 ft held **14 % of median SWE** and ten of them read
 exactly **0.0 in**, while the all-station composite read 44 % because three crest/leeward North
 Cascades sites were at 128–174 % of median. A basin-mean "percent of normal" would have concealed
 the entire hydrologic story of Event Zero.
@@ -81,11 +81,22 @@ pack in a warm December.
 - `CC = 2.1e-3 × 400 × 1 = 0.84 MJ m⁻²`, equivalent to `0.84 / 0.334 = 2.5 mm` of melt forgone.
 - Under a sustained ROS melt-energy flux of ~150 W m⁻², that deficit is paid in
   `0.84e6 / 150 ≈ 5,600 s ≈ 1.6 hours`.
-- Liquid water holding: measured LWC in real packs spans **0.9 % (stratified mid-winter) to 3.7 %
-  (mean isothermal) to 6.8 % (rain-conditioned)** (FACT via Brandt et al. 2022 review, citing
-  Juras et al. 2017 and Singh et al. 1997). At 3 % of 400 mm that is **12 mm** of storage.
-- **Combined buffer ≈ 15 mm of water.** A 72-hour AR over a western-WA basin delivers 200–400 mm.
-  The pack absorbs **4–7 % of the storm**, then conducts the rest.
+- Liquid water holding: **[CORRECTED 2026-08-24 by adversarial review — the original arithmetic
+  applied a *volumetric* LWC percentage as if it were a fraction of SWE by mass, and understated the
+  liquid term by roughly a factor of three.]** Brandt et al. 2022 report LWC of 0.9 % / 3.7 % / 6.8 %
+  (stratified / isothermal / rain-conditioned). Checking the primary source: Juras et al. 2017
+  (HESS 21:4973–4987, Table 2) measured LWC with a Denoth meter in **volume percent**, and report both
+  `Total LWC (%)` and `Total LWC (mm)` — e.g. 3.7 % over a 29.7 cm pack = 11.0 mm. Two consequences:
+  (a) Brandt's "0.9 %" for the stratified mid-winter pack is a mis-transcription of Juras's **0.9 mm**;
+  the volumetric value is **0.2 %**. (b) Volumetric percentages cannot be multiplied by SWE. Expressed
+  as a fraction of SWE, Juras's three ripe packs held **6.8–9.4 % of SWE** before sprinkling and
+  **10.9–15 % of SWE** after, so for a 400 mm SWE maritime pack the liquid term is
+  **~27–37 mm held, ~44–60 mm at saturation**, not 12 mm. (FACT — Juras et al. 2017 Table 2, fetched.)
+- **Combined buffer ≈ 30–45 mm of water** (cold content ~2.5 mm + liquid ~27–37 mm; up to ~60 mm at
+  full saturation). A 72-hour AR over a western-WA basin delivers 200–400 mm. The pack absorbs
+  **roughly 8–20 % of the storm**, then conducts the rest. The qualitative conclusion is unchanged —
+  the pack is a small, leaky buffer, not a reservoir — but the **15 mm / 4–7 % figures originally
+  stated here must not be encoded**; they are wrong by ~3×.
 
 A cold, deep pack is genuinely different: SWE = 800 mm at −5 °C gives `CC = 8.4 MJ m⁻²` ≡ 25 mm of
 melt forgone ≡ ~16 h at 150 W m⁻². The *sign flip* the doctrine asserts is real; the *magnitude* of
@@ -151,7 +162,7 @@ extreme one.** That is a sharper and more useful statement than "ROS melt is tur
 
 Jennings & Jones 2015 examined 26 ten-day storms at H.J. Andrews (Lookout Creek, 64 km²), 1992–2012.
 All 26 largest events were ROS events with initial SWE > 0 and **> 60 % of precipitation falling as
-rain** (FACT). Their mechanism, stated precisely (the prior repo pass has the phase angles inverted):
+rain** (FACT). Their mechanism, stated precisely (the prior repo pass §4.4 states the sense correctly but omits the π/2 value for large floods and the three-way moderate/large/extreme split):
 
 - **Moderate floods:** precipitation pulses are counteracted by snowpack-outflow pulses **displaced
   by π radians → destructive interference → damped Q waveform** (FACT).
@@ -302,8 +313,8 @@ threshold is *lower at higher elevation*, consistent with the humidity control.
 | Specific heat of ice `c_i` | 2.1 × 10⁻³ MJ kg⁻¹ °C⁻¹ | cold-content equation | Jennings et al. 2018 TC |
 | Latent heat of fusion `λ_f` | 0.334 MJ kg⁻¹ | melt | standard |
 | Latent heat of vaporisation `λ_v` | ~2.50 MJ kg⁻¹ | condensation melts ~7.5× its mass | standard |
-| Cold content, maritime pack 400 mm SWE at −1 °C | **0.84 MJ m⁻² ≡ 2.5 mm melt ≡ ~1.6 h at 150 W m⁻²** | INFERENCE, arithmetic §2.2 | this entry |
-| Liquid water content, real packs | **0.9 % / 3.7 % / 6.8 %** (stratified / isothermal / rain-conditioned) | measured | Brandt et al. 2022 review |
+| Cold content, maritime pack 400 mm SWE at −1 °C | **0.84 MJ m⁻² ≡ 2.5 mm melt ≡ ~1.6 h at 150 W m⁻²** (the 150 W m⁻² melt flux is an unsourced ASSUMPTION representing an extreme ROS event; at the ~30–50 W m⁻² implied by Jennings & Jones's peak-day net outflow the payment is 5–8 h) | INFERENCE, arithmetic §2.2 | this entry |
+| Liquid water content, real packs | **0.2 % / 3.7 % / 6.8 % by volume** (stratified / isothermal / rain-conditioned) ≡ **6.8–9.4 % of SWE** held, **10.9–15 % of SWE** at saturation | measured, Denoth meter; Brandt's "0.9 %" is a mis-transcription of Juras's 0.9 **mm** | Juras et al. 2017 Table 2 (fetched); Singh et al. 1997 (**Austria**, not maritime PNW) via Brandt et al. 2022 |
 | Preferential-flow path area fraction | **3–8 %** of cross-section | conveys large volumes | McGurk & Marsh 1995 via Brandt 2022 |
 | Melt energy from turbulent fluxes, Feb 1996 PNW extreme | **60–90 %** | open sites, high wind | Marks et al. 1998 |
 | Melt energy from net radiation during ROS, 8-yr HJA | **55 % / 35 % / 33 %** (3 sites) | wind-sheltered forest | Mazurkiewicz et al. 2008 |
@@ -314,7 +325,7 @@ threshold is *lower at higher elevation*, consistent with the humidity control.
 | Net snowpack outflow, >97 % of peak-day hours | **< 3 mm h⁻¹** | hard ceiling | Jennings & Jones 2015 |
 | Cumulative snowpack outflow, 10-day storm | **< 300 mm** | maritime | Jennings & Jones 2015 |
 | Rain fraction of precipitation in the 26 largest HJA storms | **> 60 %** in every one | maritime ROS is rain-dominated | Jennings & Jones 2015 |
-| Snowmelt share of TWI, 1996 PNW flood (`C_snow`) | **18.6 %** | km-scale land-surface model | Hao et al. 2025 |
+| Snowmelt share of TWI, 1996 PNW flood (`C_snow`) | **18.6 %** basin average — but the same paper notes this is *below* the **21–57 % measured at SNOTEL stations** for the same event (ref. 28 therein), the gap being because the domain is the whole **Willamette** basin, much of which is low and snow-free | km-scale land-surface model | Hao et al. 2025 |
 | Snowmelt share of ROS runoff, maritime regions | **30–45 %** (Rockies 45 – >65 %) | WRF 4 km, 2000–2013 | Musselman et al. 2018 |
 | Extreme (upper 0.1 %) runoff events with a ROS contribution | **70 %** in ROS-affected regions | but ROS runoff is **<10 %** of total extreme flood runoff | Li et al. 2019 |
 | ROS "flood potential" definition | rain ≥ **10 mm d⁻¹**, SWE ≥ **10 mm**, melt ≥ **20 %** of (rain+melt) | the de facto standard | Musselman et al. 2018 |
@@ -340,7 +351,7 @@ threshold is *lower at higher elevation*, consistent with the humidity control.
 | PNW warm snow drought WY2015 | P **70–120 % of normal**, 1 Apr SWE **~50 %**, winter T **+3.0 °C** | the reference case | Harpold et al. 2017 |
 | "At-risk" snow, PNW, 0 °C threshold | **~9,200 km², ~6.5 km³ of water** | vulnerable to rain conversion | Nolin & Daly 2006 |
 | **Western WA SNOTEL, active** | **31 sites**, median **3,900 ft**, only **3 below 3,000 ft**, **1 below 2,000 ft** | fetched from AWDB 2026-08-24 | this entry |
-| **Western WA SNOTEL SWE, 2025-12-11** | **14 % of median below 4,500 ft** (12 of 20 sites at 0.0 in); composite 44 % | Event Zero eve | this entry |
+| **Western WA SNOTEL SWE, 2025-12-11** | **14 % of median below 4,500 ft** (10 of 20 sites at 0.0 in); composite 44 % | Event Zero eve | this entry |
 | **Western WA SNOTEL SWE, 2026-04-01** | composite **55 % of median** with accumulated precipitation **105–138 % of median at every station** | textbook warm snow drought | this entry |
 
 ### 3.1 The two datasets fetched for this entry
@@ -353,17 +364,19 @@ threshold is *lower at higher elevation*, consistent with the humidity control.
 
 **The transient snow zone in which maritime ROS floods are generated is roughly 1,000–4,000 ft. The
 median western-Washington SNOTEL sits at the top of that band and only one site sits inside its
-lower half.** (FACT — dataset arithmetic reproduced above.) Four basins are effectively
-single-station: Skykomish (Stevens Pass only), Sauk (Decline Creek, record begins 2018-11),
-Stillaguamish (Deer Pass, record begins 2020-12 — **too short for a climatology**), Snoqualmie
-(Alpine Meadows, Skookum Creek, Olallie Meadows).
+lower half.** (FACT — dataset arithmetic reproduced above.) Three basins are effectively
+single-station: Skykomish (Stevens Pass only), Sauk (Decline Creek, record begins 2018-11) and
+Stillaguamish (Deer Pass, record begins 2020-12 — **too short for a climatology**). Snoqualmie has
+three sites (Skookum Creek, Alpine Meadows, Olallie Meadows) but all lie within 3,320–4,010 ft.
+AWDB returns **no median at all** for Decline Creek or Deer Pass, so any percentile- or
+percent-of-median product is uncomputable for the Sauk and the Stillaguamish today.
 
 **B. WY2026 SWE and accumulated precipitation vs median, western WA** (AWDB `/data`,
 `elements=WTEQ,PREC&duration=DAILY&centralTendencyType=MEDIAN`, retrieved 2026-08-24):
 
 | Date | Composite SWE (Σvalue/Σmedian) | Below 4,500 ft | Accumulated precipitation |
 |---|---|---|---|
-| **2025-12-11** (Event Zero) | 44 % of median (n=28) | **14 % of median (n=20)** | 105–138 % of median |
+| **2025-12-11** (Event Zero) | 44 % of median (n=28) | **14 % of median (n=20)** | 113–194 % of median (n=27) |
 | **2026-04-01** | 55 % of median (n=26) | — | **105–138 % of median at every station** |
 
 Individual western-WA sites on 2025-12-11: Alpine Meadows (3,500 ft) **0.0 in vs 10.2 median**;
@@ -497,7 +510,7 @@ are roughly double the maritime value and must never be used as a Cascade prior.
    at pack elevation are forcing inputs** — but derive it from "turbulence discriminates the
    extremes", not from "turbulence dominates".
 2. **Add a magnitude statement to the "SWE is storage, not hazard" bullet.** The buffering side is
-   worth **~15 mm of water for a typical maritime pack (≈1.6 h of cold content plus ~12 mm of liquid
+   worth **~30–45 mm of water for a typical maritime pack (≈2.5 mm of cold content plus ~27–37 mm of liquid
    storage) against a 200–400 mm AR**. Without a magnitude, "the pack can buffer the storm" reads as
    a much stronger claim than the physics supports.
 3. **Add an explicit snowmelt-fraction prior.** In maritime western Washington, snowmelt supplies
@@ -570,7 +583,7 @@ are roughly double the maritime value and must never be used as a Cascade prior.
 | 4 | `HYDROLOGY.md` §2: transient snow zone ≈ 1,000–4,000 ft (ASSUMPTION) | **CRITICISED IN THE LITERATURE AND UNOBSERVED IN THE NETWORK.** Jennings & Jones call the concept inadequate; the AWDB fetch shows only 1 of 31 western-WA sites lies below 2,000 ft and only 3 below 3,000 ft. Keep the dynamic derived fractions; delete the band as a parameter. |
 | 5 | `susceptibility.py`: SWE driver carries `direction="context_not_scored"` because "more SWE is not more risk" | **CORRECT BUT INCOMPLETE.** The doctrine is right that SWE is unsigned. But **snow *drought state* is signed** — warm snow drought is a flood-relevant state (Harpold et al. 2017; confirmed by the WY2026 data in §3.1). The platform currently has no way to express "low SWE with above-normal precipitation is a *positive* susceptibility contribution", so it emits nothing where the science supports something. |
 | 6 | `susceptibility.py`: `basin_swe_percent_of_median` is the SWE context driver | **QUALIFIED AS THE WRONG STATISTIC.** Three independent reasons (§4.5 of the prior pass) plus a new fourth: measured on 2025-12-11, the western-WA composite read 44 % while the flood-relevant sub-4,500 ft band read **14 %**. The statistic the platform prints would have understated the anomaly by a factor of three on the eve of the record crest. It is not merely uninformative — it is *misleading in the direction of calm*, which `DATA_DOCTRINE.md` §12 forbids. |
-| 7 | `HYDROLOGY.md` §12: "near record-low statewide snowpack — so the response was rain on saturated soils, not snowmelt (FACT)" | **CONFIRMED AND SHARPENED WITH PRIMARY DATA.** Below 4,500 ft in the maritime Cascades, SWE on 2025-12-11 was **14 % of median with 12 of 20 sites at exactly zero**. The statement can be upgraded from "near record-low statewide" to a basin-band measurement. |
+| 7 | `HYDROLOGY.md` §12: "near record-low statewide snowpack — so the response was rain on saturated soils, not snowmelt (FACT)" | **CONFIRMED AND SHARPENED WITH PRIMARY DATA.** Below 4,500 ft in the maritime Cascades, SWE on 2025-12-11 was **14 % of median with 10 of 20 sites at exactly zero**. The statement can be upgraded from "near record-low statewide" to a basin-band measurement. |
 | 8 | `DATA_SOURCES.md` W8: offset default 1,000 ft, range 500–1,500 ft, sourced from local-media secondary citations, "an authoritative weather.gov/sew citation is an OPEN QUESTION" | **CLOSED, with peer-reviewed sources.** Minder et al. 2011 (and White et al. 2010, Kingsmill et al. 2008, Lundquist et al. 2008 therein) give the offset, its components, its precipitation dependence and its variance. Replace the KIRO 7 / MyNorthwest / OpenSnow citations with these. |
 | 9 | `HYDROLOGY.md` §7: "Point observations (SNOTEL) are ground truth for their elevation and aspect" | **SUPPORTED, AND THE CONSEQUENCE IS MORE SEVERE THAN STATED.** With a median site elevation of 3,900 ft and one site below 2,000 ft, the network is ground truth for an elevation band **above** the one that makes the floods. The platform should say so explicitly rather than treating the gap as a coverage detail. |
 | 10 | `packages/hydrology/forcing.py`: the snow-level driver is `direction=DIRECTION_CONTEXT`, "context only; not scored" | **CORRECT for a bare elevation, and it should stay that way.** But note that once hypsometry exists, *rain-exposed fraction* derived from it **is** a scored quantity with an unambiguous sign, and the "never scored" rule must not be inherited by the derived fraction. |
@@ -637,7 +650,7 @@ numbers as INFERENCE-grade and re-verify before they enter a method:
 - Marks, D., Link, T., Winstral, A., & Garen, D. (2001). Simulating snowmelt processes during rain-on-snow over a semi-arid mountain basin. *Annals of Glaciology*, 32, 195–202. — **not independently fetched**; note that this paper is a **semi-arid** basin, so the prior repo pass's attribution of the "60–90 %" PNW figure to Marks et al. 2001 rather than Marks et al. 1998 should be corrected.
 - [Berris, S. N., & Harr, R. D. (1987). Comparative snow accumulation and melt during rainfall in forested and clear-cut plots in the western Cascades of Oregon. *Water Resources Research*, 23(1), 135–142.](https://agupubs.onlinelibrary.wiley.com/doi/abs/10.1029/WR023i001p00135) — **paywalled**; the 2–3× SWE, +40 % melt and +21 % outflow figures come from the Andrews Forest publication record and the Frontiers review.
 - [Harr, R. D. (1986). Effects of clearcutting on rain-on-snow runoff in western Oregon: a new look at old studies. *Water Resources Research*, 22(7), 1095–1100.](https://andrewsforest.oregonstate.edu/publications/681) — **not independently fetched**.
-- [Jones, J. A., & Perkins, R. M. (2010). Extreme flood sensitivity to snow and forest harvest, western Cascades, Oregon, United States. *Water Resources Research*, 46, W00H10.](https://research.fs.usda.gov/treesearch/39625) — **abstract only**; the 75 %, ~2×, and 10–20 % figures are from the USFS abstract.
+- [Jones, J. A., & Perkins, R. M. (2010). Extreme flood sensitivity to snow and forest harvest, western Cascades, Oregon, United States. *Water Resources Research*, 46, W12512, doi:10.1029/2009WR008632.](https://research.fs.usda.gov/treesearch/39625) — **abstract only**; the 75 %, ~2×, and 10–20 % figures are from the USFS abstract.
 - [Li, D., Lettenmaier, D. P., Margulis, S. A., & Andreadis, K. (2019). The role of rain-on-snow in flooding over the conterminous United States. *Water Resources Research*, 55, 8492–8513.](https://agupubs.onlinelibrary.wiley.com/doi/abs/10.1029/2019WR024950) — **Cloudflare-blocked**; the 68 % net-radiation figure is quoted verbatim by Brandt et al. 2022 (fetched); the "70 % of extreme events / <10 % of extreme flood runoff" and "rainfall dominant on the west-facing slopes of the Cascades" findings come from the publisher abstract via search.
 - [Roberts-Pierel, J., Raleigh, M. S., & Kennedy, R. E. (2024). Tracking the evolution of snow drought in the U.S. Pacific Northwest at variable scales. *Water Resources Research*, 60.](https://agupubs.onlinelibrary.wiley.com/doi/full/10.1029/2023WR034588) — **Cloudflare-blocked**; only the abstract's methodological framing (point → HUC6 aggregation, in situ + gridded + optical remote sensing) was obtained. **Its PNW-specific snow-drought-type frequencies remain unread and should be the first target of a follow-up pass.**
 - [Nolin, A. W., & Daly, C. (2006). Mapping "at-risk" snow in the Pacific Northwest. *Journal of Hydrometeorology*, 7, 1164–1171.](https://journals.ametsoc.org/view/journals/hydr/7/5/jhm543_1.xml) — **not independently fetched**; the 9,200 km² / 6.5 km³ figures are from the publisher abstract.

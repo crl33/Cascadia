@@ -13,6 +13,12 @@ the contract models. It never fetches from a provider and has no mutating endpoi
   `/stations/{id}/series`, `/scene/summary`, `/search`, `/system/health`; `/openapi.json`.
 - Every read accepts `as_of=<ISO>`; envelopes are `ContractEnvelope.model_dump(mode="json",
   by_alias=True)`; limits: `hours <= 720`, ids by pattern, `q <= 64` chars.
+- `/system/health` is DERIVED from `cascade_core.registry.JOBS` (name, provider, source, products
+  written, cadence) — never from a list kept in `routes.py`, which is how a job failing on every
+  cycle once read `ok`. It reports every registered job and every expected product, and its
+  `status` is three-valued: `degraded` (something failed or went stale), `unknown` (no evidence
+  yet — a never-run job or a never-ingested product, each named in `reasons`), `ok`. The API
+  cannot import the worker, so `tests/unit/test_job_registry.py` pins the two together.
 
 ## Human check
 `curl 'localhost:8000/viz/rivers?basin=basin:skagit'` — the observed stage value, its

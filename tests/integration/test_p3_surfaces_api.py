@@ -27,6 +27,8 @@ from __future__ import annotations
 import asyncio
 from datetime import UTC, datetime
 
+import json
+
 import httpx
 import pytest
 import respx
@@ -437,3 +439,29 @@ async def test_the_document_validates_and_is_generated_at_the_read_clock(ingeste
     assert env.contract == "BasinVisualizationState"
     assert env.as_of == AS_OF and env.time.valid == AS_OF
     assert env.generated_at <= utcnow()
+
+
+async def test_the_explanation_link_the_contract_emits_actually_resolves(ingested) -> None:
+    """`AgreementState.explanation_ref` is a promise; a 404 behind it is a broken one.
+
+    The panel reduces the method record to one sentence and offers this link for the rest. If it
+    does not resolve, the surface claims an explainability it does not have, and the band
+    parameters, the comparison window and the untruncated quality text live nowhere a reader can
+    reach (VISUAL_TRUTH_DOCTRINE §6).
+    """
+    as_of = AS_OF.isoformat().replace("+00:00", "Z")
+    env = await _viz_basins(ingested, AS_OF)
+    refs = [i.surfaces.agreement.explanation_ref for i in env.items if i.surfaces.agreement.explanation_ref]
+    assert refs, "no basin offered an explanation link to check"
+
+    app = create_app(ingested.settings, engine=ingested.engine)
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test") as c:
+        for ref in dict.fromkeys(refs):
+            r = await c.get(ref, params={"as_of": as_of})
+            assert r.status_code == 200, f"{ref} -> {r.status_code}: the contract offers a link that does not resolve"
+            body = r.json()
+            assert body["surface"] == "agreement" and body["method"], ref
+            # the record states its own uncalibrated basis rather than presenting the bands as fact
+            assert "assumption" in json.dumps(body["method"]).lower(), ref
+        # an unknown basin is a 404, not an empty explanation
+        assert (await c.get("/explanations/basin:nonesuch/agreement", params={"as_of": as_of})).status_code == 404

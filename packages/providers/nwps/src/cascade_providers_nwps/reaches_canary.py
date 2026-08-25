@@ -17,13 +17,15 @@ from __future__ import annotations
 import asyncio
 import json
 import sys
+from datetime import timedelta
 
 import httpx
 
 from cascade_core.timeutils import utcnow
 from cascade_providers_nwps.client import BASE_URL
 from cascade_providers_nwps.reaches_normalize import (
-    crest_summary,
+    COVERAGE_HORIZON_H,
+    member_window,
     model_run_from_ensemble,
 )
 from cascade_providers_nwps.reaches_parser import SERIES_NAME, parse_medium_range
@@ -63,13 +65,31 @@ async def check(contact: str = "cascadia-papsukkal@example.invalid") -> dict:
                 entry["units"] = None if ensemble.mean is None else ensemble.mean.unit
                 run = model_run_from_ensemble(ensemble, retrieved_at=now)
                 entry["stored_points"] = 0 if run is None else len(run.values)
-                summary = crest_summary(ensemble)
-                entry["median_member"] = None if summary is None or summary.median_member is None else summary.median_member.member
-                entry["crest_cfs"] = None if summary is None or summary.median_member is None else round(summary.median_member.value, 1)
+                # No crest here on purpose: a crest needs a window and the window is only known
+                # at read time (reaches_normalize, finding B). What the canary checks is that the
+                # member series really reaches the far edge of the stored coverage, because a
+                # short series is how the model side silently stops covering the hazard window.
+                window = member_window(ensemble)
+                entry["coverage_h"] = COVERAGE_HORIZON_H
+                entry["stored_members"] = 0 if window is None else window.member_count
+                entry["member_points"] = (
+                    {} if window is None else {m.member: m.observed_count for m in window.members}
+                )
+                entry["covers_full_window"] = bool(
+                    window is not None
+                    and window.members
+                    and all(
+                        m.points and m.points[-1][0] >= window.issued_at + timedelta(hours=COVERAGE_HORIZON_H - 1)
+                        for m in window.members
+                    )
+                )
             except Exception as e:  # a canary reports, it never raises
                 entry["error"] = repr(e)
             report["reaches"][lid] = entry
-    report["ok"] = all("error" not in e and not e.get("member_count_changed") for e in report["reaches"].values())
+    report["ok"] = all(
+        "error" not in e and not e.get("member_count_changed") and e.get("covers_full_window")
+        for e in report["reaches"].values()
+    )
     return report
 
 

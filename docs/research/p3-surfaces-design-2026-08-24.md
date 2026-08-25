@@ -604,6 +604,17 @@ features = 18 rows/day.
 
 ## 3. AGREEMENT v0 — model agreement at forecast points
 
+> **SUPERSEDED IN PART (2026-08-25, verification §P3.9).** §3.2 step 4 and §3.4 specified a
+> per-cycle member-crest summary precomputed at ingest, while §3.2 also required both crests over
+> one `as_of`-anchored window. Those cannot both hold: measured live, the model crest sat 2 h 43 m
+> before the official window opened and Δt read 81 h inside a 78-hour window. The resolution
+> implemented is **the `as_of`-anchored window wins and nothing is precomputed** — member
+> hydrographs are stored clipped to `(cycle, cycle + 96 h]` and every crest is taken at read time
+> over the shared window (`method:nwm-member-series@2.0.0`, `method:model-agreement@0.2.0`). The
+> timing term is likewise not unconditional: it is computed only when both sides actually crest
+> inside the window.
+
+
 ### 3.1 What was verified live — and why the CONUS NetCDF question is moot
 
 The brief asked what it really costs to extract one reach from a CONUS NetCDF. The answer is:

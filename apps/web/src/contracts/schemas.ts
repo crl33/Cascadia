@@ -204,7 +204,11 @@ export const SearchResultsSchema = z.object({
 });
 const ProviderHealthSchema = z.object({ state: z.enum(['healthy', 'degraded', 'down', 'unknown']), last_success_at: iso.nullable(), last_error: z.string().nullable() });
 export const HealthSchema = z.object({
-  status: z.enum(['ok', 'degraded']),
+  // Three-valued since the finding-C fix: `unknown` is "no evidence yet" — a fresh deployment
+  // whose jobs have not run, or a knowledge time before ingestion — as distinct from `degraded`,
+  // which is evidence that something failed or went stale. TopStrip already renders an unknown
+  // health state with the neutral dot; parsing it as an error would paint that red instead.
+  status: z.enum(['ok', 'degraded', 'unknown']),
   providers: z.record(z.string(), ProviderHealthSchema),
   freshness: z.record(z.string(), z.object({ age_seconds: z.number().nullable(), state: z.string() })),
 });
