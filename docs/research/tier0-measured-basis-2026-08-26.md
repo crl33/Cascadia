@@ -129,12 +129,14 @@ This is a hindcast-blocking gap of exactly the kind the register exists to catch
 invisible because the surface correctly returns UNKNOWN with a reason rather than a wrong number.
 Backfill of 12189500 for 2025-11-25 → 2025-12-31 was run on 2026-08-26 to close it: **7,104 rows
 written**, and the resulting trajectory (above) is the strongest single piece of evidence in this
-document. `DEFAULT_SITES` now derives the December site list from the seeded
-`basin.susceptibility_gauge_id` values so the two can no longer drift apart.
+document. `DEFAULT_SITES` now includes it, and
+`tests/integration/test_backfill_site_coverage.py` asserts the list stays a **superset of the
+seeded `susceptibility_gauge_id` values**, so the two cannot drift apart again.
 
-OPEN QUESTION: whether any other basin's susceptibility gauge differs from its Event Zero
-backfill site. The default list should be derived from `basin.susceptibility_gauge_id` rather
-than hardcoded, so this cannot recur.
+No other basin's susceptibility gauge is missing: the guard test compares the whole seeded set
+against the whole backfill set, and passes with the Sauk added. The list is still a hand-kept
+literal rather than a query against the seed — acceptable because the test fails the moment they
+diverge, which is the property that matters.
 
 ---
 
