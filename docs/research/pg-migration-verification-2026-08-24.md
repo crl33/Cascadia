@@ -1155,3 +1155,30 @@ since two cycles a day are fetched instead of four.
 Same family as the SNOWLVL-at-f072 failure: asking a provider for a field it does not publish at
 that cycle. The lesson both times is that a "field_missing" parse error is usually a request
 error, and the honest fix is to stop asking.
+
+### P3.11 — A regression my own fix introduced, caught by health (2026-08-26)
+
+Restricting `QMD_CYCLE_HOURS` to the main cycles (§P3.10) also throttled the SNOW-LEVEL fetch,
+because all three NBM jobs shared `latest_qmd_cycle`. `core` publishes on all four synoptic
+cycles and lands ~44 min after its hour, so it inherited two wrong things at once: half the
+cycles, and qmd's 7.5 h latency assumption. Production read `product:nbm-v5-core` **stale at
+16.3 h while its job ran fine every 6 h** — no offline test could see it, because they all pass
+an explicit cycle.
+
+`core` now has its own `CORE_CYCLE_HOURS = (0, 6, 12, 18)` and `latest_core_cycle(latency 1.5 h)`.
+Verified live: the selector moved from `20260825T12Z` (16.5 h old) to `20260826T00Z` (4.5 h old)
+and the fetch returned all 15 SNOWLVL percentile levels — a twelve-hour freshness recovery.
+
+Two further expectation-vs-reality corrections in the same pass, both found the same way:
+
+- **Crons now follow publication, not arithmetic.** `nbm.fetch_core_snowlvl` moved to `50 */6`
+  (the derived `:10` fired 34 min *before* each cycle landed, so it always took the previous
+  one) and `nwm.fetch_reach_medium_range` to `45 0,6,12,18` (NWM medium range publishes ~6 h 30 m
+  after its cycle).
+- **`product:nwm-mr-via-nwps` grace 8 h → 12 h.** The freshest obtainable cycle is already ~6.5 h
+  old, so a 14 h staleness threshold was unreachable in normal operation and health reported
+  `degraded` on a healthy system.
+
+The pattern across §P3.10 and §P3.11 is one thing: a declared expectation that the provider never
+agreed to. Health is what makes those visible, which is why a health signal that cries wolf is
+worth fixing as urgently as one that stays silent.

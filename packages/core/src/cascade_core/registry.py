@@ -86,7 +86,10 @@ PRODUCTS: tuple[dict[str, object], ...] = (
     {"id": PRODUCT_NBM_CORE, "source_id": SRC_NBM, "label": "NBM v5.0 core, snow-level percentiles (WA subset via NOMADS filter_blend.pl)", "variables": ["snow_level"], "expected_cadence_seconds": 21600, "grace_seconds": 28800},
     # PT6H / PT8H: medium range runs 00/06/12/18Z. Member count is read from the payload,
     # never assumed (design §7 item 4).
-    {"id": PRODUCT_NWM_MR, "source_id": SRC_NWM, "label": "NWM v3.1 medium-range ensemble by reach via NWPS /reaches (members, never blended with the official forecast)", "variables": ["flow"], "expected_cadence_seconds": 21600, "grace_seconds": 28800},
+    # Grace covers the ~6.5 h publication latency (DATA_SOURCES, measured): the freshest
+    # cycle obtainable is already that old, so an 8 h grace made "stale" unreachable and
+    # /system/health read degraded on a healthy system (production, 2026-08-26).
+    {"id": PRODUCT_NWM_MR, "source_id": SRC_NWM, "label": "NWM v3.1 medium-range ensemble by reach via NWPS /reaches (members, never blended with the official forecast)", "variables": ["flow"], "expected_cadence_seconds": 21600, "grace_seconds": 43200},
     # P1D / PT36H (DATA_SOURCES H2). A daily mean older than 48 h makes the susceptibility
     # surface UNKNOWN rather than falling back to the instantaneous value (design §2.2).
     {"id": PRODUCT_USGS_OGC_DAILY, "source_id": SRC_USGS_OGC, "label": "USGS daily mean discharge (OGC API daily/latest-daily, 00060 statistic 00003)", "variables": ["flow"], "expected_cadence_seconds": 86400, "grace_seconds": 129600},

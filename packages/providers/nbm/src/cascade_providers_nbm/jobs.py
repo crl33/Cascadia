@@ -66,6 +66,7 @@ from cascade_providers_nbm.client import (
     Cycle,
     fetch_core_snowlvl,
     fetch_qmd_apcp,
+    latest_core_cycle,
     latest_qmd_cycle,
 )
 from cascade_providers_nbm.normalize import BasinQpf, Refusal, basin_mean
@@ -83,6 +84,8 @@ JOB_FETCH_CORE_SNOWLVL = "nbm.fetch_core_snowlvl"
 #: 12-hourly: only the 00Z/12Z cycles publish the 0-N day cumulative windows the 72-hour
 #: basin QPF is defined on (client.QMD_CYCLE_HOURS, measured live 2026-08-25).
 CADENCE_QMD_SECONDS = 12 * 3600
+#: 6-hourly on all four cycles; the job's cron sits at :50 so it collects each cycle
+#: after its ~44 min landing rather than 10 min before it (see scheduler).
 CADENCE_CORE_SNOWLVL_SECONDS = 6 * 3600
 
 #: Where the full-resolution basin polygons live. Display-LOD geometry over-counts the Skagit
@@ -138,7 +141,7 @@ async def run_build_grid_masks(
     reference data, and rebuilding an identical one would only churn ``computed_at``.
     """
     if grid is None:
-        cyc = cycle or latest_qmd_cycle(utcnow())
+        cyc = cycle or latest_core_cycle(utcnow())
         result = await fetch_core_snowlvl(fetcher, session, cycle=cyc, fhour=CORE_HORIZONS_H[0])
         fields = decode(result.content, want=snow_level(percentile=HEADLINE_PERCENTILE), with_values=False)
         if not fields:
@@ -358,7 +361,7 @@ async def run_fetch_core_snowlvl(
     horizons: Sequence[int] = CORE_HORIZONS_H,
 ) -> int:
     """Ingest snow-level percentiles for one cycle at each lead time. Context, never scored."""
-    cyc = cycle or latest_qmd_cycle(utcnow())
+    cyc = cycle or latest_core_cycle(utcnow())
     basins = await _basins(session)
     written = 0
     leads = tuple(horizons)

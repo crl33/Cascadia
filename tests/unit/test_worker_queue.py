@@ -75,8 +75,8 @@ def test_tasks_registered_with_locks_retry_and_cron() -> None:
         # fetch that depends on it; the climatology is annual and fires on 1 January only.
         "nbm.build_grid_masks": "30 7 * * *",
         "nbm.fetch_qmd": "40 7,19 * * *",  # main cycles only, ~20 min after each lands
-        "nbm.fetch_core_snowlvl": "10 */6 * * *",
-        "nwm.fetch_reach_medium_range": "10 */6 * * *",
+        "nbm.fetch_core_snowlvl": "50 */6 * * *",  # after the ~44 min landing, not 10 min before it
+        "nwm.fetch_reach_medium_range": "45 0,6,12,18 * * *",  # ~15 min after the ~6.5 h-late cycle lands
         "usgs.build_climatology": "30 4 1 1 *",
         "usgs.fetch_daily_percentile": "10 */24 * * *",
         "awdb.fetch_snotel_context": "10 */24 * * *",

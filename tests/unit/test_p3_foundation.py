@@ -206,7 +206,7 @@ def test_p3_product_cadences_match_the_measured_design_values() -> None:
     # would call the surface late every other cycle for a file that was never coming.
     assert (by_id[PRODUCT_NBM_QMD]["expected_cadence_seconds"], by_id[PRODUCT_NBM_QMD]["grace_seconds"]) == (43200, 32400)
     assert (by_id[PRODUCT_NBM_CORE]["expected_cadence_seconds"], by_id[PRODUCT_NBM_CORE]["grace_seconds"]) == (21600, 28800)
-    assert (by_id[PRODUCT_NWM_MR]["expected_cadence_seconds"], by_id[PRODUCT_NWM_MR]["grace_seconds"]) == (21600, 28800)
+    assert (by_id[PRODUCT_NWM_MR]["expected_cadence_seconds"], by_id[PRODUCT_NWM_MR]["grace_seconds"]) == (21600, 43200)  # grace covers the ~6.5 h publication latency; 8 h made stale unreachable
     assert by_id[PRODUCT_USGS_OGC_DAILY]["expected_cadence_seconds"] == 86400
     assert by_id[PRODUCT_AWDB_DAILY]["expected_cadence_seconds"] == 86400
     assert by_id[PRODUCT_USGS_DAILY_STATS]["expected_cadence_seconds"] == 31536000

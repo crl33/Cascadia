@@ -752,3 +752,33 @@ def test_qmd_is_only_asked_of_cycles_that_publish_the_cumulative_window() -> Non
     # and it is a real cycle in the past, never a future one
     now = datetime(2026, 8, 25, 14, 0, tzinfo=UTC)
     assert latest_qmd_cycle(now).hour == 0  # 12Z has not landed by 14:00Z (7.5 h latency)
+
+
+def test_core_and_qmd_do_not_share_a_cycle_selector() -> None:
+    """`core` publishes on all four cycles and lands in ~44 min; qmd does neither.
+
+    Sharing `latest_qmd_cycle` throttled snow level to twice a day AND, through qmd's 7.5 h
+    latency assumption, always picked a cycle 7-13 h old when a ~1 h old one existed. Measured in
+    production 2026-08-26 as `product:nbm-v5-core` stale at 16.3 h while its job ran fine — a
+    regression introduced by restricting QMD_CYCLE_HOURS, and invisible to every offline test
+    because they all pass an explicit cycle.
+    """
+    from datetime import UTC, datetime
+
+    from cascade_providers_nbm.client import (
+        CORE_CYCLE_HOURS,
+        QMD_CYCLE_HOURS,
+        latest_core_cycle,
+        latest_qmd_cycle,
+    )
+
+    assert CORE_CYCLE_HOURS == (0, 6, 12, 18) and QMD_CYCLE_HOURS == (0, 12)
+    # at 02:00Z the freshest core cycle is 00Z (landed ~00:44); qmd must still reach back to 12Z
+    at = datetime(2026, 8, 26, 2, 0, tzinfo=UTC)
+    assert latest_core_cycle(at).hour == 0
+    assert latest_qmd_cycle(at).hour == 12
+    # core never returns a cycle younger than its landing time, and never skips an intermediate one
+    for hour in range(24):
+        chosen = latest_core_cycle(datetime(2026, 8, 26, hour, 30, tzinfo=UTC))
+        assert chosen.hour in CORE_CYCLE_HOURS
+        assert (datetime(2026, 8, 26, hour, 30, tzinfo=UTC) - chosen.issued_at).total_seconds() >= 1.5 * 3600

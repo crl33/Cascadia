@@ -79,9 +79,13 @@ JOBS: tuple[Job, ...] = (
     # and 19:40 collect each cycle ~20 minutes after it lands, which is the whole difference
     # between a forcing surface that is hours stale and one that is current.
     Job(nbm_jobs.JOB_FETCH_QMD, nbm_jobs.CADENCE_QMD_SECONDS, nbm_jobs.run_fetch_qmd, cron="40 7,19 * * *"),
-    Job(nbm_jobs.JOB_FETCH_CORE_SNOWLVL, nbm_jobs.CADENCE_CORE_SNOWLVL_SECONDS, nbm_jobs.run_fetch_core_snowlvl),
+    # core lands ~44 min after its cycle, so :50 collects the fresh one; the derived `*/6` cron
+    # fires at :10 and would take the cycle six hours older every single time.
+    Job(nbm_jobs.JOB_FETCH_CORE_SNOWLVL, nbm_jobs.CADENCE_CORE_SNOWLVL_SECONDS, nbm_jobs.run_fetch_core_snowlvl, cron="50 */6 * * *"),
     # --- P3 agreement: the independent model's ensemble at each seeded reach -------------
-    Job(nwm_jobs.JOB_NAME, nwm_jobs.CADENCE_SECONDS, nwm_jobs.run_fetch_medium_range),
+    # NWM medium range publishes ~6 h 30 m after its cycle (DATA_SOURCES, measured), so the
+    # useful slots are 45 min past the following synoptic hour, not the cycle hour itself.
+    Job(nwm_jobs.JOB_NAME, nwm_jobs.CADENCE_SECONDS, nwm_jobs.run_fetch_medium_range, cron="45 0,6,12,18 * * *"),
     # --- P3 susceptibility: the ladder, then today's rank inside it, then SNOTEL context --
     Job(usgs_stats_jobs.BUILD_JOB_NAME, usgs_stats_jobs.BUILD_CADENCE_SECONDS, usgs_stats_jobs.run_build_climatology),
     Job(usgs_stats_jobs.DAILY_JOB_NAME, usgs_stats_jobs.DAILY_CADENCE_SECONDS, usgs_stats_jobs.run_fetch_daily_percentile),

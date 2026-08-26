@@ -142,6 +142,30 @@ class Cycle:
         return f"{self.yyyymmdd}T{self.hour:02d}Z"
 
 
+#: `core` publishes on ALL FOUR synoptic cycles and lands ~42-44 min after its hour (design §1.1,
+#: measured). It must NOT share `QMD_CYCLE_HOURS`: that list is restricted to the main cycles
+#: because only they carry qmd's cumulative APCP windows, which has nothing to do with snow level.
+#: Sharing the qmd selector throttled snow level to twice a day AND, through qmd's 7.5 h latency
+#: assumption, always picked a cycle 7-13 h old when a ~1 h old one was sitting there — measured
+#: in production 2026-08-26 as `product:nbm-v5-core` stale at 16.3 h while its job ran fine.
+CORE_CYCLE_HOURS = (0, 6, 12, 18)
+
+
+def latest_core_cycle(now: datetime, *, latency_hours: float = 1.5) -> Cycle:
+    """The newest `core` cycle that should have landed by ``now``.
+
+    Measured landing is cycle + 42-44 min; 1.5 h is that rounded up with margin, not a published
+    schedule. A miss is a miss — the job fetches and fails rather than substituting a cycle.
+    """
+    t = now.astimezone(UTC)
+    candidate = t.replace(minute=0, second=0, microsecond=0)
+    for _ in range(48):
+        if candidate.hour in CORE_CYCLE_HOURS and (t - candidate).total_seconds() >= latency_hours * 3600:
+            return Cycle.from_datetime(candidate)
+        candidate -= timedelta(hours=1)
+    raise ValueError(f"no core cycle old enough at {now.isoformat()}")
+
+
 def latest_qmd_cycle(now: datetime, *, latency_hours: float = 7.5) -> Cycle:
     """The newest qmd cycle that should have landed by ``now``.
 
