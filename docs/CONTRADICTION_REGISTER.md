@@ -95,7 +95,7 @@ or open on a question no shipped surface consults.
   **§12 needs hedging**: "above the 1990 record of 37.37 ft despite a lower flow (~152,000 cfs in 1990)"
   compares a levee-intact 2025 crest against a breach-depressed 1990 crest. That pairing is not a
   homogeneous hydraulic comparison and it *exaggerates* the drift. Add the Fir Island caveat or drop
-  the comparison.
+  the comparison. **[CORRECTED 2026-08-26]** Applied 2026-08-26: §12's 1990 'despite a lower flow' pair is corrected as breach-depressed (USACE 2013 §2.4.9.4) and the four drift estimates are listed with none adopted.
 
 ---
 
@@ -207,7 +207,7 @@ or open on a question no shipped surface consults.
      variables) labelled **INFERENCE**.
   2. *"the heat content of the rain itself is a minor term (FACT)"* → **QUALIFIED**. Minor in most events,
      but **29–44 %** of the energy budget in the persistent-melt events that produce floods
-     (`snow-hydrology.md` §7 row 2). "Minor" is wrong for exactly the cases the platform exists to detect.
+     (`snow-hydrology.md` §7 row 2). "Minor" is wrong for exactly the cases the platform exists to detect. **[CORRECTED 2026-08-26]** Applied 2026-08-26: the FACT assertion has been replaced with a regime-dependent statement carrying Marks 1998 / Mazurkiewicz 2008 / Li 2019 and the contested advected-rain range, with the corpus reconciliation demoted to INFERENCE.
 
 ---
 
@@ -532,7 +532,7 @@ or open on a question no shipped surface consults.
   evidenced separately. Two additions belong with it: (a) SNAW1 is genuinely tidal and its Event Zero
   record stage is a **compound quantity** — `HYDROLOGY.md` §12 cites SNAW1 as a record gauge without
   saying so; (b) the tidal-class machinery should exist **before** SNAW1 is seeded, not after — a
-  `tidal_class` field reading `FLUVIAL` for all six current points costs nothing today.
+  `tidal_class` field reading `FLUVIAL` for all six current points costs nothing today. **[CORRECTED 2026-08-26]** Applied 2026-08-26: corrected: Ferndale is not tidal at the gauge, and a new tide block records M2 <= 0.008 ft at all six seeded gauges and <= 0.025 ft/h injected rate-of-rise.
 
 ---
 
@@ -581,7 +581,7 @@ or open on a question no shipped surface consults.
   Pass, Swamp Creek and Thunder Basin "carry the maritime Skagit/Sauk signal" is contradicted by the
   station metadata. One further finding to record: the Skagit's only low-elevation pillow, **Hozomeen Camp
   (1,680 ft), sits on Ross Lake — upstream of Ross Dam**, so its SWE is not hydrologically available to
-  the Mount Vernon forecast point without passing a regulated release decision (INFERENCE, §5).
+  the Mount Vernon forecast point without passing a regulated release decision (INFERENCE, §5). **[CORRECTED 2026-08-26]** Applied 2026-08-26: corrected in DATA_SOURCES S1: the single-site caveat is now the four majority-Columbia sites with the 45.6 -> 28.9 % decomposition.
 
 ---
 
@@ -641,7 +641,7 @@ or open on a question no shipped surface consults.
   two of six seeded basins with the network as it stands, and UNKNOWN is the correct output there.
   §2's "transient snow zone … roughly 1,000 and 4,000 ft (ASSUMPTION)" should also go — the concept is
   criticised in the literature (Jennings & Jones: the transient zone "implies a static area, when in fact
-  the area undergoing melt is highly dynamic during storm events") and unobserved in the network.
+  the area undergoing melt is highly dynamic during storm events") and unobserved in the network. **[CORRECTED 2026-08-26]** Applied 2026-08-26: hedged: the §3 input row now says 'where the pillow network supports a band', and §7 carries the per-basin verdict incl. UNKNOWN for cedar and snohomish-snoqualmie.
 
 ---
 
@@ -720,7 +720,7 @@ or open on a question no shipped surface consults.
   rather than assumed — the Puyallup-White case shows it can exceed 2×.
 - **doctrine status** — `HYDROLOGY.md` is silent on the estimator. **Safe to keep**, but the register
   records a standing rule: **a composite without its estimator, its `n` and its band is not comparable to
-  yesterday's composite** and must not be rendered as if it were.
+  yesterday's composite** and must not be rendered as if it were. **[CORRECTED 2026-08-26]** Applied 2026-08-26: declared: the mean-of-ratios estimator is now stated explicitly in HYDROLOGY §7 and DATA_SOURCES S1.
 
 ---
 
@@ -760,7 +760,7 @@ or open on a question no shipped surface consults.
   soils, not snowmelt (FACT)". **Both are safe to keep, and §12's claim is strengthened**: below 4,500 ft
   in the maritime Cascades on 2025-12-11, SWE was **13.8 % of median with 10 of 20 sites at exactly zero**,
   which upgrades "near record-low statewide" to a basin-band measurement. The correction owed here is to
-  the doctrine-delta text and to any paraphrase of it, not to `HYDROLOGY.md`.
+  the doctrine-delta text and to any paraphrase of it, not to `HYDROLOGY.md`. **[CORRECTED 2026-08-26]** Applied 2026-08-26: the direction is now stated in §7: a low-elevation SWE deficit LOWERS ROS potential; the defect is wrong-mechanism attribution.
 
 ---
 
@@ -819,3 +819,9 @@ cited inside `docs/research/` and nowhere else until the named evidence arrives.
   severity: **§7's rain-on-snow FACT (X4, correction)**, **§2 line 75's Ferndale tidal claim (X12,
   correction)**, and **§12's 1990-vs-2025 crest comparison across a levee breach (X1, hedging)**. §13
   needs one addition (X6) and §8 needs one (X8).
+
+> **Doctrine-status sweep 2026-08-26.** The corrections cleared by this register were applied to
+> `docs/HYDROLOGY.md` and `docs/DATA_SOURCES.md` in the same change set, and the affected rows above
+> carry a `[CORRECTED 2026-08-26]` note naming what landed. Rows still marked *needs an addition*
+> (X6 §13, X8 §8) are deliberately untouched: X8 is the one operationally blocking contradiction and
+> its rule must not be written in ahead of the hindcast that decides it.
