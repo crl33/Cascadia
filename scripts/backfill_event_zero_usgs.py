@@ -46,7 +46,13 @@ from cascade_providers_usgs.ogc_client import build_backfill_fetcher, close_fetc
 from cascade_worker.runtime import Runtime
 
 # The six seed stations (tests/fixtures/geo + cascade_core/seed/stations.json).
-DEFAULT_SITES = ["12100490", "12113000", "12119000", "12149000", "12200500", "12213100"]
+#: The six forecast-point gauges PLUS every seeded susceptibility gauge. The Sauk (12189500) is
+#: the Skagit's susceptibility gauge precisely because it is unregulated, and it was missing from
+#: this list — so the basin of the event had no susceptibility data in any Event Zero
+#: reconstruction, silently, because the surface correctly returned UNKNOWN rather than a wrong
+#: number (docs/research/tier0-measured-basis-2026-08-26.md §4). Keep this list a superset of
+#: `basin.susceptibility_gauge_id`; the pg-marked test asserts it.
+DEFAULT_SITES = ["12100490", "12113000", "12119000", "12149000", "12189500", "12200500", "12213100"]
 DEFAULT_START = "2025-12-01T00:00:00Z"
 DEFAULT_END = "2026-01-01T00:00:00Z"
 
