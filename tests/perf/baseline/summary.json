@@ -1,0 +1,22 @@
+{
+  "basin_skagit_state": {
+    "distinct_queries": 20,
+    "exact_repeats": 2,
+    "params": {
+      "as_of": "2026-08-24T23:00:00Z"
+    },
+    "path": "/basins/basin:skagit/state",
+    "sql_wall_ms": 20.03,
+    "total_queries": 22
+  },
+  "viz_basins": {
+    "distinct_queries": 103,
+    "exact_repeats": 17,
+    "params": {
+      "as_of": "2026-08-24T23:00:00Z"
+    },
+    "path": "/viz/basins",
+    "sql_wall_ms": 101.8,
+    "total_queries": 120
+  }
+}

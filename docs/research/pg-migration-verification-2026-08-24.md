@@ -1182,3 +1182,197 @@ Two further expectation-vs-reality corrections in the same pass, both found the 
 The pattern across §P3.10 and §P3.11 is one thing: a declared expectation that the provider never
 agreed to. Health is what makes those visible, which is why a health signal that cries wolf is
 worth fixing as urgently as one that stays silent.
+
+## Phase B read path — 2026-08-26
+
+Adversarial verification of the `/viz/basins` amplification fix, run as a third pass over work a
+measuring agent and an optimising agent had already reported on. Nothing below is taken from
+their reports: every number was re-measured here, and the pre-optimisation body was regenerated
+from `git` HEAD rather than read out of the committed baseline, so that "the answer did not
+change" rests on two independent captures instead of one file nobody re-derived.
+
+Environment: macOS, Python 3.14, the local `cascadia-pg` container (PostgreSQL 18 + PostGIS 3.6,
+port 5433) and SQLite. Scratch database `cascadia_verify_phaseb`, created empty, migrated with
+`CASCADE_ALEMBIC_URL=… bash scripts/migrate.sh` (`-> 0001`, `0001 -> 0002`, PostGIS present, 16
+observation partitions), ingested from the checked-in provider payloads, and **dropped at the
+end** — `pg_database` afterwards holds only `cascadia`, `cascadia_p2v`, `cascadia_v`, `postgres`,
+none of them created by this pass. Production Neon was never contacted.
+
+### B.1 — Inventory: what the endpoint was doing
+
+Measured on the same ingested data through SQLAlchemy's `after_cursor_execute`, which is the
+driver's own account of what ran, not a count of what the code looks like it should run. The two
+drivers agree statement for statement.
+
+| | `/viz/basins` (6 basins) | `/basins/basin:skagit/state` (1 basin) |
+|---|---:|---:|
+| statements, before | **120** | **22** |
+| distinct (SQL text **and** bound parameters) | 103 | 20 |
+| exact repeats | **17** | 2 |
+| distinct SQL statement **texts** | **12** | 12 |
+| statements, after | **13** | **13** |
+| exact repeats, after | **0** | 0 |
+
+Twelve distinct texts behind 120 executions is the whole diagnosis: the endpoint asked twelve
+questions and issued them once per basin, per point and per surface. Production measured 21.8 s
+for the same 120 statements at ~176 ms of round trip each, against 2.67 s locally at ~14 ms —
+identical work, different distance.
+
+The thirteen that remain, attributed to the reader and call site that issued them (identical list
+for both endpoints, which is the property worth defending — **the count no longer scales with the
+number of basins asked for**):
+
+| reader | called from |
+|---|---|
+| `basins` / `basin` | `routes.viz_basins` / `routes.basin_state` |
+| `products` | `assemble.basin_envelope` |
+| `forecast_points_by_lid`, `stations_by_id` | `assemble._prefetch_basins` |
+| `thresholds_for`, `latest_forecast_runs`, `forecast_values_for`, `latest_observations`, `observations_for` | `assemble.prefetch_points` |
+| `latest_forecast_runs`, `derived_features_for` | `agreement.prefetch` |
+| `latest_derived_features` | `susceptibility.prefetch` |
+| `derived_features_for` | `forcing.prefetch` |
+
+Not one comes from a per-scope reader. A fourteenth is reachable and conditional on the data
+(susceptibility's climatology fallback, read only for gauges whose percentile is missing).
+
+### B.2 — Progression, and what it cost in rows
+
+Latency was measured n=15 per endpoint with a warm statement cache, pre and post runs adjacent on
+the same machine against the same database. **This laptop is noisy** — repeat runs of the
+identical build spread 53–115 ms on the same request — so the counts are the finding and the
+latencies are corroboration, which is exactly why `tests/perf/test_query_budget.py` pins the
+count and not the clock.
+
+| | statements | rows returned | wall p50 | SQL p50 |
+|---|---:|---:|---:|---:|
+| `/viz/basins`, PostgreSQL, before | 120 | **831** | 342.4 ms | 202.11 ms |
+| `/viz/basins`, PostgreSQL, after | **13** | **348** | 127.1 ms | 27–54 ms |
+| `/viz/basins`, SQLite, before | 120 | — | 161.5 ms | 61.37 ms |
+| `/viz/basins`, SQLite, after | **13** | — | 46–62 ms | 11–15 ms |
+| `/basins/…/state`, PostgreSQL, before | 22 | **142** | 65.2 ms | 35.54 ms |
+| `/basins/…/state`, PostgreSQL, after | **13** | **64** | 43–59 ms | 19–28 ms |
+| `/basins/…/state`, SQLite, before | 22 | — | 32.2 ms | 11.35 ms |
+| `/basins/…/state`, SQLite, after | **13** | — | 26–38 ms | 7–11 ms |
+
+**Round trips were not bought with bytes.** Rows returned fell 58 % and 55 %, because
+`latest_observations` answers with a `row_number()` window instead of shipping a fourteen-day
+observation window per station and taking its tail. Fewer statements *and* fewer rows.
+
+The single-basin endpoint on SQLite is the one place the change is not a win: 22 statements to 13
+buys nothing when a round trip costs nothing, and the batched statements cost slightly more to
+plan. It is inside the measurement noise here and is the opposite of the production condition.
+
+### B.3 — Semantic proof
+
+The requirement was that the body be identical except for fields legitimately computed at read
+time. It was checked at **twelve knowledge times** — the pinned `AS_OF`, an earlier time where
+most surfaces are UNKNOWN, and both sides of each of the **five** `available_at` / `effective_from`
+instants that actually exist in the ingested data (the instant itself, and one microsecond
+before it, which is the boundary a knowledge-time bug would fall off) — on both drivers, for both
+endpoints. Only `generated_at` was normalised; freshness ages were **compared, not blanked**,
+because every `compute_freshness` call on this path is passed `k.as_of` rather than the wall
+clock, so an age that moved would mean a badge computed from a different row.
+
+| comparison | files | result |
+|---|---:|---|
+| committed `tests/perf/baseline/*.json` vs a body freshly regenerated from HEAD | 2 | **identical** — the baseline is genuinely pre-optimisation output, not a file regenerated to match |
+| pre-optimisation vs shipped, SQLite | 24 | **identical** |
+| pre-optimisation vs shipped, PostgreSQL 18 + PostGIS | 24 | **identical** |
+| pre-optimisation, SQLite vs PostgreSQL | 24 | **identical** |
+| shipped, prefetches in place vs prefetches neutered | 24 | **identical** |
+
+An `as_of` in the past returns exactly what it returned before, at every boundary tested.
+
+### B.4 — Mutation tests: would the suite have noticed?
+
+A batched read that silently drops its knowledge filter is the worst outcome this work could
+have, so the claim "the tests would catch it" was tested rather than asserted. Each mutation is
+one exact string replacement in the shipped source; the file is restored from a byte-for-byte
+backup afterwards and the restore is verified by sha256 before the next one runs.
+
+**The knowledge filter itself: 5 of 5 caught.**
+
+| mutation | caught by |
+|---|---|
+| `observations_for` drops `available_at <= as_of` | `test_observations_for_equals_the_singular_reads_it_replaces` |
+| `latest_observations` drops `available_at <= as_of` | `test_latest_observation_batched_equals_singular_across_revisions` |
+| `latest_forecast_runs` drops `available_at <= as_of` | `test_latest_forecast_run_picks_the_newest_visible_run_of_the_asked_for_products` |
+| `derived_features_for` drops `available_at <= as_of` | `test_derived_features_batched_equal_singular` **and** `test_the_prefetches_are_pure_warm_up[at_an_earlier_knowledge_time]` |
+| `thresholds_for` drops `effective_from <= as_of` | `test_thresholds_batched_equal_singular_including_supersession` |
+
+**The rules next to it: 3 of 6 were NOT caught, and are now.** The filter decides which rows a
+reader may see; the ORDER BY decides which of those rows it calls the answer. That is the same
+class of rule, and three deletions of it passed the whole suite as it then stood (323 passed, 8 skipped):
+
+| mutation | before | now |
+|---|---|---|
+| `observations_for` drops `revision_seq` from its ORDER BY (id decides the revision) | **not caught** | `test_observations_for_breaks_a_revision_tie_by_revision_not_by_row_id` |
+| `derived_features_for` drops `available_at` from its ORDER BY (insertion order decides which recomputation is "latest known") | **not caught** | `test_derived_features_for_orders_recomputations_by_when_they_became_known` |
+| `observations_for` stops cutting each spec back to its own window (a single-instant read returns the whole shared window and memoises it under the narrow key) | **not caught** | `test_observations_for_gives_each_spec_its_own_window` |
+| `latest_observations` drops `revision_seq.desc()` | caught | caught |
+| `latest_observations` ranks ascending | caught | caught |
+| `derived_features_for` partitions its union by feature only, ignoring `scope_id` | caught | caught |
+
+Each new test pins the **absolute** expected row as well as batched-equals-singular: two readers
+that share an ordering bug satisfy an equality assertion perfectly.
+
+**Re-introducing an N+1: 6 of 6 caught.** A literal singular read looped once per basin, and each
+of the four prefetches deleted in turn, all fail `test_viz_basins_stays_inside_its_query_budget`.
+
+### B.5 — A blind spot in the gate that was supposed to catch N+1 shape
+
+`test_no_statement_comes_from_a_per_scope_reader` exists because a budget alone cannot tell
+thirteen batched reads from thirteen basins read one at a time. Probing it by replacing only
+`prefetch_points`' `thresholds_for(ids)` with a per-point `thresholds(fp.id)` loop showed it
+**passing** while the budget test failed.
+
+The cause: several singular readers delegate to their own set-based form for one scope
+(`thresholds` → `thresholds_for([fp_id])`), and `tests/perf/instrument.py` attributed each
+statement to the **innermost** `Knowledge` reader in flight — the batched one. A per-point N+1 was
+therefore reported as a set-based read. Attribution now goes to the **outermost** reader, which
+is the question the caller actually asked; re-running the same probe, the shape test fails as its
+docstring says it should. On a six-basin fixture the budget test still caught it, so nothing was
+missed in practice — but the gate was weaker than it read.
+
+### B.6 — Defects found and fixed in this pass
+
+1. **`KeyError` where four readers used to answer "nothing known".** `forecast_point_by_lid`,
+   `thresholds`, `latest_forecast_run` and `forecast_values` now delegate to a set-based reader,
+   and every set-based reader drops a falsy scope id before building its `IN (…)` — leaving no
+   memo entry for the singular reader to index. `forecast_point_by_lid("")` returned `None`
+   before this work and raised afterwards, i.e. a 500 where the endpoint used to 404. Not
+   reachable through `/viz/basins` today (Starlette's `{lid}` will not match an empty segment,
+   and the ids on this path are primary keys), so no captured body moved. Fixed by reading the
+   memo with `.get` and the singular reader's own empty default; pinned by
+   `test_an_empty_scope_id_answers_as_it_did`.
+2. **The instrumentation blind spot in §B.5.** Fixed in `tests/perf/instrument.py`; test-only.
+3. **Three unpinned ordering/partition rules.** Fixed by the three tests in §B.4; test-only.
+4. **`/explanations/{basin}/agreement` had no test on its 200 path**, and it is the only endpoint
+   outside `basin_envelope` that the optimisation touched. Covered now by
+   `test_the_explanation_endpoints_prefetches_are_pure_warm_up`, which patches
+   `cascade_api.routes` rather than `assemble` — the route imports `prefetch_points` by name, so
+   patching the defining module would have been a no-op and the test would have proved nothing.
+
+### B.7 — Open: the one prefetch that costs instead of saving
+
+The two prefetch calls added to `routes.agreement_explanation` never reduce a statement, because
+that endpoint assembles exactly **one** point and a batch over a set of size one is the per-point
+read. Measured across all six basins: **11 statements with them and 11 without** at `AS_OF`, and
+**8 with them against 6 without** at the earlier knowledge time, where the per-point path
+short-circuits reads the prefetch issues unconditionally. They are semantically inert — the body
+is identical either way, which is now a test — so this is a cost, not a risk, and deleting the
+five lines is a judgement for the owner rather than a correctness fix.
+
+Also worth watching rather than acting on: `observations_for` builds an `OR` with one branch per
+(station, variable, window) spec, two per forecast point. Six points is twelve branches; a much
+larger basin set would make that a planning cost worth re-measuring.
+
+### B.8 — Gates, on the shipped tree
+
+| gate | result |
+|---|---|
+| `python -m pytest -q` | **329 passed, 8 skipped** — 280 before Phase B, 323 after the optimisation landed its own tests, 329 with the six added by this pass |
+| `python -m pytest -q -m pg` (against the local container) | **8 passed, 329 deselected** |
+| `ruff check .` | All checks passed |
+| `lint-imports` | 5 kept, 0 broken |
+| contracts drift (`export_schema` + `diff -ru`) | no differences |

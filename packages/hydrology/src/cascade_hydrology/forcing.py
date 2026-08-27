@@ -67,6 +67,10 @@ QPF_WINDOWS_H = (24, 48, 72)
 QPF_PERCENTILES = (10, 25, 50, 75, 90)
 #: The percentile that the state is banded from.
 HEADLINE_PERCENTILE = 50
+#: The two percentiles read beside the headline to report the pointwise spread. Named rather
+#: than spelled inline in the read loop so :func:`prefetch` cannot ask for a different set than
+#: :func:`assess` goes on to read.
+SPREAD_PERCENTILES = (90, 10)
 #: Snow-level percentiles stored from NBM core, and the lead time the driver reports.
 SNOW_LEVEL_PERCENTILES = (10, 50, 90)
 SNOW_LEVEL_LEAD_H = 24
@@ -459,6 +463,38 @@ def _nearest_snow_row(rows: Sequence[DerivedFeature]) -> DerivedFeature | None:
     return min(candidates, key=lambda r: r.valid_time)
 
 
+def read_specs() -> list[tuple[str, str, str | None]]:
+    """The `(feature, method_id, window)` rows :func:`assess` reads for one basin.
+
+    Declared once so :func:`prefetch` cannot ask for a different family than `assess` goes on
+    to read — the failure mode of a prefetch is silent, since a miss simply falls back to the
+    per-basin statement it was meant to replace.
+    """
+    window = window_label(FORCING_HORIZON_H)
+    return [
+        *[(qpf_feature(FORCING_HORIZON_H, p), METHOD_BASIN_QPF, window) for p in (HEADLINE_PERCENTILE, *SPREAD_PERCENTILES)],
+        (snow_level_feature(SNOW_LEVEL_PERCENTILES[1]), METHOD_BASIN_SNOW_LEVEL, None),
+    ]
+
+
+async def prefetch(k: Knowledge, basins: Sequence[Basin], *, now: datetime | None = None) -> None:
+    """Read every basin's forcing rows in ONE statement instead of four per basin.
+
+    Pure warm-up. It issues the reads :func:`assess` would issue — the same feature ids, the
+    same methods, the same windows and the same cycle-age bound — as one set-based statement
+    whose answers land in the request-scoped memo `Knowledge` already keys by exactly those
+    arguments. Skipping this call changes nothing about the result — `assess` reads for itself
+    — so no caller becomes dependent on assembly order, and `assess` stays testable alone.
+
+    The QPF percentiles and the snow level go in together because they are one question about
+    one cycle: they differ only in `window`, which rides on the spec.
+    """
+    when = now or k.as_of
+    scopes = [b.id for b in basins]
+    if scopes:
+        await k.derived_features_for(read_specs(), scopes, valid_from=when - MAX_CYCLE_AGE)
+
+
 async def assess(k: Knowledge, basin: Basin, products: dict[str, SourceProduct], *, now: datetime | None = None) -> ForcingAssessment:
     """Read the stored basin-QPF features known at ``k.as_of`` and band the surface.
 
@@ -482,7 +518,7 @@ async def assess(k: Knowledge, basin: Basin, products: dict[str, SourceProduct],
         return _unknown(basin.id, ForcingReason.NO_CYCLE)
     cycle = max((r.issued_at for r in horizon_rows if r.issued_at is not None), default=None)
     qpf_rows = [r for r in horizon_rows if r.issued_at == cycle]
-    for percentile in (90, 10):
+    for percentile in SPREAD_PERCENTILES:
         qpf_rows += [
             r
             for r in await k.derived_features(

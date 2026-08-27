@@ -83,6 +83,7 @@ a statement that either forecast is right.
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 
@@ -937,6 +938,34 @@ def ensemble_from_feature(
         members=tuple(members),
         window=window,
     )
+
+
+async def prefetch(k: Knowledge, fps: Sequence[ForecastPoint]) -> None:
+    """Read every point's NWM cycle and its member series in two statements instead of two per point.
+
+    Pure warm-up, in the sense :mod:`cascade_hydrology.forcing` documents. The member-series
+    read is bounded by the cycles just located — `[min(issued_at), max(issued_at)]` across the
+    points, which on a normal cycle is a single instant — so this ships the same rows
+    :func:`latest_model_cycle` would ask for point by point, and never the whole history of a
+    blob that carries every ensemble member. Each point then narrows the batch to its own
+    cycle out of the memo, which is the same set of rows as its own `valid_from == valid_until
+    == issued_at` read.
+
+    The official run and its values are not read here: `assemble.assess_point` has already read
+    exactly those, and `assess` below now finds them in the memo rather than re-issuing them.
+    """
+    ids = [fp.id for fp in fps]
+    if not ids:
+        return
+    runs = await k.latest_forecast_runs(ids, product_ids=frozenset({PRODUCT_NWM_MR}))
+    issued = [r.issued_at for r in runs.values() if r.issued_at is not None]
+    if issued:
+        await k.derived_features_for(
+            [(FEATURE_MEMBER_SERIES, METHOD_MEMBER_SERIES, None)],
+            sorted(runs),
+            valid_from=min(issued),
+            valid_until=max(issued),
+        )
 
 
 async def latest_model_cycle(k: Knowledge, fp_id: str) -> tuple[ForecastRun | None, dict | None]:

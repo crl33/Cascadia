@@ -1,0 +1,381 @@
+{
+  "as_of": "2026-08-24T23:00:00Z",
+  "contract": "BasinVisualizationState",
+  "generated_at": "2026-08-26T23:08:12.452233Z",
+  "items": [
+    {
+      "geometry_ref": {
+        "feature_id": "basin:skagit",
+        "lod": "basin",
+        "url": "/basins/basin:skagit/geometry?lod=basin"
+      },
+      "headline_drivers": [
+        {
+          "direction": "increases_susceptibility",
+          "feature": "streamflow_doy_percentile",
+          "prov": "usgs-daily-12189500",
+          "rank": 1,
+          "unit": "pct",
+          "value": 19.1
+        },
+        {
+          "direction": "context_not_scored",
+          "feature": "basin_swe_percent_of_median",
+          "prov": "awdb-swe-skagit",
+          "rank": 2,
+          "unit": "pct",
+          "value": null
+        },
+        {
+          "direction": "context_not_scored",
+          "feature": "snotel_precip_14d_percent_of_median",
+          "prov": "awdb-prec-skagit",
+          "rank": 3,
+          "unit": "pct",
+          "value": 61.4
+        },
+        {
+          "direction": "unavailable",
+          "feature": "soil_saturation_percentile",
+          "prov": "cascade-soil-unavailable",
+          "rank": 4,
+          "unit": "pct",
+          "value": null
+        },
+        {
+          "direction": "lowers_confidence",
+          "feature": "climatology_p50_disagreement",
+          "prov": "usgs-published-stats-12189500",
+          "rank": 5,
+          "unit": "pct",
+          "value": -19.1
+        },
+        {
+          "direction": "increases_forcing",
+          "feature": "basin_qpf_72h_pointwise_p50",
+          "prov": "nbm-forcing-skagit",
+          "rank": 6,
+          "unit": "mm",
+          "value": 0.0
+        },
+        {
+          "direction": "increases_forcing",
+          "feature": "basin_qpf_72h_pointwise_p90",
+          "prov": "nbm-forcing-skagit",
+          "rank": 7,
+          "unit": "mm",
+          "value": 0.03007143850156774
+        },
+        {
+          "direction": "decreases_forcing",
+          "feature": "basin_qpf_72h_pointwise_p10",
+          "prov": "nbm-forcing-skagit",
+          "rank": 8,
+          "unit": "mm",
+          "value": 0.0
+        },
+        {
+          "direction": "context_not_scored",
+          "feature": "basin_snow_level_pointwise_p50",
+          "prov": "nbm-snowlvl-skagit",
+          "rank": 9,
+          "unit": "m",
+          "value": 3136.1720032325784
+        },
+        {
+          "direction": "reference",
+          "feature": "agreement_crest_flow_official",
+          "prov": "nwps-forecast-mvew1",
+          "rank": 10,
+          "unit": "cfs",
+          "value": 6710.0
+        },
+        {
+          "direction": "model_below_official",
+          "feature": "agreement_crest_flow_nwm_median",
+          "prov": "nwm-mr-mvew1",
+          "rank": 11,
+          "unit": "cfs",
+          "value": 6688.6
+        },
+        {
+          "direction": "neither_forecast_crests_in_window",
+          "feature": "agreement_crest_timing_delta_h",
+          "prov": "nwm-mr-mvew1",
+          "rank": 12,
+          "unit": "h",
+          "value": null
+        }
+      ],
+      "id": "basin:skagit",
+      "label_priority": 2,
+      "name": "Skagit",
+      "official_alerts": [],
+      "outlet_forecast_point_id": "fp:nwps:MVEW1",
+      "regulation_class": "regulated_upper",
+      "surfaces": {
+        "agreement": {
+          "explanation_ref": "/explanations/basin:skagit/agreement",
+          "prov": [
+            "nwps-forecast-mvew1",
+            "nwm-mr-mvew1"
+          ],
+          "reason": "The NWM median member peaks within 1% of the NWRFC forecast, and neither crests inside this window (both receding); official flood categories here are stage-only so none could be compared and all 6 NWM members reach the same peak.",
+          "state": "high"
+        },
+        "forcing": {
+          "confidence": "moderate",
+          "experimental": true,
+          "horizon_h": 72,
+          "prov": "cascade-forcing-skagit",
+          "reason": null,
+          "score": 0.0,
+          "spread": {
+            "pointwise_p10": 0.0,
+            "pointwise_p90": 0.03007143850156774
+          },
+          "state": "low",
+          "truth": "cascade_derived",
+          "value": {
+            "datum": null,
+            "unit": "mm",
+            "value": 0.0
+          }
+        },
+        "hazard": {
+          "cascade_index": null,
+          "horizon_h": 72,
+          "model_probability": null,
+          "official_category": "none",
+          "official_prov": "nwps-forecast-mvew1",
+          "prov": "nwps-forecast-mvew1",
+          "reason": "Official forecast crest 10.62 ft is below action stage 23.5 ft, NGVD29 (official NWPS). No model exceedance fraction is shown: Official flood categories at this point are defined in stage; NWM produces flow. Magnitude and timing are compared; category is not.",
+          "truth": "authoritative_model"
+        },
+        "susceptibility": {
+          "confidence": "low",
+          "experimental": true,
+          "horizon_h": null,
+          "prov": "cascade-susceptibility-skagit",
+          "reason": null,
+          "score": 0.191,
+          "spread": null,
+          "state": "low",
+          "truth": "cascade_derived",
+          "value": {
+            "datum": null,
+            "unit": "pct",
+            "value": 19.1
+          }
+        }
+      },
+      "tension": null
+    }
+  ],
+  "provenance_refs": {
+    "awdb-prec-skagit": {
+      "freshness": {
+        "age_seconds": 54000,
+        "expected_cadence_seconds": 86400,
+        "state": "current"
+      },
+      "issued_at": null,
+      "label": "SNOTEL PREC percent of median, unweighted mean of 6 point site(s) at 1680–6490 ft (NRCS AWDB). A point-network statistic, not a basin mean; shown as context and never scored as risk.",
+      "method_id": "method:snotel-precip-14d-context@1.0.0",
+      "product_id": "product:awdb-snotel-daily",
+      "quality": [],
+      "raw_artifact_id": null,
+      "retrieved_at": "2026-08-24T12:00:00Z",
+      "source_id": "src:nrcs-awdb",
+      "source_kind": "OBSERVED",
+      "valid_time": "2026-08-24T08:00:00Z"
+    },
+    "awdb-swe-skagit": {
+      "freshness": {
+        "age_seconds": 54000,
+        "expected_cadence_seconds": 86400,
+        "state": "current"
+      },
+      "issued_at": null,
+      "label": "SNOTEL WTEQ: no usable value (No mapped SNOTEL site has a non-zero median snow-water equivalent for 2026-08-23 (7 site(s) report a median of 0.0, 1 report none), so percent of median is undefined) — No mapped SNOTEL site has a non-zero median snow-water equivalent for 2026-08-23 (7 site(s) report a median of 0.0, 1 report none), so percent of median is undefined",
+      "method_id": "method:snotel-basin-swe-context@1.0.0",
+      "product_id": "product:awdb-snotel-daily",
+      "quality": [
+        "unavailable"
+      ],
+      "raw_artifact_id": null,
+      "retrieved_at": "2026-08-24T12:00:00Z",
+      "source_id": "src:nrcs-awdb",
+      "source_kind": "OBSERVED",
+      "valid_time": "2026-08-24T08:00:00Z"
+    },
+    "cascade-forcing-skagit": {
+      "freshness": {
+        "age_seconds": 39600,
+        "expected_cadence_seconds": 43200,
+        "state": "current"
+      },
+      "issued_at": "2026-08-24T12:00:00Z",
+      "label": "Cascade forcing assessment (EXPERIMENTAL) banded from NBM basin QPF. ASSUMPTION, not a calibrated threshold: 25/75/150 mm per 72 h are a defensible first cut for western-Washington basins (75 mm/72 h is roughly the scale at which Cascade foothill basins begin producing action-stage responses). They have not passed hindcast evaluation, so this surface is EXPERIMENTAL and its score is not a probability of anything (ADR-0008).",
+      "method_id": "method:forcing-assessment@0.1.0",
+      "product_id": "product:nbm-v5-qmd",
+      "quality": [],
+      "raw_artifact_id": null,
+      "retrieved_at": "2026-08-24T22:10:00Z",
+      "source_id": "src:cascade",
+      "source_kind": "EXPERIMENTAL",
+      "valid_time": "2026-08-27T12:00:00Z"
+    },
+    "cascade-soil-unavailable": {
+      "freshness": {
+        "age_seconds": null,
+        "expected_cadence_seconds": null,
+        "state": "missing"
+      },
+      "issued_at": null,
+      "label": "No basin soil-moisture product is ingested. SNOTEL SMS is the only mountain soil observation in Washington and returns no climatology, inconsistent depths and `no profile` quality flags at most sites — it cannot support a percentile.",
+      "method_id": null,
+      "product_id": null,
+      "quality": [],
+      "raw_artifact_id": null,
+      "retrieved_at": null,
+      "source_id": "src:cascade",
+      "source_kind": "UNKNOWN",
+      "valid_time": null
+    },
+    "cascade-susceptibility-skagit": {
+      "freshness": {
+        "age_seconds": 57600,
+        "expected_cadence_seconds": 86400,
+        "state": "current"
+      },
+      "issued_at": null,
+      "label": "Cascade experimental susceptibility index from the USGS daily-mean flow percentile at 12189500 (2000–2026, spanning 27 calendar years, n=130 values in the day-of-year window). The upper Skagit is regulated (Ross, Baker), so basin wetness is read from the unregulated Sauk (12189500, 1929-2026), which is often the dominant flood contributor (HYDROLOGY §2) — not from the Mount Vernon outlet.",
+      "method_id": "method:susceptibility-index@0.1.0",
+      "product_id": null,
+      "quality": [
+        "provisional",
+        "climatology_disagreement"
+      ],
+      "raw_artifact_id": null,
+      "retrieved_at": "2026-08-24T12:00:00Z",
+      "source_id": "src:cascade",
+      "source_kind": "EXPERIMENTAL",
+      "valid_time": "2026-08-24T07:00:00Z"
+    },
+    "nbm-forcing-skagit": {
+      "freshness": {
+        "age_seconds": 39600,
+        "expected_cadence_seconds": 43200,
+        "state": "current"
+      },
+      "issued_at": "2026-08-24T12:00:00Z",
+      "label": "NBM v5.0 basin-mean QPF, 72 h, pointwise percentile spread. NBM percentile fields are pointwise: this is the basin mean of a per-cell percentile, not the percentile of basin-mean QPF. The two differ and only the first is computable from this product.",
+      "method_id": "method:basin-qpf@1.0.0",
+      "product_id": "product:nbm-v5-qmd",
+      "quality": [
+        "pointwise_percentile"
+      ],
+      "raw_artifact_id": "20",
+      "retrieved_at": "2026-08-24T22:10:00Z",
+      "source_id": "src:nbm-v5",
+      "source_kind": "MODELED",
+      "valid_time": "2026-08-27T12:00:00Z"
+    },
+    "nbm-snowlvl-skagit": {
+      "freshness": {
+        "age_seconds": 39600,
+        "expected_cadence_seconds": 21600,
+        "state": "current"
+      },
+      "issued_at": "2026-08-24T12:00:00Z",
+      "label": "basin mean of the NBM pointwise 50th-percentile snow level at +24 h (context only; not scored)",
+      "method_id": "method:basin-snow-level@1.0.0",
+      "product_id": "product:nbm-v5-core",
+      "quality": [
+        "pointwise_percentile"
+      ],
+      "raw_artifact_id": "21",
+      "retrieved_at": "2026-08-24T22:10:00Z",
+      "source_id": "src:nbm-v5",
+      "source_kind": "MODELED",
+      "valid_time": "2026-08-25T12:00:00Z"
+    },
+    "nwm-mr-mvew1": {
+      "freshness": {
+        "age_seconds": 39600,
+        "expected_cadence_seconds": 21600,
+        "state": "current"
+      },
+      "issued_at": "2026-08-24T12:00:00Z",
+      "label": "NWM v3.1 medium-range ensemble by reach via NWPS /reaches (members, never blended with the official forecast)",
+      "method_id": null,
+      "product_id": "product:nwm-mr-via-nwps",
+      "quality": [],
+      "raw_artifact_id": "15",
+      "retrieved_at": "2026-08-24T22:05:00Z",
+      "source_id": "src:nwm-v3.1",
+      "source_kind": "MODELED",
+      "valid_time": null
+    },
+    "nwps-forecast-mvew1": {
+      "freshness": {
+        "age_seconds": 287700,
+        "expected_cadence_seconds": 86400,
+        "state": "stale"
+      },
+      "issued_at": "2026-08-21T15:05:00Z",
+      "label": "NWRFC official river forecast via NOAA NWPS",
+      "method_id": null,
+      "product_id": "product:nwps-forecast",
+      "quality": [],
+      "raw_artifact_id": "9",
+      "retrieved_at": "2026-08-21T15:30:00Z",
+      "source_id": "src:nwps-v1",
+      "source_kind": "OFFICIAL_FORECAST",
+      "valid_time": "2026-08-27T06:00:00Z"
+    },
+    "usgs-daily-12189500": {
+      "freshness": {
+        "age_seconds": 57600,
+        "expected_cadence_seconds": 86400,
+        "state": "current"
+      },
+      "issued_at": null,
+      "label": "USGS daily mean discharge at 12189500 for 2026-08-23 (Provisional)",
+      "method_id": null,
+      "product_id": "product:usgs-ogc-daily",
+      "quality": [
+        "provisional",
+        "climatology_disagreement"
+      ],
+      "raw_artifact_id": "34",
+      "retrieved_at": "2026-08-24T12:00:00Z",
+      "source_id": "src:usgs-wdfn-ogc",
+      "source_kind": "OBSERVED",
+      "valid_time": "2026-08-24T07:00:00Z"
+    },
+    "usgs-published-stats-12189500": {
+      "freshness": {
+        "age_seconds": null,
+        "expected_cadence_seconds": null,
+        "state": "unknown"
+      },
+      "issued_at": null,
+      "label": "USGS published day-of-year statistics, held as an independent cross-check and never averaged with the Cascade-built climatology (disagreement is information)",
+      "method_id": "method:usgs-published-doy-stats@1.0.0",
+      "product_id": "product:usgs-daily-stats",
+      "quality": [],
+      "raw_artifact_id": null,
+      "retrieved_at": null,
+      "source_id": "src:usgs-wdfn-statistics",
+      "source_kind": "OBSERVED",
+      "valid_time": null
+    }
+  },
+  "time": {
+    "mode": "past",
+    "valid": "2026-08-24T23:00:00Z"
+  },
+  "version": "1.2.0"
+}

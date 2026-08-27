@@ -1,0 +1,92 @@
+"""The comparator is the safety net for the whole optimisation, so it gets tested too.
+
+An unverified comparator is worse than none: it would report "body identical" for a change that
+was not identical, and the optimisation would ship with a silent regression carrying a green tick.
+These cases run against the real captured baseline, not a toy dict, so they also fail if the
+envelope's shape moves out from under the normalisation rules.
+
+The pairing that matters: `generated_at` may move (it is `utcnow()` at request time), and NOTHING
+ELSE may — least of all a freshness age, which at a pinned `as_of` is computed from `k.as_of` and
+is therefore deterministic. tests/perf/normalize.py argues that at length; this is the assertion.
+"""
+
+from __future__ import annotations
+
+import copy
+import json
+
+import pytest
+
+from tests.perf import normalize
+from tests.perf.harness import BASELINE_DIR
+
+
+@pytest.fixture(scope="module")
+def body() -> dict:
+    return json.loads((BASELINE_DIR / "viz_basins.json").read_text())
+
+
+def _first_freshness_key(body: dict) -> str:
+    return next(k for k in sorted(body["provenance_refs"]) if body["provenance_refs"][k]["freshness"].get("age_seconds") is not None)
+
+
+def test_an_unchanged_body_is_clean(body: dict) -> None:
+    assert normalize.diff(body, copy.deepcopy(body)) == []
+    assert normalize.canonical_json(body) == normalize.canonical_json(copy.deepcopy(body))
+
+
+def test_generated_at_may_move(body: dict) -> None:
+    """The one field the endpoint recomputes from the wall clock on every request."""
+    moved = copy.deepcopy(body)
+    moved["generated_at"] = "2027-01-01T00:00:00Z"
+    assert normalize.diff(body, moved) == []
+    assert normalize.canonical_json(body) == normalize.canonical_json(moved)
+
+
+@pytest.mark.parametrize(
+    ("what", "mutate"),
+    [
+        ("knowledge time", lambda b: b.__setitem__("as_of", "2027-01-01T00:00:00Z")),
+        ("time context", lambda b: b["time"].__setitem__("valid", "2027-01-01T00:00:00Z")),
+        ("time mode", lambda b: b["time"].__setitem__("mode", "now")),
+        ("a surface score", lambda b: b["items"][0]["surfaces"]["forcing"].__setitem__("score", 0.999)),
+        ("a surface reason", lambda b: b["items"][0]["surfaces"]["agreement"].__setitem__("reason", "because")),
+        ("item order", lambda b: b.__setitem__("items", list(reversed(b["items"])))),
+        ("a driver rank", lambda b: b["items"][0]["headline_drivers"][0].__setitem__("rank", 99)),
+    ],
+)
+def test_everything_else_is_caught(body: dict, what: str, mutate) -> None:  # noqa: ANN001
+    changed = copy.deepcopy(body)
+    mutate(changed)
+    assert normalize.diff(body, changed), f"{what} changed and the comparator did not notice"
+
+
+def test_a_freshness_age_is_caught(body: dict) -> None:
+    """Ages are NOT normalised by default, and this is why: an age that moves means the anchor
+    timestamp moved — a badge now computed from a different row. That is semantic drift, however
+    much it looks like clock noise."""
+    key = _first_freshness_key(body)
+    changed = copy.deepcopy(body)
+    changed["provenance_refs"][key]["freshness"]["age_seconds"] += 1
+    assert normalize.diff(body, changed) == [f"provenance_refs.{key}.freshness.age_seconds: {body['provenance_refs'][key]['freshness']['age_seconds']} -> {body['provenance_refs'][key]['freshness']['age_seconds'] + 1}"]
+    # ...and LOOSE, which exists for captures taken at different clocks, deliberately does not.
+    assert normalize.diff(body, changed, normalize.LOOSE) == []
+
+
+def test_a_dropped_or_added_provenance_ref_is_caught(body: dict) -> None:
+    """The failure mode a query budget invites: fewer queries because less was fetched."""
+    key = _first_freshness_key(body)
+    dropped = copy.deepcopy(body)
+    dropped["provenance_refs"].pop(key)
+    assert normalize.diff(body, dropped) == [f"provenance_refs.{key}: present in baseline, absent now"]
+
+    added = copy.deepcopy(body)
+    added["provenance_refs"]["invented"] = added["provenance_refs"][key]
+    assert normalize.diff(body, added) == ["provenance_refs.invented: absent in baseline, present now"]
+
+
+def test_read_time_values_are_reported_not_hidden(body: dict) -> None:
+    """Normalising a field must not make it unobservable — the values are recorded beside it."""
+    values = normalize.read_time_values(body)
+    assert set(values) == {"generated_at", "as_of", "time.valid"}
+    assert values["as_of"] == body["as_of"]

@@ -7,6 +7,7 @@ category. No colour, camera or renderer concept is produced here."""
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 
@@ -141,6 +142,67 @@ def forecast_run_ref(run: ForecastRun, products: dict[str, SourceProduct], *, no
     )
 
 
+#: The window `assess_point` takes its rate of rise over, ending at the knowledge time. Named
+#: because `prefetch_points` has to batch exactly this window for the batch to be the same read.
+TREND_WINDOW_H = 6
+TREND_WINDOW = timedelta(hours=TREND_WINDOW_H)
+
+
+def observed_basis(tset: ThresholdSet | None) -> str:
+    """The variable an observed value is judged on: the official thresholds' basis, else stage.
+
+    One function, because `prefetch_points` has to know which variable a point will be read on
+    in order to batch that read, and a second copy of this rule would be a way for the batch to
+    fetch one variable while `assess_point` went on to read the other.
+    """
+    return tset.basis if tset is not None else "stage"
+
+
+def other_variable(basis: str) -> str:
+    return "flow" if basis == "stage" else "stage"
+
+
+async def prefetch_points(k: Knowledge, fps: Sequence[ForecastPoint]) -> None:
+    """Read everything `assess_point` needs for ``fps`` in six statements instead of seven each.
+
+    Pure warm-up: every read below is one the per-point path would issue anyway, asked once
+    across all the points, and the answers land in the request-scoped memo `Knowledge` keys by
+    exactly those arguments. `assess_point` is unchanged and still reads for itself, so nothing
+    here can change what it returns and no caller is obliged to call this first.
+
+    The last two are ordered, not batched together, because the second depends on the first:
+    the instant at which the *secondary* variable is wanted is the valid_time of the *primary*
+    observation, and which variable is primary is the official thresholds' basis. So the
+    thresholds and the latest observations are read first, and the exact windows they imply are
+    then asked for in one statement covering every point.
+    """
+    fps = [fp for fp in fps if fp is not None]
+    if not fps:
+        return
+    ids = [fp.id for fp in fps]
+    thresholds = await k.thresholds_for(ids)
+    runs = await k.latest_forecast_runs(ids, product_ids=OFFICIAL_FORECAST_PRODUCTS)
+    await k.forecast_values_for([run.id for run in runs.values()])
+    await k.stations_by_id([fp.station_id for fp in fps if fp.station_id])
+
+    stations = [fp.station_id for fp in fps if fp.station_id]
+    if not stations:
+        return
+    latest = await k.latest_observations(stations, ("stage", "flow"))
+    specs: list[tuple[str, str, datetime, datetime | None]] = []
+    for fp in fps:
+        if not fp.station_id:
+            continue
+        basis = observed_basis(threshold_set(thresholds.get(fp.id, {})))
+        primary = latest.get((fp.station_id, basis))
+        if primary is None:
+            continue  # `assess_point` reads neither of the two below without a primary value
+        specs.append((fp.station_id, other_variable(basis), primary.valid_time, primary.valid_time))
+        specs.append((fp.station_id, basis, k.as_of - TREND_WINDOW, k.as_of))
+    if specs:
+        await k.observations_for(specs)
+
+
 @dataclass
 class PointAssessment:
     item: RiverVisualizationState
@@ -175,8 +237,8 @@ async def assess_point(k: Knowledge, fp: ForecastPoint, basin: Basin | None, pro
             raw_artifact_id=str(latest.raw_artifact_id),
         )
         thresholds_model = Thresholds(basis=tset.basis, unit=tset.unit, datum=tset.datum, action=tset.action, minor=tset.minor, moderate=tset.moderate, major=tset.major, prov=key)
-    basis = tset.basis if tset else "stage"
-    other = "flow" if basis == "stage" else "stage"
+    basis = observed_basis(tset)
+    other = other_variable(basis)
 
     # 2. latest observation known at T (USGS), primary = threshold basis
     observed: ObservedRiverState | None = None
@@ -216,8 +278,8 @@ async def assess_point(k: Knowledge, fp: ForecastPoint, basin: Basin | None, pro
     trend_model: Trend | None = None
     trend = None
     if primary is not None and fp.station_id:
-        window = await k.observations(fp.station_id, basis, since=now - timedelta(hours=6))
-        trend = rate_of_rise([(o.valid_time, o.value) for o in window if o.value is not None], basis=basis, unit=primary.unit, end=now, window_h=6)
+        window = await k.observations(fp.station_id, basis, since=now - TREND_WINDOW)
+        trend = rate_of_rise([(o.valid_time, o.value) for o in window if o.value is not None], basis=basis, unit=primary.unit, end=now, window_h=TREND_WINDOW_H)
         tkey = f"cascade-trend-{lid}"
         refs[tkey] = ProvenanceRef(
             source_id=SRC_CASCADE,
@@ -226,10 +288,10 @@ async def assess_point(k: Knowledge, fp: ForecastPoint, basin: Basin | None, pro
             valid_time=primary.valid_time,
             retrieved_at=primary.retrieved_at,
             freshness=refs[obs_key].freshness,
-            label=f"Cascade rate of rise over 6 h from stored USGS observations{'' if trend.reason is None else ' — ' + trend.reason}",
+            label=f"Cascade rate of rise over {TREND_WINDOW_H} h from stored USGS observations{'' if trend.reason is None else ' — ' + trend.reason}",
         )
         rate_q = None if trend.rate is None else Quantity(value=round(trend.rate, 4), unit=trend.unit or f"{primary.unit}/h")
-        trend_model = Trend(prov=tkey, truth=TruthClass.CASCADE_DERIVED, window_h=6, rate=rate_q, direction=trend.direction)
+        trend_model = Trend(prov=tkey, truth=TruthClass.CASCADE_DERIVED, window_h=TREND_WINDOW_H, rate=rate_q, direction=trend.direction)
 
     # 4. headroom to the next official category
     headroom_model: Headroom | None = None
@@ -310,6 +372,7 @@ def _envelope(contract: str, items: list, refs: dict[str, ProvenanceRef], *, as_
 
 async def river_envelope(k: Knowledge, fps: list[ForecastPoint], *, generated_at: datetime) -> ContractEnvelope:
     products = await k.products()
+    await prefetch_points(k, fps)
     items, refs = [], {}
     for fp in fps:
         basin = await k.basin(fp.basin_id) if fp.basin_id else None
@@ -343,6 +406,38 @@ def _explained(surface: SurfaceState, *, name: str) -> SurfaceState:
     return surface.model_copy(update={"reason": SurfaceReason.unexplained(name)})
 
 
+def _outlet_lid(basin: Basin) -> str | None:
+    return basin.outlet_fp_id.split(":")[-1] if basin.outlet_fp_id else None
+
+
+async def _prefetch_basins(k: Knowledge, basins: Sequence[Basin]) -> None:
+    """Ask each of this envelope's questions once, for every basin, before the loop starts.
+
+    The loop below is unchanged and each surface still reads for itself; this only means that
+    by the time it runs, the answers are already in the request-scoped memo. Nine reads per
+    basin and eleven per forecast point — the same nine and eleven questions, asked of six
+    different ids — become one set-based statement each, eleven for the whole request however
+    many basins are in it.
+
+    Each surface owns its own prefetch, for the same reason each owns its own reads: the
+    features, methods, lookbacks and product ids a surface asks for are its business, and a
+    batch assembled out here would be a second declaration of them, free to drift.
+
+    The one thing assembled here rather than delegated is the station set, because two
+    different surfaces read stations and they are frequently the SAME stations: the outlet
+    gauges `assess_point` names and the susceptibility gauges, which are deliberately not
+    always the outlet. Reading their union first means one statement rather than two
+    overlapping ones — and the later per-surface calls simply find their rows already read.
+    """
+    outlets = await k.forecast_points_by_lid([lid for b in basins if (lid := _outlet_lid(b))])
+    points = list(outlets.values())
+    await k.stations_by_id([fp.station_id for fp in points if fp.station_id] + susceptibility.gauge_ids(basins))
+    await prefetch_points(k, points)
+    await agreement.prefetch(k, points)
+    await susceptibility.prefetch(k, basins)
+    await forcing.prefetch(k, basins)
+
+
 async def basin_envelope(k: Knowledge, basins: list[Basin], *, generated_at: datetime) -> ContractEnvelope:
     """The basin envelope: four surfaces per basin, each computed by its own method module.
 
@@ -355,6 +450,7 @@ async def basin_envelope(k: Knowledge, basins: list[Basin], *, generated_at: dat
     probability that may appear is a counted fraction of model members.
     """
     products = await k.products()
+    await _prefetch_basins(k, basins)
     items: list[BasinVisualizationState] = []
     refs: dict[str, ProvenanceRef] = {}
     for basin in basins:

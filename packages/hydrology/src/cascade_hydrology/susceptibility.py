@@ -26,6 +26,7 @@ Three doctrine constraints are load-bearing here and each has a test:
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass, field
 from datetime import timedelta
 
@@ -261,6 +262,70 @@ def _context_driver(
     )
 
 
+def gauge_ids(basins: Sequence[Basin]) -> list[str]:
+    """The stations this surface will read for ``basins``.
+
+    Exported because the gauge is deliberately NOT always the outlet (see the class docstring
+    on `Basin`), so an assembler batching station reads cannot work the set out for itself
+    without re-deciding something this module owns.
+    """
+    return [b.susceptibility_gauge_id for b in basins if b.susceptibility_gauge_id]
+
+
+#: The specs :func:`assess` reads on its main path, declared once so :func:`prefetch` cannot ask
+#: for a different family than `assess` goes on to read.
+READ_SPECS: tuple[tuple[str, str, None], ...] = (
+    (PERCENTILE_FEATURE, METHOD_ID, None),
+    (SWE_FEATURE, SWE_METHOD_ID, None),
+    (PRECIP_FEATURE, PRECIP_METHOD_ID, None),
+)
+
+
+async def prefetch(k: Knowledge, basins: Sequence[Basin]) -> None:
+    """Read every basin's susceptibility rows in ONE statement instead of three per basin.
+
+    Pure warm-up, in the sense :mod:`cascade_hydrology.forcing` documents: the same features
+    and methods :func:`assess` reads, asked once across all the scopes, landing in the
+    request-scoped memo. Not calling it leaves `assess` reading for itself.
+
+    Two scope kinds and two lookbacks go into one statement. The scopes are a union because
+    the percentile is keyed by the gauge STATION and the two SNOTEL context features by the
+    basin, and a cell that cannot exist (SWE at a station id) simply comes back empty. The
+    lookback is the wider of the two, and `assess` still asks for its own: `[T − 48 h, T]` lies
+    inside `[T − 7 d, T]`, so the percentile read is answered by narrowing this batch to
+    precisely the rows its own statement would have returned. :data:`MAX_DAILY_MEAN_AGE` stays
+    where it belongs — the staleness rule below, applied to the rows `assess` asked for — and
+    is not weakened by having been fetched alongside something with a longer memory.
+    """
+    gauges = gauge_ids(basins)
+    scopes = gauges + [b.id for b in basins]
+    if not scopes:
+        return
+    await k.latest_derived_features(READ_SPECS, scopes, lookback=max(MAX_DAILY_MEAN_AGE, CONTEXT_LOOKBACK))
+    # The climatology is read only where the percentile is missing or carries no number. WHICH
+    # gauges those are is now free to work out — the percentile read below costs no statement,
+    # it narrows what has just been read — so the fallback is batched for exactly the gauges
+    # that will take it, and a request where none does issues nothing here at all.
+    stale = [g for g in gauges if _needs_climatology(await _percentile_row(k, g))]
+    if stale:
+        await k.latest_derived_features(
+            [(CLIMATOLOGY_FEATURE, CLIMATOLOGY_METHOD_ID, None)], stale, lookback=CLIMATOLOGY_LOOKBACK
+        )
+
+
+async def _percentile_row(k: Knowledge, gauge_id: str) -> DerivedFeature | None:
+    return await k.latest_derived_feature(PERCENTILE_FEATURE, gauge_id, method_id=METHOD_ID, lookback=MAX_DAILY_MEAN_AGE)
+
+
+def _needs_climatology(row: DerivedFeature | None) -> bool:
+    """The condition under which :func:`assess` falls back to the climatology row.
+
+    One predicate, used by both `assess` and `prefetch`, so the batch cannot decide a different
+    set of gauges needs the fallback than the set that goes on to read it.
+    """
+    return row is None or row.percentile is None
+
+
 async def assess(k: Knowledge, basin: Basin, products: dict[str, SourceProduct]) -> SusceptibilityAssessment:
     """The susceptibility surface for one basin at the knowledge time `k.as_of`."""
     slug = basin.id.split(":")[-1]
@@ -277,10 +342,8 @@ async def assess(k: Knowledge, basin: Basin, products: dict[str, SourceProduct])
     if not gauge_id:
         return _unknown(NO_GAUGE_REASON, prov_key=prov_key, refs=refs, drivers=(soil_driver,))
 
-    row = await k.latest_derived_feature(
-        PERCENTILE_FEATURE, gauge_id, method_id=METHOD_ID, lookback=MAX_DAILY_MEAN_AGE,
-    )
-    if row is None or row.percentile is None:
+    row = await _percentile_row(k, gauge_id)
+    if _needs_climatology(row):
         climatology = await k.latest_derived_feature(
             CLIMATOLOGY_FEATURE, gauge_id, method_id=CLIMATOLOGY_METHOD_ID, lookback=CLIMATOLOGY_LOOKBACK,
         )
