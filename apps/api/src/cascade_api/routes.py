@@ -18,6 +18,7 @@ from cascade_core.registry import (
     JOBS,
     PRODUCT_USGS_IV,
     PRODUCT_WRITERS,
+    PRODUCTS,
 )
 from cascade_core.timeutils import parse_iso, utcnow
 from cascade_hydrology import agreement
@@ -410,6 +411,18 @@ async def version(request: Request) -> dict:
     }
 
 
+#: What `cascade_core.registry` DECLARES for each product's freshness bounds, so `/system/health`
+#: can notice when the seeded `source_product` row no longer matches. Built from the registry
+#: rather than restated, so the two cannot drift the way the row and the registry did.
+_DECLARED_PRODUCT_CONFIG: dict[str, dict[str, object]] = {
+    str(p["id"]): {
+        "expected_cadence_seconds": p.get("expected_cadence_seconds"),
+        "grace_seconds": p.get("grace_seconds"),
+    }
+    for p in PRODUCTS
+}
+
+
 @router.get("/system/health")
 async def health(session: Session, as_of: AsOf) -> dict:
     """Every registered job and every expected product, or the reason there is nothing to say.
@@ -464,6 +477,22 @@ async def health(session: Session, as_of: AsOf) -> dict:
             now=k.as_of,
         )
         writers = PRODUCT_WRITERS.get(pid, ())
+        # A seeded row that disagrees with the registry means every freshness verdict for this
+        # product is computed against a threshold NOBODY DECLARED. Seeding runs on demand, so a
+        # registry edit reaches production only if someone re-seeds — and until 2026-08-27
+        # nothing detected that they had not. Measured that day: `product:nwm-mr-via-nwps` was
+        # raised 28800 -> 43200 s of grace in 361a8dd and production still held 28800, so the
+        # endpoint had been reporting `stale` against a bound the codebase no longer declared.
+        declared = _DECLARED_PRODUCT_CONFIG.get(pid)
+        drift = None
+        if p is not None and declared is not None:
+            differs = {
+                name: (getattr(p, name), want)
+                for name, want in declared.items()
+                if getattr(p, name) != want
+            }
+            if differs:
+                drift = ", ".join(f"{k}: database {a} != registry {b}" for k, (a, b) in sorted(differs.items()))
         if p is None:
             reason = "registered in cascade_core.registry but not seeded in this database (no source_product row)"
         elif a is None:
@@ -476,6 +505,8 @@ async def health(session: Session, as_of: AsOf) -> dict:
             reason = None
         if reason is not None:
             reasons.append(f"{pid}: {reason}")
+        if drift is not None:
+            reasons.append(f"{pid}: seeded configuration has drifted from the registry — {drift}; re-seed")
         freshness[pid] = {
             "age_seconds": f.age_seconds,
             "state": f.state.value,
@@ -483,9 +514,16 @@ async def health(session: Session, as_of: AsOf) -> dict:
             "anchor": a.kind if a else None,
             "writers": list(writers),
             "reason": reason,
+            "config_drift": drift,
         }
 
-    alarming = any(j["state"] in ALARMING_JOB_STATES for j in jobs.values()) or any(f["state"] in ALARMING_FRESHNESS_STATES for f in freshness.values())
+    alarming = (
+        any(j["state"] in ALARMING_JOB_STATES for j in jobs.values())
+        or any(f["state"] in ALARMING_FRESHNESS_STATES for f in freshness.values())
+        # Drift is evidence of failure, not absence of evidence: the platform is measuring
+        # freshness against a rule its own registry does not state.
+        or any(f["config_drift"] is not None for f in freshness.values())
+    )
     unknown = any(j["state"] == "pending" for j in jobs.values()) or any(f["state"] in ("missing", "unknown") for f in freshness.values())
     status = "degraded" if alarming else ("unknown" if unknown else "ok")
     return {"status": status, "as_of": k.as_of, "reasons": reasons, "jobs": jobs, "providers": providers, "freshness": freshness}

@@ -76,7 +76,10 @@ def test_tasks_registered_with_locks_retry_and_cron() -> None:
         "nbm.build_grid_masks": "30 7 * * *",
         "nbm.fetch_qmd": "40 7,19 * * *",  # main cycles only, ~20 min after each lands
         "nbm.fetch_core_snowlvl": "50 */6 * * *",  # after the ~44 min landing, not 10 min before it
-        "nwm.fetch_reach_medium_range": "45 0,6,12,18 * * *",  # ~15 min after the ~6.5 h-late cycle lands
+        # +8.75 h. MEASURED 2026-08-27 against the NWPS /reaches endpoint this job reads: the
+        # 00Z cycle was ABSENT at +8.23 h and PRESENT at +8.48 h. The previous +6.75 h came from
+        # DATA_SOURCES H6's "MR ~6.5 h", which times the S3 NetCDF channel, not this one.
+        "nwm.fetch_reach_medium_range": "45 2,8,14,20 * * *",
         "usgs.build_climatology": "30 4 1 1 *",
         "usgs.fetch_daily_percentile": "10 */24 * * *",
         "awdb.fetch_snotel_context": "10 */24 * * *",

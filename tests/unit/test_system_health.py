@@ -359,3 +359,49 @@ async def test_a_threshold_that_has_not_changed_is_current_not_stale(tmp_path) -
     # the recent CHECK is what freshness reads, while the value's own age is still 200 days
     assert anchor.retrieved_at is not None and (now - anchor.retrieved_at) < timedelta(hours=1)
     assert "raw_artifact" in anchor.kind and "threshold" in anchor.kind
+
+
+async def test_a_seeded_product_row_that_drifts_from_the_registry_is_reported(db) -> None:
+    """A registry edit that never reached the database is a SILENT change to what "stale" means.
+
+    Measured 2026-08-27: `product:nwm-mr-via-nwps` had its grace raised 28800 -> 43200 s in
+    commit 361a8dd, and production still held 28800 — so `/system/health` had been reporting
+    `stale` against a bound the codebase no longer declared, and nothing anywhere noticed.
+    Seeding runs on demand, so this cannot be fixed by seeding harder; it has to be observable.
+    """
+    from sqlalchemy import select
+
+    from cascade_core.models import SourceProduct
+
+    engine, factory = db
+    await add_runs(factory, succeeded(ALL_JOB_NAMES, NOW - timedelta(minutes=1)))
+    async with factory() as session:
+        for i, pid in enumerate(EXPECTED_PRODUCTS):
+            if pid in METADATA_ONLY_PRODUCTS:
+                session.add(RawArtifact(sha256=f"{i:064d}", object_key=f"test/{i}", product_id=pid, fetched_at=NOW - timedelta(minutes=2), request_url="https://example.invalid/health", bytes=1, http_status=200, content_type="application/json", retention_class=None))
+                continue
+            session.add(DerivedFeature(feature=f"health_probe_{i}", scope_kind="basin", scope_id="basin:skagit", window=None, valid_time=NOW - timedelta(minutes=2), issued_at=NOW - timedelta(minutes=2), computed_at=NOW - timedelta(minutes=2), available_at=NOW - timedelta(minutes=2), method_id="method:test-probe@1.0.0", product_id=pid, value=1.0, unit="pct", confidence_label="moderate"))
+        await session.commit()
+
+    # baseline: a database seeded from the registry reports no drift anywhere
+    clean = await get_health(engine)
+    assert clean["status"] == "ok", clean["reasons"]
+    assert all(f["config_drift"] is None for f in clean["freshness"].values())
+
+    # now move ONE seeded row away from what the registry declares
+    target = "product:nwm-mr-via-nwps"
+    async with factory() as session:
+        row = (await session.execute(select(SourceProduct).where(SourceProduct.id == target))).scalar_one()
+        original = row.grace_seconds
+        row.grace_seconds = original + 14400
+        await session.commit()
+
+    drifted = await get_health(engine)
+    assert drifted["freshness"][target]["config_drift"] is not None
+    assert "grace_seconds" in drifted["freshness"][target]["config_drift"]
+    assert str(original) in drifted["freshness"][target]["config_drift"], "the registry's value must be named"
+    assert any("drifted from the registry" in r for r in drifted["reasons"])
+    # evidence of failure, not absence of evidence
+    assert drifted["status"] == "degraded"
+    # and it does not smear: every other product still reads clean
+    assert [pid for pid, f in drifted["freshness"].items() if f["config_drift"] is not None] == [target]

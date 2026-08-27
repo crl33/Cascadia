@@ -85,7 +85,14 @@ JOBS: tuple[Job, ...] = (
     # --- P3 agreement: the independent model's ensemble at each seeded reach -------------
     # NWM medium range publishes ~6 h 30 m after its cycle (DATA_SOURCES, measured), so the
     # useful slots are 45 min past the following synoptic hour, not the cycle hour itself.
-    Job(nwm_jobs.JOB_NAME, nwm_jobs.CADENCE_SECONDS, nwm_jobs.run_fetch_medium_range, cron="45 0,6,12,18 * * *"),
+    # MEASURED against the NWPS /reaches endpoint this job actually reads, 2026-08-27: the 00Z
+    # cycle was ABSENT at +8.23 h and PRESENT at +8.48 h (20 polls, 15 min apart). The previous
+    # cron fired at +6.75 h, taken from DATA_SOURCES H6's "MR ~6.5 h" — which is the S3 NetCDF
+    # latency for a DIFFERENT channel. So the job could only ever re-fetch the PREVIOUS cycle:
+    # it succeeded, stored nothing (idempotent), and the cycle was first stored at the NEXT cron
+    # instead. The production archive shows exactly that, 12.18-12.32 h across seven cycles.
+    # :45 past +8 h gives ~15 min of margin over the measured appearance.
+    Job(nwm_jobs.JOB_NAME, nwm_jobs.CADENCE_SECONDS, nwm_jobs.run_fetch_medium_range, cron="45 2,8,14,20 * * *"),
     # --- P3 susceptibility: the ladder, then today's rank inside it, then SNOTEL context --
     Job(usgs_stats_jobs.BUILD_JOB_NAME, usgs_stats_jobs.BUILD_CADENCE_SECONDS, usgs_stats_jobs.run_build_climatology),
     Job(usgs_stats_jobs.DAILY_JOB_NAME, usgs_stats_jobs.DAILY_CADENCE_SECONDS, usgs_stats_jobs.run_fetch_daily_percentile),

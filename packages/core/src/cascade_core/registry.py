@@ -86,9 +86,12 @@ PRODUCTS: tuple[dict[str, object], ...] = (
     {"id": PRODUCT_NBM_CORE, "source_id": SRC_NBM, "label": "NBM v5.0 core, snow-level percentiles (WA subset via NOMADS filter_blend.pl)", "variables": ["snow_level"], "expected_cadence_seconds": 21600, "grace_seconds": 28800},
     # PT6H / PT8H: medium range runs 00/06/12/18Z. Member count is read from the payload,
     # never assumed (design §7 item 4).
-    # Grace covers the ~6.5 h publication latency (DATA_SOURCES, measured): the freshest
-    # cycle obtainable is already that old, so an 8 h grace made "stale" unreachable and
-    # /system/health read degraded on a healthy system (production, 2026-08-26).
+    # Grace covers the publication latency: the freshest cycle obtainable is already that old,
+    # so too tight a grace makes "stale" unreachable and /system/health reads degraded on a
+    # healthy system. MEASURED 2026-08-27 against NWPS /reaches (the channel this product is
+    # fetched from, NOT the S3 NetCDF channel DATA_SOURCES H6 times at ~6.5 h): the 00Z cycle
+    # was absent at +8.23 h and present at +8.48 h. With the cron at +8.75 h the held cycle
+    # reaches 14.75 h before the next run, so 6 h cadence + 12 h grace = 18 h covers it.
     {"id": PRODUCT_NWM_MR, "source_id": SRC_NWM, "label": "NWM v3.1 medium-range ensemble by reach via NWPS /reaches (members, never blended with the official forecast)", "variables": ["flow"], "expected_cadence_seconds": 21600, "grace_seconds": 43200},
     # P1D / PT36H (DATA_SOURCES H2). A daily mean older than 48 h makes the susceptibility
     # surface UNKNOWN rather than falling back to the instantaneous value (design §2.2).
