@@ -106,9 +106,36 @@ def read_time_values(body: Any) -> dict[str, Any]:
     return found
 
 
+#: Significant digits floats are quantised to before the body is serialised for byte comparison.
+#: 12 absorbs the last-ULP differences between architectures (the baseline is captured on arm64,
+#: CI runs x86_64, and the basin surfaces are sums over ~1,500 grid cells) while staying about
+#: five orders of magnitude tighter than any hydrologically meaningful change. `diff()` applies
+#: the same reasoning as a relative tolerance; this is the same rule expressed for serialisation.
+CANONICAL_FLOAT_SIGNIFICANT_DIGITS = 12
+
+
+def _quantise(value: Any) -> Any:
+    """Round floats to a fixed significant-figure count so the canonical form is portable."""
+    if isinstance(value, bool) or not isinstance(value, float):
+        if isinstance(value, dict):
+            return {k: _quantise(v) for k, v in value.items()}
+        if isinstance(value, list):
+            return [_quantise(v) for v in value]
+        return value
+    if value == 0 or not math.isfinite(value):
+        return value
+    return float(f"%.{CANONICAL_FLOAT_SIGNIFICANT_DIGITS}g" % value)
+
+
 def canonical_json(body: Any, mode: Mode = STRICT) -> str:
-    """The normalised body as one canonical string — this is what gets diffed byte for byte."""
-    return json.dumps(normalize(body, mode), sort_keys=True, ensure_ascii=False, indent=2) + "\n"
+    """The normalised body as one canonical string, with floats quantised so it is portable.
+
+    Byte equality on raw IEEE doubles is not a property this test can ask for: it fails between
+    architectures for reasons that have nothing to do with the answer (see
+    `CANONICAL_FLOAT_SIGNIFICANT_DIGITS`). Structure, keys, ordering and every non-float value
+    are still compared exactly.
+    """
+    return json.dumps(_quantise(normalize(body, mode)), sort_keys=True, ensure_ascii=False, indent=2) + "\n"
 
 
 def diff(baseline: Any, candidate: Any, mode: Mode = STRICT) -> list[str]:

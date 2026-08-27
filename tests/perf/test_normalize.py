@@ -117,3 +117,23 @@ def test_float_comparison_tolerates_ulps_but_not_real_changes() -> None:
     # zero-adjacent values use the absolute floor rather than a meaningless relative one
     assert diff({"v": 0.0}, {"v": 1e-13}) == []
     assert diff({"v": 0.0}, {"v": 1e-6}) != []
+
+
+def test_canonical_json_is_portable_across_architectures_but_still_strict() -> None:
+    """The canonical form must not encode this machine's floating-point last digits.
+
+    The first fix made `diff()` tolerant and left this second assertion bit-exact, so CI stayed
+    red for the same reason with a different traceback. Both comparisons have to answer the same
+    question or the pair is incoherent.
+    """
+    from tests.perf.normalize import canonical_json
+
+    base = {"v": 3186.777804321641, "p": 0.021569362835888197}
+    ulp = {"v": 3186.777804321643, "p": 0.02156936283588834}
+    real = {"v": 3186.7781224, "p": 0.021569362835888197}
+
+    assert canonical_json(base) == canonical_json(ulp)
+    assert canonical_json(base) != canonical_json(real)
+    # structure and non-float values stay exact
+    assert canonical_json({"a": 1, "b": "x"}) != canonical_json({"a": 1, "b": "y"})
+    assert canonical_json({"a": [1, 2]}) != canonical_json({"a": [2, 1]})
