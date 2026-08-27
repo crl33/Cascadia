@@ -30,31 +30,60 @@ from cascade_hydrology.tail_candidates import (
     water_year,
 )
 
-# The Sauk (12189500) 12-11 day-of-year window, approved daily means before WY2026:
-# n = 490 over 98 water years, WY1912-WY2025. Ladder p05..p95 and the top of the sample.
-SAUK_LADDER = {5: 1030.0, 10: 1240.0, 25: 1930.0, 50: 3170.0, 75: 5715.0, 90: 9282.0, 95: 12550.0}
-SAUK_TOP = [
-    (date(1946, 12, 11), 17300.0),
-    (date(1977, 12, 11), 22300.0),
-    (date(2004, 12, 10), 23700.0),
-    (date(1956, 12, 10), 24000.0),
-    (date(2010, 12, 12), 28700.0),
-    (date(2015, 12, 9), 34100.0),
-    (date(2004, 12, 11), 37400.0),
+# The Sauk (12189500), day-of-year key 12-11, approved daily means before WY2026: n = 490 over
+# 98 water years, WY1912-WY2025. This is the sample the production ladder for that key was built
+# from, and the stored ladder it produces.
+SAUK_LADDER = {5: 1508.0, 10: 1819.0, 25: 2480.0, 50: 3615.0, 75: 5677.5, 90: 8831.0, 95: 12550.0}
+# The real top 30 order statistics of that sample, with the days they fell on. Everything this
+# file asserts about the tail — the p95 reference, p98, p99, the ranks, the water-year support
+# counts, the record maximum — is decided inside these 30 values.
+SAUK_TOP_30 = [
+    (date(1990, 12, 10), 10900.0), (date(1993, 12, 10), 11000.0), (date(2014, 12, 10), 11200.0),
+    (date(2014, 12, 11), 11200.0), (date(1956, 12, 9), 12000.0), (date(1956, 12, 11), 13000.0),
+    (date(1995, 12, 12), 13300.0), (date(2004, 12, 12), 13600.0), (date(1988, 12, 13), 13600.0),
+    (date(1987, 12, 10), 13700.0), (date(1933, 12, 10), 13800.0), (date(1955, 12, 12), 14200.0),
+    (date(1933, 12, 13), 14300.0), (date(2015, 12, 10), 15500.0), (date(1995, 12, 13), 15900.0),
+    (date(1977, 12, 13), 16200.0), (date(1933, 12, 11), 16600.0), (date(1995, 12, 11), 16900.0),
+    (date(1946, 12, 11), 17300.0), (date(1977, 12, 12), 18100.0), (date(1933, 12, 12), 20500.0),
+    (date(1966, 12, 13), 21100.0), (date(1998, 12, 13), 21200.0), (date(1977, 12, 11), 22300.0),
+    (date(2004, 12, 10), 23700.0), (date(2010, 12, 13), 24000.0), (date(1956, 12, 10), 24000.0),
+    (date(2010, 12, 12), 28700.0), (date(2015, 12, 9), 34100.0), (date(2004, 12, 11), 37400.0),
 ]
 # Event Zero, as the production surface measured it (tier0-measured-basis-2026-08-26 §3).
 SKAGIT_09, SKAGIT_11 = 24976.0, 72440.0
 
 
-def sauk_sample(extra: list[tuple[date, float]] | None = None) -> WindowSample:
-    """A stand-in window sample whose ORDER STATISTICS AT THE TOP are the Sauk's real ones.
+def _filler_water_years() -> list[int]:
+    """The 98 water years the real window sample spans, WY1912-WY2025, top-30 years included."""
+    top = {water_year(d) for d, _ in SAUK_TOP_30}
+    rest = [y for y in range(1912, 2026) if y not in top]
+    return sorted(top | set(rest[: 98 - len(top) - 1]) | {2025})
 
-    The 483 values below the top seven are filler at a level that cannot disturb any tail
-    statement; every assertion in this file is about the top of the sample or about the p95
-    reference, both of which are the measured values.
+
+def sauk_sample(extra: list[tuple[date, float]] | None = None) -> WindowSample:
+    """The Sauk's 12-11 window: the real top 30, plus 460 filler values below all of them.
+
+    The filler is a monotone ramp from 1,000 to 10,777 cfs, laid on December days across the 98
+    water years the real sample spans. It cannot touch any statement this file makes: every one of
+    them is decided at or above the 460th order statistic, where the values are the measured ones.
+    The lower ladder points are never taken from this sample — the tests that need them use
+    :data:`SAUK_LADDER`, which is the stored ladder itself.
     """
-    filler = [(date(1912 + i % 98, 12, 11 - i % 3), 500.0 + i) for i in range(483)]
-    return WindowSample.from_pairs(filler + SAUK_TOP + (extra or []), key="12-11", window_days=2)
+    years = _filler_water_years()
+    filler = [
+        (date(years[i % len(years)] - 1, 12, 9 + i % 3), 1000.0 + i * 21.3) for i in range(460)
+    ]
+    return WindowSample.from_pairs(filler + SAUK_TOP_30 + (extra or []), key="12-11", window_days=2)
+
+
+def test_the_fixture_is_the_real_window_where_it_matters() -> None:
+    sample = sauk_sample()
+    assert (sample.n, sample.n_water_years) == (490, 98)
+    assert (sample.period_start, sample.period_end) == (1912, 2025)
+    assert sample.quantile(95) == pytest.approx(12550.0)
+    assert sample.quantile(98) == pytest.approx(18628.0)
+    assert sample.quantile(99) == pytest.approx(23733.0)
+    assert sample.maximum == 37400.0 and sample.maximum_day == date(2004, 12, 11)
 
 
 def test_water_year_boundary() -> None:
@@ -98,12 +127,14 @@ def test_the_rank_is_exact_censored_at_one_and_names_the_record_it_beat() -> Non
     sample = sauk_sample()
     low = candidate_a_prime_window_rank(SKAGIT_09, sample)
     high = candidate_a_prime_window_rank(SKAGIT_11, sample)
-    assert (low.rank, low.of) == (3, 491) and not low.exceeds_record
+    # 4th, not the research document's 3rd: the surface ranks each day against its OWN key, and
+    # 24,976 cfs fell on 12-09, whose window is a different (slightly lower) sample.
+    assert (low.rank, low.of) == (4, 491) and not low.exceeds_record
     assert (high.rank, high.of) == (1, 491) and high.exceeds_record
     assert high.quality == (EXCEEDS_WINDOW_RECORD,)
     assert high.previous_max == 37400.0 and high.previous_max_day == date(2004, 12, 11)
     assert "previous maximum 37,400 on 2004-12-11" in high.label
-    assert "3rd largest of 491" in low.label
+    assert "4th largest of 491" in low.label
     # Censored at 1: twice the flow is the same rank. This is why it cannot carry the velocity.
     assert candidate_a_prime_window_rank(SKAGIT_11 * 2, sample).rank == 1
 
@@ -113,7 +144,7 @@ def test_the_seasonal_multiple_is_unbounded_and_carries_the_crest() -> None:
     sample = sauk_sample()
     low = candidate_b_seasonal_multiple(SKAGIT_09, sample)
     high = candidate_b_seasonal_multiple(SKAGIT_11, sample)
-    assert low.reference_flow == pytest.approx(12550.0, abs=1.0)
+    assert low.reference_flow == pytest.approx(12550.0)
     assert low.multiple == pytest.approx(1.99, abs=0.01)
     assert high.multiple == pytest.approx(5.77, abs=0.01)
     assert high.multiple / low.multiple == pytest.approx(SKAGIT_11 / SKAGIT_09, rel=1e-9)
@@ -220,7 +251,7 @@ def test_the_velocity_is_computable_when_the_level_is_not() -> None:
 def test_growth_rank_describes_speed_without_drawing_a_band() -> None:
     history = [1.0 + i / 100 for i in range(100)]
     rank, n = growth_rank(1.90, history)
-    assert (rank, n) == (10, 100)
+    assert (rank, n) == (10, 100)  # 1.91 .. 1.99 are larger; ties share a rank
     assert growth_rank(99.0, history) == (1, 100)
 
 

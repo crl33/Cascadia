@@ -326,6 +326,16 @@ or open on a question no shipped surface consults.
   `method:usgs-published-doy-stats@1.0.0` is a second vintage, never averaged (`DATA_SOURCES.md` H9).
   The proposed successor `method:streamflow-doy-climatology@2.0.0` (method-spec M0.1) depends on
   `method:rating-epoch@1.0.0` and a `homogeneity_epochs` seed block **that does not exist**.
+- **claim D (MEASURED 2026-08-26, and it is a second question hiding behind the first)** — Ladder
+  *vintage* is not only "how many years"; it is also **whether the ladder contains the event it is
+  ranking**. The archived record behind the deployed ladders holds **approved December 2025 daily
+  means at five of the six gauges**, so each event value is ranked against a distribution that
+  includes it. Excluding water year 2026 moves p95 by **+25.7 %** at 12100490 (n=85, record from
+  2009), +8.6 % at the Sauk, +6.2 % at the Green, +5.7 % at the Nooksack. The bias **understates**
+  severity, so it does not flatter the platform — but it is look-ahead, and it means **no Event Zero
+  hindcast is valid against the currently stored ladders**. This does not resolve claims A–C; it
+  adds a constraint that holds whichever of them wins.
+  *Source: `research/tail-representation-2026-08-26.md` §5, computed from the R2-archived CSVs.*
 - **operationally blocking?** — **YES.** This is the reference distribution every susceptibility number
   for every seeded Puget Sound basin is judged against, and the answer moves it: **12.8–17.4 %** of daily
   observations change susceptibility band from ladder length alone; the estimate carries **±5.5–6.2

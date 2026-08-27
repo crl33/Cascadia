@@ -643,5 +643,4 @@ def growth_rank(growth: float, history: list[float]) -> tuple[int, int]:
     curve over a multi-event catalogue at all six basins (milestone brief §18). Until that exists,
     the rank is published and no band is drawn on it.
     """
-    ordered = sorted(history, reverse=True)
-    return (sum(1 for g in ordered if g >= growth) + 1, len(ordered))
+    return (sum(1 for g in history if g > growth) + 1, len(history))

@@ -3,8 +3,12 @@
 `trend.py` ships `rate = (pts[-1] - pts[0]) / span_h`, an endpoint difference that
 `HYDROLOGY.md` §9 already forbids in words ("trend never comes from the two endpoints of a
 response window"). This module holds the candidates that were measured against real hydrographs
-in `docs/research/trend-estimator-selection-2026-08-26.md`, plus the metadata envelope and the
-tidal guard the same document specifies.
+in **two independent selection notes** — `docs/research/trend-estimator-selection-2026-08-26.md`
+(production Neon, 14,700 December windows) and
+`docs/research/trend-estimator-selection-2026-08-27.md` (a local two-season scratch ingest, plus
+the tidal-guard design and the metadata specification below) — which were produced without
+reading each other's numbers and **chose the same estimator**. Cited below as "the 08-26 note"
+and "the 08-27 note".
 
 **Nothing here is called by `assemble.py`.** This phase decides; the next phase implements.
 `trend.py` is untouched so the A/B in the research note compares the shipped code against the
@@ -20,7 +24,10 @@ What is here
   per-station marker that fails **closed** when the marker is absent;
 - `TrendEstimate` — the full metadata envelope (method id + version, window, sample count,
   actual span, slope, slope unit, valid time, quality condition, input provenance);
-- `estimate_trend` — the candidate assembly, showing how the pieces compose.
+- `estimate_trend` — the candidate assembly, showing how the pieces compose. Its `estimator`
+  default is `repeated_median`, the chosen candidate; `theil_sen` is the runner-up and the
+  fallback if the O(n^2) cost ever becomes real; `ols` and `endpoint` are kept because both
+  notes measure them as counter-examples, not because either is a candidate.
 
 Doctrine held here
 ------------------
@@ -143,9 +150,17 @@ def repeated_median_slope(xs: list[float], ys: list[float]) -> float:
     holding its last reading), not an isolated spike, and a run longer than ~29 % of the
     window defeats Theil-Sen.
 
-    MEASURED, and this is the estimator the selection note chose: on a 40 % held run it errs by
-    0.14 STEADY epsilons against Theil-Sen's 0.24, and on a corrupted endpoint reading by 0.00
-    against the shipped endpoint difference's 45.69 (selection note §3).
+    MEASURED, and this is the estimator BOTH selection notes chose, independently.
+    08-26 note §3: on a 40 % held run it errs by 0.14 STEADY epsilons against Theil-Sen's 0.24,
+    and on a corrupted endpoint reading by 0.00 against the shipped endpoint difference's 45.69.
+    08-27 note §3 B2: best median error on a held run in 8 of 8 configurations (December 40 %
+    tail: 0.233 epsilons against Theil-Sen's 0.297 and the endpoint difference's 0.315), and
+    §3 B3: of 3,972 real Event Zero windows, one observation could flip the reported direction
+    in 2.52 % against the shipped estimator's 6.39 %.
+
+    It loses exactly one column, and the loss is inert: Theil-Sen reverses the *sign* of the
+    rate less often (08-27 §3 B3), but every such reversal lands on a window already reported
+    STEADY, where the sign is not published.
     """
     n = len(xs)
     inner: list[float] = []
@@ -224,9 +239,12 @@ def tidal_refusal(tidal_class: TidalClass | None) -> TrendRefusal | None:
     - `TIDAL`  -> refuse, `TIDAL_CONTAMINATION`. Rate of rise at a tidal gauge is not noisy,
       it is meaningless: a pure M2 tide of amplitude A injects a false endpoint rate of
       A/3 to A/2 ft/h at any window shorter than half a tidal cycle, and no robust estimator
-      removes it (verification §5.1, and §5 of the selection note injects a 1.0 ft M2 tide onto a real
-      record: every candidate reports 4.6-6.5x the STEADY epsilon, and the most robust one is
-      the WORST of them).
+      removes it. Verification §5.1; 08-26 note §5 injects a 1.0 ft M2 tide onto a real record
+      and every candidate reports 4.6-6.5x the STEADY epsilon; 08-27 note §5.2 sweeps a pure
+      2.0 ft M2 sinusoid over a full tidal cycle and the peak false rate RISES with robustness
+      (endpoint 0.666, OLS 0.781, Theil-Sen 0.797, repeated median 0.845 ft/h against a
+      0.05 ft/h epsilon). Both agree: the most robust candidate is the WORST of them on a tide,
+      because a tide is not a minority of discrepant points, it is the whole signal.
     - `None` / `UNVERIFIED` -> refuse, `TIDAL_CLASS_UNVERIFIED`. This is the property the
       brief asks for: a future tidally-affected station **cannot silently bypass** the guard,
       because there is no code path in which an unmarked station is treated as fluvial.
@@ -309,7 +327,9 @@ class TrendEstimate:
 NAMED_WINDOWS_H = (1.0, 3.0, 6.0)
 
 #: Minimum samples. Three, not two: with two points every estimator in this module collapses
-#: to the endpoint difference, which is the defect being removed.
+#: to the endpoint difference, which is the defect being removed. Measured (08-27 note §3 D):
+#: at 85 % decimation, 1,045 of 6,720 draws landed on exactly two points. This is not a
+#: calibration — it is the arity below which the choice of estimator means nothing.
 MIN_SAMPLES = 3
 
 #: How wide the pair-slope IQR may be, as a multiple of |slope|, before the estimate is marked
@@ -329,13 +349,22 @@ def estimate_trend(
     window_h: float = 6.0,
     max_gap_h: float = 2.0,
     min_span_fraction: float = 0.5,
-    estimator: str = "theil_sen",
+    estimator: str = "repeated_median",
     expected_cadence_h: float = 0.25,
 ) -> TrendEstimate:
     """Candidate assembly. Same refusal ladder as `trend.py`, plus the tidal guard first.
 
     The tidal guard runs **before** anything is computed: a refusal that depends on the data
-    would be a guard the data could talk its way out of.
+    would be a guard the data could talk its way out of — and at SNAW1 tidal transmission
+    collapses 3x during a flood, so a data-driven guard would be weakest exactly when it
+    mattered most.
+
+    `estimator` defaults to the chosen candidate. Cost, measured end-to-end at the live case
+    (n = 25, a 6 h window at 15-minute cadence; 08-27 note §4.5): 183.9 us per call against the
+    shipped `rate_of_rise`'s 18.2 us, so 1.1 ms for all six seeded forecast points — against a
+    `/viz/basins` budget dominated by 13 SQL round trips. Roughly 100 us of that is the sort,
+    dedup and gap ladder rather than the estimator. At n = 97 (a 24 h window) it is 2.4 ms per
+    point: if a 24 h trend is ever wanted, measure it again before computing it at read time.
     """
     empty = dict(
         method_id=METHOD_ID,

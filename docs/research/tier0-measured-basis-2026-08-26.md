@@ -88,6 +88,16 @@ reached p90.
 
 ## 3. The p95 collapse, and why it also kills the derivative (FACT)
 
+> **CORRECTED 2026-08-26, later the same day.** The ratios in the table below (2.9–3.7×) are
+> **superseded** by `tail-representation-2026-08-26.md` §4, which measures 3.83–5.72×. Two inputs
+> here were wrong: the daily means were averaged over a **UTC** day rather than the station's
+> **local** day (15 % high on the Sauk), and each value was ranked against a single first-clamp
+> p95 rather than its own day's ladder. The qualitative findings of this section — that the
+> percentile collapses, and that the collapse zeroes the derivative through the crest — are
+> **confirmed** by the corrected measurement, which found the day-over-day percentile change to
+> be identically zero at every gauge on every clamped day. Only the magnitudes change, and they
+> change *upward*.
+
 The stored ladders end at `p95`. `susceptibility.py` ranks a value above that as exactly `95.0`.
 Everything above the p95 flow is therefore one indistinguishable state:
 
