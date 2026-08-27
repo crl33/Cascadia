@@ -1,4 +1,4 @@
-# NEXT STEPS — what is done, what is not, and the order of work (2026-08-24)
+# NEXT STEPS — what is done, what is not, and the order of work (2026-08-27)
 
 A plan, not a roadmap: [ROADMAP.md](ROADMAP.md) and [CINEMATIC_ROADMAP.md](CINEMATIC_ROADMAP.md)
 define the phases; this file says where we actually are and what to do next, in order. Update it
@@ -11,7 +11,7 @@ when a milestone closes; delete lines that stop being true.
 | Area | State |
 |---|---|
 | Orientation | `V2_ASSESSMENT.md`, `V1_AUDIT.md` (V1 preserved read-only under `v1/`) |
-| Doctrine & architecture | `HYDROLOGY`, `DATA_DOCTRINE`, `DOMAIN_MODEL`, `ARCHITECTURE`, `TESTING`, 7 cinematic docs, ADR-0001…0013 (all accepted) |
+| Doctrine & architecture | `HYDROLOGY`, `DATA_DOCTRINE`, `DOMAIN_MODEL`, `ARCHITECTURE`, `TESTING`, 7 cinematic docs, ADR-0001…0014 (all accepted; 0014 added 2026-08-24, per-column units/datum on forecast runs) |
 | Data inventory | `DATA_SOURCES.md` — 75 providers; `docs/research/` evidence for 9 categories (3 independently verified, 6 pending) |
 | Event Zero | `EVENT_ZERO.md` — 25 verified crest rows, 115 timeline rows with issuance-time `available_at` |
 | Contracts | `packages/contracts` **1.3.0** (P3 added `SurfaceState.value` + `SurfaceState.spread`; Tier 0 added `HydrologicState`, `SeasonalMultiple`, `StateChange` and `BandBoundary`, all additively and all OUTSIDE `SurfaceState` so no client can fuse them into a score) — Pydantic + JSON Schema + fixtures + generated TypeScript; contract tests green |
@@ -19,6 +19,9 @@ when a milestone closes; delete lines that stop being true.
 | Geography seed | six WBD-derived basins at two display LODs; six stations / forecast points; SNOTEL mappings verified |
 | Deployment (added 2026-08-22 by a second tool) | web client on Cloudflare Pages (`cascadia-c7y.pages.dev`) behind a Worker gateway at `cascadia.papsukkal.com`; production build points at a **same-origin API** |
 | Working conventions | ICM routing (`CLAUDE.md`, `CONTEXT.md` per folder), skills `icm-architect`, `vibesec` (+ addendum), `react-quality` |
+| Production (2026-08-24 →) | Railway backend + Neon PostgreSQL 18/PostGIS + Cloudflare R2 behind the Pages gateway at `cascadia.papsukkal.com`; `/system/version` stamps the deployed revision; Alembic at `0003` |
+| Live intelligence (P3, 2026-08-25) | forcing (NBM v5), susceptibility (platform-built USGS day-of-year climatology), agreement (NWM medium-range ensemble via NWPS `/reaches`) |
+| Tier 0 (2026-08-27) | `rate-of-rise@2.0.0` (Siegel repeated median + fail-closed `station.tidal_class`), `streamflow-tail-state@0.1.0`, `streamflow-state-change@0.1.0`, `streamflow-record-context@1.0.0`, boundary condition; Event Zero A/B in `research/event-zero-ab-2026-08-27.md` |
 
 ### Not done (gaps, ranked by how much they block)
 
@@ -26,20 +29,31 @@ when a milestone closes; delete lines that stop being true.
    does not exist at `cascadia.papsukkal.com`; the deployed page can only show the non-WebGL /
    degraded states. The spike backend is SQLite + an in-process asyncio scheduler, not deployable
    as-is.
-2. **Phase 0 infrastructure is unbuilt:** PostGIS + Alembic schema, Procrastinate worker/queue,
-   object storage (SeaweedFS dev / R2 prod), observability, CI, `import-linter` boundaries.
-3. **USGS ingestion is on the legacy IV endpoint** (decommission Q1 2027, possible degradation
-   from August 2026); the OGC API adapter with a registered key is not written.
-4. **No continuous history yet.** Nothing is ingesting around the clock; the 30-day freshness SLO
-   and replay golden tests of Phase 1 cannot start until a worker runs somewhere.
+2. ~~Phase 0 infrastructure is unbuilt~~ **largely closed 2026-08-24/27** — PostGIS + Alembic
+   (3 revisions), Procrastinate worker/queue, R2 via `obstore`, CI (5 jobs incl. a
+   PostgreSQL-marked suite), `import-linter` (5 contracts) all exist. **Still genuinely missing,
+   verified 2026-08-27:** no `/metrics` endpoint, no `ingest_writer` / `api_reader` / `migrator`
+   database roles, and no mypy in CI. Freshness-per-product and a provider health board DO exist,
+   in `/system/health`.
+3. **USGS instantaneous values are still on the legacy IV endpoint** (decommission Q1 2027,
+   possible degradation from **August 2026 — now**). Partly closed: the OGC API adapter for
+   **daily** values IS written and the registered key IS installed in the Railway environment
+   (keyed tier verified, 4000/h). What remains is migrating the instantaneous path off IV.
+4. ~~No continuous history yet~~ **closed 2026-08-24**: the Railway worker runs the registered
+   crons continuously and `/system/health` reports freshness per product. The 30-day freshness
+   SLO can now be measured; it has not been.
 5. **HEFS, NWS alerts, SSE** adapters are not written (all researched, none coded). ~~AWDB/SNOTEL~~ landed with P3 (WTEQ + PREC as *unscored context*, HYDROLOGY §7); SNOTEL soil moisture was evaluated and REJECTED — no climatology, inconsistent depths, `no profile` flags (p3-surfaces-design §2.1), so soil stays UNKNOWN.
 6. **Basin geometry is HUC8 unions**, not outlet-delineated (NLDI/StreamStats); no hypsometry; no
    reach topology in the store.
 7. **Six research categories lack a second-agent verification pass** (hydrology, precipitation,
    snow/soil, reservoirs, static-geo, Event Zero).
-8. **Client items from the spike:** CORS allowlist for the preview origin, Cesium ion logo credit
-   rendered although ion is unused, band boundaries retuned pending telemetry, no hydrograph panel,
-   no layer inspector for series, no timeline.
+8. **Client items.** Closed with P1 (2026-08-24): hydrograph panel, timeline/replay, provenance
+   popover, search-to-flight, deep links. Still open: Cesium ion logo credit rendered although ion
+   is unused, CORS allowlist for the preview origin, band boundaries pending telemetry, no layer
+   inspector for series. **New and blocking the product 2026-08-27: the client cannot see Tier 0.**
+   `generated.ts` carries the types but `schemas.ts` has no zod entry for `hydrologic_state` or
+   `state_change`, so the client STRIPS them and no component renders them — the rank, seasonal
+   multiple, velocity and boundary condition are live in the API and invisible on screen.
 9. **Owner decisions pending:** commercial status (Cesium ion, Synoptic, Ecology GIS, DNR lidar
    terms), data agreements (King County HIC, SPU, FEMS), hosting for API/worker/DB, the second
    historical event for rain-on-snow.
@@ -187,7 +201,15 @@ Goal: `cascadia.papsukkal.com` shows live Skagit data with provenance, continuou
 - Exit: `/system/health` public and `ok`; `/basins/basin:skagit/state` validates against the
   1.1.0 contracts; the Playwright live-API suite passes against the deployed origin.
 
-### M2 — Phase 0 infrastructure (L)
+### M2 — Phase 0 infrastructure (L) — **LARGELY DONE 2026-08-24/27; three items remain**
+
+Verified 2026-08-27 against the repository: Alembic revisions `0001`–`0003` on PostGIS,
+Procrastinate queue + worker, `obstore` against R2, 5 CI jobs (`gitleaks`, `e2e-stub`, `backend`,
+`backend-pg`, `web`), `import-linter` 5 contracts, 4 provider canaries, `pg_partman`. **Not done:**
+`/metrics`, the `ingest_writer` / `api_reader` / `migrator` roles with append-only grants, and
+mypy in CI. The exit line "the spike's SQLite path deleted" is **withdrawn**: `docs/TESTING.md`
+requires a deterministic offline suite and SQLite is how it runs, so deleting it would remove the
+property the exit criterion was protecting.
 
 - Alembic migrations implementing `DOMAIN_MODEL.md` on PostGIS: geography, sources, values
   (monthly partitions via `pg_partman`), intelligence, history; roles `ingest_writer` /
@@ -198,7 +220,7 @@ Goal: `cascadia.papsukkal.com` shows live Skagit data with provenance, continuou
 - Observability: structured logs, `/metrics`, freshness per product, provider health board.
 - CI: ruff, mypy (contracts, hydrology), pytest offline, contracts:check, vitest, Playwright vs
   stub, react-doctor score gate, gitleaks; canaries on a schedule, non-blocking.
-- Exit: ROADMAP Phase 0 exit criteria; the spike's SQLite path deleted.
+- Exit: ROADMAP Phase 0 exit criteria, minus the withdrawn SQLite line (see above).
 
 ### M3 — Phase 1 observational truth (M)
 
@@ -239,22 +261,39 @@ Goal: `cascadia.papsukkal.com` shows live Skagit data with provenance, continuou
   bucket's documented retention has not been enforced and may be); hindcast harness with the
   look-ahead audit; pick the rain-on-snow analog event.
 
-## 3. Immediate next actions (this week)
+## 3. Immediate next actions
 
-1. Decide backend hosting and PostgreSQL hosting (owner decision; unblocks M1/M2).
-2. Register a USGS Water Data API key and an NWS API contact; put both in the worker environment.
-3. ~~Inventory the surviving NWM Dec-2025 outputs~~ **done 2026-08-24**: all 22 days survive
-   (25.44 TB total; scoped archive tiers FULL 2.30 TB / LEAN 1.10 TB) — see
-   `research/nwm-survival-inventory-2026-08-24.md`. Copy now blocked ONLY on an explicit owner cost approval (R2 free tier is 10 GB; LEAN ~$16.5/mo,
-   FULL ~$34/mo; owner directed free-tier mindfulness 2026-08-24). Mechanism when approved:
-   Cloudflare Worker copy pump (Super Slurper cannot read anonymous public buckets; local
-   relay measured at 1.5 MB/s). IEM AFOS product dumps still to archive (small, T2).
-4. Stand up PostGIS locally (Docker) and write the first Alembic migration from `DOMAIN_MODEL.md`.
-5. Port the spike's providers onto Procrastinate jobs; write the USGS OGC adapter with fixtures.
-6. Deploy the API + worker; wire the gateway; run the live Playwright suite against the domain.
-7. Re-run the pending research verifications (six categories) as a scheduled, low-concurrency job.
-8. Fix the client's ion credit and CORS preview origin; record the band decision in
+Items 1–6 of the previous list (hosting decisions, the USGS key, PostGIS + the first migration,
+Procrastinate, the OGC adapter, deploying API + worker + gateway) all **closed 2026-08-24**;
+they are recorded in §1 rather than repeated here.
+
+1. **Decouple the growth rank from `RANK_READ_EDGE`.** `RANK_READ_EDGE` (90.0) and `BAND_EDGES`'
+   top edge are the same constant applied to the same rounded number, so the growth rank is
+   readable **iff the band already reads VERY_HIGH** — which makes the Tier 0 lead time
+   identically equal to the length of the unranked window in all six basins (264 h total,
+   `research/event-zero-ab-2026-08-27.md` §7c). Measured fix: split the growth reference out of
+   the record context and read it unconditionally — **247 KiB of the 952 KiB context per request,
+   74 % less than widening the gate**. No band, epsilon, window or score semantics may change.
+   Exit: the independence is mutation-proved and the A/B is re-run against it.
+2. **Surface Tier 0 in the client** (blocks the product, see §1 gap 8): zod entries for
+   `hydrologic_state` and `state_change`, panels for the rank / seasonal multiple / velocity /
+   boundary and their refusal reasons, with Vitest and Playwright coverage.
+   Exit: every statement the API publishes is either rendered or explicitly not, and the refusal
+   reasons are visible rather than silently stripped.
+3. **Re-run the strict knowledge-time replay with `unproject` and check in `kt.json`** — A/B §2's
+   "792/792 UNKNOWN" is currently flagged UNVERIFIED because the published recipe produces the
+   opposite. It is the sentence that licenses every retrospective figure.
+4. **Migrate USGS instantaneous values off the legacy IV endpoint** (§1 gap 3): degradation is
+   possible from August 2026 and decommission is Q1 2027.
+5. **Close the three remaining M2 items**: `/metrics`, database roles with append-only grants,
+   mypy in CI.
+6. Re-run the pending research verifications (six categories) as a scheduled, low-concurrency job.
+7. Fix the client's ion credit and CORS preview origin; record the band decision in
    `SEMANTIC_ZOOM.md` §1 once measured.
+
+**Explicitly NOT next** (owner direction, 2026-08-27): multi-event calibration / the POD-FAR
+curve of brief §18. Nothing may draw a band or cutoff on the Tier 0 statements until it exists,
+and it is not being started yet.
 
 ## 4. What would change this plan
 
