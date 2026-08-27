@@ -3,7 +3,7 @@
 parse -> normalize (quality gains 'backfilled'; available_at = retrieval time, NEVER the
 historical valid time — ADR-0010) -> append-only Observation rows.
 
-Idempotency: same pattern as jobs.run_fetch_iv — load the latest known revision per
+Idempotency: same pattern as jobs.run_fetch_instantaneous — load the latest known revision per
 (variable, valid_time) in the window once, skip identical (value + quality), append a revision
 row when changed. The unique key (product, station, variable, valid_time, revision_seq)
 protects re-runs. Product is PRODUCT_USGS_IV (the same USGS instantaneous series; the

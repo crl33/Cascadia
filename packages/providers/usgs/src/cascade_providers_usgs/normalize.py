@@ -1,4 +1,11 @@
-"""IvSeries -> Observation records. Sentinels (provider-declared noDataValue) and unparseable
+"""IvSeries -> Observation records.
+
+`to_observations` is RETIRED FROM PRODUCTION (2026-08-27) and exists only for the transport
+comparator — see `client.py`. `ObservationRecord` and `QUALIFIER_FLAGS` are NOT retired:
+`ogc_normalize.py` builds the same record type and extends the same quality vocabulary, which is
+exactly why the two transports produce comparable rows.
+
+Original notes: Sentinels (provider-declared noDataValue) and unparseable
 strings become `value=None` with a quality flag; qualifiers are preserved both mapped
 (P->provisional, A->approved, e->estimated, Ice, Eqp) and raw. Unit is the registry spelling;
 flow arrives as ft3/s and is recorded as `cfs` (same quantity, explicit spelling)."""

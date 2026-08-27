@@ -98,6 +98,22 @@ captured:
     2026-08-12T16:00-22:00Z. Both parameters carry a real 3.0 h gap -- 14 samples where 25 are nominal
     -- which exceeds the 2 h max_gap_h tolerance, so the method must return UNKNOWN with GAP_EXCEEDS_TOLERANCE
     rather than a slope. Provisional data.'
+- file: live_window_12200500.json
+  url: https://api.waterdata.usgs.gov/ogcapi/v0/collections/continuous/items?f=json&monitoring_location_id=USGS-12200500&parameter_code=00065%2C00060&datetime=2026-08-27T11%3A30%3A00Z%2F2026-08-27T14%3A30%3A00Z&limit=10000
+  captured_at: '2026-08-27T14:30:17.622476+00:00'
+  http_status: 200
+  content_type: application/json; charset=utf-8
+  bytes: 18048
+  sha256: 000fc4cd9ed44079e24b7605a90547d3ae87a14c01d1eafc4c594250c76b2283
+  notes: 'REAL capture of the LIVE POLLING SHAPE the OGC instantaneous adapter uses: one site, stage 00065 + flow 00060, a 3 h trailing window, limit=10000, single page. This is the request the 15-minute job issues per gauge, as opposed to the backfill's multi-day paged window. Provisional data.'
+- file: live_window_12149000.json
+  url: https://api.waterdata.usgs.gov/ogcapi/v0/collections/continuous/items?f=json&monitoring_location_id=USGS-12149000&parameter_code=00065%2C00060&datetime=2026-08-27T11%3A30%3A00Z%2F2026-08-27T14%3A30%3A00Z&limit=10000
+  captured_at: '2026-08-27T14:30:17.761917+00:00'
+  http_status: 200
+  content_type: application/json; charset=utf-8
+  bytes: 18036
+  sha256: e9bc0f6c9009da14e70e1b50a975ceb479ef2f1aff874aa67214c931c38d53d1
+  notes: 'REAL capture, same live shape, at the gauge whose flow record is intermittently behind its stage record (12149000, Snoqualmie near Carnation). Parity sampling on 2026-08-27 repeatedly found OGC serving stage timestamps that NWIS IV had not yet published here.'
 derived:
 - file: derived_missing_field.json
   derived_from: day_12200500.json

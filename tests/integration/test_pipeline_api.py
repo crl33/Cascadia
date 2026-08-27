@@ -8,6 +8,7 @@ from pathlib import Path
 
 import httpx
 import pytest
+
 import respx
 from sqlalchemy import func, select
 
@@ -19,7 +20,7 @@ from cascade_core.models import ForecastRun, Observation, RawArtifact, Threshold
 from cascade_core.objectstore import LocalFilesystemStore
 from cascade_core.seed import seed_all
 from cascade_core.settings import Settings
-from cascade_providers_usgs.parser import parse_iv
+from cascade_providers_usgs.ogc_parser import parse_continuous
 from cascade_worker.runtime import Runtime
 from cascade_worker.scheduler import JOBS, run_once
 from tests.conftest import FIXTURES, GEO
@@ -31,12 +32,22 @@ LIDS = ["RNTW1", "CRNW1", "MVEW1", "NKSW1", "AUBW1", "WRAW1"]
 #: (NBM, NWM-via-NWPS, USGS statistics, AWDB), which have their own offline fixtures and tests;
 #: re-mocking their payloads here would say nothing new about the API surface this file covers,
 #: and running them unmocked would only assert that respx blocks unmocked hosts.
-SPIKE_JOB_NAMES = ("nwps.fetch_thresholds", "nwps.fetch_forecast", "usgs.fetch_iv")
+SPIKE_JOB_NAMES = ("nwps.fetch_thresholds", "nwps.fetch_forecast", "usgs.fetch_instantaneous")
+#: The seeded USGS gauges the OGC transport is asked for, one request each.
+OGC_SITES = ("12100490", "12113000", "12119000", "12149000", "12189500", "12200500", "12213100")
 SPIKE_JOBS = tuple(job for job in JOBS if job.name in SPIKE_JOB_NAMES)
 
 
 def _mock_providers(fixtures: Path, *, mvew1_stageflow: str = "stageflow_MVEW1.json") -> None:
-    respx.get("https://waterservices.usgs.gov/nwis/iv/").mock(return_value=httpx.Response(200, content=(fixtures / "usgs/valid.json").read_bytes(), headers={"content-type": "application/json"}))
+    # The instantaneous transport is the OGC API since 2026-08-27 (see cascade_providers_usgs.jobs).
+    # It is per-site, so the mock answers each gauge with a page carrying that gauge's own
+    # monitoring_location_id — the job refuses a page belonging to a different river.
+    def _ogc_page(request: httpx.Request) -> httpx.Response:
+        site = request.url.params.get("monitoring_location_id", "").removeprefix("USGS-")
+        return httpx.Response(200, content=(fixtures / f"usgs_ogc/pipeline/{site}.json").read_bytes(),
+                              headers={"content-type": "application/json"})
+
+    respx.get("https://api.waterdata.usgs.gov/ogcapi/v0/collections/continuous/items").mock(side_effect=_ogc_page)
     for lid in LIDS:
         respx.get(f"https://api.water.noaa.gov/nwps/v1/gauges/{lid}").mock(return_value=httpx.Response(200, content=(fixtures / f"nwps/gauge_{lid}.json").read_bytes()))
         name = mvew1_stageflow if lid == "MVEW1" else f"stageflow_{lid}.json"
@@ -66,20 +77,24 @@ async def test_pipeline_then_api(runtime: Runtime) -> None:
     _mock_providers(FIXTURES)
     results = await run_once(rt, SPIKE_JOBS)
     assert all(ok for _, ok, _, _ in results), results
-    # one raw artifact per fetched payload: 6 gauges + 6 stageflows + 1 USGS batch
-    assert await _count(rt, RawArtifact) == 13
+    # One raw artifact per fetched payload: 6 gauges + 6 stageflows + 7 USGS gauges. The last
+    # number is 7 and not 1 because the OGC API is per-site where NWIS IV answered every site in
+    # one request — a real transport cost, measured and recorded in ogc_client.LIVE_WINDOW_HOURS.
+    assert await _count(rt, RawArtifact) == 19
     async with rt.sessions() as s:
         for art in (await s.execute(select(RawArtifact))).scalars():
             assert (rt.settings.raw_dir / art.object_key).exists() and art.fetched_at == CLOCK
     n_obs, n_runs, n_thr = await _count(rt, Observation), await _count(rt, ForecastRun), await _count(rt, Threshold)
-    expected_obs = sum(len(x.values) for x in parse_iv((FIXTURES / 'usgs/valid.json').read_bytes()))
+    # Each of the 7 seeded gauges gets its OWN real capture of the same 3 h window ending at
+    # CLOCK — the like-for-like replacement of the single legacy `usgs/valid.json` batch.
+    expected_obs = sum(len(parse_continuous((FIXTURES / f'usgs_ogc/pipeline/{s}.json').read_bytes()).values) for s in OGC_SITES)
     assert n_obs == expected_obs and n_runs == 6 and n_thr == 24
 
     # idempotency: a second run-once writes zero new observation/run/threshold rows but archives again
     results2 = await run_once(rt, SPIKE_JOBS)
     assert [(n, ok, rows) for n, ok, rows, _ in results2] == [(results2[0][0], True, 0), (results2[1][0], True, 0), (results2[2][0], True, 0)]
     assert await _count(rt, Observation) == n_obs and await _count(rt, ForecastRun) == n_runs and await _count(rt, Threshold) == n_thr
-    assert await _count(rt, RawArtifact) == 26
+    assert await _count(rt, RawArtifact) == 38  # 19 per run; the archive row is per fetch
 
     app = create_app(rt.settings, engine=rt.engine)
     async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test", headers={"Origin": "http://localhost:5173"}) as c:
@@ -98,8 +113,8 @@ async def test_pipeline_then_api(runtime: Runtime) -> None:
         assert item.id == "fp:nwps:MVEW1" and item.station_id == "station:usgs:12200500" and item.reach_id == "reach:nwm:24270288"
         assert item.thresholds.basis == "stage" and item.thresholds.datum == "NGVD29" and item.thresholds.action == 23.5
         assert item.observed.stage.unit == "ft" and item.observed.stage.datum == "NGVD29" and item.observed.flow.unit == "cfs"
-        sk_stage = next(x for x in parse_iv((FIXTURES / 'usgs/valid.json').read_bytes()) if x.site == '12200500' and x.variable == 'stage')
-        assert item.observed_category == FloodCategory.NONE and item.observed.valid_time == sk_stage.values[-1].time and item.observed.stage.value == float(sk_stage.values[-1].raw_value)
+        stage = sorted((v for v in parse_continuous((FIXTURES / 'usgs_ogc/pipeline/12200500.json').read_bytes()).values if v.variable == 'stage'), key=lambda v: v.time)
+        assert item.observed_category == FloodCategory.NONE and item.observed.valid_time == stage[-1].time and item.observed.stage.value == float(stage[-1].raw_value)
         assert "provisional" in env.provenance_refs[item.observed.prov].quality and env.provenance_refs[item.observed.prov].freshness.state == "current"
         assert item.official_forecast.issuer == "NWRFC" and item.official_forecast.crest.unit == "ft" and item.official_forecast.points == 32
         assert item.trend is not None and item.trend.direction in ("steady", "rising", "falling")
@@ -144,8 +159,8 @@ async def test_pipeline_then_api(runtime: Runtime) -> None:
         assert all(p["stage"] is not None for p in aub_run["points"])
         r = await c.get("/stations/station:usgs:12200500/series", params={"variable": "flow", "hours": 72, "as_of": "2026-08-22T13:30:00Z"})
         series = r.json()
-        sk_flow = next(x for x in parse_iv((FIXTURES / "usgs/valid.json").read_bytes()) if x.site == "12200500" and x.variable == "flow")
-        assert series["unit"] == "cfs" and len(series["points"]) == len(sk_flow.values) and series["points"][-1]["quality"] == ["provisional"]
+        sk_flow_values = [v for v in parse_continuous((FIXTURES / "usgs_ogc/pipeline/12200500.json").read_bytes()).values if v.variable == "flow"]
+        assert series["unit"] == "cfs" and len(series["points"]) == len(sk_flow_values) and series["points"][-1]["quality"] == ["provisional"]
         assert (await c.get("/stations/station%3Ausgs%3A12200500/series", params={"variable": "stage"})).status_code == 200
         assert (await c.get("/stations/station:usgs:12200500/series", params={"hours": 721})).status_code == 422
         assert (await c.get("/basins/nope/state")).status_code == 422

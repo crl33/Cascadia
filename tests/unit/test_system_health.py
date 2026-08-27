@@ -36,7 +36,7 @@ from tests.conftest import GEO
 NOW = datetime(2026, 8, 24, 12, 0, tzinfo=UTC)
 ALL_JOB_NAMES = tuple(job.name for job in JOBS)
 #: The three jobs the old hand-written map covered. Everything else was invisible.
-OLD_MAP_JOBS = ("usgs.fetch_iv", "nwps.fetch_thresholds", "nwps.fetch_forecast")
+OLD_MAP_JOBS = ("usgs.fetch_instantaneous", "nwps.fetch_thresholds", "nwps.fetch_forecast")
 #: The exact failure the live run recorded, verbatim from §P3.6.
 CORE_SNOWLVL_ERROR = "NbmParseError: field_missing: core f072 carries no SNOWLVL percentile field"
 
@@ -166,18 +166,18 @@ async def test_one_never_run_job_does_not_degrade_the_others(db) -> None:
 
 async def test_a_run_in_flight_is_not_read_as_a_failure(db) -> None:
     engine, factory = db
-    await add_runs(factory, [*succeeded(ALL_JOB_NAMES, NOW - timedelta(minutes=2)), ("usgs.fetch_iv", NOW - timedelta(seconds=5), None, None)])
+    await add_runs(factory, [*succeeded(ALL_JOB_NAMES, NOW - timedelta(minutes=2)), ("usgs.fetch_instantaneous", NOW - timedelta(seconds=5), None, None)])
     h = await get_health(engine)
-    assert h["jobs"]["usgs.fetch_iv"]["state"] == "ok"
+    assert h["jobs"]["usgs.fetch_instantaneous"]["state"] == "ok"
     assert h["providers"]["usgs"]["state"] == "healthy"
 
 
 async def test_a_first_run_still_in_flight_is_pending_not_failing(db) -> None:
     engine, factory = db
-    await add_runs(factory, [("usgs.fetch_iv", NOW - timedelta(seconds=5), None, None)])
+    await add_runs(factory, [("usgs.fetch_instantaneous", NOW - timedelta(seconds=5), None, None)])
     h = await get_health(engine)
-    assert h["jobs"]["usgs.fetch_iv"]["state"] == "pending"
-    assert "has not recorded an outcome yet" in h["jobs"]["usgs.fetch_iv"]["reason"]
+    assert h["jobs"]["usgs.fetch_instantaneous"]["state"] == "pending"
+    assert "has not recorded an outcome yet" in h["jobs"]["usgs.fetch_instantaneous"]["reason"]
 
 
 # --- discrimination: silence is not health ------------------------------------------------------
@@ -187,12 +187,12 @@ async def test_a_job_whose_last_success_is_many_cadences_old_is_late(db) -> None
     """A long-cadence provider is not stale five minutes after boot; a 15-minute one that last
     succeeded five hours ago is."""
     engine, factory = db
-    spec = JOBS_BY_NAME["usgs.fetch_iv"]
+    spec = JOBS_BY_NAME["usgs.fetch_instantaneous"]
     assert spec.cadence_seconds == 900
-    fresh = [name for name in ALL_JOB_NAMES if name != "usgs.fetch_iv"]
-    await add_runs(factory, [*succeeded(fresh, NOW - timedelta(minutes=1)), ("usgs.fetch_iv", NOW - timedelta(hours=5), True, None)])
+    fresh = [name for name in ALL_JOB_NAMES if name != "usgs.fetch_instantaneous"]
+    await add_runs(factory, [*succeeded(fresh, NOW - timedelta(minutes=1)), ("usgs.fetch_instantaneous", NOW - timedelta(hours=5), True, None)])
     h = await get_health(engine)
-    late = h["jobs"]["usgs.fetch_iv"]
+    late = h["jobs"]["usgs.fetch_instantaneous"]
     assert late["state"] == "late" and late["late_after_seconds"] == 900 * JOB_LATE_MULTIPLIER
     assert h["providers"]["usgs"]["state"] == "degraded"
     assert h["status"] == "degraded"
@@ -200,10 +200,10 @@ async def test_a_job_whose_last_success_is_many_cadences_old_is_late(db) -> None
 
 async def test_one_skipped_cycle_is_not_late(db) -> None:
     engine, factory = db
-    fresh = [name for name in ALL_JOB_NAMES if name != "usgs.fetch_iv"]
-    await add_runs(factory, [*succeeded(fresh, NOW - timedelta(minutes=1)), ("usgs.fetch_iv", NOW - timedelta(seconds=1800), True, None)])
+    fresh = [name for name in ALL_JOB_NAMES if name != "usgs.fetch_instantaneous"]
+    await add_runs(factory, [*succeeded(fresh, NOW - timedelta(minutes=1)), ("usgs.fetch_instantaneous", NOW - timedelta(seconds=1800), True, None)])
     h = await get_health(engine)
-    assert h["jobs"]["usgs.fetch_iv"]["state"] == "ok"
+    assert h["jobs"]["usgs.fetch_instantaneous"]["state"] == "ok"
 
 
 async def test_a_failure_with_a_recent_success_is_failing_and_without_one_is_down(db) -> None:

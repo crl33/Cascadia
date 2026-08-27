@@ -1,7 +1,8 @@
-"""OgcValue -> ObservationRecord for the Event Zero backfill (ADR-0010 bitemporal honesty).
+"""OgcValue -> ObservationRecord (ADR-0010 bitemporal honesty).
 
-Every record's quality carries 'backfilled': these rows are written months after their valid
-times, and available_at = retrieved_at (the existing timeutils.available_at already produces
+Used by BOTH the Event Zero backfill and the live 15-minute instantaneous job, which differ in
+exactly one respect: whether the rows are backfilled. `backfilled=True` (the backfill) marks
+rows written months after their valid times, and available_at = retrieved_at (the existing timeutils.available_at already produces
 this for historical data — max(valid_time, retrieved_at)). approval_status is preserved both
 mapped ('Approved'->approved, 'Provisional'->provisional) and verbatim in qualifier_raw, which
 keeps the EVENT_ZERO §3 A/P audit trail without inventing NWIS letter codes. Unparseable or
@@ -43,8 +44,16 @@ def to_observation_records(
     retrieved_at: datetime,
     station_id: str,
     datum: str | None,
+    backfilled: bool = True,
 ) -> tuple[list[ObservationRecord], dict[str, int]]:
-    """Normalize one page's values for one station. Returns (records, skip counts)."""
+    """Normalize one page's values for one station. Returns (records, skip counts).
+
+    `backfilled` defaults True because this function existed for the backfill first and every
+    existing caller means it. The LIVE instantaneous job passes False: a 15-minute poll is not a
+    backfill, and the flag is not cosmetic — `provenance-record.ts` renders a `backfilled` value
+    as ARCHIVED with an age said as distance from today, so a live reading tagged this way would
+    show on screen as an archived record rather than a current one.
+    """
     out: list[ObservationRecord] = []
     skipped = {"non_instantaneous": 0}
     for v in values:
@@ -59,7 +68,8 @@ def to_observation_records(
             quality.append(OGC_QUALIFIER_FLAGS.get(q, q))
         if value is not None and v.variable == "flow" and value < 0:
             quality.append("out_of_range")
-        quality.append(BACKFILLED_FLAG)  # always, for this adapter: rows written long after valid time
+        if backfilled:
+            quality.append(BACKFILLED_FLAG)
         raw_bits = ([] if v.approval_status is None else [v.approval_status]) + list(v.qualifiers)
         out.append(
             ObservationRecord(

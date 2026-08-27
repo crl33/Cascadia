@@ -121,7 +121,11 @@ HEFS, NWRFC and NWM facts come from fetched URLs in
 [research/hydrology-observations-and-official-forecasts.json](research/hydrology-observations-and-official-forecasts.json)
 — independent verification pending.
 
-#### H1 · USGS legacy NWIS WaterServices Instantaneous Values — `src:usgs-nwis-iv` · verified-live · Phase 0 stop-gap
+#### H1 · USGS legacy NWIS WaterServices Instantaneous Values — `src:usgs-nwis-iv` · **RETIRED FROM PRODUCTION 2026-08-27** · comparator only
+
+> **The live instantaneous path is H1b (OGC `continuous`) as of 2026-08-27.** Everything below
+> remains accurate about the legacy service and is kept because it documents the transport the
+> parity comparison was made against — not because anything in production still calls it.
 - **What / authority / kind.** Legacy REST service for 15-minute stage/discharge at USGS gauges; USGS Water Data for the Nation; OBSERVED.
 - **Access.** GET `https://waterservices.usgs.gov/nwis/iv/?sites=…&parameterCd=00060,00065&period=PT2H|startDT/endDT&format=json|rdb` (FACT); 1–100 sites per call; no key; IPs exceeding "reasonable usage" get HTTP 403 (FACT). Observed 2026-08-22: `startDT/endDT` queries 301-redirect to `https://nwis.waterservices.usgs.gov/nwis/iv/` while `period=` queries answer from the original host — follow redirects (FACT).
 - **Cadence / latency.** 15-min values, ~10–15 min behind sensor time (same backend as H2) (FACT). **Resolution / history.** Point gauges; IV from 2007-10-01; some operational parameters limited to 120 days (FACT).
@@ -130,6 +134,17 @@ HEFS, NWRFC and NWM facts come from fetched URLs in
 - **License.** US Government work, public domain; provisional-data disclaimer (FACT). **Feeds.** Nothing new; V1 spike adapter only, replaced before Phase 1 exits (ROADMAP).
 - **SourceProduct.** `product:usgs-nwis-iv-stage-flow` · cadence PT15M · grace PT75M (doctrine default) · `history_depth` 2007-10-01 · sunset 2027-Q1.
 - **Evidence.** FACT https://waterservices.usgs.gov/ · FACT https://waterdata.usgs.gov/blog/api-waterservices-decom/ · FACT https://waterservices.usgs.gov/docs/instantaneous-values/instantaneous-values-details/ · INFERENCE https://help.waterdata.usgs.gov/codes-and-parameters/instantaneous-and-daily-value-status-codes
+
+#### H1b · USGS Water Data OGC API, `continuous` collection — `src:usgs-nwis-iv` · verified-live · **the production instantaneous path since 2026-08-27**
+- **What / authority / kind.** Successor to H1 for 15-minute stage/discharge; USGS Water Data for the Nation; OBSERVED. Same `src:usgs-nwis-iv` source id and same `product:usgs-iv` product as H1 — the observation is the same authoritative measurement and the transport is recorded per row (ADR-0015).
+- **Access.** GET `https://api.waterdata.usgs.gov/ogcapi/v0/collections/continuous/items?monitoring_location_id=USGS-<site>&parameter_code=00065,00060&datetime=<start>/<end>&f=json&limit=10000` (FACT). **One site per request** — unlike H1, which answered up to 100 sites in one call. Auth: `X-Api-Key` header, keyed tier 4,000 req/h; degrades to anonymous without one (FACT, verified 2026-08-24). Pagination is cursor-based: `links[rel=next]` appears exactly when `numberReturned == limit`, and `numberMatched` is null (FACT).
+- **Cadence / latency.** 15-minute values. Publication latency measured against H1 over 8 samples on 2026-08-27: **112 of 112 gauge-variable observations equal**, neither transport systematically ahead; one transient hour-long OGC lead was observed early and did not recur (FACT, `research/usgs-ogc-instantaneous-parity-2026-08-27.md` §2).
+- **Missing / flags / units.** GeoJSON FeatureCollection, one feature per observation. `properties`: `monitoring_location_id` (`USGS-<site>`), `parameter_code`, `statistic_id` (`00011` = instantaneous), `time` (**offset-bearing ISO-8601**), `value` (string, or JSON `null` for no data — there is no `noDataValue` sentinel as in H1), `unit_of_measure`, `approval_status` (`"Approved"` / `"Provisional"`, where H1 used the letters `A` / `P`), `qualifier` (null, string or list; caps spellings such as `ESTIMATED` observed), `last_modified` (FACT).
+- **Cost.** ~752 bytes per observation, against H1 packing a whole series into one array: the same 3 h / 7-gauge window is **3.4× the bytes and 7× the requests** (FACT). This forced the live window from 72 h to 3 h — 72 h would have cost 106 GB/year of raw archive against a 10 GB R2 free tier (FACT).
+- **Limitations.** – One request per site multiplies both requests and archived artifacts. – `last_modified` is exposed but not yet consumed; it is the only revision signal the API offers (OPEN QUESTION). – The `daily` collection is a DIFFERENT product (H9) and must not be substituted.
+- **License.** US Government work, public domain; provisional-data disclaimer (FACT).
+- **SourceProduct.** `product:usgs-iv` · cadence PT15M · grace PT75M · job `usgs.fetch_instantaneous`.
+- **Evidence.** FACT fixtures `tests/fixtures/providers/usgs_ogc/` (live-window, per-site pipeline and parity captures) · FACT parity `research/usgs-ogc-instantaneous-parity-2026-08-27.md` · decision [ADR-0015](adr/ADR-0015-usgs-instantaneous-transport.md)
 
 #### H2 · USGS Water Data APIs — OGC API-Features v0 — `src:usgs-wdfn-ogc` · verified-live · Phase 1
 - **What / authority / kind.** The replacement for NWIS: OGC API-Features (pygeoapi 0.24.0, OpenAPI 3.0.2, api-version 0.71.7) serving USGS observations and site metadata; USGS WDFN; OBSERVED (+ static metadata).

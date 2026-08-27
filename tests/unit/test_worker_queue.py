@@ -68,7 +68,7 @@ def test_tasks_registered_with_locks_retry_and_cron() -> None:
         assert task.retry_strategy.exponential_wait == 4
     crons = {name: pt.cron for (name, _), pt in app.periodic_registry.periodic_tasks.items()}
     assert crons == {
-        "usgs.fetch_iv": "*/15 * * * *",
+        "usgs.fetch_instantaneous": "*/15 * * * *",
         "nwps.fetch_forecast": "*/30 * * * *",
         "nwps.fetch_thresholds": "10 */6 * * *",
         # P3 (design §6 stage 2). The mask build owns an explicit slot 20 min ahead of the qmd
@@ -137,11 +137,11 @@ async def test_defer_works_and_queueing_lock_dedupes() -> None:
     connector = InMemoryConnector()
     app = q.create_queue_app(PG_SETTINGS, connector=connector)
     async with app.open_async():
-        await app.tasks["usgs.fetch_iv"].defer_async()
+        await app.tasks["usgs.fetch_instantaneous"].defer_async()
         with pytest.raises(exceptions.AlreadyEnqueued):
-            await app.tasks["usgs.fetch_iv"].defer_async()
+            await app.tasks["usgs.fetch_instantaneous"].defer_async()
         await app.tasks["nwps.fetch_forecast"].defer_async()  # a different job is unaffected
-    assert sorted(j["task_name"] for j in connector.jobs.values()) == ["nwps.fetch_forecast", "usgs.fetch_iv"]
+    assert sorted(j["task_name"] for j in connector.jobs.values()) == ["nwps.fetch_forecast", "usgs.fetch_instantaneous"]
     assert all(j["status"] == "todo" for j in connector.jobs.values())
 
 
@@ -157,7 +157,7 @@ async def test_task_wraps_run_job_and_raises_only_on_failure(monkeypatch: pytest
 
     async def fake_run_job(rt: object, name: str, fn: object) -> _FakeJobRun:
         calls.append((rt, name, fn))
-        return _FakeJobRun(True, 7, None) if name == "usgs.fetch_iv" else _FakeJobRun(False, 0, "boom")
+        return _FakeJobRun(True, 7, None) if name == "usgs.fetch_instantaneous" else _FakeJobRun(False, 0, "boom")
 
     def factory(settings: Settings) -> object:
         built.append(settings)
@@ -166,10 +166,10 @@ async def test_task_wraps_run_job_and_raises_only_on_failure(monkeypatch: pytest
     monkeypatch.setattr(q, "run_job", fake_run_job)
     app = q.create_queue_app(PG_SETTINGS, connector=InMemoryConnector(), runtime_factory=factory)
 
-    out = await app.tasks["usgs.fetch_iv"].func(timestamp=123)
-    assert out == {"job": "usgs.fetch_iv", "ok": True, "rows_written": 7, "timestamp": 123}
+    out = await app.tasks["usgs.fetch_instantaneous"].func(timestamp=123)
+    assert out == {"job": "usgs.fetch_instantaneous", "ok": True, "rows_written": 7, "timestamp": 123}
     by_name = {j.name: j for j in JOBS}
-    assert calls[0] == (fake_rt, "usgs.fetch_iv", by_name["usgs.fetch_iv"].fn)  # frozen fn passed through untouched
+    assert calls[0] == (fake_rt, "usgs.fetch_instantaneous", by_name["usgs.fetch_instantaneous"].fn)  # frozen fn passed through untouched
 
     # run_job recorded the failure in job_run; the task re-raises so procrastinate retries
     with pytest.raises(q.JobFailed, match="nwps.fetch_forecast: boom"):

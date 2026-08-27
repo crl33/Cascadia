@@ -68,7 +68,7 @@ JOBS: tuple[Job, ...] = (
     # --- observational truth and the official forecast (spike scope) ---------------------
     Job(nwps_jobs.JOB_THRESHOLDS, nwps_jobs.CADENCE_THRESHOLDS_SECONDS, nwps_jobs.run_fetch_thresholds),
     Job(nwps_jobs.JOB_FORECAST, nwps_jobs.CADENCE_FORECAST_SECONDS, nwps_jobs.run_fetch_forecast),
-    Job(usgs_jobs.JOB_NAME, usgs_jobs.CADENCE_SECONDS, usgs_jobs.run_fetch_iv),
+    Job(usgs_jobs.JOB_NAME, usgs_jobs.CADENCE_SECONDS, usgs_jobs.run_fetch_instantaneous),
     # --- P3 forcing: masks first, then the two NBM subsets ------------------------------
     # 07:30 UTC: ten minutes ahead of the 07:40 qmd slot, so a grid change is picked up before
     # the cycle that would otherwise be refused. A no-op day costs one ~172 KB subset.

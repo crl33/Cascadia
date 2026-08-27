@@ -49,7 +49,10 @@ __all__ = ["AS_OF", "BEFORE", "BASELINE_DIR", "SKAGIT", "T_USGS_IV", "ingest", "
 #: and so the rows are knowledge-visible at AS_OF two days later.
 T_USGS_IV = datetime(2026, 8, 22, 13, 30, tzinfo=UTC)
 
-USGS_IV_URL = "https://waterservices.usgs.gov/nwis/iv/"
+#: The instantaneous transport is the OGC API since 2026-08-27; it is per-site, so the
+#: harness answers each seeded gauge from its own real capture of the same window.
+USGS_OGC_URL = "https://api.waterdata.usgs.gov/ogcapi/v0/collections/continuous/items"
+OGC_SITES = ("12100490", "12113000", "12119000", "12149000", "12189500", "12200500", "12213100")
 
 BASELINE_DIR = Path(__file__).resolve().parent / "baseline"
 
@@ -81,20 +84,22 @@ async def _ingest_usgs_iv(settings: Settings) -> None:
     """
     import httpx
     import respx
-    from cascade_providers_usgs.jobs import run_fetch_iv
+    from cascade_providers_usgs.jobs import run_fetch_instantaneous
+
+    def _page(request: httpx.Request) -> httpx.Response:
+        site = request.url.params.get("monitoring_location_id", "").removeprefix("USGS-")
+        return httpx.Response(
+            200,
+            content=(FIXTURES / "usgs_ogc" / "pipeline" / f"{site}.json").read_bytes(),
+            headers={"content-type": "application/json"},
+        )
 
     rt = Runtime.build(settings, fetcher=_fetcher(settings.raw_dir, T_USGS_IV), clock=lambda: T_USGS_IV)
     try:
         with respx.mock:
-            respx.get(USGS_IV_URL).mock(
-                return_value=httpx.Response(
-                    200,
-                    content=(FIXTURES / "usgs" / "valid.json").read_bytes(),
-                    headers={"content-type": "application/json"},
-                )
-            )
+            respx.get(USGS_OGC_URL).mock(side_effect=_page)
             async with rt.sessions() as s:
-                await run_fetch_iv(s, _fetcher(settings.raw_dir, T_USGS_IV))
+                await run_fetch_instantaneous(s, _fetcher(settings.raw_dir, T_USGS_IV))
                 await s.commit()
     finally:
         await rt.engine.dispose()

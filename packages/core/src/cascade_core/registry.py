@@ -47,7 +47,7 @@ PRODUCT_AWDB_DAILY = "product:awdb-snotel-daily"
 PRODUCT_AWDB_STATIONS = "product:awdb-stations"
 
 SOURCES: tuple[dict[str, str], ...] = (
-    {"id": SRC_USGS, "authority": "U.S. Geological Survey", "kind": "OBSERVED", "base_url": "https://waterservices.usgs.gov/nwis/iv/", "docs_url": "https://waterservices.usgs.gov/docs/instantaneous-values/"},
+    {"id": SRC_USGS, "authority": "U.S. Geological Survey", "kind": "OBSERVED", "base_url": "https://api.waterdata.usgs.gov/ogcapi/v0/collections/continuous/items", "docs_url": "https://api.waterdata.usgs.gov/ogcapi/v0/openapi?f=html"},
     {"id": SRC_NWPS, "authority": "NOAA National Weather Service (NWPS)", "kind": "OFFICIAL_FORECAST", "base_url": "https://api.water.noaa.gov/nwps/v1/", "docs_url": "https://api.water.noaa.gov/nwps/v1/docs/"},
     {"id": SRC_CASCADE, "authority": "Cascadia Papsukkal", "kind": "DERIVED", "base_url": "", "docs_url": ""},
     {"id": SRC_NWS_AFOS, "authority": "NOAA NWS (AFOS text via IEM archive)", "kind": "OFFICIAL_FORECAST", "base_url": "https://mesonet.agron.iastate.edu/api/1/", "docs_url": "https://mesonet.agron.iastate.edu/api/1/docs"},
@@ -67,7 +67,14 @@ SOURCES: tuple[dict[str, str], ...] = (
 )
 
 PRODUCTS: tuple[dict[str, object], ...] = (
-    {"id": PRODUCT_USGS_IV, "source_id": SRC_USGS, "label": "USGS instantaneous values (stage 00065, discharge 00060)", "variables": ["stage", "flow"], "expected_cadence_seconds": 900, "grace_seconds": 4500},
+    # ONE product across both transports, decided on measured parity (ADR-0015): the observation
+    # is the same authoritative USGS instantaneous measurement whether it arrived over NWIS IV or
+    # the OGC API, and a second product id would fragment the series, the freshness anchor and
+    # every downstream read for a difference that is not scientific. WHICH transport supplied a
+    # given row is answered per row by `observation.raw_artifact_id -> raw_artifact.request_url`.
+    # The id string still says "iv" because renaming it would orphan every stored row's FK; it is
+    # historical, and the label below names the transport actually in use.
+    {"id": PRODUCT_USGS_IV, "source_id": SRC_USGS, "label": "USGS instantaneous values (stage 00065, discharge 00060) via the Water Data OGC API `continuous` collection; NWIS IV until 2026-08-27", "variables": ["stage", "flow"], "expected_cadence_seconds": 900, "grace_seconds": 4500},
     {"id": PRODUCT_NWPS_FORECAST, "source_id": SRC_NWPS, "label": "NWRFC official river forecast via NOAA NWPS", "variables": ["stage", "flow"], "expected_cadence_seconds": 86400, "grace_seconds": 64800},
     {"id": PRODUCT_NWPS_THRESHOLDS, "source_id": SRC_NWPS, "label": "Official NWS flood categories (NWPS)", "variables": ["threshold"], "expected_cadence_seconds": 21600, "grace_seconds": 21600},
     {"id": PRODUCT_NWS_FLS_CREST, "source_id": SRC_NWS_AFOS, "label": "NWRFC crest via WFO FLW/FLS text (reconstructed; 6-hourly hydrograph lost)", "variables": ["stage", "flow"], "expected_cadence_seconds": 21600, "grace_seconds": 43200},
@@ -139,7 +146,12 @@ class JobSpec:
 JOBS: tuple[JobSpec, ...] = (
     JobSpec("nwps.fetch_thresholds", "nwps", SRC_NWPS, (PRODUCT_NWPS_THRESHOLDS,), 6 * 3600),
     JobSpec("nwps.fetch_forecast", "nwps", SRC_NWPS, (PRODUCT_NWPS_FORECAST,), 30 * 60),
-    JobSpec("usgs.fetch_iv", "usgs", SRC_USGS, (PRODUCT_USGS_IV,), 900),
+    # Renamed from "usgs.fetch_iv" on 2026-08-27 when the transport moved to the OGC API. The
+    # name is transport-NEUTRAL on purpose: the previous one named a service that is being
+    # decommissioned, and this job's identity is "fetch the instantaneous observations", not
+    # "call NWIS". Run history under the old name is not migrated; the health endpoint reports
+    # `pending` (which reads `unknown`, not `degraded`) until the first run.
+    JobSpec("usgs.fetch_instantaneous", "usgs", SRC_USGS, (PRODUCT_USGS_IV,), 900),
     # Writes grid masks, not values: no product of its own, and therefore nothing in the
     # freshness map. Its health is still reported — a silently failing mask build is what makes
     # every NBM basin mean read UNKNOWN (see the scheduler's JOBS docstring).

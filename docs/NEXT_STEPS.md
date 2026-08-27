@@ -1,4 +1,4 @@
-# NEXT STEPS — what is done, what is not, and the order of work (2026-08-27)
+# NEXT STEPS — what is done, what is not, and the order of work (2026-08-27, second pass)
 
 A plan, not a roadmap: [ROADMAP.md](ROADMAP.md) and [CINEMATIC_ROADMAP.md](CINEMATIC_ROADMAP.md)
 define the phases; this file says where we actually are and what to do next, in order. Update it
@@ -21,7 +21,8 @@ when a milestone closes; delete lines that stop being true.
 | Working conventions | ICM routing (`CLAUDE.md`, `CONTEXT.md` per folder), skills `icm-architect`, `vibesec` (+ addendum), `react-quality` |
 | Production (2026-08-24 →) | Railway backend + Neon PostgreSQL 18/PostGIS + Cloudflare R2 behind the Pages gateway at `cascadia.papsukkal.com`; `/system/version` stamps the deployed revision; Alembic at `0003` |
 | Live intelligence (P3, 2026-08-25) | forcing (NBM v5), susceptibility (platform-built USGS day-of-year climatology), agreement (NWM medium-range ensemble via NWPS `/reaches`) |
-| Tier 0 (2026-08-27) | `rate-of-rise@2.0.0` (Siegel repeated median + fail-closed `station.tidal_class`), `streamflow-tail-state@0.1.0`, `streamflow-state-change@0.1.0`, `streamflow-record-context@1.0.0`, boundary condition; Event Zero A/B in `research/event-zero-ab-2026-08-27.md` |
+| Tier 0 (2026-08-27) | `rate-of-rise@2.0.0` (Siegel repeated median + fail-closed `station.tidal_class`), `streamflow-tail-state@0.1.0`, `streamflow-state-change@0.1.0`, `streamflow-record-context@2.0.0` + `streamflow-growth-reference@1.0.0` (split so the growth rank is read at every percentile, not only at or above p90), boundary condition; Event Zero A/B in `research/event-zero-ab-2026-08-27.md`, re-run after the split: first escalations carrying a growth rank 1 of 6 → 6 of 6, lead times unchanged |
+| Tier 0 in the client (2026-08-27) | runtime zod schemas for `hydrologic_state` / `state_change` with a `NoMissingKeys` drift check; BasinPanel renders level, change and historical context as separate statements, each with its own provenance; refusals keep the backend's own reason |
 
 ### Not done (gaps, ranked by how much they block)
 
@@ -35,10 +36,10 @@ when a milestone closes; delete lines that stop being true.
    verified 2026-08-27:** no `/metrics` endpoint, no `ingest_writer` / `api_reader` / `migrator`
    database roles, and no mypy in CI. Freshness-per-product and a provider health board DO exist,
    in `/system/health`.
-3. **USGS instantaneous values are still on the legacy IV endpoint** (decommission Q1 2027,
-   possible degradation from **August 2026 — now**). Partly closed: the OGC API adapter for
-   **daily** values IS written and the registered key IS installed in the Railway environment
-   (keyed tier verified, 4000/h). What remains is migrating the instantaneous path off IV.
+3. ~~USGS instantaneous values are still on the legacy IV endpoint~~ **closed 2026-08-27**: the
+   instantaneous path is the OGC `continuous` collection. **What remains on the same Q1 2027
+   deadline** is `nwis/stat` — the published day-of-year statistics used as the climatology
+   cross-check — which is now the only production code calling `waterservices.usgs.gov`.
 4. ~~No continuous history yet~~ **closed 2026-08-24**: the Railway worker runs the registered
    crons continuously and `/system/health` reports freshness per product. The 30-day freshness
    SLO can now be measured; it has not been.
@@ -48,12 +49,11 @@ when a milestone closes; delete lines that stop being true.
 7. **Six research categories lack a second-agent verification pass** (hydrology, precipitation,
    snow/soil, reservoirs, static-geo, Event Zero).
 8. **Client items.** Closed with P1 (2026-08-24): hydrograph panel, timeline/replay, provenance
-   popover, search-to-flight, deep links. Still open: Cesium ion logo credit rendered although ion
-   is unused, CORS allowlist for the preview origin, band boundaries pending telemetry, no layer
-   inspector for series. **New and blocking the product 2026-08-27: the client cannot see Tier 0.**
-   `generated.ts` carries the types but `schemas.ts` has no zod entry for `hydrologic_state` or
-   `state_change`, so the client STRIPS them and no component renders them — the rank, seasonal
-   multiple, velocity and boundary condition are live in the API and invisible on screen.
+   popover, search-to-flight, deep links. ~~The client cannot see Tier 0~~ **closed 2026-08-27**
+   (`3b880bf`): runtime zod schemas added with a missing-key drift check, and BasinPanel renders
+   the level, the change and the historical context of that change as separate statements.
+   Still open: Cesium ion logo credit rendered although ion is unused, CORS allowlist for the
+   preview origin, band boundaries pending telemetry, no layer inspector for series.
 9. **Owner decisions pending:** commercial status (Cesium ion, Synoptic, Ecology GIS, DNR lidar
    terms), data agreements (King County HIC, SPU, FEMS), hosting for API/worker/DB, the second
    historical event for rain-on-snow.
@@ -267,24 +267,27 @@ Items 1–6 of the previous list (hosting decisions, the USGS key, PostGIS + the
 Procrastinate, the OGC adapter, deploying API + worker + gateway) all **closed 2026-08-24**;
 they are recorded in §1 rather than repeated here.
 
-1. **Decouple the growth rank from `RANK_READ_EDGE`.** `RANK_READ_EDGE` (90.0) and `BAND_EDGES`'
-   top edge are the same constant applied to the same rounded number, so the growth rank is
-   readable **iff the band already reads VERY_HIGH** — which makes the Tier 0 lead time
-   identically equal to the length of the unranked window in all six basins (264 h total,
-   `research/event-zero-ab-2026-08-27.md` §7c). Measured fix: split the growth reference out of
-   the record context and read it unconditionally — **247 KiB of the 952 KiB context per request,
-   74 % less than widening the gate**. No band, epsilon, window or score semantics may change.
-   Exit: the independence is mutation-proved and the A/B is re-run against it.
-2. **Surface Tier 0 in the client** (blocks the product, see §1 gap 8): zod entries for
-   `hydrologic_state` and `state_change`, panels for the rank / seasonal multiple / velocity /
-   boundary and their refusal reasons, with Vitest and Playwright coverage.
-   Exit: every statement the API publishes is either rendered or explicitly not, and the refusal
-   reasons are visible rather than silently stripped.
-3. **Re-run the strict knowledge-time replay with `unproject` and check in `kt.json`** — A/B §2's
-   "792/792 UNKNOWN" is currently flagged UNVERIFIED because the published recipe produces the
-   opposite. It is the sentence that licenses every retrospective figure.
-4. **Migrate USGS instantaneous values off the legacy IV endpoint** (§1 gap 3): degradation is
-   possible from August 2026 and decommission is Q1 2027.
+~~1. Decouple the growth rank from `RANK_READ_EDGE`~~ **DONE 2026-08-27** (`595fc92`). The growth
+   reference is its own row, `method:streamflow-growth-reference@1.0.0`, read at every percentile;
+   the record context went to `@2.0.0` with `growth` removed, so storage is unchanged and the read
+   is 247 KiB instead of 952. Mutation-proved three ways.
+~~2. Surface Tier 0 in the client~~ **DONE 2026-08-27** (`3b880bf`, `1856fe1`). The runtime zod
+   schemas were the gap — `generated.ts` had the types and minor-version tolerance stripped them.
+   Added, plus a `NoMissingKeys` check that fails typecheck naming an omitted field, because the
+   existing `Assignable` guard is one-directional and structurally cannot catch an omission.
+   BasinPanel renders level / change / historical context as separate statements, each with its
+   own provenance. `1856fe1` corrected a clamp renderer that named the wrong END of the ladder.
+~~3. Re-run the strict knowledge-time replay~~ **DONE 2026-08-27** (`a024c7f`). `unproject` must
+   run BEFORE the strict replay; with it, 792 evaluations and zero computed surfaces, pinned by
+   `tests/fixtures/hindcast/event_zero_knowledge_time.json` and a test.
+~~4. Migrate USGS instantaneous values off the legacy IV endpoint~~ **DONE 2026-08-27**. The live
+   path is the Water Data OGC API `continuous` collection; parity was measured over 1,100 semantic
+   rows with zero one-sided rows and zero value/unit/datum/quality differences
+   (`research/usgs-ogc-instantaneous-parity-2026-08-27.md`, [ADR-0015](adr/ADR-0015-usgs-instantaneous-transport.md)).
+   The legacy adapter is retired to comparator-only and there is no fallback. **Still on the same
+   deadline and NOT done: the published day-of-year statistics cross-check (`nwis/stat`,
+   `product:usgs-daily-stats`)**, which is the last production caller of
+   `waterservices.usgs.gov`.
 5. **Close the three remaining M2 items**: `/metrics`, database roles with append-only grants,
    mypy in CI.
 6. Re-run the pending research verifications (six categories) as a scheduled, low-concurrency job.

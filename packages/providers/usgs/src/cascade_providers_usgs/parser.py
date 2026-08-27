@@ -1,4 +1,11 @@
-"""Strict parser for NWIS IV JSON (WaterML-ish). Uses only the fields we need; tolerates extras;
+"""Strict parser for NWIS IV JSON (WaterML-ish).
+
+`parse_iv`, `IvSeries` and `IvValue` are RETIRED FROM PRODUCTION (2026-08-27) and exist only for
+the transport comparator — see `client.py`. `VARIABLE_BY_CODE` and `ParseError` are NOT retired:
+`ogc_parser.py` imports both, so the two transports agree on which parameter codes matter and
+raise the same error type.
+
+Original notes: Uses only the fields we need; tolerates extras;
 raises ParseError on a missing required field. Values stay strings here; normalize.py decides
 sentinel/number. Timestamps are parsed WITH their offset (e.g. -07:00 PDT / -08:00 PST)."""
 

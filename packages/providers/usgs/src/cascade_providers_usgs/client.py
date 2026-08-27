@@ -1,8 +1,24 @@
-"""USGS NWIS IV client. Base URL is a compile-time constant (vibesec addendum §1).
+"""USGS NWIS IV client — RETIRED FROM PRODUCTION 2026-08-27; comparator and capture use only.
 
-NOTE: the legacy `waterservices.usgs.gov/nwis/iv/` service is scheduled for decommission in
-Q1 2027 (successor: api.waterdata.usgs.gov OGC API). Some queries 301 to
-`nwis.waterservices.usgs.gov`; both hosts are allowlisted and redirects are re-validated.
+The live instantaneous path is the Water Data OGC API (`ogc_client.py`, `jobs.py`). Nothing in
+`packages/`, `apps/` or the scheduler calls this module any more: `fetch_iv` appears outside
+`tests/` and `scripts/` only in comments.
+
+It is KEPT rather than deleted for one concrete reason the migration brief allows — it is half of
+the parity evidence. `tests/unit/test_usgs_transport_parity.py` runs both transports over the same
+captured window and asserts they normalize identically, and `scripts/compare_usgs_iv_ogc.py` does
+the same against the live endpoints. A comparator that cannot be run is not a comparator.
+
+It must NEVER become a fallback. `jobs.py` does not import it, and
+`test_usgs_ogc_live_job.py::test_an_ogc_failure_fails_and_never_reaches_for_the_legacy_service`
+fails if that changes: a transport that switches itself under failure makes both provenance and
+outage interpretation ambiguous, and health would read green on data from somewhere else.
+
+The service is scheduled for decommission in Q1 2027. Some queries 301 to
+`nwis.waterservices.usgs.gov`; both hosts stay allowlisted because the comparator and the still-
+legacy `nwis/stat` cross-check (`stats_client.py`) need them.
+
+Base URL is a compile-time constant (vibesec addendum §1).
 """
 
 from __future__ import annotations
