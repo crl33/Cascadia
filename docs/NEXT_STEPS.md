@@ -302,9 +302,10 @@ they are recorded in §1 rather than repeated here.
    carries `America/Los_Angeles` and refuses any zone outside `SEEDABLE_TIME_ZONES` or
    unresolvable in the running image, so it fails at seed time instead of degrading per row
    ([ADR-0017](adr/ADR-0017-canonical-iana-time-zones-in-the-seed.md)). The flagged historical rows
-   are left as they are and nothing is backfilled: the 24 h `growth` returns on its own once two
-   correctly stamped daily rows exist. **Production still needs the re-seed and one re-run** —
-   `infra/RUNBOOK-deploy.md` §"Re-seed after a seed-data change".
+   are left as they are and nothing is backfilled. **Closed in production 2026-08-27**: migration
+   `0004` corrected 7 station rows and nothing else, the next in-container job wrote its rows at
+   the local 07:00Z boundary with no `day_boundary_assumed_utc`, and the 24 h `growth` recovered
+   immediately on all six basins because a correct row from 24 h earlier already existed.
 6. **Close the three remaining M2 items**: `/metrics`, database roles with append-only grants,
    mypy in CI.
 7. Re-run the pending research verifications (six categories) as a scheduled, low-concurrency job.

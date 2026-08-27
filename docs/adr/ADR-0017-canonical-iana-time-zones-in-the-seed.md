@@ -113,3 +113,55 @@ Nothing is backfilled to manufacture a growth rank. The 24 h `growth` becomes no
 - Tests: `test_a_legacy_time_zone_alias_is_refused_at_seed_time`,
   `test_every_seedable_time_zone_resolves_and_is_not_a_legacy_alias` (tests/unit/test_p3_foundation.py);
   `test_every_seeded_gauge_has_a_time_zone_so_the_day_boundary_is_never_assumed` (tests/unit/test_susceptibility.py).
+
+## Production outcome (2026-08-27)
+
+The seed fix changes what a future seed writes; it does not correct rows already in a database,
+and re-seeding is a manual act. Migration `0004` carries the correction on the path the
+deployment already runs. Landed `5d00299`, all five CI jobs green (445 offline / 15 pg).
+
+`alembic upgrade head` against production, from `0003`:
+
+```
+Running upgrade 0003 -> 0004, Correct the one seeded station time zone …
+0004: station.time_zone 'PST8PDT' -> 'America/Los_Angeles' on 7 row(s)
+```
+
+Full row snapshots either side: all 7 stations corrected, **zero non-`time_zone` differences**,
+same station set. No other table touched, no schema change, no derived row rewritten.
+
+**The production image resolves the zone — proved by the job, not by a laptop.** The next
+`usgs.fetch_daily_percentile` run, deferred to the production worker and executed in the
+container, wrote 6 rows stamped `2026-08-27T07:00:00Z` — local midnight ending 2026-08-26 in PDT,
+derived from `America/Los_Angeles` rather than assumed — with `quality: ['provisional']` and **no
+`day_boundary_assumed_utc`**. An image that could not resolve the key would have produced
+`00:00Z` and the flag; that is what it had produced on every prior container run.
+
+**`state_change` recovered immediately, without waiting a day.** Production already held one
+correctly stamped batch at `2026-08-26T07:00Z` from an off-cron manual run; the new row at
+`2026-08-27T07:00Z` is exactly 24 h later, so the pair was available at once. All six basins now
+publish a non-null 24 h `growth` with `span_h: 24.0`.
+
+The pair is both-local, and that was verified rather than inferred — the values alone cannot
+distinguish the two stampings, because a UTC-assumed row and its local twin carry the *same*
+daily mean. Re-running `state_change` over the real production rows shows only LOCAL rows fall
+inside `STATE_CHANGE_TOLERANCE_H` of either endpoint:
+
+```
+end anchor 2026-08-27T07:00:00+00:00
+  within 6.0h of the to   anchor: [('2026-08-27T07:00:00+00:00', 'LOCAL')]
+  within 6.0h of the from anchor: [('2026-08-26T07:00:00+00:00', 'LOCAL')]
+  -> growth 0.9831932773109243   (the surface reports 0.9832)
+```
+
+This is §"The historical rows are left exactly as they are" holding in production: the 24
+UTC-assumed rows are all still present, still flagged, and simply unreachable from a
+local-stamped endpoint 7 h away. Nothing was deleted, superseded or backfilled, and
+`STATE_CHANGE_TOLERANCE_H` is untouched at 6 h.
+
+Two nulls that are correct and are not defects. The 48 h window still refuses —
+`no daily mean within 6 h of 2026-08-25T07:00:00+00:00` — because only a UTC-assumed row exists
+for that date; it closes on its own. And the 24 h growth `rank` is null with the reason *outside
+the largest 10 % of this gauge's N changes over this window, which is the only part stored*: the
+flows are steady, so the change is below the stored p90 tail. The rank is populated where the
+reference supports it, and here it honestly does not.

@@ -278,11 +278,12 @@ Both seed sites now carry `America/Los_Angeles`, and `cascade_core.seed._validat
 refuses any zone outside `SEEDABLE_TIME_ZONES` or unresolvable in the running image — so the seed
 fails once and loudly rather than degrading in every derived row.
 
-**In the repository only.** Production still carries `PST8PDT` and still writes UTC-assumed rows;
-it needs the re-seed and one job re-run described in `infra/RUNBOOK-deploy.md`
-§"Re-seed after a seed-data change". Until then `/viz/basins` keeps reporting `growth: null`, and
-for one cron interval after the re-seed it still will — the velocity needs two correctly stamped
-rows 24 h apart. Two details the fix turned up and depends on:
+**Closed in production the same day** by migration `0004` rather than a re-seed: changing the seed
+file does not correct rows already in a database. 7 station rows corrected, nothing else changed,
+and the next in-container job wrote its rows at the local boundary with no
+`day_boundary_assumed_utc`. The 24 h `growth` came back at once on all six basins — no waiting a
+day, because a correctly stamped row from 24 h earlier already existed (ADR-0017 §Production
+outcome). Two details the fix turned up and depends on:
 
 - The pre-existing test that asserts the seeded zones resolve
   (`test_every_seeded_gauge_has_a_time_zone_so_the_day_boundary_is_never_assumed`) passed the whole
