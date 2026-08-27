@@ -76,6 +76,17 @@ def context() -> dict:
     return clim.build_record_context(sauk_rows(), site=SITE).to_values_json()
 
 
+@pytest.fixture
+def growth_context() -> dict:
+    """The stored `streamflow_growth_reference` blob — a SEPARATE row since 2026-08-27.
+
+    Separate because the velocity reads it at every percentile while the window tail is read only
+    at or above `RANK_READ_EDGE`; keeping them in one document made the growth rank inherit the
+    tail's p90 gate.
+    """
+    return clim.build_record_context(sauk_rows(), site=SITE).growth_values_json()
+
+
 # --- the defect, restated so a fix cannot be claimed without moving these numbers ------------
 
 
@@ -315,8 +326,8 @@ def test_the_velocity_is_computable_when_the_level_is_not() -> None:
     assert sus.state_change([(D9, SKAGIT_09), (D11, SKAGIT_11)], end=D11, window_h=48).growth is not None
 
 
-def test_growth_rank_describes_speed_without_drawing_a_band(context) -> None:
-    reference = context["growth"]["24"]
+def test_growth_rank_describes_speed_without_drawing_a_band(growth_context) -> None:
+    reference = growth_context["growth"]["24"]
     assert reference["n"] > 0 and reference["span_days"] == 1
     biggest = max(reference["top"])
     rank, n, reason = sus.growth_rank(biggest + 1.0, reference)
@@ -368,18 +379,27 @@ def test_the_surface_and_the_builder_agree_on_the_record_context_vocabulary() ->
         assert sus._window_keys(key, clim.WINDOW_DAYS) == set(clim.window_keys(key))
 
 
-def test_the_two_reasons_a_growth_rank_is_absent_stay_distinct() -> None:
-    """"Nobody built the record context" and "we did not read it" are different facts.
+def test_a_growth_rank_is_never_absent_merely_because_the_percentile_is_low() -> None:
+    """The decoupling, asserted as the ABSENCE of a state rather than the presence of a message.
 
-    The first is a gap somebody has to close; the second is the read rule working as designed.
-    Collapsing them would hide the gap behind the design, which is the same mistake the tidal
-    guard's two refusals exist to avoid.
+    There used to be two reasons a growth rank could be missing: nobody had built the reference,
+    or the surface had declined to read it below p90. The second was the defect — `RANK_READ_EDGE`
+    is the same constant as the top band edge, so the rank arrived only once the band already read
+    VERY_HIGH, and the velocity fires below that. The reference is now read at every percentile,
+    so "not read" is not a state the surface can be in, and the only remaining reason must be the
+    one somebody can act on.
     """
-    not_built = sus.growth_rank(2.0, None, absent_reason=sus.NO_RECORD_CONTEXT_REASON)
-    not_read = sus.growth_rank(2.0, None, absent_reason=sus.NO_GROWTH_REFERENCE_READ_REASON)
-    assert not_built[2] != not_read[2]
-    assert "build_climatology" in not_built[2]
-    assert f"p{int(sus.RANK_READ_EDGE)}" in not_read[2]
+    assert not hasattr(sus, "NO_GROWTH_REFERENCE_READ_REASON"), (
+        "the p90-gated refusal is the defect; its reintroduction is a regression"
+    )
+    only_reason = sus.NO_GROWTH_REFERENCE_BUILT_REASON
+    assert "build_climatology" in only_reason, "the remaining reason must name what closes it"
+    assert f"p{int(sus.RANK_READ_EDGE)}" not in only_reason, (
+        "the reason must not cite the percentile edge — the read no longer depends on it"
+    )
+    # and the reference is fetched under its OWN identity, not the tail's
+    assert sus.GROWTH_REFERENCE_METHOD_ID != sus.RECORD_CONTEXT_METHOD_ID
+    assert sus.GROWTH_REFERENCE_FEATURE != sus.RECORD_CONTEXT_FEATURE
 
 def test_the_tail_and_the_velocity_have_to_be_checked_together(context) -> None:
     """The coupling, in one test, because shipping half of this change is the failure mode.
@@ -432,10 +452,13 @@ def test_each_new_statement_publishes_its_own_method_identity() -> None:
     """
     assert sus.TAIL_STATE_METHOD_ID == "method:streamflow-tail-state@0.1.0"
     assert sus.STATE_CHANGE_METHOD_ID == "method:streamflow-state-change@0.1.0"
-    assert sus.RECORD_CONTEXT_METHOD_ID == "method:streamflow-record-context@1.0.0"
+    # @2.0.0: the growth reference moved out of this document, so what is stored changed
+    assert sus.RECORD_CONTEXT_METHOD_ID == "method:streamflow-record-context@2.0.0"
+    assert sus.GROWTH_REFERENCE_METHOD_ID == "method:streamflow-growth-reference@1.0.0"
     # an exact rank, a ratio of two daily means, the ladder they are read beside, the published
     # cross-check and the banded index are five different claims and never interchangeable
     assert len({
         sus.TAIL_STATE_METHOD_ID, sus.STATE_CHANGE_METHOD_ID, sus.CLIMATOLOGY_METHOD_ID,
         sus.PUBLISHED_CLIMATOLOGY_METHOD_ID, sus.SURFACE_METHOD_V2,
-    }) == 5
+        sus.RECORD_CONTEXT_METHOD_ID, sus.GROWTH_REFERENCE_METHOD_ID,
+    }) == 7

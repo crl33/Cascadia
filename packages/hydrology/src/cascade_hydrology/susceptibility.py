@@ -136,7 +136,10 @@ PERCENTILE_ROW_METHOD_ID = "method:susceptibility-index@0.1.0"
 
 CLIMATOLOGY_METHOD_ID = "method:streamflow-doy-climatology@1.0.0"
 PUBLISHED_CLIMATOLOGY_METHOD_ID = "method:usgs-published-doy-stats@1.0.0"
-RECORD_CONTEXT_METHOD_ID = "method:streamflow-record-context@1.0.0"
+RECORD_CONTEXT_METHOD_ID = "method:streamflow-record-context@2.0.0"
+#: The growth distribution, stored separately from the window tail so the VELOCITY can read
+#: it on every request without paying for the tail. Read unconditionally; the tail is not.
+GROWTH_REFERENCE_METHOD_ID = "method:streamflow-growth-reference@1.0.0"
 SWE_METHOD_ID = "method:snotel-basin-swe-context@1.0.0"
 PRECIP_METHOD_ID = "method:snotel-precip-14d-context@1.0.0"
 #: The level statement above the ladder's ceiling: rank + multiple. Exact arithmetic over the
@@ -148,6 +151,7 @@ STATE_CHANGE_METHOD_ID = "method:streamflow-state-change@0.1.0"
 PERCENTILE_FEATURE = "streamflow_doy_percentile"
 CLIMATOLOGY_FEATURE = "streamflow_doy_climatology"
 RECORD_CONTEXT_FEATURE = "streamflow_record_context"
+GROWTH_REFERENCE_FEATURE = "streamflow_growth_reference"
 SWE_FEATURE = "basin_swe_percent_of_median"
 PRECIP_FEATURE = "snotel_precip_14d_percent_of_median"
 SOIL_FEATURE = "soil_saturation_percentile"
@@ -595,11 +599,16 @@ def state_change(
     return GrowthReading(window_h, growth, q_then, q_now, t_then, t_now, span_h, direction, None)
 
 
-NO_GROWTH_REFERENCE_READ_REASON = (
-    "The gauge's own distribution of past changes lives in the day-of-year record context, "
-    f"which is read only at or above p{int(RANK_READ_EDGE)} — where the ladder stops "
-    "discriminating and the level needs a rank. Below it the change is published without one. "
-    "The change itself is exact either way."
+#: Why a change may carry no rank. Since 2026-08-27 this is the ONLY reason: the reference is
+#: read on every request regardless of percentile, so "not read" is no longer a state the surface
+#: can be in. The previous reason said the reference was read only at or above p90 — that was
+#: true, and it meant the rank was missing on exactly the days the velocity earned its lead.
+NO_GROWTH_REFERENCE_BUILT_REASON = (
+    "No stored growth reference for this gauge, so the change cannot be ranked against its own "
+    "history. It is written by the annual `usgs.build_climatology` job under "
+    "`method:streamflow-growth-reference@1.0.0`; until that has run, the change is published "
+    "without a rank. The change itself is exact either way, and it is NOT withheld because the "
+    "percentile is low — the reference is read at every percentile."
 )
 
 
@@ -817,6 +826,14 @@ async def prefetch(k: Knowledge, basins: Sequence[Basin], *, version: str = SHIP
       exact rank is wanted precisely where the ladder is about to stop discriminating, and
       reading a 100-year record's tail at every gauge on a quiet August day would be a round
       trip bought for nothing.
+
+    The growth reference is read for EVERY gauge, unconditionally, in one statement. That is
+    deliberate and it is the fix of 2026-08-27: it used to ride inside the record context and
+    inherit the p90 gate, which is the same constant as the top band edge, so the velocity's rank
+    was available only once the level had already reached the top band — and the velocity fires
+    below it. It is 247 KiB across the six seeded gauges against the context's 952 KiB, so
+    reading it always is cheaper than reading the context always, which is the alternative that
+    would have been needed to close the same gap.
     """
     gauges = gauge_ids(basins)
     scopes = gauges + [b.id for b in basins]
@@ -831,6 +848,11 @@ async def prefetch(k: Knowledge, basins: Sequence[Basin], *, version: str = SHIP
         )
     if version == "0.1.0":
         return  # 0.1.0 knows nothing about the record context and must not read it
+    # Unconditional, and batched across every gauge: `_state_changes` reads this for all of them
+    # at any percentile, so a per-gauge read here would cost one statement each.
+    await k.latest_derived_features(
+        [(GROWTH_REFERENCE_FEATURE, GROWTH_REFERENCE_METHOD_ID, None)], gauges, lookback=CLIMATOLOGY_LOOKBACK
+    )
     hot = [g for g in gauges if _needs_record_context(rows[g])]
     if hot:
         await k.latest_derived_features(
@@ -1285,18 +1307,22 @@ async def _state_changes(
     points = [(r.valid_time, float(r.value)) for r in history if r.value is not None]
     unit = row.unit or "cfs"
 
-    # The growth reference lives in the record context, which is read only in the tail. Where it
-    # is absent the growth still publishes; only its rank is refused, with its reason.
-    looked = _needs_record_context(row)
-    context_row = (
-        await k.latest_derived_feature(
-            RECORD_CONTEXT_FEATURE, gauge_id, method_id=RECORD_CONTEXT_METHOD_ID, lookback=CLIMATOLOGY_LOOKBACK,
-        )
-        if looked
-        else None
+    # The growth reference is read UNCONDITIONALLY — it does not live in the record context any
+    # more, and this is the whole point of having separated them. It used to be gated behind
+    # `_needs_record_context` (p90), which is the same constant as the top band edge, so the rank
+    # was readable only once the band already read VERY_HIGH — and the velocity fires BELOW p90,
+    # which is the entire reason it exists. Measured before the split
+    # (`research/event-zero-ab-2026-08-27.md` §7c): five of six first escalations carried no rank,
+    # and the lead time was identically the length of the unranked window in all six basins.
+    #
+    # The gate is not widened, it is REMOVED for this read: `GROWTH_REFERENCE_FEATURE` is 247 KiB
+    # across the six gauges against the context's 952 KiB, so reading it always costs 74 % less
+    # than reading the context always would have.
+    growth_row = await k.latest_derived_feature(
+        GROWTH_REFERENCE_FEATURE, gauge_id, method_id=GROWTH_REFERENCE_METHOD_ID, lookback=CLIMATOLOGY_LOOKBACK,
     )
-    growth_reference = ((context_row.values_json or {}).get("growth") or {}) if context_row is not None else {}
-    absent = NO_RECORD_CONTEXT_REASON if looked else NO_GROWTH_REFERENCE_READ_REASON
+    growth_reference = ((growth_row.values_json or {}).get("growth") or {}) if growth_row is not None else {}
+    absent = NO_GROWTH_REFERENCE_BUILT_REASON
 
     changes: list[StateChange] = []
     drivers: list[Driver] = []

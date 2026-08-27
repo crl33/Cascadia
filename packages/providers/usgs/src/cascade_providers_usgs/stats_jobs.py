@@ -46,6 +46,7 @@ from cascade_core.models import Basin, DerivedFeature, Station
 from cascade_core.registry import PRODUCT_USGS_DAILY_STATS, PRODUCT_USGS_OGC_DAILY
 from cascade_core.timeutils import available_at, utcnow
 from cascade_providers_usgs.climatology import (
+    GROWTH_REFERENCE_METHOD_ID,
     METHOD_ID,
     PUBLISHED_METHOD_ID,
     RECORD_CONTEXT_METHOD_ID,
@@ -85,6 +86,10 @@ PERCENTILE_FEATURE = "streamflow_doy_percentile"
 #: untouched by this and a replay at an old knowledge time simply finds no context row and says
 #: so (design: research/high-tail-selection-2026-08-27.md §9).
 RECORD_CONTEXT_FEATURE = "streamflow_record_context"
+#: Written beside the record context by the same job, from the same parsed rows and the same
+#: artifact. Separate because the velocity reads it UNCONDITIONALLY while the tail is read
+#: only at or above the rank edge — see `GROWTH_REFERENCE_METHOD_ID` for the measurement.
+GROWTH_REFERENCE_FEATURE = "streamflow_growth_reference"
 # Ranking today's flow inside the ladder IS the susceptibility method's step 3, so the row
 # carries that method id and cascade_hydrology.susceptibility reads it back under the same one.
 PERCENTILE_METHOD_ID = "method:susceptibility-index@0.1.0"
@@ -178,6 +183,45 @@ def _climatology_row(
     )
 
 
+def _growth_reference_row(
+    context: RecordContext,
+    *,
+    station_id: str,
+    valid_time: datetime,
+    retrieved_at: datetime,
+    artifact_id: int | None,
+    quality: list[str],
+) -> DerivedFeature:
+    """The gauge's own distribution of past day-over-day changes, as its own row.
+
+    Same identity rule as the record context it is written beside: one build is one row, and a
+    re-run finds its own row and skips. It exists as a separate row precisely so the surface can
+    read it without reading the window tail, which is four times larger and is wanted only where
+    the ladder clamps.
+    """
+    return DerivedFeature(
+        feature=GROWTH_REFERENCE_FEATURE,
+        scope_kind="station",
+        scope_id=station_id,
+        window=None,
+        valid_time=valid_time,
+        issued_at=None,
+        computed_at=retrieved_at,
+        available_at=available_at(valid_time=valid_time, retrieved_at=retrieved_at),
+        method_id=GROWTH_REFERENCE_METHOD_ID,
+        product_id=PRODUCT_USGS_OGC_DAILY,
+        value=None,
+        values_json=context.growth_values_json(),
+        unit=context.unit,
+        percentile=None,
+        climatology_ref=context.reference_ref,
+        confidence_label="unknown",  # exact counts carry no confidence of their own to state
+        quality=quality,
+        inputs=[] if artifact_id is None else [{"table": "raw_artifact", "id": artifact_id}],
+        raw_artifact_id=artifact_id,
+    )
+
+
 def _record_context_row(
     context: RecordContext,
     *,
@@ -250,6 +294,19 @@ async def run_build_climatology(
             scope_id=station.id, valid_time=valid_time,
         ):
             session.add(_record_context_row(
+                context, station_id=station.id, valid_time=valid_time, retrieved_at=result.fetched_at,
+                artifact_id=result.artifact_id, quality=list(flags),
+            ))
+            written += 1
+        # The growth reference rides on the SAME build, artifact and identity rule, and is written
+        # separately only so the velocity can read it without the tail. Guarded on its own
+        # existence check so a re-run after the split writes the missing half without duplicating
+        # the half that is already there.
+        if context.growth and not await _exists(
+            session, method_id=GROWTH_REFERENCE_METHOD_ID, feature=GROWTH_REFERENCE_FEATURE,
+            scope_id=station.id, valid_time=valid_time,
+        ):
+            session.add(_growth_reference_row(
                 context, station_id=station.id, valid_time=valid_time, retrieved_at=result.fetched_at,
                 artifact_id=result.artifact_id, quality=list(flags),
             ))

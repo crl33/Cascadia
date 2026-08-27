@@ -310,14 +310,22 @@ async def test_build_climatology_stores_both_ladders_separately_and_never_fuses_
         await session.commit()
         rows = list((await session.execute(select(DerivedFeature).where(DerivedFeature.feature == "streamflow_doy_climatology"))).scalars())
         context = list((await session.execute(select(DerivedFeature).where(DerivedFeature.feature == stats_jobs.RECORD_CONTEXT_FEATURE))).scalars())
-    # six gauges x (cascade-built ladder, usgs-published ladder, record context)
-    assert written == 18
+    # six gauges x (cascade-built ladder, usgs-published ladder, record context, growth reference)
+    assert written == 24
+    growth = list((await session.execute(select(DerivedFeature).where(DerivedFeature.feature == stats_jobs.GROWTH_REFERENCE_FEATURE))).scalars())
+    assert len(growth) == 6
     # The record context is a SEPARATE feature under a SEPARATE method id. That is what keeps
     # `method:streamflow-doy-climatology@1.0.0` producing byte-identical output while the tail
     # gains a rank — and it is what keeps register X8 untouched by this change.
     assert len(context) == 6
     assert {r.method_id for r in context} == {clim.RECORD_CONTEXT_METHOD_ID}
-    assert all(r.value is None and r.values_json["keys"] and r.values_json["growth"] for r in context)
+    # the context holds the window tail and its per-key support; the growth distribution is a
+    # SEPARATE row under its own method id, which is what lets the velocity read one without the
+    # other (susceptibility.GROWTH_REFERENCE_METHOD_ID)
+    assert all(r.value is None and r.values_json["keys"] and r.values_json["tail"] for r in context)
+    assert all("growth" not in r.values_json for r in context), "the split must not leave a copy behind"
+    assert all(r.value is None and r.values_json["growth"] for r in growth)
+    assert {r.method_id for r in growth} == {clim.GROWTH_REFERENCE_METHOD_ID}
     assert all("percentiles" not in r.values_json and "ladder" not in r.values_json for r in context)
     by_method = {}
     for row in rows:
@@ -341,7 +349,8 @@ async def test_climatology_job_is_append_only_and_a_rerun_writes_nothing(session
         second = await stats_jobs.run_build_climatology(session, fetcher(tmp_path), now=NOW)
         await session.commit()
         n = len(list((await session.execute(select(DerivedFeature).where(DerivedFeature.feature == "streamflow_doy_climatology"))).scalars()))
-    assert first == 18 and second == 0 and n == 12  # 12 ladders + 6 record contexts, then nothing
+    # 12 ladders + 6 record contexts + 6 growth references, then nothing on a re-run
+    assert first == 24 and second == 0 and n == 12
 
 
 @respx.mock
@@ -353,8 +362,10 @@ async def test_the_cross_check_may_fail_without_costing_the_surface_its_value(se
         written = await stats_jobs.run_build_climatology(session, fetcher(tmp_path), now=NOW)
         await session.commit()
         methods = {r.method_id for r in (await session.execute(select(DerivedFeature))).scalars()}
-    # the ladder and its record context both survive; only the published cross-check is missing
-    assert written == 12 and methods == {clim.METHOD_ID, clim.RECORD_CONTEXT_METHOD_ID}
+    # the ladder, its record context and its growth reference all survive; only the published
+    # cross-check is missing
+    assert written == 18
+    assert methods == {clim.METHOD_ID, clim.RECORD_CONTEXT_METHOD_ID, clim.GROWTH_REFERENCE_METHOD_ID}
 
 
 @respx.mock
@@ -919,15 +930,25 @@ async def _sentinel_record_context(session, *, gauge: str, valid_time: datetime)
             for key in ("08-23", "08-24", "08-25", "08-26", "08-27", "08-28")
         },
         "tail": [[day, value] for day, value in SENTINEL_TAIL],
-        "growth": {str(w): {"n": n, "span_days": w // 24, "top": [1.0]}
-                   for w, n in SENTINEL_GROWTH_N.items()},
     }
+    # TWO rows since 2026-08-27, and writing them separately is what makes this test stronger:
+    # the tail and the growth distribution are fetched under different feature/method ids and on
+    # different read rules, so each has to be proved to come from the named gauge on its own.
+    growth_doc = {**{k: v for k, v in doc.items() if k not in ("keys", "tail")},
+                  "growth": {str(w): {"n": n, "span_days": w // 24, "top": [1.0]}
+                             for w, n in SENTINEL_GROWTH_N.items()}}
+    common = dict(
+        scope_kind="station", scope_id=gauge, window=None, valid_time=valid_time, issued_at=None,
+        computed_at=valid_time, available_at=valid_time, product_id=PRODUCT_USGS_OGC_DAILY,
+        value=None, unit="cfs", percentile=None, confidence_label="unknown", quality=[], inputs=[],
+    )
     session.add(DerivedFeature(
-        feature=susceptibility.RECORD_CONTEXT_FEATURE, scope_kind="station", scope_id=gauge,
-        window=None, valid_time=valid_time, issued_at=None, computed_at=valid_time,
-        available_at=valid_time, method_id=susceptibility.RECORD_CONTEXT_METHOD_ID,
-        product_id=PRODUCT_USGS_OGC_DAILY, value=None, unit="cfs", percentile=None,
-        values_json=doc, confidence_label="unknown", quality=[], inputs=[],
+        feature=susceptibility.RECORD_CONTEXT_FEATURE,
+        method_id=susceptibility.RECORD_CONTEXT_METHOD_ID, values_json=doc, **common,
+    ))
+    session.add(DerivedFeature(
+        feature=susceptibility.GROWTH_REFERENCE_FEATURE,
+        method_id=susceptibility.GROWTH_REFERENCE_METHOD_ID, values_json=growth_doc, **common,
     ))
 
 
@@ -1047,3 +1068,58 @@ async def test_the_level_says_why_it_has_no_rank_instead_of_publishing_a_bare_nu
             # the sample size is known even though the position in it was not computed
             assert hs.rank.of >= 1, basin.id
     assert seen, "anti-vacuity: no basin below the read edge, so nothing was actually asserted"
+
+
+@respx.mock
+async def test_the_growth_rank_is_available_below_p90_where_the_velocity_actually_fires(sessions, tmp_path) -> None:
+    """The Tier 0 defect of 2026-08-27, closed and pinned BEHAVIOURALLY.
+
+    `RANK_READ_EDGE` (90.0) and `BAND_EDGES`' top edge are the same constant applied to the same
+    rounded number. While the growth reference lived inside the record context it inherited that
+    gate, so the growth rank was readable **iff the band already read VERY_HIGH** — and the
+    velocity fires BELOW p90, which is the entire reason it exists. Measured consequence across
+    all six basins (`research/event-zero-ab-2026-08-27.md` §7c): the Tier 0 lead time was
+    identically the length of the unranked window, so 100 % of the lead was delivered by a
+    statement that structurally could not say whether the change was fast.
+
+    Asserting the constant is gone is structure. This asserts BEHAVIOUR: a gauge below the edge,
+    with a real day-over-day rise, publishes a RANKED change.
+
+    Both flows are derived from the gauge's own stored ladder rather than hardcoded, so the test
+    keeps testing the same property if the fixture's record changes.
+    """
+    _mock_usgs_stats()
+    await _ingest(sessions, tmp_path, awdb=False)
+    gauge = "station:usgs:12189500"
+    at = datetime(2026, 8, 27, 12, 0, tzinfo=UTC)
+    async with sessions() as session:
+        ladder_row = (await session.execute(
+            select(DerivedFeature).where(DerivedFeature.feature == "streamflow_doy_climatology",
+                                         DerivedFeature.scope_id == gauge,
+                                         DerivedFeature.method_id == clim.METHOD_ID)
+        )).scalars().first()
+        ladder = clim.from_values_json(ladder_row.values_json, method_id=clim.METHOD_ID)
+        # a value comfortably inside the ladder — the level stays UNREMARKABLE while the change
+        # is large, which is exactly the state the velocity exists to describe
+        p50 = ladder.ladders[clim.doy_key(date(2026, 8, 26))].values[50]
+        for offset, value in enumerate((p50 / 2.0, p50)):
+            await _flood_row(session, gauge=gauge, day=date(2026, 8, 25) + timedelta(days=offset),
+                             value=value, valid_time=datetime(2026, 8, 26 + offset, 7, 0, tzinfo=UTC))
+        await session.commit()
+
+    async with sessions() as session:
+        k = as_known_at(session, at)
+        a = await susceptibility.assess(k, await k.basin("basin:skagit"), await k.products())
+        hs = a.hydrologic_state
+        assert hs is not None and hs.percentile < susceptibility.RANK_READ_EDGE, (
+            f"anti-vacuity: the level must be BELOW the read edge, got {None if hs is None else hs.percentile}"
+        )
+        rising = [c for c in a.state_changes if c.growth is not None]
+        assert rising, "anti-vacuity: no change computed, so the rank was never reached"
+        assert any(c.growth > 1.4 for c in rising), "the fixture must actually contain a rise"
+        for c in rising:
+            assert c.rank is not None, (
+                f"a {c.window_h} h change of x{c.growth:.2f} at p{hs.percentile:.1f} carries no rank "
+                f"({c.rank_reason!r}) — the read is still coupled to RANK_READ_EDGE"
+            )
+            assert c.rank_of and c.rank_of >= c.rank

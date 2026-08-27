@@ -117,12 +117,23 @@ async def test_a_production_sized_record_context_round_trips_through_jsonb(scrat
             # the real thing, not a truncated one: 366 keys, thousands of tail values, both windows
             assert len(blob["keys"]) == 366
             assert len(blob["tail"]) > 1000
-            assert set(blob["growth"]) == {"24", "48"}
             assert blob["used_rows"] > 30000
+            # The growth distribution is a SEPARATE row under its own method id since
+            # 2026-08-27, so the context must NOT carry a copy — a leftover copy is how the two
+            # would silently disagree — and the separate row must round-trip through JSONB too.
+            assert "growth" not in blob
+            growth_rows = list((await session.execute(
+                select(DerivedFeature).where(DerivedFeature.feature == stats_jobs.GROWTH_REFERENCE_FEATURE)
+            )).scalars())
+            assert len(growth_rows) == 6, "one growth reference per susceptibility gauge"
+            growth_blob = next(r for r in growth_rows if r.scope_id == SAUK).values_json
+            assert set(growth_blob["growth"]) == {"24", "48"}
+            assert growth_blob["site"] and growth_blob["unit"], "it carries its own identity"
+            assert {r.method_id for r in growth_rows} == {clim.GROWTH_REFERENCE_METHOD_ID}
             # JSONB is unordered and re-encodes floats; the reader must survive both
             context = clim.record_context_from_values_json(blob)
             assert context.keys["12-11"].maximum > 0
-            assert context.growth[24].n > 30000
+            assert int(growth_blob["growth"]["24"]["n"]) > 30000
 
             # and the READ path finds it: a crest above the ladder's ceiling gets an exact rank
             key = "12-11"

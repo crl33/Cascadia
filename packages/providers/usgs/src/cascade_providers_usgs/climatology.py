@@ -43,7 +43,27 @@ PUBLISHED_METHOD_ID = "method:usgs-published-doy-stats@1.0.0"
 #: The record the seven-point ladder throws away, kept under its OWN method id so
 #: `method:streamflow-doy-climatology@1.0.0` keeps producing byte-identical output and register
 #: X8 (which ladder vintage?) is untouched by this. See :func:`build_record_context`.
-RECORD_CONTEXT_METHOD_ID = "method:streamflow-record-context@1.0.0"
+#: Bumped from @1.0.0 when the growth reference moved OUT of this document into
+#: `GROWTH_REFERENCE_METHOD_ID`. The stored shape changed, so the id changed — versioning what is
+#: stored, not the code that stores it. See `growth_values_json` for why they were separated.
+RECORD_CONTEXT_METHOD_ID = "method:streamflow-record-context@2.0.0"
+
+#: The gauge's own distribution of past day-over-day changes, stored SEPARATELY from the window
+#: tail so the velocity can read it without paying for the tail.
+#:
+#: They were one document until 2026-08-27, and that coupling had a measured consequence. The
+#: record context is read only at or above `RANK_READ_EDGE` (p90) because the tail is large and
+#: is wanted only where the ladder clamps — but the VELOCITY fires below p90, which is the whole
+#: point of having one, so the growth rank was unavailable on exactly the days the velocity
+#: earned its lead time. Measured across all six basins in `research/event-zero-ab-2026-08-27.md`
+#: §7c: 100 % of the 264 h of lead the Tier 0 change bought was delivered by a statement that
+#: structurally could not carry a rank.
+#:
+#: Splitting rather than widening the gate is what the payload says: the growth block is 247 KiB
+#: of the 952 KiB context across the six seeded gauges (26 %), so reading it alone costs 74 %
+#: less than reading the whole context on every request, and total storage is unchanged because
+#: nothing is duplicated.
+GROWTH_REFERENCE_METHOD_ID = "method:streamflow-growth-reference@1.0.0"
 PERCENTILES: tuple[int, ...] = (5, 10, 25, 50, 75, 90, 95)
 WINDOW_DAYS = 2
 APPROVED = "Approved"
@@ -463,6 +483,32 @@ class RecordContext:
     end_water_year: int | None
     used_rows: int
 
+    def growth_values_json(self) -> dict[str, Any]:
+        """The growth reference alone, as its own stored document (`GROWTH_REFERENCE_METHOD_ID`).
+
+        Carries its own identity — site, unit, window, period of record, parameters — rather than
+        pointing at the record context. The two are written by the same job from the same parsed
+        rows and the same artifact, but they are separate STATEMENTS with different read rules and
+        either may be absent, so a consumer must be able to answer "where did this come from" from
+        the row in front of it.
+
+        Nothing is duplicated: `to_values_json` no longer carries `growth`, which is why
+        `RECORD_CONTEXT_METHOD_ID` went to @2.0.0.
+        """
+        return {
+            "site": self.site,
+            "unit": self.unit,
+            "window_days": self.window_days,
+            "begin_water_year": self.begin_water_year,
+            "end_water_year": self.end_water_year,
+            "used_rows": self.used_rows,
+            "parameters": RECORD_CONTEXT_PARAMETERS,
+            "growth": {
+                str(w): {"n": g.n, "span_days": g.span_days, "top": list(g.top)}
+                for w, g in sorted(self.growth.items())
+            },
+        }
+
     @property
     def reference_ref(self) -> str:
         span = f"WY{self.begin_water_year}-WY{self.end_water_year}" if self.begin_water_year else "unknown"
@@ -494,10 +540,6 @@ class RecordContext:
                 for s in sorted(self.keys.values(), key=lambda s: s.key)
             },
             "tail": [[d.isoformat(), v] for d, v in self.tail],
-            "growth": {
-                str(w): {"n": g.n, "span_days": g.span_days, "top": list(g.top)}
-                for w, g in sorted(self.growth.items())
-            },
         }
 
 
