@@ -239,6 +239,16 @@ def test_the_velocity_refuses_rather_than_interpolates() -> None:
     assert empty.growth is None and "no observation at or before" in empty.reason
     zero = state_change([(D10, 0.0), (D11, 4000.0)], end=D11, window_h=24)
     assert zero.growth is None and "multiplicative rate" in zero.reason
+    # A "24 h growth" measured over 14 h is a different number wearing the same label.
+    short = state_change([(D9, 1000.0), (D10 - timedelta(hours=10), 4000.0)], end=D10, window_h=24)
+    assert short.growth is None and "within 6 h of it" in short.reason
+
+
+def test_the_velocity_reports_the_span_it_actually_covered() -> None:
+    change = state_change([(D9, 1000.0), (D11, 3000.0)], end=D11, window_h=48)
+    assert change.span_h == pytest.approx(48.0)
+    off = state_change([(D9 + timedelta(hours=3), 1000.0), (D11, 3000.0)], end=D11, window_h=48)
+    assert off.growth == pytest.approx(3.0) and off.span_h == pytest.approx(45.0)
 
 
 def test_the_velocity_is_computable_when_the_level_is_not() -> None:

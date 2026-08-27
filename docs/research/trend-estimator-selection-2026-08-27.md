@@ -19,6 +19,12 @@ checked-in fixture; **INFERENCE** = reasoned from those facts; **OPEN QUESTION**
 > measurement whose value is precisely that it was independent, plus the §5 tidal-guard design
 > and the §6 metadata specification that the brief asks for. Where the two differ in emphasis,
 > §4.6 says so.
+>
+> The prototype both notes describe is one module, not two. It was written for this phase as
+> `packages/hydrology/src/cascade_hydrology/trend_candidates.py` — the name the brief gave it —
+> and renamed to **`trend_estimators.py`** by the implementing phase, which is the name used
+> throughout below. If you find it under the other name, it is the same file. `trend.py` itself
+> is untouched, and nothing is wired into `assemble.py` *by this note*.
 
 ---
 
@@ -88,7 +94,7 @@ reads **+0 through the crest** (`tier0-measured-basis` §3): 24,976 cfs and 72,4
 95.0 at the Sauk, so their difference is zero by construction. Fixing the estimator does not
 touch that, and shipping a percentile-space derivative before the high tail is fixed would
 produce a velocity that is silent exactly when velocity matters. Brief §7 and §8 remain one
-change; this is not it. `trend_candidates.PERCENTILE_SPACE_WARNING` carries the fence in code.
+change; this is not it. `trend_estimators.PERCENTILE_SPACE_WARNING` carries the fence in code.
 
 **Stage and discharge stay separate** throughout. Every table below reports the two bases
 separately, in their own units, and nothing here converts one into the other (`HYDROLOGY.md` §9).
@@ -267,7 +273,7 @@ fixtures.
 sample spacing is not constant, computing the OLS slope on a *nominal* 15-minute index instead
 of the actual timestamps gives a median error of **35.9 %** and a maximum of **106.7 %**
 (worst: the Sauk, 2026-08-12T22:00Z, 14 samples, 3.0 h maximum gap). Every estimator in
-`trend_candidates.py` takes `xs` built from `(t − t₀).total_seconds()/3600`; none of them has
+`trend_estimators.py` takes `xs` built from `(t − t₀).total_seconds()/3600`; none of them has
 an index-based path.
 
 **Refusal, not extrapolation.** The existing ladder — `< MIN_SAMPLES`, `max_gap > 2 h`,
@@ -298,7 +304,13 @@ flow, 14 samples where 25 are nominal, spacing 15–105 min, inside the 2 h tole
 must **answer**, from actual timestamps (endpoint −2683, OLS −2253, T-S −2400, RM −2445 cfs/h;
 stage over the same window is complete at 25 and gives −0.172/−0.167/−0.165/−0.190 ft/h).
 `trend_aug_irregular_12189500.json`: the Sauk, 14 samples, a real 3.0 h gap — the method must
-**refuse**, `GAP_EXCEEDS_TOLERANCE`, on both bases.
+**refuse**, `GAP_EXCEEDS_TOLERANCE`, on both bases. Both behaviours were confirmed end-to-end
+through `estimate_trend`: CRNW1 flow answers −2445 cfs/h carrying `quality = SPARSE_SUPPORT`
+(14 samples where the 6 h span implies 24) while CRNW1 stage over the identical window answers
+−0.190 ft/h with `quality = OK`, and the Sauk returns `slope = None`, `direction = "unknown"`,
+`refusal.reason = "GAP_EXCEEDS_TOLERANCE"` on stage and flow alike. **The same window is
+answerable on one basis and sparse on the other, which is why the support condition is recorded
+per estimate rather than per station.**
 
 ---
 
@@ -515,7 +527,7 @@ every estimator is two orders of magnitude below the epsilon.
 ### 5.3 The design
 
 **A per-station marker, and a method-level refusal that fails closed.** Prototyped in
-`trend_candidates.py` as `TidalClass` + `tidal_refusal`.
+`trend_estimators.py` as `TidalClass` + `tidal_refusal`.
 
 ```
 TidalClass = FLUVIAL | TIDAL | UNVERIFIED     (and the field may be absent)
@@ -602,11 +614,25 @@ All three are deterministic, offline, and need no provider. **T2 must be written
 estimator is changed to suppress a tide**, because suppressing it silently is the outcome the
 guard exists to prevent.
 
+**All three were run against the prototype before this note was written, and pass** (FACT,
+`estimate_trend(..., estimator="repeated_median")`):
+
+| test | asserted | measured |
+|---|---|---|
+| T1 | all 50 phases refuse `TIDAL_CONTAMINATION`, `slope is None`, `n == 0` | **50/50**, `slope=None`, `direction="unknown"`, `n=0` |
+| T1b | absent marker and `UNVERIFIED` both refuse `TIDAL_CLASS_UNVERIFIED` | both, verbatim |
+| T2 | >= 45/50 phases non-STEADY, peak abs(slope) > 0.5 ft/h | **49/50**, peak **0.8452 ft/h** (16.9x the epsilon) |
+| T3a | `FLUVIAL` never refuses | no refusal, on the real fixture window and on the synthetic |
+| T3b | A = 0.008 ft tide on a real flat window: abs(delta slope) < 0.005 ft/h, direction unchanged | **0.003399 ft/h**, direction unchanged at **50/50** phases |
+
+The T3b base window is `trend_aug_flat_12213100.json` (NKSW1 stage, −0.0139 ft/h, STEADY); the
+measured seeded maximum tide moves it by a quarter of one percent of the STEADY epsilon.
+
 ---
 
 ## 6. What a trend must carry
 
-Prototyped as `trend_candidates.TrendEstimate`. Every field answers the one rule — *where did it
+Prototyped as `trend_estimators.TrendEstimate`. Every field answers the one rule — *where did it
 come from, when, from which version, how stale, what transformed it.*
 
 | field | why it must be there |
@@ -674,7 +700,7 @@ tests/fixtures/providers/usgs_ogc/trend_aug_irregular_12189500.json # D     a re
 Each carries its url, `captured_at`, byte count, sha256 and its role in
 `tests/fixtures/providers/usgs_ogc/manifest.yaml`. Parse features with `statistic_id == "00011"`,
 map `parameter_code` 00065 → stage/ft and 00060 → flow/cfs, build `xs` from the actual `time`
-values, and call `cascade_hydrology.trend_candidates`.
+values, and call `cascade_hydrology.trend_estimators`.
 
 **The full population** (§3 A, B, B2, B3, C, D, E, F) needs the two-season ingest:
 

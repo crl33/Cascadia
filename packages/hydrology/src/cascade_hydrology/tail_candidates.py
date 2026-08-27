@@ -104,8 +104,9 @@ class WindowSample:
     would have to persist; here it is built in memory so the research numbers are reproducible.
 
     `values` is ascending. `days` is parallel to it. `period_start` / `period_end` are the first and
-    last calendar years of the record the sample was drawn from — the reference period that must be
-    printed beside every number derived from it.
+    last WATER years the sample reaches — the reference period that must be printed beside every
+    number derived from it, and water years rather than calendar years because a December flood
+    belongs to the winter it happened in.
     """
 
     key: str  # the "MM-DD" day-of-year key
@@ -288,8 +289,10 @@ def candidate_a_prime_window_rank(value: float, sample: WindowSample) -> WindowR
 
     Censored at 1: a value above the record maximum is "the largest", and so is a value twice that.
     In the USGS approved daily series the Sauk read `rank 1` on 12-10 (41,500 cfs) and again on
-    12-11 (62,600 cfs), and cedar read it for five consecutive days, 12-10 through 12-14. That saturation is the measured reason this cannot be the velocity's
-    basis — but unlike the clamped percentile it saturates HONESTLY, naming the record it beat.
+    12-11 (62,600 cfs), and cedar read it for NINE consecutive days, 12-10 through 12-18, across a
+    flow range of 5,160 to 10,100 cfs. That saturation is the measured reason this cannot be the
+    velocity's basis — but unlike the clamped percentile it saturates HONESTLY, naming the record
+    it beat.
     """
     above = sum(1 for v in sample.values if v > value)
     flags: tuple[str, ...] = ()
@@ -573,6 +576,7 @@ class StateChange:
     to_value: float | None
     direction: str
     reason: str | None
+    span_h: float | None = None  # the span actually covered, which is what `growth` is over
 
     @property
     def percent_change(self) -> float | None:
@@ -582,9 +586,7 @@ class StateChange:
     def label(self) -> str:
         if self.growth is None:
             return f"{self.window_h} h change unknown: {self.reason}"
-        pct = self.percent_change
-        assert pct is not None
-        return f"×{self.growth:.2f} in {self.window_h} h ({pct:+.0f} %), {self.direction}"
+        return f"×{self.growth:.2f} in {self.window_h} h ({(self.growth - 1.0) * 100.0:+.0f} %), {self.direction}"
 
 
 def state_change(
@@ -596,39 +598,49 @@ def state_change(
 ) -> StateChange:
     """The multiplicative change in daily-mean flow over ``window_h``, or UNKNOWN with a reason.
 
-    Refuses rather than interpolates, on `trend.py`'s discipline: the endpoint must exist within
-    ``tolerance_h`` of `end − window_h`, both values must be positive (a ratio through zero is not
-    a rate), and a missing endpoint is UNKNOWN rather than a silently shortened window. `tolerance_h`
-    defaults to 6 h because a daily mean is labelled by a calendar day whose boundary is the
-    station's local midnight, so ±6 h absorbs the DST step without admitting a different day.
+    Refuses rather than interpolates, on `trend.py`'s discipline: BOTH endpoints must exist within
+    ``tolerance_h`` of their targets (`end` and `end − window_h`), both values must be positive (a
+    ratio through zero is not a rate), and a missing endpoint is UNKNOWN rather than a silently
+    shortened window — a "24 h growth" measured over 14 h is a different number wearing the same
+    label. `tolerance_h` defaults to 6 h because a daily mean is labelled by a calendar day whose
+    boundary is the station's local midnight, so ±6 h absorbs the DST step and the UTC-vs-local
+    boundary without admitting a different day.
     """
     if window_h <= 0:
         return StateChange(window_h, None, None, None, UNKNOWN, "window must be positive")
     ordered = sorted(points)
-    latest = [(t, v) for t, v in ordered if t <= end]
-    if not latest:
+    if not ordered:
         return StateChange(window_h, None, None, None, UNKNOWN, f"no observation at or before {end.isoformat()}")
+    tolerance = timedelta(hours=tolerance_h)
+    latest = [(t, v) for t, v in ordered if t <= end and (end - t) <= tolerance]
+    if not latest:
+        return StateChange(
+            window_h, None, None, None, UNKNOWN,
+            f"no observation at or before {end.isoformat()} within {tolerance_h:g} h of it",
+        )
     t_now, q_now = latest[-1]
     target = end - timedelta(hours=window_h)
-    window = timedelta(hours=tolerance_h)
-    prior = [(t, v) for t, v in ordered if abs(t - target) <= window]
+    prior = [(t, v) for t, v in ordered if abs(t - target) <= tolerance]
     if not prior:
         return StateChange(
             window_h, None, None, q_now, UNKNOWN,
             f"no observation within {tolerance_h:g} h of {target.isoformat()}",
         )
     t_then, q_then = min(prior, key=lambda p: abs(p[0] - target))
-    if q_then <= 0 or q_now <= 0:
-        return StateChange(window_h, None, q_then, q_now, UNKNOWN, "a zero or negative flow has no multiplicative rate")
-    growth = q_now / q_then
     span_h = (t_now - t_then).total_seconds() / 3600.0
     if span_h <= 0:
         return StateChange(window_h, None, q_then, q_now, UNKNOWN, "the two observations do not span any time")
+    if q_then <= 0 or q_now <= 0:
+        return StateChange(
+            window_h, None, q_then, q_now, UNKNOWN,
+            "a zero or negative flow has no multiplicative rate", span_h,
+        )
+    growth = q_now / q_then
     # The steady band is `trend.py`'s ±1 %/h compounded over the ACTUAL span, so a 24 h and a 48 h
     # term cannot disagree about whether the same river is steady.
     eps = (1.0 + FLOW_STEADY_FRACTION_PER_H) ** span_h
     direction = STEADY if (1.0 / eps) <= growth <= eps else (RISING if growth > 1.0 else FALLING)
-    return StateChange(window_h, growth, q_then, q_now, direction, None)
+    return StateChange(window_h, growth, q_then, q_now, direction, None, span_h)
 
 
 def growth_rank(growth: float, history: list[float]) -> tuple[int, int]:
