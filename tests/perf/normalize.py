@@ -29,6 +29,7 @@ from __future__ import annotations
 
 import copy
 import json
+import math
 from dataclasses import dataclass
 from typing import Any
 
@@ -138,6 +139,21 @@ def _compare(a: Any, b: Any, path: str, out: list[str]) -> None:
             out.append(f"{path}: length {len(a)} -> {len(b)}")
         for i, (x, y) in enumerate(zip(a, b)):
             _compare(x, y, f"{path}[{i}]", out)
+        return
+    if isinstance(a, float) or isinstance(b, float):
+        # Floats compare within a relative tolerance, NOT bit-exactly. The basin surfaces are
+        # sums over ~1,500 grid cells and ~100 observations, and summation order and FMA
+        # contraction differ between architectures: the baseline is captured on arm64 and CI runs
+        # x86_64, which produced last-ULP differences (3186.777804321641 vs ...43) and failed a
+        # test whose question is "did the optimisation change the answer".
+        #
+        # 1e-9 relative is about six orders of magnitude tighter than the smallest difference that
+        # could matter hydrologically (a 1e-9 relative change in a 3,000 cfs driver is 3 micro-cfs),
+        # so a real change in the read path still fails here. Absolute floor covers values at or
+        # near zero, where relative tolerance is meaningless.
+        if a == b or math.isclose(float(a), float(b), rel_tol=1e-9, abs_tol=1e-12):
+            return
+        out.append(f"{path or '<root>'}: {a!r} -> {b!r}")
         return
     if a != b:
         out.append(f"{path or '<root>'}: {a!r} -> {b!r}")

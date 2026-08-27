@@ -90,3 +90,30 @@ def test_read_time_values_are_reported_not_hidden(body: dict) -> None:
     values = normalize.read_time_values(body)
     assert set(values) == {"generated_at", "as_of", "time.valid"}
     assert values["as_of"] == body["as_of"]
+
+
+def test_float_comparison_tolerates_ulps_but_not_real_changes() -> None:
+    """The semantic baseline must survive a change of architecture, not of answer.
+
+    CI runs x86_64 and the baseline is captured on arm64; summation order and FMA contraction
+    over ~1,500 grid cells differ, so bit-exact float equality failed on differences in the last
+    one or two ULPs (3186.777804321641 vs 3186.777804321643) while the answer was identical.
+    A tolerance loose enough to absorb that must still be far tighter than anything hydrologically
+    meaningful, or the test stops protecting the read path.
+    """
+    from tests.perf.normalize import diff
+
+    base = {"items": [{"v": 3186.777804321641, "p": 0.021569362835888197}]}
+
+    # last-ULP drift: not a change
+    assert diff(base, {"items": [{"v": 3186.777804321643, "p": 0.02156936283588834}]}) == []
+
+    # a change of one part in ten million IS a change and must be reported
+    assert diff(base, {"items": [{"v": 3186.7781224, "p": 0.021569362835888197}]}) != []
+
+    # and so is anything a person could see
+    assert diff(base, {"items": [{"v": 3187.0, "p": 0.021569362835888197}]}) != []
+
+    # zero-adjacent values use the absolute floor rather than a meaningless relative one
+    assert diff({"v": 0.0}, {"v": 1e-13}) == []
+    assert diff({"v": 0.0}, {"v": 1e-6}) != []
