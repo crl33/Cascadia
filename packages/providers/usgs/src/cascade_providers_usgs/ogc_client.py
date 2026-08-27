@@ -135,8 +135,8 @@ async def fetch_continuous_window(
     """One gauge's trailing `hours` window — the live poll's request shape.
 
     A thin wrapper over :func:`fetch_continuous_first_page` so the live job never open-codes a
-    time window, and so the fixture in `tests/fixtures/providers/usgs_ogc/live_window_*.json`
-    documents exactly the request this issues.
+    time window, and so the captures in `tests/fixtures/providers/usgs_ogc/pipeline/` document
+    exactly the request this issues — one gauge, both parameters, one page.
     """
     end = now or utcnow()
     return await fetch_continuous_first_page(
