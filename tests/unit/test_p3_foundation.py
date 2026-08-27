@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
 from zoneinfo import ZoneInfo
 
 import httpx
@@ -465,3 +466,57 @@ async def test_a_mistyped_addendum_key_raises_instead_of_seeding_nothing(tmp_pat
                 await seed_all(session, geo_dir=GEO, seed_file=tmp_path / "stations.json")
     finally:
         await engine.dispose()
+
+
+# --- migration 0004: the seeded time-zone correction, offline scope guard -------------------
+
+
+def test_the_time_zone_migration_touches_only_that_one_column() -> None:
+    """0004 corrects seeded data on the path the deployment already runs (ADR-0017).
+
+    Offline half of `tests/integration/test_tz_data_migration_pg.py`, which proves the behaviour
+    against a real database. This one guards the SHAPE, because the danger with a data migration
+    is not that it fails — it is that someone later widens it. A migration that swept a second
+    column, or dropped the `WHERE`, would move hydrologic values on every deployment and no
+    schema test would notice.
+
+    It also pins the two literals. They are deliberately duplicated from `cascade_core.seed`
+    rather than imported: a migration records a database state and must keep meaning the same
+    thing after the application constant moves on.
+    """
+    import re
+
+    root = Path(__file__).resolve().parents[2]
+    source = (root / "infra/migrations/versions/0004_canonical_station_time_zone.py").read_text()
+
+    statements = re.findall(r'sa\.text\(\s*"([^"]+)"', source)
+    assert len(statements) == 1, f"0004 should issue exactly one statement, found {statements}"
+    sql = statements[0]
+    assert sql.startswith("UPDATE station SET time_zone = "), sql
+    assert "WHERE time_zone = :legacy" in sql, "the WHERE clause is what makes it idempotent"
+    assert sql.count("=") == 2, f"one SET and one WHERE comparison only: {sql}"
+    for forbidden in ("DELETE", "DROP", "INSERT", "ALTER", "derived_feature", "observation"):
+        assert forbidden not in sql.upper() if forbidden.isupper() else forbidden not in sql, sql
+
+    assert 'LEGACY_ALIAS = "PST8PDT"' in source
+    assert f'CANONICAL_ZONE = "{PACIFIC_TIME_ZONE}"' in source
+    assert PACIFIC_TIME_ZONE in SEEDABLE_TIME_ZONES
+    # the migration must not import the application constant it duplicates
+    assert "from cascade_core" not in source and "import cascade_core" not in source
+
+    # Parsed, not grepped: the docstring contains the words "no-op", so a substring check for
+    # "op." matches its own explanation. The body must contain nothing but that docstring.
+    import ast
+
+    tree = ast.parse(source)
+    down = next(n for n in tree.body if isinstance(n, ast.FunctionDef) and n.name == "downgrade")
+    assert len(down.body) == 1 and isinstance(down.body[0], ast.Expr), (
+        "downgrade must stay a no-op; writing the alias back recreates the defect"
+    )
+    assert isinstance(down.body[0].value, ast.Constant) and isinstance(down.body[0].value.value, str)
+
+    up = next(n for n in tree.body if isinstance(n, ast.FunctionDef) and n.name == "upgrade")
+    calls = {
+        ast.unparse(n.func) for n in ast.walk(up) if isinstance(n, ast.Call) and not isinstance(n.func, ast.Name)
+    }
+    assert calls == {"op.get_bind", "op.get_bind().execute", "sa.text"}, f"upgrade should do one thing: {calls}"
