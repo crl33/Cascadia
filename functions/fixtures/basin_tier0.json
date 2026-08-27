@@ -371,6 +371,59 @@
     "basin:nooksack": {
      "hydrologic_state": null,
      "state_change": []
+    },
+    "basin:puyallup-white": {
+     "hydrologic_state": {
+      "prov": "cascade-tail-puyallup-white",
+      "truth": "cascade_derived",
+      "observed": {
+       "value": 1190.0,
+       "unit": "cfs",
+       "datum": null
+      },
+      "day": "2025-12-06",
+      "percentile": 5.0,
+      "percentile_clamped": true,
+      "reference": {
+       "doy_key": "12-06",
+       "window_days": 2,
+       "n": 80,
+       "independent_years": 16,
+       "period_start": 2009,
+       "period_end": 2025,
+       "method_id": "method:streamflow-doy-climatology@1.0.0"
+      },
+      "rank": null,
+      "multiple": {
+       "multiple": 0.296,
+       "reference": {
+        "value": 4023.0,
+        "unit": "cfs",
+        "datum": null
+       },
+       "reference_percentile": 95,
+       "prov": "cascade-tail-puyallup-white"
+      },
+      "boundary": "unquantified",
+      "bands_within_sampling_error": [],
+      "reason": null
+     },
+     "state_change": [],
+     "susceptibility": {
+      "prov": "cascade-susceptibility-puyallup-white",
+      "truth": "cascade_derived",
+      "state": "low",
+      "score": 0.05,
+      "value": {
+       "value": 5.0,
+       "unit": "pct",
+       "datum": null
+      },
+      "spread": null,
+      "confidence": "moderate",
+      "experimental": true,
+      "reason": null
+     }
     }
    },
    "provenance_refs": {
@@ -631,6 +684,42 @@
      "quality": [],
      "raw_artifact_id": null,
      "label": "Cascade experimental susceptibility index from the USGS daily-mean flow percentile (52.4 pct) at this basin's configured gauge \u2014 uncalibrated, never a probability"
+    },
+    "cascade-tail-puyallup-white": {
+     "source_id": "src:cascade",
+     "source_kind": "EXPERIMENTAL",
+     "product_id": null,
+     "method_id": "method:streamflow-tail-state@0.1.0",
+     "issued_at": null,
+     "valid_time": "2025-12-06T08:00:00Z",
+     "retrieved_at": "2025-12-06T09:00:00Z",
+     "freshness": {
+      "state": "current",
+      "age_seconds": 3600,
+      "expected_cadence_seconds": 86400
+     },
+     "quality": [
+      "outside_climatology_range"
+     ],
+     "raw_artifact_id": null,
+     "label": "Cascade exact rank and seasonal multiple for the daily mean at 12100490, clamped at the BOTTOM of the ladder (n=80 across 16 independent years, 2009-2025)"
+    },
+    "cascade-susceptibility-puyallup-white": {
+     "source_id": "src:cascade",
+     "source_kind": "EXPERIMENTAL",
+     "product_id": null,
+     "method_id": "method:susceptibility-index@0.2.0",
+     "issued_at": null,
+     "valid_time": "2025-12-06T08:00:00Z",
+     "retrieved_at": "2025-12-06T09:00:00Z",
+     "freshness": {
+      "state": "current",
+      "age_seconds": 3600,
+      "expected_cadence_seconds": 86400
+     },
+     "quality": [],
+     "raw_artifact_id": null,
+     "label": "Cascade experimental susceptibility index (5.0 pct) \u2014 uncalibrated, never a probability"
     }
    },
    "until": "2026-01-01T00:00:00Z"

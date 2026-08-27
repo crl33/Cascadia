@@ -71,6 +71,19 @@ describe('Tier 0 renders three distinct statements', () => {
     expect(green).toContain('read at every percentile');    // and it does not blame the percentile
   });
 
+  it('names the correct END of the ladder when the percentile is clamped', () => {
+    // Production, 2026-08-27: late-summer low flow clamps at the BOTTOM. A first version of this
+    // panel assumed the high end and told production a p5.0 day was "at or above p95".
+    const low = render('basin:puyallup-white');
+    expect(low).toContain('At or below the stored p5 limit');
+    expect(low).not.toContain('At or above');
+    expect(low).toContain('0.30×');                       // a multiple below 1, consistent with it
+
+    const high = render('basin:skagit');
+    expect(high).toContain('At or above the stored p95 limit');
+    expect(high).not.toContain('At or below');
+  });
+
   it('states an actual span that differs from the nominal window', () => {
     const html = render('basin:skagit');
     expect(html).toContain('measured over 47.5 h, not the nominal 48 h');

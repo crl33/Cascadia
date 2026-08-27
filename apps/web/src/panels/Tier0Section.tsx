@@ -56,6 +56,23 @@ function boundaryText(state: HydrologicState): string | null {
   return null;
 }
 
+/**
+ * Which END of the ladder the percentile is clamped against.
+ *
+ * `percentile_clamped` is true at EITHER end — the ladder ran out, so the percentile is a bound
+ * — and the shipped surface says so in its own comment: "a value under p05 is equally clamped".
+ * A first version of this panel assumed the high end and told production, truthfully-looking and
+ * falsely, that a Skagit low-flow day at p5.0 was "at or above the stored p95 limit".
+ *
+ * No guessing is needed: when the value is clamped, the reported percentile IS the outermost
+ * stored breakpoint, so comparing it with the reference percentile the multiple names decides
+ * the end exactly. Absent a multiple, 95 is the contract's own default top breakpoint.
+ */
+function clampedHigh(state: HydrologicState): boolean {
+  const top = state.multiple?.reference_percentile ?? 95;
+  return (state.percentile ?? 0) >= top;
+}
+
 function LevelBlock({ state, refs }: { state: HydrologicState; refs: Refs }) {
   const rank = state.rank;
   const multiple = state.multiple;
@@ -69,8 +86,8 @@ function LevelBlock({ state, refs }: { state: HydrologicState; refs: Refs }) {
       </p>
       {state.percentile_clamped ? (
         <p className="t0-note" data-testid="tier0-level-clamped">
-          At or above the stored p{multiple?.reference_percentile ?? 95} limit. The ladder stops
-          discriminating here, so the percentile is a bound rather than an estimate.
+          At or {clampedHigh(state) ? 'above' : 'below'} the stored p{state.percentile ?? '?'} limit.
+          The ladder stops discriminating here, so the percentile is a bound rather than an estimate.
         </p>
       ) : null}
       {multiple ? (
