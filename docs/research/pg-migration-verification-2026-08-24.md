@@ -1376,3 +1376,303 @@ larger basin set would make that a planning cost worth re-measuring.
 | `ruff check .` | All checks passed |
 | `lint-imports` | 5 kept, 0 broken |
 | contracts drift (`export_schema` + `diff -ru`) | no differences |
+
+## Tier 0 mutation audit — 2026-08-27
+
+The Tier 0 change (robust trend, high-tail representation, velocity, boundary condition, tidal
+guard) landed with a green suite. A green suite that would also pass the broken implementation
+is not protection, so every claim the change makes was broken on purpose and the suite was asked
+whether it noticed. Brief §23.
+
+**Method, the same as §B.4's.** Each mutation is ONE exact string replacement in a *shipped*
+source file — never in a test — chosen to be the plausible regression rather than a strawman: a
+tidy-up that reverts a constant, a refactor that inlines the wrong function, a "simplification"
+that drops a `where` clause, a copy-paste that reads a neighbouring gauge. The whole offline
+suite then runs with its exit status captured directly (`subprocess.run`, no pipe), the file is
+restored from a byte-for-byte backup, and the restore is verified by **sha256** before the next
+mutation is applied. The runner also restores on SIGTERM/SIGINT and through `atexit`, and that
+guard exists because it was needed: the first version had no handler, the run was killed
+mid-mutation, and `trend.py` was left holding a mutated `repeated_median_slope`. It was caught
+by an `md5` manifest taken before the run and restored by hand. The manifest was re-checked
+after every subsequent kill and at the end of the pass; the tree is byte-identical to where it
+started.
+
+Baseline: **399 passed, 10 skipped** (`python -m pytest -q`, 181 s), and each mutated run is the
+same suite, so "caught" means *this* suite failed, not that some suite somewhere would.
+
+**Headline: 18 of 21 caught, 3 not — two gaps, one of them serious.** Nothing in the suite
+pinned *which gauge's record* a published rank came from (two of the three), and nothing pinned
+the replay harness's own look-ahead clamp (the third). Both gaps are now tested, and both fixes
+were re-measured against the same mutations rather than asserted.
+
+### T0.1 — Trend regression: put the endpoint slope back (2 of 2 caught)
+
+| mutation | caught by |
+|---|---|
+| `SHIPPED_ESTIMATOR = "repeated_median"` → `"endpoint"` | `test_trend::test_the_shipped_estimator_is_the_one_the_measurement_chose`, `::test_the_rate_survives_a_bad_final_reading_end_to_end` |
+| `repeated_median_slope`'s body replaced by `endpoint_slope(xs, ys)`, constant and docstring untouched | `test_trend::test_a_corrupted_final_reading_moves_the_endpoint_difference_and_not_the_shipped_one`, `::test_no_estimator_removes_a_tide_which_is_why_the_guard_exists`, `::test_the_rate_survives_a_bad_final_reading_end_to_end` |
+
+The second is the one that mattered: it leaves every name in place, so only a test that measures
+the estimator's *behaviour under a corrupted reading* can see it. Three did.
+
+### T0.2 — Tail collapse: everything above the old ceiling reads alike (2 of 2 caught)
+
+| mutation | caught by |
+|---|---|
+| `seasonal_multiple` → `min(1.0, value / reference_flow)` — every flow at or above p95 reads 1.0× | `test_tail_state::test_the_seasonal_multiple_is_unbounded_and_carries_the_crest`, `::test_the_level_is_monotone_in_flow`, `::test_the_velocity_does_not_depend_on_the_ladder_at_all`, `test_susceptibility::test_the_tail_discriminates_where_the_percentile_clamps`, **`test_hindcast::test_seasonal_multiple_is_reproducible_from_the_recorded_flow_and_reference`** |
+| `window_rank` always takes its below-the-floor branch — no rank is published above the ceiling | `test_susceptibility::test_the_rank_names_the_record_it_beat_when_the_context_is_stored`, `test_tail_state::test_the_rank_is_exact_censored_at_one_and_names_the_record_it_beat`, `::test_the_rank_is_exact_inside_the_stored_tail`, `::test_adding_one_more_water_year_moves_the_rank_by_one_and_nothing_else_breaks`, `::test_thin_tail_support_is_labelled_and_never_suppressed` |
+
+**A correction to the brief's expectation, stated because it is a real property of the design.**
+§23 item 2 expects a tail collapse to fail the extreme-flow discrimination test *and* the Event
+Zero **velocity** test. Measured: it fails the discrimination tests and the Event Zero **level**
+regression (`test_seasonal_multiple_is_reproducible_…`), and it does **not** fail the Event Zero
+velocity regression (`test_state_change_is_reproducible_from_the_ranked_daily_means`) — because
+the shipped velocity is computed on *flow* and is structurally independent of the ladder and of
+the tail. That independence is not an accident to be repaired; it is the design, and
+`test_the_velocity_does_not_depend_on_the_ladder_at_all` pins it deliberately.
+
+The coupling is therefore guarded from the **other** direction, and that direction was tested
+(T0.3, M3b): re-pointing the velocity at the clamped representation IS caught. A collapse of
+either half now also fails one test written to hold both together —
+`test_tail_state::test_the_tail_and_the_velocity_have_to_be_checked_together`, which takes the
+two real Event Zero flows (24,976 and 72,440 cfs, identical to the shipped percentile) and
+requires the level to discriminate *and* the growth to be the flow ratio rather than the
+percentile ratio of exactly 1.0.
+
+### T0.3 — Velocity removal (2 of 2 caught)
+
+| mutation | caught by |
+|---|---|
+| `growth = q_now / q_then` → `growth = 1.0` (Δ24/Δ48 identically zero) | **`test_hindcast::test_state_change_is_reproducible_from_the_ranked_daily_means`**, `test_susceptibility::test_the_velocity_survives_the_clamp_that_silenced_the_percentile_derivative`, `test_tail_state::test_the_velocity_survives_the_crest_where_every_percentile_derivative_dies`, `::test_the_velocity_has_a_sign_and_detects_the_recession`, `::test_the_velocity_does_not_depend_on_the_ladder_at_all` |
+| the velocity's series taken from `r.percentile` instead of `r.value` — **the coupling**: on two clamped days the ratio is exactly 1.0 | `test_susceptibility::test_the_velocity_survives_the_clamp_that_silenced_the_percentile_derivative`, `test_query_budget::test_the_body_is_identical_to_the_semantic_baseline` ×2 |
+
+The Event Zero velocity regression fails on the first, which is what §23 item 3 asks for.
+
+### T0.4 — Look-ahead (2 of 3 caught; **1 defect**)
+
+| mutation | caught by |
+|---|---|
+| `Knowledge._derived_feature_rows` drops `available_at <= self.as_of` | `test_p3_foundation::test_derived_features_are_knowledge_filtered_but_valid_time_is_not_clamped`, `test_knowledge_batching::test_derived_features_batched_equal_singular`, `test_forcing::test_a_knowledge_time_before_ingestion_is_unknown_with_the_no_cycle_reason`, `test_query_budget::test_the_prefetches_are_pure_warm_up[at_an_earlier_knowledge_time]` |
+| `hindcast._percentile_history` drops `valid_until=k.as_of` | **NOTHING — see below** |
+| `susceptibility._state_changes` drops `valid_until=k.as_of` | `test_query_budget::test_no_statement_comes_from_a_per_scope_reader`, `::test_viz_basins_stays_inside_its_query_budget` — the **query budget**, not a knowledge-time assertion |
+
+**Defect 1 — the replay harness's own look-ahead clamp had no test.** Deleting
+`valid_until=k.as_of` from `hindcast._percentile_history` passes all 399 tests. It is not a
+cosmetic clamp: `hindcast.evaluate` sets `anchor = percentile_history[-1][0]` and publishes it
+as `Clocks.valid_at`, and `susceptibility.state_change` is called with `end=` that anchor — so
+without the clamp an entire evaluation is timed from a daily mean for a day that had not
+happened. Nothing caught it because `tests/unit/test_hindcast.py` rehydrates a **stored run
+document**; no test in the tree drives the harness against a database at all.
+
+Reachability, measured rather than assumed: the Event Zero projection sets
+`available_at := valid_time` for the reconstructed daily-mean rows
+(`scripts/hindcast_event_zero.py`), which makes `available_at <= as_of` and
+`valid_time <= as_of` select identically, so the deletion is *currently* invisible in behaviour
+as well as in tests. That is a property of one projection rule, not of the reader. The clamp is
+the only thing that holds the moment a row exists whose `valid_time` runs ahead of its
+`available_at` — which is exactly the shape `Knowledge.derived_features` documents as legitimate
+("a derived forecast feature is legitimately valid in the future") and deliberately does not
+clamp for.
+
+**Fixed by** `test_susceptibility::test_the_hindcast_history_stops_at_the_knowledge_time`, which
+writes precisely that shape (valid_time ahead of `as_of`, `available_at` behind it) and asserts
+the harness anchors on the last daily mean the replay could have had.
+
+**Worth recording about the third row**: the `_state_changes` clamp *is* caught, but by the
+N+1/query-budget gate rather than by anything about knowledge. Dropping `valid_until` widens the
+requested `valid_time` range past what `susceptibility.prefetch` batched, so the request memo
+can no longer answer it and a statement is issued. That is a real gate and it fires today, but
+it is coincidental protection: widen `MAIN_LOOKBACK` or change the memo's range-covering rule
+and the same mutation goes green.
+
+### T0.5 — Reference-vintage substitution (2 of 2 caught)
+
+| mutation | caught by |
+|---|---|
+| `build_doy_climatology` keeps only the most recent 30 calendar years (register X8's rival vintage) | `test_susceptibility::test_golden_climatology_reproduces_exactly`, `::test_cascade_and_published_p50_agree_on_at_least_350_of_366_days` |
+| `_approved_daily_means` keeps only the most recent 30 water years, so the record context is built from a recent-period record | `test_tail_state::test_the_built_context_is_the_real_window_where_it_matters`, `::test_the_rank_is_exact_censored_at_one_and_names_the_record_it_beat`, `::test_the_rank_is_exact_inside_the_stored_tail`, `::test_adding_one_more_water_year_moves_the_rank_by_one_and_nothing_else_breaks` |
+
+The vintage-sensitive tests are the ones that pin the *sample*: the golden ladder, and
+`n = 490 over 98 water years, WY1912–WY2025`. Register X8 stays open; what is pinned is that the
+ladder cannot change vintage silently.
+
+### T0.6 — Tidal guard (3 of 3 caught, after one false negative of my own)
+
+| mutation | caught by |
+|---|---|
+| a station measured `TIDAL` is no longer refused | `test_trend::test_a_tidal_station_is_refused_even_though_the_data_looks_fine`, `::test_the_assembler_refuses_a_rate_when_the_station_is_not_measured_fluvial[TIDAL]` |
+| the guard fails **open**: an unmarked / `UNVERIFIED` station gets a rate | `test_trend::test_the_tidal_guard_fails_closed[None]`, `::[UNVERIFIED]`, `::test_the_assembler_refuses_a_rate_when_the_station_is_not_measured_fluvial[None]`, `::[not-a-class]` |
+| the call site bypasses the guard: `assemble` hardcodes `TidalClass.FLUVIAL` | `test_trend::test_the_assembler_refuses_a_rate_when_the_station_is_not_measured_fluvial[None]`, `::[TIDAL]`, `::[not-a-class]` |
+
+**A methodological warning worth more than the row it sits in.** The fail-open mutation was
+first written as `return None or TrendRefusal(...)`, which is a **no-op** — and it reported
+"not caught, 0 failures", i.e. a false accusation against the suite. The runner's sha256 check
+proves a file *changed*; it cannot prove the change *means* anything. Every "not caught" in this
+section was re-read for that failure mode before being written down.
+
+**§23 item 6 also asks for two things the suite did not have**, and both are now present:
+
+- `test_trend::test_a_tide_dominated_stage_series_never_becomes_a_flood_trend` drives a pure
+  2.0 ft M2 tide with no river motion at all through `estimate_trend`, sweeping the window phase
+  over a full tidal cycle, and requires a refusal at every phase for `TIDAL`, `UNVERIFIED` and
+  unmarked alike. The second half of each iteration marks the identical series `FLUVIAL` and
+  records what the guard is standing in front of: a published rise of more than 10 STEADY
+  epsilons — an ordinary flood trend. The pre-existing tide test exercised the bare estimators;
+  this one pins that `estimate_trend` consults the guard *before* it computes.
+- `test_trend::test_the_guard_does_not_fire_for_any_station_the_platform_serves` asserts the
+  other half of a guard: all 7 seeded stations (6 forecast points + the Sauk susceptibility
+  proxy) carry a measured `FLUVIAL` marker and none is refused. Seeding an eighth station
+  without the M2 measurement fails here, which is the intended price of seeding one.
+
+### T0.7 — Band uncertainty (3 of 3 caught)
+
+| mutation | caught by |
+|---|---|
+| `band_boundary(p, None)` returns `SEPARATED` instead of `UNQUANTIFIED` — the condition fails **open** | `test_tail_state::test_the_boundary_is_a_condition_and_it_fails_closed` |
+| the ±1 rank-standard-error widening removed (`lo = hi = band(percentile)`) | `test_tail_state::test_the_boundary_is_a_condition_and_it_fails_closed`, `test_hindcast::test_the_boundary_condition_is_reproducible_from_the_recorded_sample`, `test_query_budget::test_the_body_is_identical_to_the_semantic_baseline` ×2 |
+| `independent_years` returns `n` instead of deflating by the ±2-day window (understating the error by √5) | `test_tail_state::test_the_sample_is_deflated_by_the_smoothing_window_before_any_error_is_quoted`, `test_hindcast::test_the_boundary_condition_is_reproducible_from_the_recorded_sample`, `test_query_budget::test_the_body_is_identical_to_the_semantic_baseline` ×2 |
+
+The edge case is genuinely covered: two of the six basins in the perf baseline sit at
+`near_band_edge`, so the semantic body catches a widening change as well as the unit tests.
+
+### T0.8 — Provenance (2 of 4 caught; **2 defects**)
+
+| mutation | caught by |
+|---|---|
+| `_hydrologic_state` reads the record context for a **different gauge** (`station:usgs:12119000` in place of `row.scope_id`) | **NOTHING** |
+| `_state_changes` reads the growth reference for a **different gauge** | **NOTHING** |
+| the tail-state ref is stamped `method:streamflow-doy-climatology@1.0.0` instead of `method:streamflow-tail-state@0.1.0` | `test_query_budget::test_the_body_is_identical_to_the_semantic_baseline` ×2 — **and nothing else** |
+| the `ReferenceWindow` claims `method:usgs-published-doy-stats@1.0.0`, i.e. the cross-check table it was not built from | `test_query_budget::test_the_body_is_identical_to_the_semantic_baseline` ×2 — **and nothing else** |
+
+**Defect 2 — a published rank was not tied to the gauge it names.** The surface can be made to
+rank the Skagit's crest inside a *different river's* record and every one of the 399 tests
+passes. Two reasons, and both are properties of the fixtures rather than oversights anyone would
+spot by reading:
+
+- `tests/unit/test_susceptibility.py::_mock_usgs_stats` deliberately serves the **Sauk's**
+  captured daily payload for five of the six susceptibility gauges (only the Skagit outlet gets
+  its own). That is honest plumbing — it exercises the write path offline — but it means the
+  five record contexts are byte-identical, so no assertion about *values* can tell one from
+  another.
+- the perf semantic baseline never reaches the tail: its August fixture sits at p5–p19, below
+  `RANK_READ_EDGE`, so `rank` is `null` in both stored bodies and the record context is never
+  read on that path at all.
+
+This is the single most valuable thing this pass found. It is exactly the class of bug CLAUDE.md's
+one rule exists to prevent — a number rendered beside a label naming a river it did not come
+from — and the *label* would have said "12189500" while the *rank* came from the Cedar.
+
+**Fixed by** `test_susceptibility::test_the_rank_and_the_growth_rank_come_from_the_gauge_the_label_names`,
+which writes a sentinel `streamflow_record_context` for the Skagit's configured gauge alone —
+a maximum (111,111 cfs), a maximum day (1899-08-26) and change denominators (4,242 / 2,424) that
+no captured payload can produce — and requires every published number that depends on a record
+to come out of it: the rank (4th of 491), the previous maximum and its day, the rendered label,
+and both growth ranks' denominators. It closes the level's rank and the velocity's rank in one
+test, because the two mutations are the same copy-paste in two functions.
+
+**Defect 3 — method identity was guarded only by evidence, not by a contract.** Both
+mis-stamping mutations were caught, but *only* by `test_the_body_is_identical_to_the_semantic_baseline`.
+That file is evidence — `tests/perf/CONTEXT.md` says so — and it is legitimately regenerated
+whenever the endpoint's answer changes on purpose. A future regeneration would carry the wrong
+method id into the baseline and take the guard with it. DATA_DOCTRINE §8 makes a method change a
+new identity, so this deserves an assertion of its own.
+
+**Fixed by** two additions: `test_tail_state::test_each_new_statement_publishes_its_own_method_identity`
+pins the three new ids to their literals and asserts the five published identities are distinct;
+and the provenance test above asserts what each statement is actually *stamped* with — the tail
+state, the state change, the reference window and the experimental surface, each with its own id.
+
+### T0.9 — The mutations re-run against the repaired suite
+
+Same runner, same restore-and-verify discipline, on the tree with the new tests in place.
+
+| mutation | before | now |
+|---|---|---|
+| `hindcast._percentile_history` drops `valid_until=k.as_of` | **not caught** | caught — `test_susceptibility::test_the_hindcast_history_stops_at_the_knowledge_time`, and nothing else (1 failure) |
+| record context read for the wrong gauge (level rank) | **not caught** | caught — `test_susceptibility::test_the_rank_and_the_growth_rank_come_from_the_gauge_the_label_names`, and nothing else (1 failure) |
+| growth reference read for the wrong gauge (velocity rank) | **not caught** | caught — the same provenance test, and nothing else (1 failure) |
+| tail-state ref stamped with the climatology method id | perf baseline only | caught by the same provenance test **as well as** the baseline (3 failures) |
+| `ReferenceWindow` claims the published cross-check ladder | perf baseline only | caught by the same provenance test **as well as** the baseline (3 failures) |
+| `seasonal_multiple` clamped at 1.0 (tail collapse) | caught (5) | caught (6) — `test_the_tail_and_the_velocity_have_to_be_checked_together` joins them |
+| velocity taken from the percentile series (the coupling) | caught (3) | caught (3), unchanged — the coupling test asserts about `state_change`'s *inputs*; this mutation is in the wiring that feeds it, which `test_the_velocity_survives_the_clamp_that_silenced_the_percentile_derivative` holds |
+| a station measured `TIDAL` is no longer refused | caught (2) | caught (3) — `test_a_tide_dominated_stage_series_never_becomes_a_flood_trend[TIDAL]` joins them |
+
+### T0.10 — Tests added
+
+| file | test | what it holds |
+|---|---|---|
+| `tests/unit/test_trend.py` | `test_a_tide_dominated_stage_series_never_becomes_a_flood_trend` | a synthetic M2 tide, phase-swept, refused end to end — and the size of the false rate it suppresses |
+| `tests/unit/test_trend.py` | `test_the_guard_does_not_fire_for_any_station_the_platform_serves` | all 7 seeded stations are measured FLUVIAL and none is refused |
+| `tests/unit/test_tail_state.py` | `test_the_tail_and_the_velocity_have_to_be_checked_together` | the coupling in one assertion: the level must discriminate AND the growth must be the flow ratio, not the percentile ratio of 1.0 |
+| `tests/unit/test_tail_state.py` | `test_each_new_statement_publishes_its_own_method_identity` | the three new method ids, pinned to literals and distinct |
+| `tests/unit/test_susceptibility.py` | `test_the_rank_and_the_growth_rank_come_from_the_gauge_the_label_names` | the rank, the previous maximum, the label and both growth denominators come from the gauge the label names — and each statement carries its own method id |
+| `tests/unit/test_susceptibility.py` | `test_the_hindcast_history_stops_at_the_knowledge_time` | the replay anchor never advances past `as_of`, pinned with the one row shape where `available_at` cannot stand in for the clamp |
+
+No shipped source file was changed by this pass. Every fix is a test.
+
+### T0.11 — Gates, on the tree as it now stands
+
+Every exit status below was captured directly from the command, never through a pipe.
+
+| gate | command | result |
+|---|---|---|
+| offline suite | `python -m pytest -q` | **407 passed, 10 skipped** (399 before, plus the 8 added here), exit 0, 191 s |
+| pg suite | fresh scratch `cascadia_t0mut` (see below) then `CASCADE_TEST_PG_URL=… python -m pytest -q -m pg` | **10 passed, 407 deselected**, exit 0 |
+| ruff | `ruff check .` | All checks passed, exit 0 |
+| lint-imports | `lint-imports` | 113 files, 531 dependencies, **5 kept, 0 broken**, exit 0 |
+| contracts drift | `python -m cascade_contracts.export_schema <tmp>` then `diff -ru packages/contracts/schema <tmp>` | **no differences**, exit 0 |
+| perf: query budget + semantic baseline | `python -m pytest -q tests/perf` | **26 passed**, exit 0 — the budget is unchanged and still independent of basin count, and both stored bodies are byte-identical after normalisation |
+| web typecheck | `npx tsc -p tsconfig.json --noEmit` | exit 0 |
+| web lint | `npm run lint` | exit 0 |
+| web unit | `npx vitest run` | **135 passed, 9 skipped**, exit 0 |
+| web build | `npm run build` | exit 0 |
+| Playwright | stale `:4173` / `:8000` listeners killed first, then `npm run e2e` | **15 passed** (1.7 min), exit 0 |
+
+**The scratch database, end to end.** Created on the local `cascadia-pg` container, migrated,
+seeded, ingested for real, tested, then dropped — and its absence verified against
+`pg_database` (only the pre-existing `cascadia`, `cascadia_p2v`, `cascadia_v` dev databases
+remain, none of them touched).
+
+```
+create   → CREATE DATABASE cascadia_t0mut
+migrate  → bash scripts/migrate.sh          exit 0, {"schema": "applied"}
+seed     → python -m cascade_worker seed    {"sources": 9, "products": 11, "basins": 6,
+                                             "stations": 7, "forecast_points": 6,
+                                             "basin_geometries": 12}
+ingest   → python -m cascade_worker run-once   9 of 10 jobs ok
+drop     → DROP DATABASE … WITH (FORCE)     verified gone
+```
+
+Row census after the ingest: `data_source` 9, `source_product` 11, `basin` 6, `station` 7,
+`forecast_point` 6, `observation` 3,974, `forecast_run` 6, `forecast_value` 213, `threshold` 24,
+`derived_feature` 180, `raw_artifact` 34, `job_run` 10.
+
+The one ingest failure is upstream and is **not** a defect in this change or in the fetcher:
+`nwm.fetch_reach_medium_range` timed out on
+`api.water.noaa.gov/nwps/v1/reaches/23977634/streamflow?series=medium_range`. An independent
+probe of the same URL returned **HTTP 504 after 60.3 s**, i.e. the provider's own gateway gave
+up; the fetcher's timeout is 30 s. Every other job wrote rows. Recorded here because a green
+gate that quietly swallowed a failed job would be exactly the kind of evidence this document
+exists to refuse.
+
+### T0.12 — What this pass did not do, and what is still open
+
+- **No shipped source file was changed.** All 21 probes found the Tier 0 *implementation*
+  correct; the three defects were in the *suite*. Every fix is a test.
+- **The `_state_changes` knowledge clamp is still guarded only by the query budget** (T0.4).
+  A behavioural assertion cannot reach it today: `state_change` is called with
+  `end=row.valid_time` taken from the level row, which is itself clamped, and it filters
+  `t <= end` — so no future row can enter however the history was read. Recorded as
+  defence-in-depth rather than papered over with a test that would pass either way.
+- **The offline fixture still serves one gauge's payload for five gauges.** The new provenance
+  test works around that with a sentinel rather than removing it. Capturing a real daily record
+  per susceptibility gauge would be the better fix and a much larger fixture; it is a decision
+  for whoever owns `tests/fixtures/usgs_stats`, not a change to smuggle into an audit.
+- **Nothing here was resolved that the register holds open.** Register X8 is untouched, no band
+  edge moved, no method version was bumped — the new tests assert the *existing* ids
+  (`@0.1.0` for the tail state and the state change, `@2.0.0` for rate of rise), so they will
+  fail if a future change bumps one without saying so, which is the intended cost.
+- **Mutation testing measures the suite, not the science.** Nothing in this pass says the Tier 0
+  numbers are right; it says the suite would notice them going wrong. The governing question —
+  does this improve a 6–120 h flood prediction for a named Puget Sound basin — is answered by
+  `docs/research/event-zero-ab-2026-08-27.md` and its stated cost, not here.

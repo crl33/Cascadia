@@ -10,7 +10,7 @@ Rules enforced here by type:
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import date, datetime
 from enum import StrEnum
 
 from pydantic import Field, model_validator
@@ -128,6 +128,141 @@ class Driver(StrictModel):
     prov: str
 
 
+class BandBoundary(StrEnum):
+    """Whether the reference distribution can separate this value from a band edge.
+
+    A **condition**, not a confidence: there is no number here and no coverage claim. The
+    day-of-year ladder's breakpoints are sample quantiles estimated from a finite number of
+    independent years, so a value sitting a point or two from a band edge is not distinguishable
+    from the other side of it by the record that drew the edge.
+
+    - ``separated`` — no band edge lies inside the reported sampling error of the percentile.
+    - ``near_band_edge`` — one does; :attr:`HydrologicState.bands_within_sampling_error` names
+      the bands the record cannot tell apart here.
+    - ``unquantified`` — the sample size behind the ladder is not known, so the question cannot
+      be answered at all. This is the **fail-closed** state: it never means "separated".
+    """
+
+    SEPARATED = "separated"
+    NEAR_BAND_EDGE = "near_band_edge"
+    UNQUANTIFIED = "unquantified"
+
+
+class ReferenceWindow(StrictModel):
+    """The empirical day-of-year sample a level statement is ranked against.
+
+    Printed beside every number derived from it, because a rank means nothing without the
+    sample it is a rank in. `independent_years` is the sample count deflated by the smoothing
+    window (a ±2-day window pools 5 consecutive days of each year, so `n` days are not `n`
+    independent draws); it is the denominator any statement about sampling error must use.
+    """
+
+    doy_key: str = Field(pattern=r"^\d{2}-\d{2}$", description='day-of-year key, "MM-DD"')
+    window_days: int = Field(ge=0, description="half-width of the smoothing window in days")
+    n: int = Field(ge=0, description="values in the window sample")
+    independent_years: int = Field(ge=0, description="n deflated by the smoothing window; the honest denominator")
+    period_start: int | None = Field(
+        default=None,
+        description=(
+            "first calendar year of the record the reference was built from. A calendar SPAN, "
+            "not a count of years with data: a gauge can reach back further than it observed"
+        ),
+    )
+    period_end: int | None = None
+    method_id: str = Field(description="the climatology method that built the sample, method:<name>@<semver>")
+
+
+class SeasonalMultiple(StrictModel):
+    """`value ÷ the day-of-year reference flow`. Unbounded, and never a flood magnitude.
+
+    The reference is the ladder's TOP stored breakpoint, so `multiple >= 1` is exactly the
+    condition under which the percentile clamps: this begins where the percentile stops
+    discriminating. It is a multiple of a *seasonal* reference — a late-summer flash flow on a
+    tiny denominator can exceed a winter flood's multiple — so the absolute flow always renders
+    beside it, and it is never banded on a year-round cutoff.
+    """
+
+    multiple: float = Field(ge=0)
+    reference_percentile: int = Field(ge=0, le=100)
+    reference: Quantity = Field(description="the reference flow itself, in the observation's own unit")
+    prov: str
+
+
+class RecordRank(StrictModel):
+    """Where the value sits among the reference window sample, as a count and nothing more.
+
+    Deliberately not a plotting position: "3rd largest of 491 daily means" says its own sample
+    size, where "p99.48" advertises resolution the sample does not have. Censored at 1 — a value
+    above the record maximum is "the largest", and so is one twice as big — but it censors
+    HONESTLY, naming the record it beat. `rank` is None where only a bound is available, and
+    `reason` then says why.
+    """
+
+    rank: int | None = Field(default=None, ge=1, description="1 = largest; None when only a bound is known")
+    of: int = Field(ge=1, description="sample size including the value being ranked")
+    exceeds_record: bool = False
+    previous_max: Quantity | None = None
+    previous_max_day: date | None = None
+    reason: str | None = None
+    prov: str
+
+
+class HydrologicState(StrictModel):
+    """Where the river is: one observation said three ways that are never combined.
+
+    `percentile` is the shipped, still-clamped day-of-year percentile — unchanged, uncalibrated
+    and EXPERIMENTAL. `rank` says how unusual it is against a named record. `multiple` says how
+    big it is against a named reference. **There is no fourth field summarising the three, and
+    there must never be one**: a composite of these would be exactly the flood-risk score the
+    doctrine forbids. A client may not colour, size or order one of them by another.
+    """
+
+    prov: str
+    truth: TruthClass
+    observed: Quantity = Field(description="the daily-mean flow the three statements are about")
+    day: date = Field(description="the station-local calendar day the daily mean covers")
+    percentile: float | None = Field(default=None, ge=0, le=100)
+    percentile_clamped: bool = Field(
+        default=False,
+        description="the value fell outside the stored ladder, so the percentile is a bound, not an estimate",
+    )
+    reference: ReferenceWindow | None = None
+    rank: RecordRank | None = None
+    multiple: SeasonalMultiple | None = None
+    boundary: BandBoundary = BandBoundary.UNQUANTIFIED
+    bands_within_sampling_error: tuple[SurfaceLevel, ...] = Field(
+        default=(), description="the bands the reference distribution cannot separate here; empty when it can"
+    )
+    reason: str | None = None
+
+
+class StateChange(StrictModel):
+    """How fast the river is moving, as a multiplicative growth of the daily mean over a window.
+
+    `growth = Q(t) / Q(t − window_h)`. Computed on the observation, never on the percentile: the
+    ladder clamps, so a percentile derivative reads +0 through a crest. Three properties follow
+    and all three are load-bearing — it does not depend on any ladder or its vintage, it has no
+    extrapolated region (it is arithmetic on two observations), and it stays exact while the
+    level is censored.
+
+    It is a **driver, not a score**: nothing here is weighted against the level, and no band edge
+    is drawn on it. `rank` answers "is that fast?" descriptively, against this gauge's own past
+    changes over the same window, because no evidence yet exists for a cutoff.
+    """
+
+    window_h: int = Field(ge=1)
+    growth: float | None = Field(default=None, gt=0, description="Q(t) / Q(t − window_h); dimensionless")
+    direction: str = Field(pattern="^(rising|falling|steady|unknown)$")
+    from_value: Quantity | None = None
+    to_value: Quantity | None = None
+    span_h: float | None = Field(default=None, description="the span actually covered, which is what growth is over")
+    rank: int | None = Field(default=None, ge=1, description="1 = largest change in this gauge's record")
+    rank_of: int | None = Field(default=None, ge=1)
+    rank_reason: str | None = Field(default=None, description="why the rank is absent or a bound")
+    reason: str | None = Field(default=None, description="why growth is absent, when it is")
+    prov: str
+
+
 class OfficialAlert(StrictModel):
     id: str
     event: str
@@ -157,6 +292,11 @@ class BasinVisualizationState(StrictModel):
     regulation_class: str = Field(pattern="^(natural|partially_regulated|regulated|regulated_upper|unknown)$")
     surfaces: BasinSurfaces
     tension: float | None = Field(default=None, ge=0, le=1, description="wake-up intensity hint; documented method; not a probability")
+    #: The high-tail level statement and its velocity, beside the banded surface and never fused
+    #: with it (docs/research/high-tail-selection-2026-08-27.md §9). Both are absent where the
+    #: inputs are, with a reason on the state and on each change.
+    hydrologic_state: HydrologicState | None = None
+    state_change: tuple[StateChange, ...] = ()
     headline_drivers: tuple[Driver, ...] = ()
     official_alerts: tuple[OfficialAlert, ...] = ()
     outlet_forecast_point_id: str | None = None

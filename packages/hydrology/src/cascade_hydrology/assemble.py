@@ -63,8 +63,8 @@ from cascade_hydrology import agreement, forcing, surfaces, susceptibility
 from cascade_hydrology.category import CategoryResult, Measure, ThresholdSet, categorize
 from cascade_hydrology.headroom import headroom as compute_headroom
 from cascade_hydrology.surfaces import SurfaceReason, require_reason
-from cascade_hydrology.trend_estimators import METHOD_ID as TREND_METHOD_ID
-from cascade_hydrology.trend_estimators import TidalClass, estimate_trend
+from cascade_hydrology.trend import METHOD_ID as TREND_METHOD_ID
+from cascade_hydrology.trend import TidalClass, estimate_trend
 
 RIVER_REGULATION = {"regulated_upper": "regulated", "regulated": "regulated", "partially_regulated": "partially_regulated", "natural": "natural"}
 
@@ -543,6 +543,12 @@ async def basin_envelope(k: Knowledge, basins: list[Basin], *, generated_at: dat
                     agreement=agreement_state,
                 ),
                 tension=None,
+                # BESIDE the banded surface, never inside it. `SurfaceState.score` is still the
+                # percentile and nothing else; no arithmetic here combines the level with the
+                # velocity, and there is no field in which a HIGH band and a fast change resolve
+                # into one symbol (research/high-tail-selection-2026-08-27.md §9).
+                hydrologic_state=sus.hydrologic_state,
+                state_change=sus.state_changes,
                 headline_drivers=_renumbered(sus.drivers, frc.drivers, agreement_drivers),
                 official_alerts=(),
                 outlet_forecast_point_id=basin.outlet_fp_id,

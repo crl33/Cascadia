@@ -179,6 +179,14 @@ object for the whole world.
    `SurfaceState.spread` (named spread points in that same unit) — additive, so 1.1.0
    consumers keep validating. Neither is ever a probability, and where the surface is a
    Cascade derivation both are EXPERIMENTAL; `headline_drivers` remain the explanation.
+   **1.3.0** (2026-08-26) added the optional `BasinVisualizationState.hydrologic_state` and
+   `.state_change` (with `ReferenceWindow`, `SeasonalMultiple`, `RecordRank`, `BandBoundary`,
+   `HydrologicState`, `StateChange`) — the Tier 0 high-tail level and its velocity. They sit
+   **beside** `surfaces`, never inside `SurfaceState`, and that placement is the contract:
+   `SurfaceState.score` is still the day-of-year percentile and nothing else, so no client can
+   fuse a level with a velocity into one symbol. `HydrologicState.boundary` is a *condition*
+   with three values, one of which is `unquantified` — the fail-closed state, which never means
+   "separated". None of these fields is ever a probability, a return period or an AEP.
 5. Contract tests: each schema has fixture documents; the web client's generated types are
    checked against them in CI; the API's responses are validated against the schema in
    integration tests.

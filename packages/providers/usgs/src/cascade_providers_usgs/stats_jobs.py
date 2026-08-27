@@ -6,11 +6,22 @@ a measurement (DOMAIN_MODEL §2.3).
 
 Job 1 · `usgs.build_climatology` (annual). Per basin susceptibility gauge: pull the ENTIRE
 approved daily-mean record in one request and build `method:streamflow-doy-climatology@1.0.0`;
-then pull the legacy USGS published table and store it SEPARATELY under
-`method:usgs-published-doy-stats@1.0.0`. The two are never averaged. The published fetch is
-allowed to fail: it is the cross-check, and WaterServices decommissions in Q1 2027 (design §2.2
-step 2). A whole ladder is one row with the 366-day ladder in `values_json` — see
-`_climatology_row` for why.
+then, from the SAME parsed rows and the same raw artifact, build
+`method:streamflow-record-context@1.0.0` — the tail of each day-of-year window and the gauge's
+own day-over-day growth distribution, which the seven-point ladder throws away and the high-tail
+level needs (research/high-tail-selection-2026-08-27.md); then pull the legacy USGS published
+table and store it SEPARATELY under `method:usgs-published-doy-stats@1.0.0`. None of the three is
+ever averaged with another. The published fetch is allowed to fail: it is the cross-check, and
+WaterServices decommissions in Q1 2027 (design §2.2 step 2). Each is one row with its whole
+366-day structure in `values_json` — see `_climatology_row` for why.
+
+**Why the record context is a separate feature and method rather than more keys in the ladder
+blob.** `method:streamflow-doy-climatology@1.0.0` must keep producing byte-identical output:
+register X8 (which ladder vintage?) is open and operationally blocking, a stored ladder is the
+reference distribution every susceptibility number is judged against, and a golden test
+reproduces one exactly. Adding fields to its blob would redefine a shipped method's output under
+its own id. So the context is additive: an old knowledge time simply finds no context row and
+the surface says so, with the reason naming this job.
 
 Job 2 · `usgs.fetch_daily_percentile` (daily). One `latest-daily` request for every gauge, then
 each site's most recent daily mean is ranked inside its stored ladder. Deliberately absent: any
@@ -37,8 +48,11 @@ from cascade_core.timeutils import available_at, utcnow
 from cascade_providers_usgs.climatology import (
     METHOD_ID,
     PUBLISHED_METHOD_ID,
+    RECORD_CONTEXT_METHOD_ID,
     DoyClimatology,
+    RecordContext,
     build_doy_climatology,
+    build_record_context,
     daily_mean_valid_time,
     doy_key,
     from_values_json,
@@ -64,6 +78,13 @@ DAILY_CADENCE_SECONDS = 86400
 
 CLIMATOLOGY_FEATURE = "streamflow_doy_climatology"
 PERCENTILE_FEATURE = "streamflow_doy_percentile"
+#: The empirical record the ladder throws away — the tail of each day-of-year window and this
+#: gauge's own day-over-day growth distribution. Written by the SAME annual build, from the SAME
+#: fetched record and the same raw artifact, under its OWN feature and method id: the ladder's
+#: `values_json` is unchanged and byte-identical, so register X8 and the golden test are
+#: untouched by this and a replay at an old knowledge time simply finds no context row and says
+#: so (design: research/high-tail-selection-2026-08-27.md §9).
+RECORD_CONTEXT_FEATURE = "streamflow_record_context"
 # Ranking today's flow inside the ladder IS the susceptibility method's step 3, so the row
 # carries that method id and cascade_hydrology.susceptibility reads it back under the same one.
 PERCENTILE_METHOD_ID = "method:susceptibility-index@0.1.0"
@@ -157,6 +178,44 @@ def _climatology_row(
     )
 
 
+def _record_context_row(
+    context: RecordContext,
+    *,
+    station_id: str,
+    valid_time: datetime,
+    retrieved_at: datetime,
+    artifact_id: int | None,
+    quality: list[str],
+) -> DerivedFeature:
+    """One row per build, holding the tail of every day-of-year window and the growth reference.
+
+    Same shape and same identity rule as `_climatology_row`: a statement about a period of
+    record has no per-day `valid_time`, so one build is one row and a re-run finds its own row
+    and skips. `value` stays NULL because a record is not a single number.
+    """
+    return DerivedFeature(
+        feature=RECORD_CONTEXT_FEATURE,
+        scope_kind="station",
+        scope_id=station_id,
+        window=None,
+        valid_time=valid_time,
+        issued_at=None,
+        computed_at=retrieved_at,
+        available_at=available_at(valid_time=valid_time, retrieved_at=retrieved_at),
+        method_id=RECORD_CONTEXT_METHOD_ID,
+        product_id=PRODUCT_USGS_OGC_DAILY,
+        value=None,
+        values_json=context.to_values_json(),
+        unit=context.unit,
+        percentile=None,
+        climatology_ref=context.reference_ref,
+        confidence_label="unknown",  # exact counts carry no confidence of their own to state
+        quality=quality,
+        inputs=[] if artifact_id is None else [{"table": "raw_artifact", "id": artifact_id}],
+        raw_artifact_id=artifact_id,
+    )
+
+
 async def run_build_climatology(
     session: AsyncSession,
     fetcher: ArchivingFetcher,
@@ -180,6 +239,19 @@ async def run_build_climatology(
             session.add(_climatology_row(
                 climatology, station_id=station.id, valid_time=valid_time, retrieved_at=result.fetched_at,
                 product_id=PRODUCT_USGS_OGC_DAILY, artifact_id=result.artifact_id, quality=list(flags),
+            ))
+            written += 1
+        # The record context rides on the same parsed rows and the same artifact. It is written
+        # after the ladder and never instead of it: a gauge whose ladder is refused has no
+        # context either, and the surface reports the ladder's reason, not a second one.
+        context = build_record_context(rows, site=site, unit=FLOW_UNIT)
+        if context.keys and not await _exists(
+            session, method_id=RECORD_CONTEXT_METHOD_ID, feature=RECORD_CONTEXT_FEATURE,
+            scope_id=station.id, valid_time=valid_time,
+        ):
+            session.add(_record_context_row(
+                context, station_id=station.id, valid_time=valid_time, retrieved_at=result.fetched_at,
+                artifact_id=result.artifact_id, quality=list(flags),
             ))
             written += 1
         if not with_cross_check:

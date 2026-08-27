@@ -14,7 +14,7 @@ when a milestone closes; delete lines that stop being true.
 | Doctrine & architecture | `HYDROLOGY`, `DATA_DOCTRINE`, `DOMAIN_MODEL`, `ARCHITECTURE`, `TESTING`, 7 cinematic docs, ADR-0001…0013 (all accepted) |
 | Data inventory | `DATA_SOURCES.md` — 75 providers; `docs/research/` evidence for 9 categories (3 independently verified, 6 pending) |
 | Event Zero | `EVENT_ZERO.md` — 25 verified crest rows, 115 timeline rows with issuance-time `available_at` |
-| Contracts | `packages/contracts` **1.2.0** (P3 added `SurfaceState.value` + `SurfaceState.spread`, additively) — Pydantic + JSON Schema + fixtures + generated TypeScript; contract tests green |
+| Contracts | `packages/contracts` **1.3.0** (P3 added `SurfaceState.value` + `SurfaceState.spread`; Tier 0 added `HydrologicState`, `SeasonalMultiple`, `StateChange` and `BandBoundary`, all additively and all OUTSIDE `SurfaceState` so no client can fuse them into a score) — Pydantic + JSON Schema + fixtures + generated TypeScript; contract tests green |
 | Spike (verified end to end) | worker → raw archive → SQLite → read-only API → CesiumJS client; 40 backend tests, 27 web tests, Playwright 4/4 vs stub and vs real API, react-doctor 90/100 (`research/spike-report-2026-08-22.md`) |
 | Geography seed | six WBD-derived basins at two display LODs; six stations / forecast points; SNOTEL mappings verified |
 | Deployment (added 2026-08-22 by a second tool) | web client on Cloudflare Pages (`cascadia-c7y.pages.dev`) behind a Worker gateway at `cascadia.papsukkal.com`; production build points at a **same-origin API** |

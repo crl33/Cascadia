@@ -7,7 +7,11 @@ from enum import StrEnum
 
 from pydantic import BaseModel, ConfigDict, Field
 
-CONTRACT_VERSION = "1.2.0"  # 1.2.0 (2026-08-24): +SurfaceState.value, +SurfaceState.spread — additive only,
+CONTRACT_VERSION = "1.3.0"  # 1.3.0 (2026-08-26): +BasinVisualizationState.hydrologic_state and
+# .state_change — the Tier 0 high-tail representation and its velocity (ReferenceWindow,
+# SeasonalMultiple, RecordRank, BandBoundary, HydrologicState, StateChange). Additive only: both
+# new fields default to absent, so 1.2.0 consumers keep validating.
+# 1.2.0 (2026-08-24): +SurfaceState.value, +SurfaceState.spread — additive only,
 # so 1.1.0 consumers keep validating (docs/VISUALIZATION_CONTRACTS.md §10 rule 4).
 # 1.1.0 (2026-08-22): +ground band, +AgreementState.reason, Regulation.class accepts regulated_upper
 

@@ -281,14 +281,44 @@ async def test_accept_still_defaults_to_json(tmp_path) -> None:
     assert route.calls.last.request.headers["user-agent"] == "t"
 
 
-# --- contracts 1.2.0 --------------------------------------------------------------------
+# --- contracts 1.3.0 --------------------------------------------------------------------
 
 
-def test_contract_version_is_1_2_0_and_the_additions_are_optional() -> None:
-    assert CONTRACT_VERSION == "1.2.0"
+def test_contract_version_is_1_3_0_and_the_additions_are_optional() -> None:
+    assert CONTRACT_VERSION == "1.3.0"
     # A 1.1.0-shaped payload (no value, no spread) must keep validating: the bump is additive.
     old = SurfaceState(prov="p", truth=TruthClass.CASCADE_DERIVED, state=SurfaceLevel.UNKNOWN, reason="no cycle")
     assert old.value is None and old.spread is None
+
+
+def test_the_tail_and_the_velocity_are_additive_and_never_inside_the_surface() -> None:
+    """1.3.0: a 1.2.0 basin item keeps validating, and the new fields hang BESIDE the surfaces.
+
+    Putting the high-tail level or the state change inside `SurfaceState` would have made them
+    look like inputs to the band. They are not: `SurfaceState.score` is still the percentile and
+    nothing else, and the contract keeps them in separate objects so no client can fuse them.
+    """
+    from cascade_contracts import BandBoundary, HydrologicState, StateChange
+    from cascade_contracts.visualization import BasinVisualizationState
+
+    assert "hydrologic_state" not in SurfaceState.model_fields
+    assert "state_change" not in SurfaceState.model_fields
+    fields = BasinVisualizationState.model_fields
+    assert fields["hydrologic_state"].default is None and fields["state_change"].default == ()
+
+    # the boundary condition fails closed: its default is the one that says "cannot be answered"
+    state = HydrologicState(
+        prov="p", truth=TruthClass.CASCADE_DERIVED,
+        observed={"value": 72440.0, "unit": "cfs"}, day="2025-12-11",
+    )
+    assert state.boundary is BandBoundary.UNQUANTIFIED
+    assert state.rank is None and state.multiple is None and state.bands_within_sampling_error == ()
+
+    # a growth is a positive multiple or absent; zero and negative are not rates
+    with pytest.raises(ValueError):
+        StateChange(window_h=24, growth=0.0, direction="rising", prov="p")
+    with pytest.raises(ValueError):
+        StateChange(window_h=24, growth=1.5, direction="accelerating", prov="p")
 
 
 def test_surface_state_carries_the_headline_value_and_its_spread() -> None:

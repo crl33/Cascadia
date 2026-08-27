@@ -26,7 +26,7 @@ import pytest
 import respx
 from sqlalchemy import select
 
-from cascade_contracts import ConfidenceLabel, SourceKind
+from cascade_contracts import BandBoundary, ConfidenceLabel, SourceKind
 from cascade_contracts.visualization import SurfaceLevel
 from cascade_core.db import create_schema, make_engine, make_session_factory
 from cascade_core.fetch import ArchivingFetcher
@@ -309,7 +309,16 @@ async def test_build_climatology_stores_both_ladders_separately_and_never_fuses_
         written = await stats_jobs.run_build_climatology(session, fetcher(tmp_path), now=NOW)
         await session.commit()
         rows = list((await session.execute(select(DerivedFeature).where(DerivedFeature.feature == "streamflow_doy_climatology"))).scalars())
-    assert written == 12  # six gauges x (cascade-built, usgs-published)
+        context = list((await session.execute(select(DerivedFeature).where(DerivedFeature.feature == stats_jobs.RECORD_CONTEXT_FEATURE))).scalars())
+    # six gauges x (cascade-built ladder, usgs-published ladder, record context)
+    assert written == 18
+    # The record context is a SEPARATE feature under a SEPARATE method id. That is what keeps
+    # `method:streamflow-doy-climatology@1.0.0` producing byte-identical output while the tail
+    # gains a rank — and it is what keeps register X8 untouched by this change.
+    assert len(context) == 6
+    assert {r.method_id for r in context} == {clim.RECORD_CONTEXT_METHOD_ID}
+    assert all(r.value is None and r.values_json["keys"] and r.values_json["growth"] for r in context)
+    assert all("percentiles" not in r.values_json and "ladder" not in r.values_json for r in context)
     by_method = {}
     for row in rows:
         by_method.setdefault(row.method_id, []).append(row)
@@ -332,7 +341,7 @@ async def test_climatology_job_is_append_only_and_a_rerun_writes_nothing(session
         second = await stats_jobs.run_build_climatology(session, fetcher(tmp_path), now=NOW)
         await session.commit()
         n = len(list((await session.execute(select(DerivedFeature).where(DerivedFeature.feature == "streamflow_doy_climatology"))).scalars()))
-    assert first == 12 and second == 0 and n == 12
+    assert first == 18 and second == 0 and n == 12  # 12 ladders + 6 record contexts, then nothing
 
 
 @respx.mock
@@ -344,7 +353,8 @@ async def test_the_cross_check_may_fail_without_costing_the_surface_its_value(se
         written = await stats_jobs.run_build_climatology(session, fetcher(tmp_path), now=NOW)
         await session.commit()
         methods = {r.method_id for r in (await session.execute(select(DerivedFeature))).scalars()}
-    assert written == 6 and methods == {clim.METHOD_ID}
+    # the ladder and its record context both survive; only the published cross-check is missing
+    assert written == 12 and methods == {clim.METHOD_ID, clim.RECORD_CONTEXT_METHOD_ID}
 
 
 @respx.mock
@@ -400,7 +410,19 @@ async def test_every_basin_reports_a_state_and_a_score_when_a_recent_daily_mean_
             assert a.surface.value is not None and a.surface.value.unit == "pct"
             assert a.surface.horizon_h is None  # a present-state surface has no horizon
             assert a.surface.experimental is True
-            assert a.surface.spread is None  # the ladder is in cfs; spread must share value's unit
+            # 0.2.0 publishes the reference distribution's own rank-space sampling error as the
+            # spread, in percentile POINTS — the same unit as `value`, which is the contract's
+            # rule. It is a dispersion with no coverage claim, never a probability.
+            # A CLAMPED percentile is a bound, so the dispersion is withheld rather than
+            # asserted either side of it; anything else publishes the resolution the clamp
+            # refuses. Both branches are asserted so neither can be quietly dropped.
+            if a.hydrologic_state is not None and a.hydrologic_state.percentile_clamped:
+                assert a.surface.spread is None, basin.id
+                assert a.hydrologic_state.boundary is BandBoundary.UNQUANTIFIED, basin.id
+            else:
+                assert set(a.surface.spread) == {"p_minus_1_rank_se", "p_plus_1_rank_se"}, basin.id
+                lo, hi = a.surface.spread["p_minus_1_rank_se"], a.surface.spread["p_plus_1_rank_se"]
+                assert 0.0 <= lo <= a.surface.value.value <= hi <= 100.0, basin.id
             assert a.surface.prov in a.refs
             assert a.refs[a.surface.prov].source_kind is SourceKind.EXPERIMENTAL
             assert {d.prov for d in a.drivers} <= set(a.refs)
@@ -564,7 +586,14 @@ def test_the_surface_and_the_jobs_agree_on_the_feature_and_method_vocabulary() -
     assert susceptibility.PUBLISHED_CLIMATOLOGY_METHOD_ID == clim.PUBLISHED_METHOD_ID
     assert susceptibility.PERCENTILE_FEATURE == stats_jobs.PERCENTILE_FEATURE
     assert susceptibility.CLIMATOLOGY_FEATURE == stats_jobs.CLIMATOLOGY_FEATURE
-    assert susceptibility.METHOD_ID == stats_jobs.PERCENTILE_METHOD_ID == "method:susceptibility-index@0.1.0"
+    # The SURFACE version and the id the INGEST stamps on the stored ranking row are two
+    # different things, and 0.2.0 moved only the first. Bumping the row id would have orphaned
+    # every percentile already stored, for no gain: both surface versions read the same rows.
+    assert susceptibility.PERCENTILE_ROW_METHOD_ID == stats_jobs.PERCENTILE_METHOD_ID == "method:susceptibility-index@0.1.0"
+    assert susceptibility.METHOD_ID == susceptibility.SURFACE_METHOD_V2 == "method:susceptibility-index@0.2.0"
+    assert susceptibility.SURFACE_METHOD_V1 == "method:susceptibility-index@0.1.0"
+    assert susceptibility.RECORD_CONTEXT_FEATURE == stats_jobs.RECORD_CONTEXT_FEATURE
+    assert susceptibility.RECORD_CONTEXT_METHOD_ID == clim.RECORD_CONTEXT_METHOD_ID
     assert susceptibility.SWE_FEATURE == awdb_normalize.SWE_FEATURE
     assert susceptibility.PRECIP_FEATURE == awdb_normalize.PRECIP_FEATURE
     assert susceptibility.SWE_METHOD_ID == awdb_normalize.SWE_METHOD_ID
@@ -633,3 +662,354 @@ async def test_every_provenance_kind_is_resolved_from_the_registry(sessions, tmp
             assert ref.source_kind is susceptibility.resolved_source_kind(ref.source_id), key
     # and nothing in this surface may ever claim the authority of an official forecast
     assert all(r.source_kind is not SourceKind.OFFICIAL_FORECAST for r in a.refs.values())
+
+
+# --- G. `@0.2.0`: the high tail, its velocity, and the version that must stay callable -------
+
+
+async def _flood_row(session, *, gauge: str, day: date, value: float, valid_time: datetime) -> None:
+    """Append one `streamflow_doy_percentile` row, ranked in the gauge's own stored ladder.
+
+    Written the way the ingest writes it — same feature, same method id, same values_json shape
+    — so these tests exercise the read path against rows the job could really have produced.
+    """
+    ladder_row = (await session.execute(
+        select(DerivedFeature).where(DerivedFeature.feature == "streamflow_doy_climatology",
+                                     DerivedFeature.scope_id == gauge,
+                                     DerivedFeature.method_id == clim.METHOD_ID)
+    )).scalars().first()
+    climatology = clim.from_values_json(ladder_row.values_json, method_id=clim.METHOD_ID)
+    key = clim.doy_key(day)
+    ranked = clim.percentile_of(value, climatology.ladders[key])
+    session.add(DerivedFeature(
+        feature="streamflow_doy_percentile", scope_kind="station", scope_id=gauge, window=None,
+        valid_time=valid_time, issued_at=None, computed_at=valid_time, available_at=valid_time,
+        method_id=stats_jobs.PERCENTILE_METHOD_ID, product_id=PRODUCT_USGS_OGC_DAILY,
+        value=value, unit="cfs", percentile=round(ranked.percentile, 2),
+        values_json={
+            "day": day.isoformat(), "doy_key": key, "sample_count": ranked.sample_count,
+            "ladder": {f"p{p:02d}": v for p, v in sorted(climatology.ladders[key].values.items())},
+            "climatology": {"method_id": clim.METHOD_ID, "ref": climatology.climatology_ref,
+                            "begin_year": climatology.begin_year, "end_year": climatology.end_year},
+            "approval_status": "Provisional", "cross_check": None,
+        },
+        climatology_ref=climatology.climatology_ref, confidence_label="unknown",
+        quality=list(ranked.quality), inputs=[], raw_artifact_id=ladder_row.raw_artifact_id,
+    ))
+
+
+#: Event Zero's three decisive daily means at the Skagit's own susceptibility gauge, the Sauk:
+#: 8,359 -> 24,976 -> 72,440 cfs, which the shipped surface reported as p89 -> p95 -> p95 with a
+#: derivative of exactly +0 (`research/tier0-measured-basis-2026-08-26.md` §2, §3).
+CREST_FLOWS = (8359.0, 24976.0, 72440.0)
+
+
+async def _crest(sessions, tmp_path) -> tuple:
+    """Ingest, then lay Event Zero's three-day rise on the Sauk ending above the ladder's ceiling.
+
+    The FLOWS are the measured December 2025 ones; the DAYS are moved into the fixture's own
+    August window on purpose. The stored ladder and record context were built from a record
+    ending in August 2026, so they are not knowable at a December 2025 knowledge time — asking
+    for them there would test the clock, not the tail. Every read below still filters
+    `available_at <= as_of`; nothing here relaxes that.
+    """
+    _mock_usgs_stats()
+    await _ingest(sessions, tmp_path, awdb=False)
+    gauge = "station:usgs:12189500"
+    at = datetime(2026, 8, 27, 12, 0, tzinfo=UTC)
+    async with sessions() as session:
+        for offset, flow in enumerate(CREST_FLOWS):
+            day = date(2026, 8, 24) + timedelta(days=offset)
+            await _flood_row(session, gauge=gauge, day=day, value=flow,
+                             valid_time=datetime(2026, 8, 25 + offset, 7, 0, tzinfo=UTC))
+        await session.commit()
+    return gauge, at
+
+
+@respx.mock
+async def test_the_tail_discriminates_where_the_percentile_clamps(sessions, tmp_path) -> None:
+    """The measured defect, closed: two flows the ladder calls identical are told apart.
+
+    The percentile itself is UNCHANGED — still 95.0, still clamped, still flagged. What changed
+    is that something beside it now moves.
+    """
+    _, at = await _crest(sessions, tmp_path)
+    async with sessions() as session:
+        products = await as_known_at(session, at).products()
+        crest = await susceptibility.assess(as_known_at(session, at), await as_known_at(session, at).basin("basin:skagit"), products)
+        earlier = as_known_at(session, at - timedelta(hours=24))
+        onset = await susceptibility.assess(earlier, await earlier.basin("basin:skagit"), products)
+
+    assert onset.surface.value.value == crest.surface.value.value == 95.0, "the ladder still clamps"
+    assert onset.hydrologic_state.percentile_clamped and crest.hydrologic_state.percentile_clamped
+    # ... and the multiple, which the clamp cannot silence, moves by exactly the flow ratio
+    low, high = onset.hydrologic_state.multiple.multiple, crest.hydrologic_state.multiple.multiple
+    assert high > low > 1.0
+    # Each day is divided by ITS OWN day-of-year reference, so the ratio of the two multiples is
+    # the flow ratio only where the reference is shared. What is asserted here is the exact
+    # division each of them actually is.
+    for state, flow in ((onset.hydrologic_state, 24976.0), (crest.hydrologic_state, 72440.0)):
+        assert state.observed.value == flow
+        assert state.multiple.multiple == pytest.approx(flow / state.multiple.reference.value, rel=1e-3)
+    assert crest.hydrologic_state.multiple.reference.unit == "cfs"
+    assert crest.hydrologic_state.multiple.reference_percentile == susceptibility.REFERENCE_PERCENTILE
+
+
+@respx.mock
+async def test_the_velocity_survives_the_clamp_that_silenced_the_percentile_derivative(sessions, tmp_path) -> None:
+    """tier0 §3: between two clamped days a percentile change is identically +0. This is not."""
+    _, at = await _crest(sessions, tmp_path)
+    async with sessions() as session:
+        k = as_known_at(session, at)
+        a = await susceptibility.assess(k, await k.basin("basin:skagit"), await k.products())
+    changes = {c.window_h: c for c in a.state_changes}
+    assert set(changes) == {24, 48}
+    assert changes[24].growth == pytest.approx(72440.0 / 24976.0, rel=1e-3)
+    assert changes[48].growth == pytest.approx(72440.0 / 8359.0, rel=1e-3)
+    assert changes[24].direction == "rising" and changes[48].direction == "rising"
+    assert changes[24].from_value.unit == changes[24].to_value.unit == "cfs"
+    assert changes[24].span_h == pytest.approx(24.0)
+    # and it is rendered as a driver that says out loud that it is not scored
+    growth_drivers = [d for d in a.drivers if d.feature.startswith("streamflow_growth_")]
+    assert len(growth_drivers) == 2
+    assert {d.direction for d in growth_drivers} == {susceptibility.STATE_CHANGE_DIRECTION}
+
+
+@respx.mock
+async def test_the_rank_names_the_record_it_beat_when_the_context_is_stored(sessions, tmp_path) -> None:
+    """Above p90 the exact rank is published, censored at 1 and naming the previous maximum."""
+    _, at = await _crest(sessions, tmp_path)
+    async with sessions() as session:
+        k = as_known_at(session, at)
+        a = await susceptibility.assess(k, await k.basin("basin:skagit"), await k.products())
+    rank = a.hydrologic_state.rank
+    assert rank is not None and rank.rank == 1 and rank.exceeds_record
+    assert rank.previous_max is not None and rank.previous_max.unit == "cfs"
+    assert rank.previous_max_day is not None
+    assert susceptibility.EXCEEDS_WINDOW_RECORD in a.refs[a.hydrologic_state.prov].quality
+    assert a.hydrologic_state.reference.n > 0
+    assert a.hydrologic_state.reference.independent_years == susceptibility.independent_years(
+        a.hydrologic_state.reference.n
+    )
+
+
+@respx.mock
+async def test_nothing_combines_the_level_and_the_velocity(sessions, tmp_path) -> None:
+    """The prohibition, asserted: no composite, and no driver outside the percentile is scored."""
+    _, at = await _crest(sessions, tmp_path)
+    async with sessions() as session:
+        k = as_known_at(session, at)
+        a = await susceptibility.assess(k, await k.basin("basin:skagit"), await k.products())
+    # the score is the percentile and nothing else, to the digit
+    assert a.surface.score == pytest.approx(a.surface.value.value / 100.0)
+    assert a.surface.state is susceptibility.band(a.surface.value.value)
+    scored = [d for d in a.drivers if d.direction == susceptibility.SCORED_DIRECTION]
+    assert [d.feature for d in scored] == [susceptibility.PERCENTILE_FEATURE]
+    # every other driver declares itself unscored, so `headline_drivers` cannot read as a weighting
+    assert {d.direction for d in a.drivers} - {susceptibility.SCORED_DIRECTION} <= {
+        susceptibility.LEVEL_DIRECTION, susceptibility.STATE_CHANGE_DIRECTION,
+        susceptibility.CONTEXT_DIRECTION, susceptibility.UNAVAILABLE_DIRECTION, "lowers_confidence",
+    }
+    # and there is no field on the state that summarises the three statements
+    assert not {f for f in type(a.hydrologic_state).model_fields} & {"score", "index", "combined", "severity"}
+
+
+@respx.mock
+async def test_the_boundary_condition_is_published_and_fails_closed(sessions, tmp_path) -> None:
+    """Correction 4: a condition, derived from the reference distribution's own sampling error."""
+    from cascade_contracts import BandBoundary
+
+    _mock_usgs_stats()
+    _mock_awdb()
+    await _ingest(sessions, tmp_path)
+    async with sessions() as session:
+        k = as_known_at(session, NOW)
+        products = await k.products()
+        states = {b.id: (await susceptibility.assess(k, b, products)).hydrologic_state for b in await k.basins()}
+    for basin_id, state in states.items():
+        assert state is not None, basin_id
+        # Every seeded ladder has an n, so the ONLY reason the condition is unquantified is that
+        # the percentile is a clamped bound. Asserting the iff is stronger than asserting the
+        # condition is present: it catches both a silently dropped standard error and a spread
+        # asserted either side of a bound.
+        assert (state.boundary is BandBoundary.UNQUANTIFIED) == state.percentile_clamped, basin_id
+        # Three conditions, three distinct shapes. UNQUANTIFIED must not be allowed to look like
+        # either of the other two: it names no bands because it checked nothing, whereas
+        # SEPARATED names none because the check passed.
+        if state.boundary is BandBoundary.SEPARATED:
+            assert state.bands_within_sampling_error == (), basin_id
+            assert not state.percentile_clamped, basin_id
+        elif state.boundary is BandBoundary.UNQUANTIFIED:
+            assert state.bands_within_sampling_error == (), basin_id
+            assert state.percentile_clamped, basin_id  # the only reason a seeded ladder cannot answer
+        else:
+            # the bands the record cannot tell apart are named, and the reported band is one of them
+            assert len(state.bands_within_sampling_error) > 1, basin_id
+            assert susceptibility.band(state.percentile) in state.bands_within_sampling_error, basin_id
+
+
+@respx.mock
+async def test_the_replaced_surface_version_is_still_callable_and_publishes_nothing_new(sessions, tmp_path) -> None:
+    """Brief §22. Both methods run at the SAME knowledge time and agree about the band.
+
+    This is the A/B harness's contract: `0.1.0` is the surface that shipped, and it must not
+    acquire the tail, the velocity or the spread retroactively — otherwise the comparison would
+    be the new code against itself.
+    """
+    _, at = await _crest(sessions, tmp_path)
+    async with sessions() as session:
+        k = as_known_at(session, at)
+        basin = await k.basin("basin:skagit")
+        products = await k.products()
+        old = await susceptibility.assess(k, basin, products, version="0.1.0")
+        new = await susceptibility.assess(k, basin, products, version="0.2.0")
+        again = await susceptibility.assess(as_known_at(session, at), basin, products, version="0.1.0")
+
+    assert old.version == "0.1.0" and new.version == "0.2.0"
+    assert old.refs[old.surface.prov].method_id == susceptibility.SURFACE_METHOD_V1
+    assert new.refs[new.surface.prov].method_id == susceptibility.SURFACE_METHOD_V2
+    # deterministic at the same knowledge time
+    assert again.surface.model_dump() == old.surface.model_dump()
+    # the BAND is untouched: same state, same score, same value, no recalibration (brief §8)
+    assert (old.surface.state, old.surface.score, old.surface.value) == (new.surface.state, new.surface.score, new.surface.value)
+    # and 0.1.0 publishes none of what 0.2.0 added. The spread is conditional on the percentile
+    # being resolved rather than clamped, so it is asserted as "never on the old arm, and on the
+    # new arm exactly when the ladder resolved the value" — the crest used here is clamped, which
+    # is precisely the case where 0.2.0 must ALSO withhold it.
+    assert old.surface.spread is None
+    assert new.hydrologic_state.percentile_clamped is True, "the crest fixture must be clamped"
+    assert new.surface.spread is None
+    assert old.hydrologic_state is None and new.hydrologic_state is not None
+    assert old.state_changes == () and new.state_changes != ()
+    assert not [d for d in old.drivers if d.direction in
+                (susceptibility.LEVEL_DIRECTION, susceptibility.STATE_CHANGE_DIRECTION)]
+    # 0.1.0's driver list is exactly what it shipped: percentile, SWE, precipitation, soil
+    assert [d.feature for d in old.drivers] == [
+        susceptibility.PERCENTILE_FEATURE, susceptibility.SWE_FEATURE,
+        susceptibility.PRECIP_FEATURE, susceptibility.SOIL_FEATURE,
+    ]
+
+
+def test_an_unknown_method_version_is_refused_rather_than_silently_defaulted() -> None:
+    assert susceptibility.VERSIONS == ("0.1.0", "0.2.0")
+    assert susceptibility.SHIPPED_VERSION == "0.2.0"
+
+#: A record context no seeded gauge's own record could ever produce. Everything in it is a
+#: sentinel: a maximum an order of magnitude above anything in the captured payloads, days
+#: outside the record entirely, and change denominators that are not counts of anything real.
+SENTINEL_MAX = 111111.0
+SENTINEL_MAX_DAY = date(1899, 8, 26)
+SENTINEL_TAIL = [("1899-08-26", SENTINEL_MAX), ("1898-08-25", 90000.0), ("1897-08-27", 80000.0)]
+SENTINEL_GROWTH_N = {24: 4242, 48: 2424}
+
+
+async def _sentinel_record_context(session, *, gauge: str, valid_time: datetime) -> None:
+    """Append a `streamflow_record_context` row for ONE gauge, later than the ingest's own."""
+    doc = {
+        "site": gauge.split(":")[-1],
+        "unit": "cfs",
+        "window_days": susceptibility.DOY_WINDOW_DAYS,
+        "begin_water_year": 1897,
+        "end_water_year": 2026,
+        "used_rows": 40000,
+        "parameters": {},
+        "keys": {
+            key: {"n": 490, "water_years": 98, "max": SENTINEL_MAX,
+                  "max_day": SENTINEL_MAX_DAY.isoformat(), "tail_floor": 1000.0, "tail_years": 42}
+            for key in ("08-23", "08-24", "08-25", "08-26", "08-27", "08-28")
+        },
+        "tail": [[day, value] for day, value in SENTINEL_TAIL],
+        "growth": {str(w): {"n": n, "span_days": w // 24, "top": [1.0]}
+                   for w, n in SENTINEL_GROWTH_N.items()},
+    }
+    session.add(DerivedFeature(
+        feature=susceptibility.RECORD_CONTEXT_FEATURE, scope_kind="station", scope_id=gauge,
+        window=None, valid_time=valid_time, issued_at=None, computed_at=valid_time,
+        available_at=valid_time, method_id=susceptibility.RECORD_CONTEXT_METHOD_ID,
+        product_id=PRODUCT_USGS_OGC_DAILY, value=None, unit="cfs", percentile=None,
+        values_json=doc, confidence_label="unknown", quality=[], inputs=[],
+    ))
+
+
+@respx.mock
+async def test_the_rank_and_the_growth_rank_come_from_the_gauge_the_label_names(sessions, tmp_path) -> None:
+    """Provenance, not plausibility: the tail is ranked in THIS gauge's own stored record.
+
+    Five of the six seeded gauges are served the same captured daily payload by this file's
+    mocks (see `_mock_usgs_stats`), so a surface that read a NEIGHBOURING gauge's record context
+    would publish numerically identical ranks and no assertion about the values could tell them
+    apart. A sentinel context is therefore written for the Skagit's configured gauge alone, and
+    every published number that depends on a record has to come out of it.
+    """
+    gauge, at = await _crest(sessions, tmp_path)
+    async with sessions() as session:
+        await _sentinel_record_context(session, gauge=gauge, valid_time=at - timedelta(hours=1))
+        await session.commit()
+    async with sessions() as session:
+        k = as_known_at(session, at)
+        a = await susceptibility.assess(k, await k.basin("basin:skagit"), await k.products())
+
+    state = a.hydrologic_state
+    assert state is not None and state.rank is not None
+    assert state.rank.previous_max is not None
+    assert state.rank.previous_max.value == SENTINEL_MAX, "ranked in some other gauge's record"
+    assert state.rank.previous_max_day == SENTINEL_MAX_DAY
+    # three stored tail values in this key's window are above the crest, so the rank is the 4th
+    assert (state.rank.rank, state.rank.of) == (4, 491)
+    assert not state.rank.exceeds_record
+    assert "4th largest of 491" in a.refs[state.prov].label
+    # and the growth rank is taken against the SAME gauge's stored change distribution
+    by_window = {c.window_h: c.rank_of for c in a.state_changes}
+    assert by_window == SENTINEL_GROWTH_N
+    # and every statement is STAMPED with its own method identity, never a neighbour's: the
+    # rank and the multiple are exact arithmetic, the change is a ratio of two daily means, the
+    # reference is the Cascade-built ladder (not the USGS published cross-check), and only the
+    # banded index is the experimental surface
+    assert a.refs[state.prov].method_id == susceptibility.TAIL_STATE_METHOD_ID
+    assert state.reference is not None
+    assert state.reference.method_id == susceptibility.CLIMATOLOGY_METHOD_ID
+    assert {a.refs[c.prov].method_id for c in a.state_changes} == {susceptibility.STATE_CHANGE_METHOD_ID}
+    assert a.refs[a.surface.prov].method_id == susceptibility.SURFACE_METHOD_V2
+
+
+@respx.mock
+async def test_the_hindcast_history_stops_at_the_knowledge_time(sessions, tmp_path) -> None:
+    """The replay harness's own look-ahead clamp, where `available_at` cannot stand in for it.
+
+    `Knowledge.derived_features` deliberately does NOT clamp `valid_time` to `as_of` — a derived
+    *forecast* feature is legitimately valid in the future — so the daily-mean readers pass
+    `valid_until` themselves. Every hindcast evaluation is timed from the LAST row this reader
+    returns (`hindcast.evaluate` sets `anchor = percentile_history[-1][0]` and publishes it as
+    `Clocks.valid_at`), so losing the clamp moves the whole evaluation onto a day that had not
+    happened yet.
+
+    It has to be pinned with a row whose `valid_time` is ahead of `as_of` while its
+    `available_at` is behind it, because the Event Zero projection sets
+    `available_at := valid_time` for this family (`scripts/hindcast_event_zero.py`), which makes
+    the two filters agree there and hides the difference. The private reader is called directly:
+    it is the seam, and `hindcast.evaluate` needs a whole event to reach it.
+    """
+    from cascade_hydrology import hindcast
+
+    gauge, at = await _crest(sessions, tmp_path)
+    async with sessions() as session:
+        await _flood_row(session, gauge=gauge, day=date(2026, 8, 27), value=999000.0,
+                         valid_time=at + timedelta(hours=12))
+        await session.commit()
+    async with sessions() as session:
+        future = (await session.execute(
+            select(DerivedFeature)
+            .where(DerivedFeature.feature == "streamflow_doy_percentile",
+                   DerivedFeature.scope_id == gauge)
+            .order_by(DerivedFeature.valid_time.desc())
+        )).scalars().first()
+        assert future.valid_time > at
+        future.available_at = at - timedelta(hours=1)  # already known, just not yet true
+        await session.commit()
+
+    async with sessions() as session:
+        history = await hindcast._percentile_history(as_known_at(session, at), gauge)
+
+    assert history, "the history is empty and the assertions below would be vacuous"
+    assert max(t for t, _v, _p in history) <= at
+    assert history[-1][1] == 72440.0, "the replay anchored on a daily mean it could not have had"

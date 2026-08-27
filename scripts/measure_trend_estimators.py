@@ -1,8 +1,10 @@
 """Measure the candidate trend estimators against real Event Zero hydrographs.
 
 Produces the evidence behind `docs/research/trend-estimator-selection-2026-08-27.md`.
-`packages/hydrology/src/cascade_hydrology/trend_candidates.py` holds the estimators; this
-script only measures them, so the two cannot drift apart.
+`packages/hydrology/src/cascade_hydrology/trend.py` holds the estimators — as
+`trend_candidates.py` when this script was written, folded into `trend.py` when
+`method:rate-of-rise@2.0.0` shipped. This script only measures them, so the two cannot drift
+apart, and it measures the SHIPPED code rather than a copy of it.
 
 Run:  CASCADE_DB_URL=<direct url> python scripts/measure_trend_estimators.py [--cache PATH]
 
@@ -33,11 +35,11 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "packages/hydrology/src"))
 
-from cascade_hydrology.trend import steady_epsilon  # noqa: E402
-from cascade_hydrology.trend_candidates import (  # noqa: E402
+from cascade_hydrology.trend import (  # noqa: E402
     endpoint_slope,
     ols_slope,
     repeated_median_slope,
+    steady_epsilon,
     theil_sen_slope,
 )
 

@@ -55,10 +55,18 @@ from tests.perf.instrument import QueryRecorder, attributed
 #: after** — and the 120 were only 12 distinct SQL texts, which is what made them removable.
 #: The inventory of all 120, and where each of them went, is in tests/perf/README.md.
 #:
-#: 16 rather than 13 because three of the thirteen are conditional on the data, not on the code:
-#: the NWM member series is not read where no NWM cycle is known, the secondary-variable
-#: observation is not read where no observation is, and the climatology fallback IS read where a
-#: flow percentile is missing. The ceiling the code can reach is 14; the budget leaves two.
+#: 16 rather than 13 because four reads are conditional on the data, not on the code: the NWM
+#: member series is not read where no NWM cycle is known, the secondary-variable observation is
+#: not read where no observation is, the climatology fallback IS read where a flow percentile is
+#: missing, and the day-of-year record context IS read where a percentile reaches p90. The
+#: ceiling the code can reach is 15; the budget leaves one.
+#:
+#: **Measured 2026-08-26 with the Tier 0 tail and velocity in place: still 13.** The velocity
+#: (`streamflow_growth_24h` / `_48h`) costs ZERO statements — it reads the same
+#: `streamflow_doy_percentile` rows the level does, over a narrower valid_time range than
+#: `susceptibility.prefetch` already batched, so it is answered out of the request memo. Forcing
+#: the record-context read at every gauge (`RANK_READ_EDGE = 0`) measures 14, for six basins and
+#: for one alike.
 #:
 #: **The number is now independent of how many basins are asked for.** That is the property
 #: worth defending, and the one this test defends: `/viz/basins` (six basins) and

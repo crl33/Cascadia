@@ -1,7 +1,7 @@
 {
   "as_of": "2026-08-24T23:00:00Z",
   "contract": "BasinVisualizationState",
-  "generated_at": "2026-08-26T23:08:12.452233Z",
+  "generated_at": "2026-08-27T08:59:12.726761Z",
   "items": [
     {
       "geometry_ref": {
@@ -19,10 +19,18 @@
           "value": 19.1
         },
         {
+          "direction": "level_not_scored",
+          "feature": "streamflow_seasonal_multiple",
+          "prov": "cascade-tail-skagit",
+          "rank": 2,
+          "unit": "x",
+          "value": 0.318
+        },
+        {
           "direction": "context_not_scored",
           "feature": "basin_swe_percent_of_median",
           "prov": "awdb-swe-skagit",
-          "rank": 2,
+          "rank": 3,
           "unit": "pct",
           "value": null
         },
@@ -30,7 +38,7 @@
           "direction": "context_not_scored",
           "feature": "snotel_precip_14d_percent_of_median",
           "prov": "awdb-prec-skagit",
-          "rank": 3,
+          "rank": 4,
           "unit": "pct",
           "value": 61.4
         },
@@ -38,7 +46,7 @@
           "direction": "unavailable",
           "feature": "soil_saturation_percentile",
           "prov": "cascade-soil-unavailable",
-          "rank": 4,
+          "rank": 5,
           "unit": "pct",
           "value": null
         },
@@ -46,7 +54,7 @@
           "direction": "lowers_confidence",
           "feature": "climatology_p50_disagreement",
           "prov": "usgs-published-stats-12189500",
-          "rank": 5,
+          "rank": 6,
           "unit": "pct",
           "value": -19.1
         },
@@ -54,7 +62,7 @@
           "direction": "increases_forcing",
           "feature": "basin_qpf_72h_pointwise_p50",
           "prov": "nbm-forcing-skagit",
-          "rank": 6,
+          "rank": 7,
           "unit": "mm",
           "value": 0.0
         },
@@ -62,7 +70,7 @@
           "direction": "increases_forcing",
           "feature": "basin_qpf_72h_pointwise_p90",
           "prov": "nbm-forcing-skagit",
-          "rank": 7,
+          "rank": 8,
           "unit": "mm",
           "value": 0.03007143850156774
         },
@@ -70,7 +78,7 @@
           "direction": "decreases_forcing",
           "feature": "basin_qpf_72h_pointwise_p10",
           "prov": "nbm-forcing-skagit",
-          "rank": 8,
+          "rank": 9,
           "unit": "mm",
           "value": 0.0
         },
@@ -78,7 +86,7 @@
           "direction": "context_not_scored",
           "feature": "basin_snow_level_pointwise_p50",
           "prov": "nbm-snowlvl-skagit",
-          "rank": 9,
+          "rank": 10,
           "unit": "m",
           "value": 3136.1720032325784
         },
@@ -86,7 +94,7 @@
           "direction": "reference",
           "feature": "agreement_crest_flow_official",
           "prov": "nwps-forecast-mvew1",
-          "rank": 10,
+          "rank": 11,
           "unit": "cfs",
           "value": 6710.0
         },
@@ -94,7 +102,7 @@
           "direction": "model_below_official",
           "feature": "agreement_crest_flow_nwm_median",
           "prov": "nwm-mr-mvew1",
-          "rank": 11,
+          "rank": 12,
           "unit": "cfs",
           "value": 6688.6
         },
@@ -102,17 +110,91 @@
           "direction": "neither_forecast_crests_in_window",
           "feature": "agreement_crest_timing_delta_h",
           "prov": "nwm-mr-mvew1",
-          "rank": 12,
+          "rank": 13,
           "unit": "h",
           "value": null
         }
       ],
+      "hydrologic_state": {
+        "bands_within_sampling_error": [
+          "low",
+          "moderate"
+        ],
+        "boundary": "near_band_edge",
+        "day": "2026-08-23",
+        "multiple": {
+          "multiple": 0.318,
+          "prov": "cascade-tail-skagit",
+          "reference": {
+            "datum": null,
+            "unit": "cfs",
+            "value": 4061.0
+          },
+          "reference_percentile": 95
+        },
+        "observed": {
+          "datum": null,
+          "unit": "cfs",
+          "value": 1290.0
+        },
+        "percentile": 19.1,
+        "percentile_clamped": false,
+        "prov": "cascade-tail-skagit",
+        "rank": null,
+        "reason": null,
+        "reference": {
+          "doy_key": "08-23",
+          "independent_years": 26,
+          "method_id": "method:streamflow-doy-climatology@1.0.0",
+          "n": 130,
+          "period_end": 2026,
+          "period_start": 2000,
+          "window_days": 2
+        },
+        "truth": "cascade_derived"
+      },
       "id": "basin:skagit",
       "label_priority": 2,
       "name": "Skagit",
       "official_alerts": [],
       "outlet_forecast_point_id": "fp:nwps:MVEW1",
       "regulation_class": "regulated_upper",
+      "state_change": [
+        {
+          "direction": "unknown",
+          "from_value": null,
+          "growth": null,
+          "prov": "cascade-change-skagit-24h",
+          "rank": null,
+          "rank_of": null,
+          "rank_reason": null,
+          "reason": "no daily mean within 6 h of 2026-08-23T07:00:00+00:00",
+          "span_h": null,
+          "to_value": {
+            "datum": null,
+            "unit": "cfs",
+            "value": 1290.0
+          },
+          "window_h": 24
+        },
+        {
+          "direction": "unknown",
+          "from_value": null,
+          "growth": null,
+          "prov": "cascade-change-skagit-48h",
+          "rank": null,
+          "rank_of": null,
+          "rank_reason": null,
+          "reason": "no daily mean within 6 h of 2026-08-22T07:00:00+00:00",
+          "span_h": null,
+          "to_value": {
+            "datum": null,
+            "unit": "cfs",
+            "value": 1290.0
+          },
+          "window_h": 48
+        }
+      ],
       "surfaces": {
         "agreement": {
           "explanation_ref": "/explanations/basin:skagit/agreement",
@@ -159,7 +241,10 @@
           "prov": "cascade-susceptibility-skagit",
           "reason": null,
           "score": 0.191,
-          "spread": null,
+          "spread": {
+            "p_minus_1_rank_se": 11.4,
+            "p_plus_1_rank_se": 26.8
+          },
           "state": "low",
           "truth": "cascade_derived",
           "value": {
@@ -209,6 +294,40 @@
       "source_kind": "OBSERVED",
       "valid_time": "2026-08-24T08:00:00Z"
     },
+    "cascade-change-skagit-24h": {
+      "freshness": {
+        "age_seconds": 57600,
+        "expected_cadence_seconds": 86400,
+        "state": "current"
+      },
+      "issued_at": null,
+      "label": "Cascade 24 h state change at 12189500: not computed — no daily mean within 6 h of 2026-08-23T07:00:00+00:00. Refused rather than measured over a shortened window.",
+      "method_id": "method:streamflow-state-change@0.1.0",
+      "product_id": null,
+      "quality": [],
+      "raw_artifact_id": null,
+      "retrieved_at": "2026-08-24T12:00:00Z",
+      "source_id": "src:cascade",
+      "source_kind": "DERIVED",
+      "valid_time": "2026-08-24T07:00:00Z"
+    },
+    "cascade-change-skagit-48h": {
+      "freshness": {
+        "age_seconds": 57600,
+        "expected_cadence_seconds": 86400,
+        "state": "current"
+      },
+      "issued_at": null,
+      "label": "Cascade 48 h state change at 12189500: not computed — no daily mean within 6 h of 2026-08-22T07:00:00+00:00. Refused rather than measured over a shortened window.",
+      "method_id": "method:streamflow-state-change@0.1.0",
+      "product_id": null,
+      "quality": [],
+      "raw_artifact_id": null,
+      "retrieved_at": "2026-08-24T12:00:00Z",
+      "source_id": "src:cascade",
+      "source_kind": "DERIVED",
+      "valid_time": "2026-08-24T07:00:00Z"
+    },
     "cascade-forcing-skagit": {
       "freshness": {
         "age_seconds": 39600,
@@ -251,7 +370,7 @@
       },
       "issued_at": null,
       "label": "Cascade experimental susceptibility index from the USGS daily-mean flow percentile at 12189500 (2000–2026, spanning 27 calendar years, n=130 values in the day-of-year window). The upper Skagit is regulated (Ross, Baker), so basin wetness is read from the unregulated Sauk (12189500, 1929-2026), which is often the dominant flood contributor (HYDROLOGY §2) — not from the Mount Vernon outlet.",
-      "method_id": "method:susceptibility-index@0.1.0",
+      "method_id": "method:susceptibility-index@0.2.0",
       "product_id": null,
       "quality": [
         "provisional",
@@ -261,6 +380,26 @@
       "retrieved_at": "2026-08-24T12:00:00Z",
       "source_id": "src:cascade",
       "source_kind": "EXPERIMENTAL",
+      "valid_time": "2026-08-24T07:00:00Z"
+    },
+    "cascade-tail-skagit": {
+      "freshness": {
+        "age_seconds": 57600,
+        "expected_cadence_seconds": 86400,
+        "state": "current"
+      },
+      "issued_at": null,
+      "label": "1,290 cfs at 12189500 on 2026-08-23. 0.32× the p95 flow for 08-23 (4,061 cfs; ±2-day window, 2000–2026, n=130 values over ~26 independent years). Cascade exact rank and seasonal multiple over the stored approved daily-mean record; the record's vintage is an open question (register X8) and every level statement here inherits it. Never a probability, a return period or an AEP.",
+      "method_id": "method:streamflow-tail-state@0.1.0",
+      "product_id": null,
+      "quality": [
+        "provisional",
+        "climatology_disagreement"
+      ],
+      "raw_artifact_id": "34",
+      "retrieved_at": "2026-08-24T12:00:00Z",
+      "source_id": "src:cascade",
+      "source_kind": "DERIVED",
       "valid_time": "2026-08-24T07:00:00Z"
     },
     "nbm-forcing-skagit": {
@@ -377,5 +516,5 @@
     "mode": "past",
     "valid": "2026-08-24T23:00:00Z"
   },
-  "version": "1.2.0"
+  "version": "1.3.0"
 }

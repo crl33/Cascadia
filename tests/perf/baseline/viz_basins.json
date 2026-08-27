@@ -1,7 +1,7 @@
 {
   "as_of": "2026-08-24T23:00:00Z",
   "contract": "BasinVisualizationState",
-  "generated_at": "2026-08-26T23:08:11.936835Z",
+  "generated_at": "2026-08-27T08:59:12.408538Z",
   "items": [
     {
       "geometry_ref": {
@@ -19,10 +19,18 @@
           "value": 5.0
         },
         {
+          "direction": "level_not_scored",
+          "feature": "streamflow_seasonal_multiple",
+          "prov": "cascade-tail-cedar",
+          "rank": 2,
+          "unit": "x",
+          "value": 0.03
+        },
+        {
           "direction": "context_not_scored",
           "feature": "basin_swe_percent_of_median",
           "prov": "awdb-swe-cedar",
-          "rank": 2,
+          "rank": 3,
           "unit": "pct",
           "value": null
         },
@@ -30,7 +38,7 @@
           "direction": "context_not_scored",
           "feature": "snotel_precip_14d_percent_of_median",
           "prov": "awdb-prec-cedar",
-          "rank": 3,
+          "rank": 4,
           "unit": "pct",
           "value": 23.3
         },
@@ -38,7 +46,7 @@
           "direction": "unavailable",
           "feature": "soil_saturation_percentile",
           "prov": "cascade-soil-unavailable",
-          "rank": 4,
+          "rank": 5,
           "unit": "pct",
           "value": null
         },
@@ -46,7 +54,7 @@
           "direction": "lowers_confidence",
           "feature": "climatology_p50_disagreement",
           "prov": "usgs-published-stats-12119000",
-          "rank": 5,
+          "rank": 6,
           "unit": "pct",
           "value": -19.1
         },
@@ -54,7 +62,7 @@
           "direction": "increases_forcing",
           "feature": "basin_qpf_72h_pointwise_p50",
           "prov": "nbm-forcing-cedar",
-          "rank": 6,
+          "rank": 7,
           "unit": "mm",
           "value": 0.0
         },
@@ -62,7 +70,7 @@
           "direction": "increases_forcing",
           "feature": "basin_qpf_72h_pointwise_p90",
           "prov": "nbm-forcing-cedar",
-          "rank": 7,
+          "rank": 8,
           "unit": "mm",
           "value": 0.0
         },
@@ -70,7 +78,7 @@
           "direction": "decreases_forcing",
           "feature": "basin_qpf_72h_pointwise_p10",
           "prov": "nbm-forcing-cedar",
-          "rank": 8,
+          "rank": 9,
           "unit": "mm",
           "value": 0.0
         },
@@ -78,7 +86,7 @@
           "direction": "context_not_scored",
           "feature": "basin_snow_level_pointwise_p50",
           "prov": "nbm-snowlvl-cedar",
-          "rank": 9,
+          "rank": 10,
           "unit": "m",
           "value": 3186.777804321641
         },
@@ -86,7 +94,7 @@
           "direction": "reference",
           "feature": "agreement_crest_flow_official",
           "prov": "nwps-forecast-rntw1",
-          "rank": 10,
+          "rank": 11,
           "unit": "cfs",
           "value": 122.0
         },
@@ -94,7 +102,7 @@
           "direction": "model_exceeds_official",
           "feature": "agreement_crest_flow_nwm_median",
           "prov": "nwm-mr-rntw1",
-          "rank": 11,
+          "rank": 12,
           "unit": "cfs",
           "value": 196.0
         },
@@ -102,17 +110,88 @@
           "direction": "only_one_forecast_crests_in_window",
           "feature": "agreement_crest_timing_delta_h",
           "prov": "nwm-mr-rntw1",
-          "rank": 12,
+          "rank": 13,
           "unit": "h",
           "value": null
         }
       ],
+      "hydrologic_state": {
+        "bands_within_sampling_error": [],
+        "boundary": "unquantified",
+        "day": "2026-08-23",
+        "multiple": {
+          "multiple": 0.03,
+          "prov": "cascade-tail-cedar",
+          "reference": {
+            "datum": null,
+            "unit": "cfs",
+            "value": 4061.0
+          },
+          "reference_percentile": 95
+        },
+        "observed": {
+          "datum": null,
+          "unit": "cfs",
+          "value": 122.0
+        },
+        "percentile": 5.0,
+        "percentile_clamped": true,
+        "prov": "cascade-tail-cedar",
+        "rank": null,
+        "reason": null,
+        "reference": {
+          "doy_key": "08-23",
+          "independent_years": 26,
+          "method_id": "method:streamflow-doy-climatology@1.0.0",
+          "n": 130,
+          "period_end": 2026,
+          "period_start": 2000,
+          "window_days": 2
+        },
+        "truth": "cascade_derived"
+      },
       "id": "basin:cedar",
       "label_priority": 2,
       "name": "Cedar / Lake Washington",
       "official_alerts": [],
       "outlet_forecast_point_id": "fp:nwps:RNTW1",
       "regulation_class": "partially_regulated",
+      "state_change": [
+        {
+          "direction": "unknown",
+          "from_value": null,
+          "growth": null,
+          "prov": "cascade-change-cedar-24h",
+          "rank": null,
+          "rank_of": null,
+          "rank_reason": null,
+          "reason": "no daily mean within 6 h of 2026-08-23T07:00:00+00:00",
+          "span_h": null,
+          "to_value": {
+            "datum": null,
+            "unit": "cfs",
+            "value": 122.0
+          },
+          "window_h": 24
+        },
+        {
+          "direction": "unknown",
+          "from_value": null,
+          "growth": null,
+          "prov": "cascade-change-cedar-48h",
+          "rank": null,
+          "rank_of": null,
+          "rank_reason": null,
+          "reason": "no daily mean within 6 h of 2026-08-22T07:00:00+00:00",
+          "span_h": null,
+          "to_value": {
+            "datum": null,
+            "unit": "cfs",
+            "value": 122.0
+          },
+          "window_h": 48
+        }
+      ],
       "surfaces": {
         "agreement": {
           "explanation_ref": "/explanations/basin:cedar/agreement",
@@ -187,10 +266,18 @@
           "value": 5.0
         },
         {
+          "direction": "level_not_scored",
+          "feature": "streamflow_seasonal_multiple",
+          "prov": "cascade-tail-green-duwamish",
+          "rank": 2,
+          "unit": "x",
+          "value": 0.073
+        },
+        {
           "direction": "context_not_scored",
           "feature": "basin_swe_percent_of_median",
           "prov": "awdb-swe-green-duwamish",
-          "rank": 2,
+          "rank": 3,
           "unit": "pct",
           "value": null
         },
@@ -198,7 +285,7 @@
           "direction": "context_not_scored",
           "feature": "snotel_precip_14d_percent_of_median",
           "prov": "awdb-prec-green-duwamish",
-          "rank": 3,
+          "rank": 4,
           "unit": "pct",
           "value": 10.3
         },
@@ -206,7 +293,7 @@
           "direction": "unavailable",
           "feature": "soil_saturation_percentile",
           "prov": "cascade-soil-unavailable",
-          "rank": 4,
+          "rank": 5,
           "unit": "pct",
           "value": null
         },
@@ -214,7 +301,7 @@
           "direction": "lowers_confidence",
           "feature": "climatology_p50_disagreement",
           "prov": "usgs-published-stats-12113000",
-          "rank": 5,
+          "rank": 6,
           "unit": "pct",
           "value": -19.1
         },
@@ -222,7 +309,7 @@
           "direction": "increases_forcing",
           "feature": "basin_qpf_72h_pointwise_p50",
           "prov": "nbm-forcing-green-duwamish",
-          "rank": 6,
+          "rank": 7,
           "unit": "mm",
           "value": 0.0
         },
@@ -230,7 +317,7 @@
           "direction": "increases_forcing",
           "feature": "basin_qpf_72h_pointwise_p90",
           "prov": "nbm-forcing-green-duwamish",
-          "rank": 7,
+          "rank": 8,
           "unit": "mm",
           "value": 0.0
         },
@@ -238,7 +325,7 @@
           "direction": "decreases_forcing",
           "feature": "basin_qpf_72h_pointwise_p10",
           "prov": "nbm-forcing-green-duwamish",
-          "rank": 8,
+          "rank": 9,
           "unit": "mm",
           "value": 0.0
         },
@@ -246,7 +333,7 @@
           "direction": "context_not_scored",
           "feature": "basin_snow_level_pointwise_p50",
           "prov": "nbm-snowlvl-green-duwamish",
-          "rank": 9,
+          "rank": 10,
           "unit": "m",
           "value": 3215.215976777881
         },
@@ -254,7 +341,7 @@
           "direction": "reference",
           "feature": "agreement_crest_flow_official",
           "prov": "nwps-forecast-aubw1",
-          "rank": 10,
+          "rank": 11,
           "unit": "cfs",
           "value": 303.9
         },
@@ -262,7 +349,7 @@
           "direction": "model_exceeds_official",
           "feature": "agreement_crest_flow_nwm_median",
           "prov": "nwm-mr-aubw1",
-          "rank": 11,
+          "rank": 12,
           "unit": "cfs",
           "value": 379.3
         },
@@ -270,17 +357,88 @@
           "direction": "neither_forecast_crests_in_window",
           "feature": "agreement_crest_timing_delta_h",
           "prov": "nwm-mr-aubw1",
-          "rank": 12,
+          "rank": 13,
           "unit": "h",
           "value": null
         }
       ],
+      "hydrologic_state": {
+        "bands_within_sampling_error": [],
+        "boundary": "unquantified",
+        "day": "2026-08-23",
+        "multiple": {
+          "multiple": 0.073,
+          "prov": "cascade-tail-green-duwamish",
+          "reference": {
+            "datum": null,
+            "unit": "cfs",
+            "value": 4061.0
+          },
+          "reference_percentile": 95
+        },
+        "observed": {
+          "datum": null,
+          "unit": "cfs",
+          "value": 296.0
+        },
+        "percentile": 5.0,
+        "percentile_clamped": true,
+        "prov": "cascade-tail-green-duwamish",
+        "rank": null,
+        "reason": null,
+        "reference": {
+          "doy_key": "08-23",
+          "independent_years": 26,
+          "method_id": "method:streamflow-doy-climatology@1.0.0",
+          "n": 130,
+          "period_end": 2026,
+          "period_start": 2000,
+          "window_days": 2
+        },
+        "truth": "cascade_derived"
+      },
       "id": "basin:green-duwamish",
       "label_priority": 2,
       "name": "Green-Duwamish",
       "official_alerts": [],
       "outlet_forecast_point_id": "fp:nwps:AUBW1",
       "regulation_class": "regulated",
+      "state_change": [
+        {
+          "direction": "unknown",
+          "from_value": null,
+          "growth": null,
+          "prov": "cascade-change-green-duwamish-24h",
+          "rank": null,
+          "rank_of": null,
+          "rank_reason": null,
+          "reason": "no daily mean within 6 h of 2026-08-23T07:00:00+00:00",
+          "span_h": null,
+          "to_value": {
+            "datum": null,
+            "unit": "cfs",
+            "value": 296.0
+          },
+          "window_h": 24
+        },
+        {
+          "direction": "unknown",
+          "from_value": null,
+          "growth": null,
+          "prov": "cascade-change-green-duwamish-48h",
+          "rank": null,
+          "rank_of": null,
+          "rank_reason": null,
+          "reason": "no daily mean within 6 h of 2026-08-22T07:00:00+00:00",
+          "span_h": null,
+          "to_value": {
+            "datum": null,
+            "unit": "cfs",
+            "value": 296.0
+          },
+          "window_h": 48
+        }
+      ],
       "surfaces": {
         "agreement": {
           "explanation_ref": "/explanations/basin:green-duwamish/agreement",
@@ -362,10 +520,18 @@
           "value": 18.2
         },
         {
+          "direction": "level_not_scored",
+          "feature": "streamflow_seasonal_multiple",
+          "prov": "cascade-tail-nooksack",
+          "rank": 2,
+          "unit": "x",
+          "value": 0.315
+        },
+        {
           "direction": "context_not_scored",
           "feature": "basin_swe_percent_of_median",
           "prov": "awdb-swe-nooksack",
-          "rank": 2,
+          "rank": 3,
           "unit": "pct",
           "value": null
         },
@@ -373,7 +539,7 @@
           "direction": "context_not_scored",
           "feature": "snotel_precip_14d_percent_of_median",
           "prov": "awdb-prec-nooksack",
-          "rank": 3,
+          "rank": 4,
           "unit": "pct",
           "value": 22.9
         },
@@ -381,7 +547,7 @@
           "direction": "unavailable",
           "feature": "soil_saturation_percentile",
           "prov": "cascade-soil-unavailable",
-          "rank": 4,
+          "rank": 5,
           "unit": "pct",
           "value": null
         },
@@ -389,7 +555,7 @@
           "direction": "lowers_confidence",
           "feature": "climatology_p50_disagreement",
           "prov": "usgs-published-stats-12213100",
-          "rank": 5,
+          "rank": 6,
           "unit": "pct",
           "value": -19.1
         },
@@ -397,7 +563,7 @@
           "direction": "increases_forcing",
           "feature": "basin_qpf_72h_pointwise_p50",
           "prov": "nbm-forcing-nooksack",
-          "rank": 6,
+          "rank": 7,
           "unit": "mm",
           "value": 0.0
         },
@@ -405,7 +571,7 @@
           "direction": "increases_forcing",
           "feature": "basin_qpf_72h_pointwise_p90",
           "prov": "nbm-forcing-nooksack",
-          "rank": 7,
+          "rank": 8,
           "unit": "mm",
           "value": 0.0
         },
@@ -413,7 +579,7 @@
           "direction": "decreases_forcing",
           "feature": "basin_qpf_72h_pointwise_p10",
           "prov": "nbm-forcing-nooksack",
-          "rank": 8,
+          "rank": 9,
           "unit": "mm",
           "value": 0.0
         },
@@ -421,7 +587,7 @@
           "direction": "context_not_scored",
           "feature": "basin_snow_level_pointwise_p50",
           "prov": "nbm-snowlvl-nooksack",
-          "rank": 9,
+          "rank": 10,
           "unit": "m",
           "value": 3158.7007251313407
         },
@@ -429,7 +595,7 @@
           "direction": "reference",
           "feature": "agreement_crest_flow_official",
           "prov": "nwps-forecast-nksw1",
-          "rank": 10,
+          "rank": 11,
           "unit": "cfs",
           "value": 1410.0
         },
@@ -437,7 +603,7 @@
           "direction": "model_below_official",
           "feature": "agreement_crest_flow_nwm_median",
           "prov": "nwm-mr-nksw1",
-          "rank": 11,
+          "rank": 12,
           "unit": "cfs",
           "value": 1287.6
         },
@@ -445,17 +611,91 @@
           "direction": "neither_forecast_crests_in_window",
           "feature": "agreement_crest_timing_delta_h",
           "prov": "nwm-mr-nksw1",
-          "rank": 12,
+          "rank": 13,
           "unit": "h",
           "value": null
         }
       ],
+      "hydrologic_state": {
+        "bands_within_sampling_error": [
+          "low",
+          "moderate"
+        ],
+        "boundary": "near_band_edge",
+        "day": "2026-08-23",
+        "multiple": {
+          "multiple": 0.315,
+          "prov": "cascade-tail-nooksack",
+          "reference": {
+            "datum": null,
+            "unit": "cfs",
+            "value": 4061.0
+          },
+          "reference_percentile": 95
+        },
+        "observed": {
+          "datum": null,
+          "unit": "cfs",
+          "value": 1280.0
+        },
+        "percentile": 18.2,
+        "percentile_clamped": false,
+        "prov": "cascade-tail-nooksack",
+        "rank": null,
+        "reason": null,
+        "reference": {
+          "doy_key": "08-23",
+          "independent_years": 26,
+          "method_id": "method:streamflow-doy-climatology@1.0.0",
+          "n": 130,
+          "period_end": 2026,
+          "period_start": 2000,
+          "window_days": 2
+        },
+        "truth": "cascade_derived"
+      },
       "id": "basin:nooksack",
       "label_priority": 2,
       "name": "Nooksack",
       "official_alerts": [],
       "outlet_forecast_point_id": "fp:nwps:NKSW1",
       "regulation_class": "natural",
+      "state_change": [
+        {
+          "direction": "unknown",
+          "from_value": null,
+          "growth": null,
+          "prov": "cascade-change-nooksack-24h",
+          "rank": null,
+          "rank_of": null,
+          "rank_reason": null,
+          "reason": "no daily mean within 6 h of 2026-08-23T07:00:00+00:00",
+          "span_h": null,
+          "to_value": {
+            "datum": null,
+            "unit": "cfs",
+            "value": 1280.0
+          },
+          "window_h": 24
+        },
+        {
+          "direction": "unknown",
+          "from_value": null,
+          "growth": null,
+          "prov": "cascade-change-nooksack-48h",
+          "rank": null,
+          "rank_of": null,
+          "rank_reason": null,
+          "reason": "no daily mean within 6 h of 2026-08-22T07:00:00+00:00",
+          "span_h": null,
+          "to_value": {
+            "datum": null,
+            "unit": "cfs",
+            "value": 1280.0
+          },
+          "window_h": 48
+        }
+      ],
       "surfaces": {
         "agreement": {
           "explanation_ref": "/explanations/basin:nooksack/agreement",
@@ -502,7 +742,10 @@
           "prov": "cascade-susceptibility-nooksack",
           "reason": null,
           "score": 0.182,
-          "spread": null,
+          "spread": {
+            "p_minus_1_rank_se": 10.6,
+            "p_plus_1_rank_se": 25.8
+          },
           "state": "low",
           "truth": "cascade_derived",
           "value": {
@@ -530,10 +773,18 @@
           "value": 5.0
         },
         {
+          "direction": "level_not_scored",
+          "feature": "streamflow_seasonal_multiple",
+          "prov": "cascade-tail-puyallup-white",
+          "rank": 2,
+          "unit": "x",
+          "value": 0.14
+        },
+        {
           "direction": "context_not_scored",
           "feature": "basin_swe_percent_of_median",
           "prov": "awdb-swe-puyallup-white",
-          "rank": 2,
+          "rank": 3,
           "unit": "pct",
           "value": null
         },
@@ -541,7 +792,7 @@
           "direction": "context_not_scored",
           "feature": "snotel_precip_14d_percent_of_median",
           "prov": "awdb-prec-puyallup-white",
-          "rank": 3,
+          "rank": 4,
           "unit": "pct",
           "value": null
         },
@@ -549,7 +800,7 @@
           "direction": "unavailable",
           "feature": "soil_saturation_percentile",
           "prov": "cascade-soil-unavailable",
-          "rank": 4,
+          "rank": 5,
           "unit": "pct",
           "value": null
         },
@@ -557,7 +808,7 @@
           "direction": "lowers_confidence",
           "feature": "climatology_p50_disagreement",
           "prov": "usgs-published-stats-12100490",
-          "rank": 5,
+          "rank": 6,
           "unit": "pct",
           "value": -19.1
         },
@@ -565,7 +816,7 @@
           "direction": "increases_forcing",
           "feature": "basin_qpf_72h_pointwise_p50",
           "prov": "nbm-forcing-puyallup-white",
-          "rank": 6,
+          "rank": 7,
           "unit": "mm",
           "value": 0.0
         },
@@ -573,7 +824,7 @@
           "direction": "increases_forcing",
           "feature": "basin_qpf_72h_pointwise_p90",
           "prov": "nbm-forcing-puyallup-white",
-          "rank": 7,
+          "rank": 8,
           "unit": "mm",
           "value": 0.021569362835888197
         },
@@ -581,7 +832,7 @@
           "direction": "decreases_forcing",
           "feature": "basin_qpf_72h_pointwise_p10",
           "prov": "nbm-forcing-puyallup-white",
-          "rank": 8,
+          "rank": 9,
           "unit": "mm",
           "value": 0.0
         },
@@ -589,7 +840,7 @@
           "direction": "context_not_scored",
           "feature": "basin_snow_level_pointwise_p50",
           "prov": "nbm-snowlvl-puyallup-white",
-          "rank": 9,
+          "rank": 10,
           "unit": "m",
           "value": 3172.661026647645
         },
@@ -597,7 +848,7 @@
           "direction": "reference",
           "feature": "agreement_crest_flow_official",
           "prov": "nwps-forecast-wraw1",
-          "rank": 10,
+          "rank": 11,
           "unit": "cfs",
           "value": 787.2
         },
@@ -605,7 +856,7 @@
           "direction": "model_below_official",
           "feature": "agreement_crest_flow_nwm_median",
           "prov": "nwm-mr-wraw1",
-          "rank": 11,
+          "rank": 12,
           "unit": "cfs",
           "value": 557.3
         },
@@ -613,17 +864,88 @@
           "direction": "neither_forecast_crests_in_window",
           "feature": "agreement_crest_timing_delta_h",
           "prov": "nwm-mr-wraw1",
-          "rank": 12,
+          "rank": 13,
           "unit": "h",
           "value": null
         }
       ],
+      "hydrologic_state": {
+        "bands_within_sampling_error": [],
+        "boundary": "unquantified",
+        "day": "2026-08-23",
+        "multiple": {
+          "multiple": 0.14,
+          "prov": "cascade-tail-puyallup-white",
+          "reference": {
+            "datum": null,
+            "unit": "cfs",
+            "value": 4061.0
+          },
+          "reference_percentile": 95
+        },
+        "observed": {
+          "datum": null,
+          "unit": "cfs",
+          "value": 570.0
+        },
+        "percentile": 5.0,
+        "percentile_clamped": true,
+        "prov": "cascade-tail-puyallup-white",
+        "rank": null,
+        "reason": null,
+        "reference": {
+          "doy_key": "08-23",
+          "independent_years": 26,
+          "method_id": "method:streamflow-doy-climatology@1.0.0",
+          "n": 130,
+          "period_end": 2026,
+          "period_start": 2000,
+          "window_days": 2
+        },
+        "truth": "cascade_derived"
+      },
       "id": "basin:puyallup-white",
       "label_priority": 2,
       "name": "Puyallup / White",
       "official_alerts": [],
       "outlet_forecast_point_id": "fp:nwps:WRAW1",
       "regulation_class": "regulated",
+      "state_change": [
+        {
+          "direction": "unknown",
+          "from_value": null,
+          "growth": null,
+          "prov": "cascade-change-puyallup-white-24h",
+          "rank": null,
+          "rank_of": null,
+          "rank_reason": null,
+          "reason": "no daily mean within 6 h of 2026-08-23T07:00:00+00:00",
+          "span_h": null,
+          "to_value": {
+            "datum": null,
+            "unit": "cfs",
+            "value": 570.0
+          },
+          "window_h": 24
+        },
+        {
+          "direction": "unknown",
+          "from_value": null,
+          "growth": null,
+          "prov": "cascade-change-puyallup-white-48h",
+          "rank": null,
+          "rank_of": null,
+          "rank_reason": null,
+          "reason": "no daily mean within 6 h of 2026-08-22T07:00:00+00:00",
+          "span_h": null,
+          "to_value": {
+            "datum": null,
+            "unit": "cfs",
+            "value": 570.0
+          },
+          "window_h": 48
+        }
+      ],
       "surfaces": {
         "agreement": {
           "explanation_ref": "/explanations/basin:puyallup-white/agreement",
@@ -705,10 +1027,18 @@
           "value": 19.1
         },
         {
+          "direction": "level_not_scored",
+          "feature": "streamflow_seasonal_multiple",
+          "prov": "cascade-tail-skagit",
+          "rank": 2,
+          "unit": "x",
+          "value": 0.318
+        },
+        {
           "direction": "context_not_scored",
           "feature": "basin_swe_percent_of_median",
           "prov": "awdb-swe-skagit",
-          "rank": 2,
+          "rank": 3,
           "unit": "pct",
           "value": null
         },
@@ -716,7 +1046,7 @@
           "direction": "context_not_scored",
           "feature": "snotel_precip_14d_percent_of_median",
           "prov": "awdb-prec-skagit",
-          "rank": 3,
+          "rank": 4,
           "unit": "pct",
           "value": 61.4
         },
@@ -724,7 +1054,7 @@
           "direction": "unavailable",
           "feature": "soil_saturation_percentile",
           "prov": "cascade-soil-unavailable",
-          "rank": 4,
+          "rank": 5,
           "unit": "pct",
           "value": null
         },
@@ -732,7 +1062,7 @@
           "direction": "lowers_confidence",
           "feature": "climatology_p50_disagreement",
           "prov": "usgs-published-stats-12189500",
-          "rank": 5,
+          "rank": 6,
           "unit": "pct",
           "value": -19.1
         },
@@ -740,7 +1070,7 @@
           "direction": "increases_forcing",
           "feature": "basin_qpf_72h_pointwise_p50",
           "prov": "nbm-forcing-skagit",
-          "rank": 6,
+          "rank": 7,
           "unit": "mm",
           "value": 0.0
         },
@@ -748,7 +1078,7 @@
           "direction": "increases_forcing",
           "feature": "basin_qpf_72h_pointwise_p90",
           "prov": "nbm-forcing-skagit",
-          "rank": 7,
+          "rank": 8,
           "unit": "mm",
           "value": 0.03007143850156774
         },
@@ -756,7 +1086,7 @@
           "direction": "decreases_forcing",
           "feature": "basin_qpf_72h_pointwise_p10",
           "prov": "nbm-forcing-skagit",
-          "rank": 8,
+          "rank": 9,
           "unit": "mm",
           "value": 0.0
         },
@@ -764,7 +1094,7 @@
           "direction": "context_not_scored",
           "feature": "basin_snow_level_pointwise_p50",
           "prov": "nbm-snowlvl-skagit",
-          "rank": 9,
+          "rank": 10,
           "unit": "m",
           "value": 3136.1720032325784
         },
@@ -772,7 +1102,7 @@
           "direction": "reference",
           "feature": "agreement_crest_flow_official",
           "prov": "nwps-forecast-mvew1",
-          "rank": 10,
+          "rank": 11,
           "unit": "cfs",
           "value": 6710.0
         },
@@ -780,7 +1110,7 @@
           "direction": "model_below_official",
           "feature": "agreement_crest_flow_nwm_median",
           "prov": "nwm-mr-mvew1",
-          "rank": 11,
+          "rank": 12,
           "unit": "cfs",
           "value": 6688.6
         },
@@ -788,17 +1118,91 @@
           "direction": "neither_forecast_crests_in_window",
           "feature": "agreement_crest_timing_delta_h",
           "prov": "nwm-mr-mvew1",
-          "rank": 12,
+          "rank": 13,
           "unit": "h",
           "value": null
         }
       ],
+      "hydrologic_state": {
+        "bands_within_sampling_error": [
+          "low",
+          "moderate"
+        ],
+        "boundary": "near_band_edge",
+        "day": "2026-08-23",
+        "multiple": {
+          "multiple": 0.318,
+          "prov": "cascade-tail-skagit",
+          "reference": {
+            "datum": null,
+            "unit": "cfs",
+            "value": 4061.0
+          },
+          "reference_percentile": 95
+        },
+        "observed": {
+          "datum": null,
+          "unit": "cfs",
+          "value": 1290.0
+        },
+        "percentile": 19.1,
+        "percentile_clamped": false,
+        "prov": "cascade-tail-skagit",
+        "rank": null,
+        "reason": null,
+        "reference": {
+          "doy_key": "08-23",
+          "independent_years": 26,
+          "method_id": "method:streamflow-doy-climatology@1.0.0",
+          "n": 130,
+          "period_end": 2026,
+          "period_start": 2000,
+          "window_days": 2
+        },
+        "truth": "cascade_derived"
+      },
       "id": "basin:skagit",
       "label_priority": 2,
       "name": "Skagit",
       "official_alerts": [],
       "outlet_forecast_point_id": "fp:nwps:MVEW1",
       "regulation_class": "regulated_upper",
+      "state_change": [
+        {
+          "direction": "unknown",
+          "from_value": null,
+          "growth": null,
+          "prov": "cascade-change-skagit-24h",
+          "rank": null,
+          "rank_of": null,
+          "rank_reason": null,
+          "reason": "no daily mean within 6 h of 2026-08-23T07:00:00+00:00",
+          "span_h": null,
+          "to_value": {
+            "datum": null,
+            "unit": "cfs",
+            "value": 1290.0
+          },
+          "window_h": 24
+        },
+        {
+          "direction": "unknown",
+          "from_value": null,
+          "growth": null,
+          "prov": "cascade-change-skagit-48h",
+          "rank": null,
+          "rank_of": null,
+          "rank_reason": null,
+          "reason": "no daily mean within 6 h of 2026-08-22T07:00:00+00:00",
+          "span_h": null,
+          "to_value": {
+            "datum": null,
+            "unit": "cfs",
+            "value": 1290.0
+          },
+          "window_h": 48
+        }
+      ],
       "surfaces": {
         "agreement": {
           "explanation_ref": "/explanations/basin:skagit/agreement",
@@ -845,7 +1249,10 @@
           "prov": "cascade-susceptibility-skagit",
           "reason": null,
           "score": 0.191,
-          "spread": null,
+          "spread": {
+            "p_minus_1_rank_se": 11.4,
+            "p_plus_1_rank_se": 26.8
+          },
           "state": "low",
           "truth": "cascade_derived",
           "value": {
@@ -873,10 +1280,18 @@
           "value": 5.0
         },
         {
+          "direction": "level_not_scored",
+          "feature": "streamflow_seasonal_multiple",
+          "prov": "cascade-tail-snohomish-snoqualmie",
+          "rank": 2,
+          "unit": "x",
+          "value": 0.129
+        },
+        {
           "direction": "context_not_scored",
           "feature": "basin_swe_percent_of_median",
           "prov": "awdb-swe-snohomish-snoqualmie",
-          "rank": 2,
+          "rank": 3,
           "unit": "pct",
           "value": null
         },
@@ -884,7 +1299,7 @@
           "direction": "context_not_scored",
           "feature": "snotel_precip_14d_percent_of_median",
           "prov": "awdb-prec-snohomish-snoqualmie",
-          "rank": 3,
+          "rank": 4,
           "unit": "pct",
           "value": 37.3
         },
@@ -892,7 +1307,7 @@
           "direction": "unavailable",
           "feature": "soil_saturation_percentile",
           "prov": "cascade-soil-unavailable",
-          "rank": 4,
+          "rank": 5,
           "unit": "pct",
           "value": null
         },
@@ -900,7 +1315,7 @@
           "direction": "lowers_confidence",
           "feature": "climatology_p50_disagreement",
           "prov": "usgs-published-stats-12149000",
-          "rank": 5,
+          "rank": 6,
           "unit": "pct",
           "value": -19.1
         },
@@ -908,7 +1323,7 @@
           "direction": "increases_forcing",
           "feature": "basin_qpf_72h_pointwise_p50",
           "prov": "nbm-forcing-snohomish-snoqualmie",
-          "rank": 6,
+          "rank": 7,
           "unit": "mm",
           "value": 0.0
         },
@@ -916,7 +1331,7 @@
           "direction": "increases_forcing",
           "feature": "basin_qpf_72h_pointwise_p90",
           "prov": "nbm-forcing-snohomish-snoqualmie",
-          "rank": 7,
+          "rank": 8,
           "unit": "mm",
           "value": 0.0
         },
@@ -924,7 +1339,7 @@
           "direction": "decreases_forcing",
           "feature": "basin_qpf_72h_pointwise_p10",
           "prov": "nbm-forcing-snohomish-snoqualmie",
-          "rank": 8,
+          "rank": 9,
           "unit": "mm",
           "value": 0.0
         },
@@ -932,17 +1347,88 @@
           "direction": "context_not_scored",
           "feature": "basin_snow_level_pointwise_p50",
           "prov": "nbm-snowlvl-snohomish-snoqualmie",
-          "rank": 9,
+          "rank": 10,
           "unit": "m",
           "value": 3178.5613440418
         }
       ],
+      "hydrologic_state": {
+        "bands_within_sampling_error": [],
+        "boundary": "unquantified",
+        "day": "2026-08-23",
+        "multiple": {
+          "multiple": 0.129,
+          "prov": "cascade-tail-snohomish-snoqualmie",
+          "reference": {
+            "datum": null,
+            "unit": "cfs",
+            "value": 4061.0
+          },
+          "reference_percentile": 95
+        },
+        "observed": {
+          "datum": null,
+          "unit": "cfs",
+          "value": 525.0
+        },
+        "percentile": 5.0,
+        "percentile_clamped": true,
+        "prov": "cascade-tail-snohomish-snoqualmie",
+        "rank": null,
+        "reason": null,
+        "reference": {
+          "doy_key": "08-23",
+          "independent_years": 26,
+          "method_id": "method:streamflow-doy-climatology@1.0.0",
+          "n": 130,
+          "period_end": 2026,
+          "period_start": 2000,
+          "window_days": 2
+        },
+        "truth": "cascade_derived"
+      },
       "id": "basin:snohomish-snoqualmie",
       "label_priority": 2,
       "name": "Snohomish / Snoqualmie",
       "official_alerts": [],
       "outlet_forecast_point_id": "fp:nwps:CRNW1",
       "regulation_class": "natural",
+      "state_change": [
+        {
+          "direction": "unknown",
+          "from_value": null,
+          "growth": null,
+          "prov": "cascade-change-snohomish-snoqualmie-24h",
+          "rank": null,
+          "rank_of": null,
+          "rank_reason": null,
+          "reason": "no daily mean within 6 h of 2026-08-23T07:00:00+00:00",
+          "span_h": null,
+          "to_value": {
+            "datum": null,
+            "unit": "cfs",
+            "value": 525.0
+          },
+          "window_h": 24
+        },
+        {
+          "direction": "unknown",
+          "from_value": null,
+          "growth": null,
+          "prov": "cascade-change-snohomish-snoqualmie-48h",
+          "rank": null,
+          "rank_of": null,
+          "rank_reason": null,
+          "reason": "no daily mean within 6 h of 2026-08-22T07:00:00+00:00",
+          "span_h": null,
+          "to_value": {
+            "datum": null,
+            "unit": "cfs",
+            "value": 525.0
+          },
+          "window_h": 48
+        }
+      ],
       "surfaces": {
         "agreement": {
           "explanation_ref": null,
@@ -1220,6 +1706,210 @@
       "source_kind": "OBSERVED",
       "valid_time": "2026-08-24T08:00:00Z"
     },
+    "cascade-change-cedar-24h": {
+      "freshness": {
+        "age_seconds": 57600,
+        "expected_cadence_seconds": 86400,
+        "state": "current"
+      },
+      "issued_at": null,
+      "label": "Cascade 24 h state change at 12119000: not computed — no daily mean within 6 h of 2026-08-23T07:00:00+00:00. Refused rather than measured over a shortened window.",
+      "method_id": "method:streamflow-state-change@0.1.0",
+      "product_id": null,
+      "quality": [],
+      "raw_artifact_id": null,
+      "retrieved_at": "2026-08-24T12:00:00Z",
+      "source_id": "src:cascade",
+      "source_kind": "DERIVED",
+      "valid_time": "2026-08-24T07:00:00Z"
+    },
+    "cascade-change-cedar-48h": {
+      "freshness": {
+        "age_seconds": 57600,
+        "expected_cadence_seconds": 86400,
+        "state": "current"
+      },
+      "issued_at": null,
+      "label": "Cascade 48 h state change at 12119000: not computed — no daily mean within 6 h of 2026-08-22T07:00:00+00:00. Refused rather than measured over a shortened window.",
+      "method_id": "method:streamflow-state-change@0.1.0",
+      "product_id": null,
+      "quality": [],
+      "raw_artifact_id": null,
+      "retrieved_at": "2026-08-24T12:00:00Z",
+      "source_id": "src:cascade",
+      "source_kind": "DERIVED",
+      "valid_time": "2026-08-24T07:00:00Z"
+    },
+    "cascade-change-green-duwamish-24h": {
+      "freshness": {
+        "age_seconds": 57600,
+        "expected_cadence_seconds": 86400,
+        "state": "current"
+      },
+      "issued_at": null,
+      "label": "Cascade 24 h state change at 12113000: not computed — no daily mean within 6 h of 2026-08-23T07:00:00+00:00. Refused rather than measured over a shortened window.",
+      "method_id": "method:streamflow-state-change@0.1.0",
+      "product_id": null,
+      "quality": [],
+      "raw_artifact_id": null,
+      "retrieved_at": "2026-08-24T12:00:00Z",
+      "source_id": "src:cascade",
+      "source_kind": "DERIVED",
+      "valid_time": "2026-08-24T07:00:00Z"
+    },
+    "cascade-change-green-duwamish-48h": {
+      "freshness": {
+        "age_seconds": 57600,
+        "expected_cadence_seconds": 86400,
+        "state": "current"
+      },
+      "issued_at": null,
+      "label": "Cascade 48 h state change at 12113000: not computed — no daily mean within 6 h of 2026-08-22T07:00:00+00:00. Refused rather than measured over a shortened window.",
+      "method_id": "method:streamflow-state-change@0.1.0",
+      "product_id": null,
+      "quality": [],
+      "raw_artifact_id": null,
+      "retrieved_at": "2026-08-24T12:00:00Z",
+      "source_id": "src:cascade",
+      "source_kind": "DERIVED",
+      "valid_time": "2026-08-24T07:00:00Z"
+    },
+    "cascade-change-nooksack-24h": {
+      "freshness": {
+        "age_seconds": 57600,
+        "expected_cadence_seconds": 86400,
+        "state": "current"
+      },
+      "issued_at": null,
+      "label": "Cascade 24 h state change at 12213100: not computed — no daily mean within 6 h of 2026-08-23T07:00:00+00:00. Refused rather than measured over a shortened window.",
+      "method_id": "method:streamflow-state-change@0.1.0",
+      "product_id": null,
+      "quality": [],
+      "raw_artifact_id": null,
+      "retrieved_at": "2026-08-24T12:00:00Z",
+      "source_id": "src:cascade",
+      "source_kind": "DERIVED",
+      "valid_time": "2026-08-24T07:00:00Z"
+    },
+    "cascade-change-nooksack-48h": {
+      "freshness": {
+        "age_seconds": 57600,
+        "expected_cadence_seconds": 86400,
+        "state": "current"
+      },
+      "issued_at": null,
+      "label": "Cascade 48 h state change at 12213100: not computed — no daily mean within 6 h of 2026-08-22T07:00:00+00:00. Refused rather than measured over a shortened window.",
+      "method_id": "method:streamflow-state-change@0.1.0",
+      "product_id": null,
+      "quality": [],
+      "raw_artifact_id": null,
+      "retrieved_at": "2026-08-24T12:00:00Z",
+      "source_id": "src:cascade",
+      "source_kind": "DERIVED",
+      "valid_time": "2026-08-24T07:00:00Z"
+    },
+    "cascade-change-puyallup-white-24h": {
+      "freshness": {
+        "age_seconds": 57600,
+        "expected_cadence_seconds": 86400,
+        "state": "current"
+      },
+      "issued_at": null,
+      "label": "Cascade 24 h state change at 12100490: not computed — no daily mean within 6 h of 2026-08-23T07:00:00+00:00. Refused rather than measured over a shortened window.",
+      "method_id": "method:streamflow-state-change@0.1.0",
+      "product_id": null,
+      "quality": [],
+      "raw_artifact_id": null,
+      "retrieved_at": "2026-08-24T12:00:00Z",
+      "source_id": "src:cascade",
+      "source_kind": "DERIVED",
+      "valid_time": "2026-08-24T07:00:00Z"
+    },
+    "cascade-change-puyallup-white-48h": {
+      "freshness": {
+        "age_seconds": 57600,
+        "expected_cadence_seconds": 86400,
+        "state": "current"
+      },
+      "issued_at": null,
+      "label": "Cascade 48 h state change at 12100490: not computed — no daily mean within 6 h of 2026-08-22T07:00:00+00:00. Refused rather than measured over a shortened window.",
+      "method_id": "method:streamflow-state-change@0.1.0",
+      "product_id": null,
+      "quality": [],
+      "raw_artifact_id": null,
+      "retrieved_at": "2026-08-24T12:00:00Z",
+      "source_id": "src:cascade",
+      "source_kind": "DERIVED",
+      "valid_time": "2026-08-24T07:00:00Z"
+    },
+    "cascade-change-skagit-24h": {
+      "freshness": {
+        "age_seconds": 57600,
+        "expected_cadence_seconds": 86400,
+        "state": "current"
+      },
+      "issued_at": null,
+      "label": "Cascade 24 h state change at 12189500: not computed — no daily mean within 6 h of 2026-08-23T07:00:00+00:00. Refused rather than measured over a shortened window.",
+      "method_id": "method:streamflow-state-change@0.1.0",
+      "product_id": null,
+      "quality": [],
+      "raw_artifact_id": null,
+      "retrieved_at": "2026-08-24T12:00:00Z",
+      "source_id": "src:cascade",
+      "source_kind": "DERIVED",
+      "valid_time": "2026-08-24T07:00:00Z"
+    },
+    "cascade-change-skagit-48h": {
+      "freshness": {
+        "age_seconds": 57600,
+        "expected_cadence_seconds": 86400,
+        "state": "current"
+      },
+      "issued_at": null,
+      "label": "Cascade 48 h state change at 12189500: not computed — no daily mean within 6 h of 2026-08-22T07:00:00+00:00. Refused rather than measured over a shortened window.",
+      "method_id": "method:streamflow-state-change@0.1.0",
+      "product_id": null,
+      "quality": [],
+      "raw_artifact_id": null,
+      "retrieved_at": "2026-08-24T12:00:00Z",
+      "source_id": "src:cascade",
+      "source_kind": "DERIVED",
+      "valid_time": "2026-08-24T07:00:00Z"
+    },
+    "cascade-change-snohomish-snoqualmie-24h": {
+      "freshness": {
+        "age_seconds": 57600,
+        "expected_cadence_seconds": 86400,
+        "state": "current"
+      },
+      "issued_at": null,
+      "label": "Cascade 24 h state change at 12149000: not computed — no daily mean within 6 h of 2026-08-23T07:00:00+00:00. Refused rather than measured over a shortened window.",
+      "method_id": "method:streamflow-state-change@0.1.0",
+      "product_id": null,
+      "quality": [],
+      "raw_artifact_id": null,
+      "retrieved_at": "2026-08-24T12:00:00Z",
+      "source_id": "src:cascade",
+      "source_kind": "DERIVED",
+      "valid_time": "2026-08-24T07:00:00Z"
+    },
+    "cascade-change-snohomish-snoqualmie-48h": {
+      "freshness": {
+        "age_seconds": 57600,
+        "expected_cadence_seconds": 86400,
+        "state": "current"
+      },
+      "issued_at": null,
+      "label": "Cascade 48 h state change at 12149000: not computed — no daily mean within 6 h of 2026-08-22T07:00:00+00:00. Refused rather than measured over a shortened window.",
+      "method_id": "method:streamflow-state-change@0.1.0",
+      "product_id": null,
+      "quality": [],
+      "raw_artifact_id": null,
+      "retrieved_at": "2026-08-24T12:00:00Z",
+      "source_id": "src:cascade",
+      "source_kind": "DERIVED",
+      "valid_time": "2026-08-24T07:00:00Z"
+    },
     "cascade-forcing-cedar": {
       "freshness": {
         "age_seconds": 39600,
@@ -1347,7 +2037,7 @@
       },
       "issued_at": null,
       "label": "Cascade experimental susceptibility index from the USGS daily-mean flow percentile at 12119000 (2000–2026, spanning 27 calendar years, n=130 values in the day-of-year window). Cedar at Renton sits below Chester Morse, which is operated for water supply with a limited flood role; the percentile is therefore partly an operations signal.",
-      "method_id": "method:susceptibility-index@0.1.0",
+      "method_id": "method:susceptibility-index@0.2.0",
       "product_id": null,
       "quality": [
         "outside_climatology_range",
@@ -1368,7 +2058,7 @@
       },
       "issued_at": null,
       "label": "Cascade experimental susceptibility index from the USGS daily-mean flow percentile at 12113000 (2000–2026, spanning 27 calendar years, n=130 values in the day-of-year window). Green near Auburn is below Howard Hanson, so the percentile partly measures USACE reservoir operations rather than basin wetness. Adding an unregulated inflow gauge above the dam is an open seed-data decision (design §2.3).",
-      "method_id": "method:susceptibility-index@0.1.0",
+      "method_id": "method:susceptibility-index@0.2.0",
       "product_id": null,
       "quality": [
         "outside_climatology_range",
@@ -1389,7 +2079,7 @@
       },
       "issued_at": null,
       "label": "Cascade experimental susceptibility index from the USGS daily-mean flow percentile at 12213100 (2000–2026, spanning 27 calendar years, n=130 values in the day-of-year window). Nooksack at Ferndale is unregulated but tidally influenced; whether the USGS daily mean is materially tide-contaminated has not been checked, so confidence is capped at moderate rather than high (design §7 item 6).",
-      "method_id": "method:susceptibility-index@0.1.0",
+      "method_id": "method:susceptibility-index@0.2.0",
       "product_id": null,
       "quality": [
         "provisional",
@@ -1409,7 +2099,7 @@
       },
       "issued_at": null,
       "label": "Cascade experimental susceptibility index from the USGS daily-mean flow percentile at 12100490 (2000–2026, spanning 27 calendar years, n=130 values in the day-of-year window). White at R St is below Mud Mountain and has only a 17-year record (2010-2026), so the percentile is both operations-contaminated and thinly sampled. Adding an unregulated inflow gauge above the dam is an open seed-data decision (design §2.3).",
-      "method_id": "method:susceptibility-index@0.1.0",
+      "method_id": "method:susceptibility-index@0.2.0",
       "product_id": null,
       "quality": [
         "outside_climatology_range",
@@ -1430,7 +2120,7 @@
       },
       "issued_at": null,
       "label": "Cascade experimental susceptibility index from the USGS daily-mean flow percentile at 12189500 (2000–2026, spanning 27 calendar years, n=130 values in the day-of-year window). The upper Skagit is regulated (Ross, Baker), so basin wetness is read from the unregulated Sauk (12189500, 1929-2026), which is often the dominant flood contributor (HYDROLOGY §2) — not from the Mount Vernon outlet.",
-      "method_id": "method:susceptibility-index@0.1.0",
+      "method_id": "method:susceptibility-index@0.2.0",
       "product_id": null,
       "quality": [
         "provisional",
@@ -1450,7 +2140,7 @@
       },
       "issued_at": null,
       "label": "Cascade experimental susceptibility index from the USGS daily-mean flow percentile at 12149000 (2000–2026, spanning 27 calendar years, n=130 values in the day-of-year window). Snoqualmie near Carnation is unregulated, so its day-of-year flow percentile is a basin state rather than an operating decision.",
-      "method_id": "method:susceptibility-index@0.1.0",
+      "method_id": "method:susceptibility-index@0.2.0",
       "product_id": null,
       "quality": [
         "outside_climatology_range",
@@ -1461,6 +2151,130 @@
       "retrieved_at": "2026-08-24T12:00:00Z",
       "source_id": "src:cascade",
       "source_kind": "EXPERIMENTAL",
+      "valid_time": "2026-08-24T07:00:00Z"
+    },
+    "cascade-tail-cedar": {
+      "freshness": {
+        "age_seconds": 57600,
+        "expected_cadence_seconds": 86400,
+        "state": "current"
+      },
+      "issued_at": null,
+      "label": "122 cfs at 12119000 on 2026-08-23. 0.03× the p95 flow for 08-23 (4,061 cfs; ±2-day window, 2000–2026, n=130 values over ~26 independent years). Cascade exact rank and seasonal multiple over the stored approved daily-mean record; the record's vintage is an open question (register X8) and every level statement here inherits it. Never a probability, a return period or an AEP.",
+      "method_id": "method:streamflow-tail-state@0.1.0",
+      "product_id": null,
+      "quality": [
+        "outside_climatology_range",
+        "provisional",
+        "climatology_disagreement"
+      ],
+      "raw_artifact_id": "34",
+      "retrieved_at": "2026-08-24T12:00:00Z",
+      "source_id": "src:cascade",
+      "source_kind": "DERIVED",
+      "valid_time": "2026-08-24T07:00:00Z"
+    },
+    "cascade-tail-green-duwamish": {
+      "freshness": {
+        "age_seconds": 57600,
+        "expected_cadence_seconds": 86400,
+        "state": "current"
+      },
+      "issued_at": null,
+      "label": "296 cfs at 12113000 on 2026-08-23. 0.07× the p95 flow for 08-23 (4,061 cfs; ±2-day window, 2000–2026, n=130 values over ~26 independent years). Cascade exact rank and seasonal multiple over the stored approved daily-mean record; the record's vintage is an open question (register X8) and every level statement here inherits it. Never a probability, a return period or an AEP.",
+      "method_id": "method:streamflow-tail-state@0.1.0",
+      "product_id": null,
+      "quality": [
+        "outside_climatology_range",
+        "provisional",
+        "climatology_disagreement"
+      ],
+      "raw_artifact_id": "34",
+      "retrieved_at": "2026-08-24T12:00:00Z",
+      "source_id": "src:cascade",
+      "source_kind": "DERIVED",
+      "valid_time": "2026-08-24T07:00:00Z"
+    },
+    "cascade-tail-nooksack": {
+      "freshness": {
+        "age_seconds": 57600,
+        "expected_cadence_seconds": 86400,
+        "state": "current"
+      },
+      "issued_at": null,
+      "label": "1,280 cfs at 12213100 on 2026-08-23. 0.32× the p95 flow for 08-23 (4,061 cfs; ±2-day window, 2000–2026, n=130 values over ~26 independent years). Cascade exact rank and seasonal multiple over the stored approved daily-mean record; the record's vintage is an open question (register X8) and every level statement here inherits it. Never a probability, a return period or an AEP.",
+      "method_id": "method:streamflow-tail-state@0.1.0",
+      "product_id": null,
+      "quality": [
+        "provisional",
+        "climatology_disagreement"
+      ],
+      "raw_artifact_id": "34",
+      "retrieved_at": "2026-08-24T12:00:00Z",
+      "source_id": "src:cascade",
+      "source_kind": "DERIVED",
+      "valid_time": "2026-08-24T07:00:00Z"
+    },
+    "cascade-tail-puyallup-white": {
+      "freshness": {
+        "age_seconds": 57600,
+        "expected_cadence_seconds": 86400,
+        "state": "current"
+      },
+      "issued_at": null,
+      "label": "570 cfs at 12100490 on 2026-08-23. 0.14× the p95 flow for 08-23 (4,061 cfs; ±2-day window, 2000–2026, n=130 values over ~26 independent years). Cascade exact rank and seasonal multiple over the stored approved daily-mean record; the record's vintage is an open question (register X8) and every level statement here inherits it. Never a probability, a return period or an AEP.",
+      "method_id": "method:streamflow-tail-state@0.1.0",
+      "product_id": null,
+      "quality": [
+        "outside_climatology_range",
+        "provisional",
+        "climatology_disagreement"
+      ],
+      "raw_artifact_id": "34",
+      "retrieved_at": "2026-08-24T12:00:00Z",
+      "source_id": "src:cascade",
+      "source_kind": "DERIVED",
+      "valid_time": "2026-08-24T07:00:00Z"
+    },
+    "cascade-tail-skagit": {
+      "freshness": {
+        "age_seconds": 57600,
+        "expected_cadence_seconds": 86400,
+        "state": "current"
+      },
+      "issued_at": null,
+      "label": "1,290 cfs at 12189500 on 2026-08-23. 0.32× the p95 flow for 08-23 (4,061 cfs; ±2-day window, 2000–2026, n=130 values over ~26 independent years). Cascade exact rank and seasonal multiple over the stored approved daily-mean record; the record's vintage is an open question (register X8) and every level statement here inherits it. Never a probability, a return period or an AEP.",
+      "method_id": "method:streamflow-tail-state@0.1.0",
+      "product_id": null,
+      "quality": [
+        "provisional",
+        "climatology_disagreement"
+      ],
+      "raw_artifact_id": "34",
+      "retrieved_at": "2026-08-24T12:00:00Z",
+      "source_id": "src:cascade",
+      "source_kind": "DERIVED",
+      "valid_time": "2026-08-24T07:00:00Z"
+    },
+    "cascade-tail-snohomish-snoqualmie": {
+      "freshness": {
+        "age_seconds": 57600,
+        "expected_cadence_seconds": 86400,
+        "state": "current"
+      },
+      "issued_at": null,
+      "label": "525 cfs at 12149000 on 2026-08-23. 0.13× the p95 flow for 08-23 (4,061 cfs; ±2-day window, 2000–2026, n=130 values over ~26 independent years). Cascade exact rank and seasonal multiple over the stored approved daily-mean record; the record's vintage is an open question (register X8) and every level statement here inherits it. Never a probability, a return period or an AEP.",
+      "method_id": "method:streamflow-tail-state@0.1.0",
+      "product_id": null,
+      "quality": [
+        "outside_climatology_range",
+        "provisional",
+        "climatology_disagreement"
+      ],
+      "raw_artifact_id": "34",
+      "retrieved_at": "2026-08-24T12:00:00Z",
+      "source_id": "src:cascade",
+      "source_kind": "DERIVED",
       "valid_time": "2026-08-24T07:00:00Z"
     },
     "nbm-forcing-cedar": {
@@ -2109,5 +2923,5 @@
     "mode": "past",
     "valid": "2026-08-24T23:00:00Z"
   },
-  "version": "1.2.0"
+  "version": "1.3.0"
 }

@@ -22,7 +22,10 @@ checked-in fixture; **INFERENCE** = reasoned from those facts; **OPEN QUESTION**
 >
 > The prototype both notes describe is one module, not two. It was written for this phase as
 > `packages/hydrology/src/cascade_hydrology/trend_candidates.py` — the name the brief gave it —
-> and renamed to **`trend_estimators.py`** by the implementing phase, which is the name used
+> renamed to **`trend_estimators.py`** by the implementing phase — the name used
+> throughout the sections below — and finally folded into **`trend.py`** beside the
+> `method:rate-of-rise@1.0.0` it replaces, which is where the shipped code now lives. Read
+> every `trend_estimators.X` below as `cascade_hydrology.trend.X`. That is also the name used
 > throughout below. If you find it under the other name, it is the same file. `trend.py` itself
 > is untouched, and nothing is wired into `assemble.py` *by this note*.
 

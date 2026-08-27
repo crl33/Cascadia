@@ -498,6 +498,12 @@ The computation — approved rows only, `±2`-day day-of-year window, R-type-7 p
 = Oct–Sep, which is `build_doy_climatology` verbatim:
 
 ```python
+# SHIPPED 2026-08-26: the chosen candidates were folded into
+# `cascade_hydrology.susceptibility` (seasonal_multiple, window_rank, state_change,
+# growth_rank) and `cascade_providers_usgs.climatology` (build_record_context), and the
+# prototype below was deleted with `tail_candidates.py`. The refused candidate C and the
+# deferred candidate A were not carried over; §3 and §6 remain their record.
+# The pinned numbers now live in `tests/unit/test_tail_state.py`.
 from cascade_hydrology.tail_candidates import (
     WindowSample, tail_state, state_change, supported_breakpoints, candidate_c_pot_gpd,
 )
