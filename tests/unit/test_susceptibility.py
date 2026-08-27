@@ -1123,3 +1123,36 @@ async def test_the_growth_rank_is_available_below_p90_where_the_velocity_actuall
                 f"({c.rank_reason!r}) — the read is still coupled to RANK_READ_EDGE"
             )
             assert c.rank_of and c.rank_of >= c.rank
+
+
+async def test_every_seeded_gauge_has_a_time_zone_so_the_day_boundary_is_never_assumed(sessions) -> None:
+    """A daily mean is labelled by the station's LOCAL calendar day, and the seed must say which.
+
+    Measured in production 2026-08-27: three days of `streamflow_doy_percentile` rows carried
+    `day_boundary_assumed_utc` because `station.time_zone` was NULL when they were written, so
+    their `valid_time` landed on UTC midnight while later rows landed on local midnight — 7 hours
+    apart, which is more than `STATE_CHANGE_TOLERANCE_H`. The velocity could not pair them and
+    refused. Nothing failed loudly; the flag was the only trace.
+
+    The function's fallback is tested elsewhere and stays: an unknown zone must still produce a
+    number with an honest flag. What must never happen is a SEEDED gauge reaching it.
+    """
+    from sqlalchemy import select
+
+    from cascade_core.models import Basin, Station
+
+    async with sessions() as session:
+        basins = list((await session.execute(select(Basin))).scalars())
+        gauge_ids = [b.susceptibility_gauge_id for b in basins if b.susceptibility_gauge_id]
+        assert gauge_ids, "anti-vacuity: no susceptibility gauges seeded"
+        for gid in gauge_ids:
+            station = await session.get(Station, gid)
+            assert station is not None, gid
+            assert station.time_zone, f"{gid} has no time_zone; its daily means would assume UTC"
+            # and the zone must actually resolve to a local midnight, not silently fall back
+            _, flags = clim.daily_mean_valid_time(date(2026, 8, 26), time_zone=station.time_zone)
+            assert flags == (), f"{gid} time_zone {station.time_zone!r} did not resolve: {flags}"
+
+        # every station the platform reads at all, not just the susceptibility gauges
+        for station in (await session.execute(select(Station))).scalars():
+            assert station.time_zone, f"{station.id} has no time_zone"
