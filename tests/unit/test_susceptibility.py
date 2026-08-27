@@ -1013,3 +1013,37 @@ async def test_the_hindcast_history_stops_at_the_knowledge_time(sessions, tmp_pa
     assert history, "the history is empty and the assertions below would be vacuous"
     assert max(t for t, _v, _p in history) <= at
     assert history[-1][1] == 72440.0, "the replay anchored on a daily mean it could not have had"
+
+
+@respx.mock
+async def test_the_level_says_why_it_has_no_rank_instead_of_publishing_a_bare_null(sessions, tmp_path) -> None:
+    """Absence is rendered with its reason, on BOTH sides of the surface.
+
+    Below `RANK_READ_EDGE` the exact rank is deliberately not fetched. Until 2026-08-27 that was
+    published as `hydrologic_state.rank = null` with no reason anywhere, while the velocity's
+    `growth_rank` refused in the same situation with a full sentence two fields away. A reader
+    could not tell "not read" from "no record for this gauge" from "nobody computed it", which is
+    precisely what CLAUDE.md's one rule exists to prevent.
+    """
+    _mock_usgs_stats()
+    _mock_awdb()
+    await _ingest(sessions, tmp_path)
+    async with sessions() as session:
+        k = as_known_at(session, NOW)
+        products = await k.products()
+        seen = []
+        for basin in await k.basins():
+            a = await susceptibility.assess(k, basin, products)
+            hs = a.hydrologic_state
+            if hs is None or hs.percentile >= susceptibility.RANK_READ_EDGE:
+                continue
+            seen.append(basin.id)
+            assert hs.rank is not None, f"{basin.id}: the refusal itself must be published"
+            assert hs.rank.rank is None, basin.id
+            assert hs.rank.reason, f"{basin.id}: a null rank without a reason is the defect"
+            # it must say WHY it was not read, and must not be confusable with a missing record
+            assert "Not read" in hs.rank.reason, basin.id
+            assert hs.rank.reason != susceptibility.NO_RECORD_CONTEXT_REASON, basin.id
+            # the sample size is known even though the position in it was not computed
+            assert hs.rank.of >= 1, basin.id
+    assert seen, "anti-vacuity: no basin below the read edge, so nothing was actually asserted"

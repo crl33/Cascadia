@@ -1,7 +1,7 @@
 {
   "as_of": "2026-08-24T23:00:00Z",
   "contract": "BasinVisualizationState",
-  "generated_at": "2026-08-27T08:59:12.408538Z",
+  "generated_at": "2026-08-27T09:36:33.685715Z",
   "items": [
     {
       "geometry_ref": {
@@ -137,7 +137,15 @@
         "percentile": 5.0,
         "percentile_clamped": true,
         "prov": "cascade-tail-cedar",
-        "rank": null,
+        "rank": {
+          "exceeds_record": false,
+          "of": 131,
+          "previous_max": null,
+          "previous_max_day": null,
+          "prov": "cascade-tail-cedar",
+          "rank": null,
+          "reason": "Not read: the exact rank is fetched only at or above p90, where the stored ladder is within one breakpoint of clamping and the percentile stops discriminating. Below that edge the percentile resolves the value on its own and the rank would be a round trip bought for nothing. The value here is NOT unranked because the record is missing — see the seasonal multiple, computed from the same reference."
+        },
         "reason": null,
         "reference": {
           "doy_key": "08-23",
@@ -384,7 +392,15 @@
         "percentile": 5.0,
         "percentile_clamped": true,
         "prov": "cascade-tail-green-duwamish",
-        "rank": null,
+        "rank": {
+          "exceeds_record": false,
+          "of": 131,
+          "previous_max": null,
+          "previous_max_day": null,
+          "prov": "cascade-tail-green-duwamish",
+          "rank": null,
+          "reason": "Not read: the exact rank is fetched only at or above p90, where the stored ladder is within one breakpoint of clamping and the percentile stops discriminating. Below that edge the percentile resolves the value on its own and the rank would be a round trip bought for nothing. The value here is NOT unranked because the record is missing — see the seasonal multiple, computed from the same reference."
+        },
         "reason": null,
         "reference": {
           "doy_key": "08-23",
@@ -641,7 +657,15 @@
         "percentile": 18.2,
         "percentile_clamped": false,
         "prov": "cascade-tail-nooksack",
-        "rank": null,
+        "rank": {
+          "exceeds_record": false,
+          "of": 131,
+          "previous_max": null,
+          "previous_max_day": null,
+          "prov": "cascade-tail-nooksack",
+          "rank": null,
+          "reason": "Not read: the exact rank is fetched only at or above p90, where the stored ladder is within one breakpoint of clamping and the percentile stops discriminating. Below that edge the percentile resolves the value on its own and the rank would be a round trip bought for nothing. The value here is NOT unranked because the record is missing — see the seasonal multiple, computed from the same reference."
+        },
         "reason": null,
         "reference": {
           "doy_key": "08-23",
@@ -891,7 +915,15 @@
         "percentile": 5.0,
         "percentile_clamped": true,
         "prov": "cascade-tail-puyallup-white",
-        "rank": null,
+        "rank": {
+          "exceeds_record": false,
+          "of": 131,
+          "previous_max": null,
+          "previous_max_day": null,
+          "prov": "cascade-tail-puyallup-white",
+          "rank": null,
+          "reason": "Not read: the exact rank is fetched only at or above p90, where the stored ladder is within one breakpoint of clamping and the percentile stops discriminating. Below that edge the percentile resolves the value on its own and the rank would be a round trip bought for nothing. The value here is NOT unranked because the record is missing — see the seasonal multiple, computed from the same reference."
+        },
         "reason": null,
         "reference": {
           "doy_key": "08-23",
@@ -1148,7 +1180,15 @@
         "percentile": 19.1,
         "percentile_clamped": false,
         "prov": "cascade-tail-skagit",
-        "rank": null,
+        "rank": {
+          "exceeds_record": false,
+          "of": 131,
+          "previous_max": null,
+          "previous_max_day": null,
+          "prov": "cascade-tail-skagit",
+          "rank": null,
+          "reason": "Not read: the exact rank is fetched only at or above p90, where the stored ladder is within one breakpoint of clamping and the percentile stops discriminating. Below that edge the percentile resolves the value on its own and the rank would be a round trip bought for nothing. The value here is NOT unranked because the record is missing — see the seasonal multiple, computed from the same reference."
+        },
         "reason": null,
         "reference": {
           "doy_key": "08-23",
@@ -1374,7 +1414,15 @@
         "percentile": 5.0,
         "percentile_clamped": true,
         "prov": "cascade-tail-snohomish-snoqualmie",
-        "rank": null,
+        "rank": {
+          "exceeds_record": false,
+          "of": 131,
+          "previous_max": null,
+          "previous_max_day": null,
+          "prov": "cascade-tail-snohomish-snoqualmie",
+          "rank": null,
+          "reason": "Not read: the exact rank is fetched only at or above p90, where the stored ladder is within one breakpoint of clamping and the percentile stops discriminating. Below that edge the percentile resolves the value on its own and the rank would be a round trip bought for nothing. The value here is NOT unranked because the record is missing — see the seasonal multiple, computed from the same reference."
+        },
         "reason": null,
         "reference": {
           "doy_key": "08-23",

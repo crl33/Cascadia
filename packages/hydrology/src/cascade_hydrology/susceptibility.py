@@ -275,6 +275,20 @@ SOIL_UNAVAILABLE_REASON = (
     "observation in Washington and returns no climatology, inconsistent depths and `no profile` "
     "quality flags at most sites — it cannot support a percentile."
 )
+#: Why the LEVEL carries no exact rank below the read edge. It exists because the absence was
+#: previously rendered as a bare `null`: `hydrologic_state.rank` was simply omitted, with no
+#: reason anywhere, while the velocity's `growth_rank` refused in the same situation with a full
+#: sentence. A reader cannot tell "nobody computed this" from "this gauge has no record" from
+#: "the surface declined to look", and the project's one rule says every displayed number — and
+#: every absent one — answers where it came from.
+RANK_NOT_READ_REASON = (
+    f"Not read: the exact rank is fetched only at or above p{int(RANK_READ_EDGE)}, where the "
+    "stored ladder is within one breakpoint of clamping and the percentile stops "
+    "discriminating. Below that edge the percentile resolves the value on its own and the rank "
+    "would be a round trip bought for nothing. The value here is NOT unranked because the "
+    "record is missing — see the seasonal multiple, computed from the same reference."
+)
+
 NO_RECORD_CONTEXT_REASON = (
     "No stored day-of-year record context for this gauge, so the exact rank cannot be computed. "
     "It is written by the annual `usgs.build_climatology` job under "
@@ -1161,6 +1175,12 @@ async def _hydrologic_state(
     elif _needs_record_context(row):
         rank_model = RecordRank(rank=None, of=n + 1, reason=NO_RECORD_CONTEXT_REASON, prov=tail_key)
         tail_quality = (NO_RECORD_CONTEXT,)
+    elif n:
+        # Below the read edge. The rank is absent BY DESIGN, and the design says so rather than
+        # leaving a bare null beside a statement that refuses out loud two fields away. `of` is
+        # still published because the sample size IS known — what was not computed is the
+        # position within it, which is exactly what the reason explains.
+        rank_model = RecordRank(rank=None, of=n + 1, reason=RANK_NOT_READ_REASON, prov=tail_key)
 
     refs[tail_key] = ProvenanceRef(
         source_id=SRC_CASCADE,
