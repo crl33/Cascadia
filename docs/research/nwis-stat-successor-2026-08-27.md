@@ -207,3 +207,68 @@ confidence because Cascadia holds *more* data than the comparator is backwards.
 
 This is a calibration question about what the threshold means, not a transport question. Changing
 it would modify score semantics, which §11 freezes. Recorded here for the calibration phase.
+
+## 9. Production proof
+
+Deployed `2b8bd4ec3242da74712f180056b3a97fb3ac585f` at 20:19Z from a clean tree equal to
+`origin/main`, all five CI jobs green. `/system/version` returns that SHA at contract 1.3.0.
+
+The registry catalogues were merged into the production database (sources and products only — no
+`create_schema`, no geometry, no stations; Alembic owns that schema). `/system/health`'s
+freshness map is derived from `JOBS`, so no hand edit was needed to retire the old product:
+
+| | before | after |
+|---|---|---|
+| `product:usgs-daily-stats` | `current` | **absent from the freshness map** |
+| `product:usgs-doy-normals` | — | `current`, writer `usgs.build_climatology` |
+| `status` / `reasons` | `ok` / `[]` | `ok` / `[]` |
+
+The merge also corrected `src:usgs-nwis-iv`'s `base_url`, which still pointed at
+`waterservices.usgs.gov/nwis/iv/` in production: an ADR-0015 registry edit that had never reached
+the database, exactly the drift `/system/health`'s own comment warns about.
+
+`usgs.build_climatology` and `usgs.fetch_daily_percentile` were deferred onto the **production
+worker** rather than run locally, to keep single-writer discipline. Both succeeded. Six
+`@2.0.0` rows were written, all from `api.waterdata.usgs.gov`, each carrying the sample-count ref
+the source actually supports:
+
+```
+station:usgs:12100490  usgs-ogc-normals:12100490:n4-17     station:usgs:12149000  …:n24-96
+station:usgs:12113000  usgs-ogc-normals:12113000:n22-90    station:usgs:12189500  …:n25-100
+station:usgs:12119000  usgs-ogc-normals:12119000:n20-81    station:usgs:12213100  …:n15-60
+```
+
+The live cross-check now reads `method:usgs-published-doy-stats@2.0.0` at all six gauges. **The
+prediction in §5 held**: 12113000's disagreement went from **−7.29 % to +0.74 %**, because the
+successor shares the longer record Cascadia built its own ladder from. Every gauge is far inside
+the 10 % threshold (max |disagreement| 3.21 %, at the Sauk), so no confidence outcome changed.
+
+**Zero calls to `waterservices.usgs.gov` since the deploy.** The last one of any kind was
+`nwis/iv` at 15:30:21Z — about five hours earlier, when the ADR-0015 instantaneous deploy landed;
+`nwis/stat` last answered at 11:22:17Z. The goal of this phase is met.
+
+### A pre-existing defect this verification surfaced, deliberately not fixed here
+
+Every `streamflow_doy_percentile` row written **inside the container** carries
+`day_boundary_assumed_utc` and is stamped at UTC midnight instead of the station-local boundary.
+`state_change` is consequently dead in production: `/viz/basins` returns `growth_24h=None` for
+every basin, because no two correctly-stamped rows 24 h apart can exist.
+
+Cause, verified rather than inferred: stations are seeded `time_zone="PST8PDT"`
+(`seed.py:160`, `seed/p3_surfaces.json:24`), and `python:3.14-slim` ships a **reduced** tz
+database — it has `America/Los_Angeles` but not the legacy POSIX alias `PST8PDT`:
+
+```
+docker run --rm python:3.14-slim python -c "from zoneinfo import ZoneInfo; ZoneInfo('PST8PDT')"
+ZoneInfoNotFoundError: 'No time zone found with key PST8PDT'
+```
+
+`daily_mean_valid_time` catches this and degrades to UTC **with the flag**, so the code is doing
+what it promises; the seeded key is simply unresolvable in the image. This is why it looked
+intermittent — a laptop run (full tz database, POSIX aliases included) stamps correctly and a
+container run does not. It is **not** a regression from this migration: the container cron runs at
+2026-08-25 02:06, 2026-08-26 00:11 and 2026-08-27 00:10 were all UTC-assumed, hours before this
+deploy; the single correct batch at 09:26 was an off-cron manual run.
+
+It does not make the WaterServices removal unsafe, so it is recorded here and left for its own
+change — the fix is to seed the canonical IANA name, not to install a bigger tz database.
