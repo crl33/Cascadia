@@ -141,6 +141,7 @@ async def seed_all(session: AsyncSession, *, geo_dir: Path, seed_file: Path) -> 
                 lat=st["lat"],
                 vertical_datum=st.get("vertical_datum"),
                 time_zone=st.get("time_zone"),
+                tidal_class=st.get("tidal_class"),
             )
         )
         counts["stations"] += 1
@@ -157,6 +158,7 @@ async def seed_all(session: AsyncSession, *, geo_dir: Path, seed_file: Path) -> 
                 lat=fp["lat"],
                 vertical_datum=fp["datum"],
                 time_zone="PST8PDT",
+                tidal_class=fp.get("tidal_class"),
             )
         )
         counts["stations"] += 1

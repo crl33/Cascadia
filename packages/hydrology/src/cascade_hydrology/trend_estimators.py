@@ -74,10 +74,14 @@ __all__ = [
     "estimate_trend",
 ]
 
-#: The identity a wired-in version would publish. Bumped from `method:rate-of-rise@1.0.0`
-#: because the *estimator* changes, not merely its parameters — a consumer comparing two
-#: stored trends must be able to see that they were computed by different mathematics.
-METHOD_ID = "method:rate-of-rise@2.0.0-candidate"
+#: Bumped from `method:rate-of-rise@1.0.0` because the *estimator* changes, not merely its
+#: parameters — a consumer comparing two stored trends must be able to see that they were
+#: computed by different mathematics.
+METHOD_ID = "method:rate-of-rise@2.0.0"
+
+#: The estimator this method publishes. Named, not implied: `estimate_trend` accepts the others
+#: so the A/B in the selection note stays runnable, and the default is the measured winner.
+SHIPPED_ESTIMATOR = "repeated_median"
 
 PERCENTILE_SPACE_WARNING = (
     "These estimators operate on native-unit observations (ft, cfs). Do not apply them to a "
@@ -352,7 +356,7 @@ def estimate_trend(
     estimator: str = "repeated_median",
     expected_cadence_h: float = 0.25,
 ) -> TrendEstimate:
-    """Candidate assembly. Same refusal ladder as `trend.py`, plus the tidal guard first.
+    """The shipped assembly. Same refusal ladder as v1, plus the tidal guard first.
 
     The tidal guard runs **before** anything is computed: a refusal that depends on the data
     would be a guard the data could talk its way out of — and at SNAW1 tidal transmission

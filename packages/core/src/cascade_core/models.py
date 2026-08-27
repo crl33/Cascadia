@@ -140,6 +140,12 @@ class Station(Base):
     lat: Mapped[float | None] = mapped_column(Float)
     vertical_datum: Mapped[str | None] = mapped_column(String)  # gauge-zero datum per NWPS
     time_zone: Mapped[str | None] = mapped_column(String)
+    # MEASURED tidal class: "FLUVIAL" | "TIDAL". NULL means nobody has measured this station's
+    # semidiurnal amplitude, and rate of rise REFUSES rather than assuming it is fluvial — a
+    # tide injects a false rate no estimator removes (research/trend-estimator-selection §5).
+    # Set only from a measurement against a coastal reference with a non-tidal control
+    # (research/tidal-gauge-verification-2026-08-26.md §3).
+    tidal_class: Mapped[str | None] = mapped_column(String)
 
 
 class ForecastPoint(Base):

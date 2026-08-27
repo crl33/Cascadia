@@ -63,7 +63,8 @@ from cascade_hydrology import agreement, forcing, surfaces, susceptibility
 from cascade_hydrology.category import CategoryResult, Measure, ThresholdSet, categorize
 from cascade_hydrology.headroom import headroom as compute_headroom
 from cascade_hydrology.surfaces import SurfaceReason, require_reason
-from cascade_hydrology.trend import rate_of_rise
+from cascade_hydrology.trend_estimators import METHOD_ID as TREND_METHOD_ID
+from cascade_hydrology.trend_estimators import TidalClass, estimate_trend
 
 RIVER_REGULATION = {"regulated_upper": "regulated", "regulated": "regulated", "partially_regulated": "partially_regulated", "natural": "natural"}
 
@@ -279,23 +280,45 @@ async def assess_point(k: Knowledge, fp: ForecastPoint, basin: Basin | None, pro
     trend = None
     if primary is not None and fp.station_id:
         window = await k.observations(fp.station_id, basis, since=now - TREND_WINDOW)
-        trend = rate_of_rise([(o.valid_time, o.value) for o in window if o.value is not None], basis=basis, unit=primary.unit, end=now, window_h=TREND_WINDOW_H)
+        station = await k.station(fp.station_id)
+        # The tidal class is READ, never inferred. A station the seed has not marked produces a
+        # refusal, because no estimator removes a tide — the most robust one is the worst of the
+        # four measured (research/trend-estimator-selection-2026-08-26.md §5).
+        try:
+            tidal = TidalClass(station.tidal_class) if station is not None and station.tidal_class else None
+        except ValueError:
+            tidal = TidalClass.UNVERIFIED  # an unrecognised marker is not a licence to proceed
+        trend = estimate_trend(
+            [(o.valid_time, o.value) for o in window if o.value is not None],
+            station_id=fp.station_id, basis=basis, unit=primary.unit, end=now,
+            tidal_class=tidal, window_h=TREND_WINDOW_H,
+        )
         tkey = f"cascade-trend-{lid}"
+        # The pair-slope IQR is a DISPERSION and never a confidence interval; it rides in the
+        # label because `Trend` carries one rate, and widening the contract to hold it is a
+        # separate decision from replacing the estimator.
+        detail = "" if trend.refusal is None else f" — {trend.refusal.reason}: {trend.refusal.detail}"
+        if trend.refusal is None and trend.slope_q25 is not None:
+            detail = (
+                f" (repeated median of {trend.n} observations spanning {trend.span_h:.2f} h; "
+                f"pair-slope IQR {trend.slope_q25:.4f}..{trend.slope_q75:.4f} {trend.slope_unit}, "
+                f"a dispersion and not a confidence interval; condition {trend.quality.value})"
+            )
         refs[tkey] = ProvenanceRef(
             source_id=SRC_CASCADE,
             source_kind=SourceKind.DERIVED,
-            method_id="method:rate-of-rise@1.0.0",
-            valid_time=primary.valid_time,
+            method_id=TREND_METHOD_ID,
+            valid_time=trend.last_valid_time if trend.refusal is None else primary.valid_time,
             retrieved_at=primary.retrieved_at,
             freshness=refs[obs_key].freshness,
-            label=f"Cascade rate of rise over {TREND_WINDOW_H} h from stored USGS observations{'' if trend.reason is None else ' — ' + trend.reason}",
+            label=f"Cascade rate of rise over {TREND_WINDOW_H} h from stored USGS observations{detail}",
         )
-        rate_q = None if trend.rate is None else Quantity(value=round(trend.rate, 4), unit=trend.unit or f"{primary.unit}/h")
+        rate_q = None if trend.slope is None else Quantity(value=round(trend.slope, 4), unit=trend.slope_unit or f"{primary.unit}/h")
         trend_model = Trend(prov=tkey, truth=TruthClass.CASCADE_DERIVED, window_h=TREND_WINDOW_H, rate=rate_q, direction=trend.direction)
 
     # 4. headroom to the next official category
     headroom_model: Headroom | None = None
-    hr = compute_headroom(measure, tset, rate_per_h=None if trend is None else trend.rate, direction="unknown" if trend is None else trend.direction)
+    hr = compute_headroom(measure, tset, rate_per_h=None if trend is None else trend.slope, direction="unknown" if trend is None else trend.direction)
     if hr is not None:
         hkey = f"cascade-headroom-{lid}"
         refs[hkey] = ProvenanceRef(

@@ -1,22 +1,123 @@
 {
   "_provenance": {
-    "note": "Seed stations and forecast points, verified live against USGS NWIS and NOAA NWPS on 2026-08-22 (docs/V1_AUDIT.md §8). Datums are the gauge-zero vertical datum NWPS lists for each LID; regulated_by entries are operational metadata (CONFIGURED), never used in hazard computation.",
+    "note": "Seed stations and forecast points, verified live against USGS NWIS and NOAA NWPS on 2026-08-22 (docs/V1_AUDIT.md \u00a78). Datums are the gauge-zero vertical datum NWPS lists for each LID; regulated_by entries are operational metadata (CONFIGURED), never used in hazard computation.",
     "verified_at": "2026-08-22T08:26:43Z"
   },
   "basins": {
-    "basin:skagit": {"regulated_by": ["reservoir:ross-lake", "reservoir:baker"]},
-    "basin:nooksack": {"regulated_by": []},
-    "basin:snohomish-snoqualmie": {"regulated_by": []},
-    "basin:cedar": {"regulated_by": ["reservoir:chester-morse"]},
-    "basin:green-duwamish": {"regulated_by": ["reservoir:howard-hanson"]},
-    "basin:puyallup-white": {"regulated_by": ["reservoir:mud-mountain"]}
+    "basin:skagit": {
+      "regulated_by": [
+        "reservoir:ross-lake",
+        "reservoir:baker"
+      ]
+    },
+    "basin:nooksack": {
+      "regulated_by": []
+    },
+    "basin:snohomish-snoqualmie": {
+      "regulated_by": []
+    },
+    "basin:cedar": {
+      "regulated_by": [
+        "reservoir:chester-morse"
+      ]
+    },
+    "basin:green-duwamish": {
+      "regulated_by": [
+        "reservoir:howard-hanson"
+      ]
+    },
+    "basin:puyallup-white": {
+      "regulated_by": [
+        "reservoir:mud-mountain"
+      ]
+    }
   },
   "forecast_points": [
-    {"id": "fp:nwps:RNTW1", "lid": "RNTW1", "name": "Cedar River at Renton", "station_id": "station:usgs:12119000", "usgs_site": "12119000", "basin_id": "basin:cedar", "lon": -122.2025, "lat": 47.4825, "datum": "NGVD29", "upstream_lids": [], "reach_id": null},
-    {"id": "fp:nwps:CRNW1", "lid": "CRNW1", "name": "Snoqualmie River near Carnation", "station_id": "station:usgs:12149000", "usgs_site": "12149000", "basin_id": "basin:snohomish-snoqualmie", "lon": -121.9242, "lat": 47.6656, "datum": "NAVD88", "upstream_lids": [], "reach_id": null},
-    {"id": "fp:nwps:MVEW1", "lid": "MVEW1", "name": "Skagit River near Mount Vernon", "station_id": "station:usgs:12200500", "usgs_site": "12200500", "basin_id": "basin:skagit", "lon": -122.3342, "lat": 48.4453, "datum": "NGVD29", "upstream_lids": ["CONW1"], "reach_id": "reach:nwm:24270288"},
-    {"id": "fp:nwps:NKSW1", "lid": "NKSW1", "name": "Nooksack River at Ferndale", "station_id": "station:usgs:12213100", "usgs_site": "12213100", "basin_id": "basin:nooksack", "lon": -122.5897, "lat": 48.8467, "datum": "NAVD88", "upstream_lids": [], "reach_id": null},
-    {"id": "fp:nwps:AUBW1", "lid": "AUBW1", "name": "Green River near Auburn", "station_id": "station:usgs:12113000", "usgs_site": "12113000", "basin_id": "basin:green-duwamish", "lon": -122.2017, "lat": 47.3081, "datum": "NGVD29", "upstream_lids": [], "reach_id": null},
-    {"id": "fp:nwps:WRAW1", "lid": "WRAW1", "name": "White River at R St near Auburn", "station_id": "station:usgs:12100490", "usgs_site": "12100490", "basin_id": "basin:puyallup-white", "lon": -122.2317, "lat": 47.2950, "datum": "NGVD29", "upstream_lids": [], "reach_id": null}
+    {
+      "id": "fp:nwps:RNTW1",
+      "lid": "RNTW1",
+      "name": "Cedar River at Renton",
+      "station_id": "station:usgs:12119000",
+      "usgs_site": "12119000",
+      "basin_id": "basin:cedar",
+      "lon": -122.2025,
+      "lat": 47.4825,
+      "datum": "NGVD29",
+      "upstream_lids": [],
+      "reach_id": null,
+      "tidal_class": "FLUVIAL"
+    },
+    {
+      "id": "fp:nwps:CRNW1",
+      "lid": "CRNW1",
+      "name": "Snoqualmie River near Carnation",
+      "station_id": "station:usgs:12149000",
+      "usgs_site": "12149000",
+      "basin_id": "basin:snohomish-snoqualmie",
+      "lon": -121.9242,
+      "lat": 47.6656,
+      "datum": "NAVD88",
+      "upstream_lids": [],
+      "reach_id": null,
+      "tidal_class": "FLUVIAL"
+    },
+    {
+      "id": "fp:nwps:MVEW1",
+      "lid": "MVEW1",
+      "name": "Skagit River near Mount Vernon",
+      "station_id": "station:usgs:12200500",
+      "usgs_site": "12200500",
+      "basin_id": "basin:skagit",
+      "lon": -122.3342,
+      "lat": 48.4453,
+      "datum": "NGVD29",
+      "upstream_lids": [
+        "CONW1"
+      ],
+      "reach_id": "reach:nwm:24270288",
+      "tidal_class": "FLUVIAL"
+    },
+    {
+      "id": "fp:nwps:NKSW1",
+      "lid": "NKSW1",
+      "name": "Nooksack River at Ferndale",
+      "station_id": "station:usgs:12213100",
+      "usgs_site": "12213100",
+      "basin_id": "basin:nooksack",
+      "lon": -122.5897,
+      "lat": 48.8467,
+      "datum": "NAVD88",
+      "upstream_lids": [],
+      "reach_id": null,
+      "tidal_class": "FLUVIAL"
+    },
+    {
+      "id": "fp:nwps:AUBW1",
+      "lid": "AUBW1",
+      "name": "Green River near Auburn",
+      "station_id": "station:usgs:12113000",
+      "usgs_site": "12113000",
+      "basin_id": "basin:green-duwamish",
+      "lon": -122.2017,
+      "lat": 47.3081,
+      "datum": "NGVD29",
+      "upstream_lids": [],
+      "reach_id": null,
+      "tidal_class": "FLUVIAL"
+    },
+    {
+      "id": "fp:nwps:WRAW1",
+      "lid": "WRAW1",
+      "name": "White River at R St near Auburn",
+      "station_id": "station:usgs:12100490",
+      "usgs_site": "12100490",
+      "basin_id": "basin:puyallup-white",
+      "lon": -122.2317,
+      "lat": 47.295,
+      "datum": "NGVD29",
+      "upstream_lids": [],
+      "reach_id": null,
+      "tidal_class": "FLUVIAL"
+    }
   ]
 }
