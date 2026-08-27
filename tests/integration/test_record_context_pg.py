@@ -167,9 +167,15 @@ async def test_the_surface_reads_the_context_back_at_a_knowledge_time(scratch_ur
             assert state is not None
             assert state.multiple is not None and state.multiple.multiple > 0
             assert state.reference is not None and state.reference.n > 0
-            # quiet river: below p90 no rank is asked for, and none is invented
+            # quiet river: below p90 the context is not READ and no rank is invented — but the
+            # absence is published with its reason rather than as a bare null, so this asserts
+            # the refusal, not the silence. `of` is the ladder's own sample size, which is known
+            # without reading the context.
             assert state.percentile < susceptibility.RANK_READ_EDGE
-            assert state.rank is None
+            assert state.rank is not None and state.rank.rank is None
+            assert "Not read" in (state.rank.reason or "")
+            assert state.rank.reason != susceptibility.NO_RECORD_CONTEXT_REASON
+            assert state.rank.of >= 1 and state.rank.previous_max is None
             # every prov key the state and the changes point at resolves to a real ref
             assert state.prov in a.refs
             assert all(c.prov in a.refs for c in a.state_changes)
