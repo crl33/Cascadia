@@ -145,8 +145,13 @@ def test_the_boundary_condition_is_reproducible_from_the_recorded_sample(
             continue
         m = susceptibility.independent_years(e.reference.n)
         assert m == e.reference.independent_years
-        se = susceptibility.rank_standard_error_points(e.level.percentile, m)
+        # The shipped surface WITHHOLDS the dispersion when the percentile is a clamped bound —
+        # a standard error either side of a bound asserts the resolution the clamp refuses. The
+        # recomputation has to apply the same rule or it is checking a different method.
+        se = None if e.level.clamped else susceptibility.rank_standard_error_points(e.level.percentile, m)
         boundary, bands = susceptibility.band_boundary(e.level.percentile, se)
+        if e.level.clamped:
+            assert boundary is susceptibility.BandBoundary.UNQUANTIFIED, f"{e.basin_id} {e.daily_mean_day}"
         assert boundary.value == e.level.boundary, f"{e.basin_id} {e.daily_mean_day}"
         assert tuple(b.value for b in bands) == e.level.bands_within_sampling_error
         checked += 1
@@ -392,3 +397,42 @@ def test_the_escalation_it_did_buy_is_paid_for_in_the_control_window(
         extra_control += c.new.control_firings - c.old.control_firings
     assert earlier >= 1, "the fixture no longer shows any earlier escalation"
     assert extra_control >= 0, "the new arm cannot be quieter than the old on the control window"
+
+
+# --- section 2 of the A/B, pinned by an artifact instead of by prose --------------------------
+
+
+def test_the_strict_knowledge_time_replay_computed_nothing() -> None:
+    """A/B §2, which licenses every retrospective figure in that document, as a checked artifact.
+
+    It was UNVERIFIED until 2026-08-27: the published recipe put `reference` and `reconstruct`
+    — which both write `available_at = valid_time` — BEFORE the strict run, leaving the ladder
+    visible in December 2025, a state in which `susceptibility.assess` does NOT return UNKNOWN.
+    The guard could not catch it either, because `projection_state` ANDs across three row
+    families and observations are never projected. Re-run with `unproject` first, the claim holds
+    exactly, and this pins it so the recipe cannot rot again without a test failing.
+    """
+    import json
+    from pathlib import Path
+
+    doc = json.loads((Path(__file__).parents[1] / "fixtures/hindcast/event_zero_knowledge_time.json").read_text())
+    counts = doc["counts"]
+    assert doc["_provenance"]["mode"] == "KNOWLEDGE_TIME"
+    assert counts["evaluations"] == 792
+    assert counts["with_a_computed_surface"] == 0, "the strict replay must know nothing"
+    assert sorted(counts["arms"]) == ["new", "old"], "both arms, so neither is credited with silence"
+    assert len(counts["basins"]) == 6 and counts["knowledge_times"] == 66
+
+    # every evaluation refuses with a machine-readable reason that NAMES the missing input
+    reasons = doc["surface_reasons"]
+    assert sum(reasons.values()) == 792
+    assert "<none>" not in reasons, "a refusal without a reason is the thing this forbids"
+    assert all("climatology" in r for r in reasons), reasons
+    # and no escalation fired under any rule, in either arm
+    for c in doc["escalations"]:
+        for arm in ("old", "new"):
+            assert c[arm].get("first_time") is None, (c["rule_id"], c["basin_id"], arm)
+
+    # the reproduction order is recorded WITH the artifact, because getting it wrong silently
+    # produces the opposite result
+    assert "unproject" in doc["_provenance"]["note"]

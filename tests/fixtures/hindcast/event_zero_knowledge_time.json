@@ -1,0 +1,1483 @@
+{
+ "_provenance": {
+  "event": "event-zero-2025-12",
+  "generated_at": "2026-08-27T11:04:16.675210+00:00",
+  "generated_by": "scripts/hindcast_event_zero.py run --mode knowledge-time",
+  "mode": "KNOWLEDGE_TIME",
+  "note": "A COMPACT record of the strict replay, not the whole document (2.4 MB). It exists so the A/B report's section 2 is pinned by an artifact and a test rather than by prose. REPRODUCTION ORDER MATTERS: `unproject` must run BEFORE this, because `reference` and `reconstruct` both write available_at = valid_time and would otherwise leave the ladder visible in December 2025 \u2014 in which state the surface does NOT return UNKNOWN. The published recipe omitted that step until 2026-08-27."
+ },
+ "counts": {
+  "arms": [
+   "new",
+   "old"
+  ],
+  "basins": [
+   "basin:cedar",
+   "basin:green-duwamish",
+   "basin:nooksack",
+   "basin:puyallup-white",
+   "basin:skagit",
+   "basin:snohomish-snoqualmie"
+  ],
+  "evaluations": 792,
+  "knowledge_times": 66,
+  "with_a_computed_surface": 0
+ },
+ "escalations": [
+  {
+   "basin_id": "basin:cedar",
+   "caveat": "neither arm escalated in the event window",
+   "difference_h": null,
+   "legitimate_lead_time": false,
+   "new": {
+    "applicable": true,
+    "arm_id": "new",
+    "basin_id": "basin:cedar",
+    "control_evaluations": 10,
+    "control_firings": 0,
+    "evaluations": 56,
+    "first_cursor": null,
+    "first_time": null,
+    "rule_id": "any_escalation"
+   },
+   "old": {
+    "applicable": true,
+    "arm_id": "old",
+    "basin_id": "basin:cedar",
+    "control_evaluations": 10,
+    "control_firings": 0,
+    "evaluations": 56,
+    "first_cursor": null,
+    "first_time": null,
+    "rule_id": "any_escalation"
+   },
+   "rule_id": "any_escalation",
+   "verdict": "no_difference"
+  },
+  {
+   "basin_id": "basin:green-duwamish",
+   "caveat": "neither arm escalated in the event window",
+   "difference_h": null,
+   "legitimate_lead_time": false,
+   "new": {
+    "applicable": true,
+    "arm_id": "new",
+    "basin_id": "basin:green-duwamish",
+    "control_evaluations": 10,
+    "control_firings": 0,
+    "evaluations": 56,
+    "first_cursor": null,
+    "first_time": null,
+    "rule_id": "any_escalation"
+   },
+   "old": {
+    "applicable": true,
+    "arm_id": "old",
+    "basin_id": "basin:green-duwamish",
+    "control_evaluations": 10,
+    "control_firings": 0,
+    "evaluations": 56,
+    "first_cursor": null,
+    "first_time": null,
+    "rule_id": "any_escalation"
+   },
+   "rule_id": "any_escalation",
+   "verdict": "no_difference"
+  },
+  {
+   "basin_id": "basin:nooksack",
+   "caveat": "neither arm escalated in the event window",
+   "difference_h": null,
+   "legitimate_lead_time": false,
+   "new": {
+    "applicable": true,
+    "arm_id": "new",
+    "basin_id": "basin:nooksack",
+    "control_evaluations": 10,
+    "control_firings": 0,
+    "evaluations": 56,
+    "first_cursor": null,
+    "first_time": null,
+    "rule_id": "any_escalation"
+   },
+   "old": {
+    "applicable": true,
+    "arm_id": "old",
+    "basin_id": "basin:nooksack",
+    "control_evaluations": 10,
+    "control_firings": 0,
+    "evaluations": 56,
+    "first_cursor": null,
+    "first_time": null,
+    "rule_id": "any_escalation"
+   },
+   "rule_id": "any_escalation",
+   "verdict": "no_difference"
+  },
+  {
+   "basin_id": "basin:puyallup-white",
+   "caveat": "neither arm escalated in the event window",
+   "difference_h": null,
+   "legitimate_lead_time": false,
+   "new": {
+    "applicable": true,
+    "arm_id": "new",
+    "basin_id": "basin:puyallup-white",
+    "control_evaluations": 10,
+    "control_firings": 0,
+    "evaluations": 56,
+    "first_cursor": null,
+    "first_time": null,
+    "rule_id": "any_escalation"
+   },
+   "old": {
+    "applicable": true,
+    "arm_id": "old",
+    "basin_id": "basin:puyallup-white",
+    "control_evaluations": 10,
+    "control_firings": 0,
+    "evaluations": 56,
+    "first_cursor": null,
+    "first_time": null,
+    "rule_id": "any_escalation"
+   },
+   "rule_id": "any_escalation",
+   "verdict": "no_difference"
+  },
+  {
+   "basin_id": "basin:skagit",
+   "caveat": "neither arm escalated in the event window",
+   "difference_h": null,
+   "legitimate_lead_time": false,
+   "new": {
+    "applicable": true,
+    "arm_id": "new",
+    "basin_id": "basin:skagit",
+    "control_evaluations": 10,
+    "control_firings": 0,
+    "evaluations": 56,
+    "first_cursor": null,
+    "first_time": null,
+    "rule_id": "any_escalation"
+   },
+   "old": {
+    "applicable": true,
+    "arm_id": "old",
+    "basin_id": "basin:skagit",
+    "control_evaluations": 10,
+    "control_firings": 0,
+    "evaluations": 56,
+    "first_cursor": null,
+    "first_time": null,
+    "rule_id": "any_escalation"
+   },
+   "rule_id": "any_escalation",
+   "verdict": "no_difference"
+  },
+  {
+   "basin_id": "basin:snohomish-snoqualmie",
+   "caveat": "neither arm escalated in the event window",
+   "difference_h": null,
+   "legitimate_lead_time": false,
+   "new": {
+    "applicable": true,
+    "arm_id": "new",
+    "basin_id": "basin:snohomish-snoqualmie",
+    "control_evaluations": 10,
+    "control_firings": 0,
+    "evaluations": 56,
+    "first_cursor": null,
+    "first_time": null,
+    "rule_id": "any_escalation"
+   },
+   "old": {
+    "applicable": true,
+    "arm_id": "old",
+    "basin_id": "basin:snohomish-snoqualmie",
+    "control_evaluations": 10,
+    "control_firings": 0,
+    "evaluations": 56,
+    "first_cursor": null,
+    "first_time": null,
+    "rule_id": "any_escalation"
+   },
+   "rule_id": "any_escalation",
+   "verdict": "no_difference"
+  },
+  {
+   "basin_id": "basin:cedar",
+   "caveat": "neither arm escalated in the event window",
+   "difference_h": null,
+   "legitimate_lead_time": false,
+   "new": {
+    "applicable": true,
+    "arm_id": "new",
+    "basin_id": "basin:cedar",
+    "control_evaluations": 10,
+    "control_firings": 0,
+    "evaluations": 56,
+    "first_cursor": null,
+    "first_time": null,
+    "rule_id": "band_high"
+   },
+   "old": {
+    "applicable": true,
+    "arm_id": "old",
+    "basin_id": "basin:cedar",
+    "control_evaluations": 10,
+    "control_firings": 0,
+    "evaluations": 56,
+    "first_cursor": null,
+    "first_time": null,
+    "rule_id": "band_high"
+   },
+   "rule_id": "band_high",
+   "verdict": "no_difference"
+  },
+  {
+   "basin_id": "basin:green-duwamish",
+   "caveat": "neither arm escalated in the event window",
+   "difference_h": null,
+   "legitimate_lead_time": false,
+   "new": {
+    "applicable": true,
+    "arm_id": "new",
+    "basin_id": "basin:green-duwamish",
+    "control_evaluations": 10,
+    "control_firings": 0,
+    "evaluations": 56,
+    "first_cursor": null,
+    "first_time": null,
+    "rule_id": "band_high"
+   },
+   "old": {
+    "applicable": true,
+    "arm_id": "old",
+    "basin_id": "basin:green-duwamish",
+    "control_evaluations": 10,
+    "control_firings": 0,
+    "evaluations": 56,
+    "first_cursor": null,
+    "first_time": null,
+    "rule_id": "band_high"
+   },
+   "rule_id": "band_high",
+   "verdict": "no_difference"
+  },
+  {
+   "basin_id": "basin:nooksack",
+   "caveat": "neither arm escalated in the event window",
+   "difference_h": null,
+   "legitimate_lead_time": false,
+   "new": {
+    "applicable": true,
+    "arm_id": "new",
+    "basin_id": "basin:nooksack",
+    "control_evaluations": 10,
+    "control_firings": 0,
+    "evaluations": 56,
+    "first_cursor": null,
+    "first_time": null,
+    "rule_id": "band_high"
+   },
+   "old": {
+    "applicable": true,
+    "arm_id": "old",
+    "basin_id": "basin:nooksack",
+    "control_evaluations": 10,
+    "control_firings": 0,
+    "evaluations": 56,
+    "first_cursor": null,
+    "first_time": null,
+    "rule_id": "band_high"
+   },
+   "rule_id": "band_high",
+   "verdict": "no_difference"
+  },
+  {
+   "basin_id": "basin:puyallup-white",
+   "caveat": "neither arm escalated in the event window",
+   "difference_h": null,
+   "legitimate_lead_time": false,
+   "new": {
+    "applicable": true,
+    "arm_id": "new",
+    "basin_id": "basin:puyallup-white",
+    "control_evaluations": 10,
+    "control_firings": 0,
+    "evaluations": 56,
+    "first_cursor": null,
+    "first_time": null,
+    "rule_id": "band_high"
+   },
+   "old": {
+    "applicable": true,
+    "arm_id": "old",
+    "basin_id": "basin:puyallup-white",
+    "control_evaluations": 10,
+    "control_firings": 0,
+    "evaluations": 56,
+    "first_cursor": null,
+    "first_time": null,
+    "rule_id": "band_high"
+   },
+   "rule_id": "band_high",
+   "verdict": "no_difference"
+  },
+  {
+   "basin_id": "basin:skagit",
+   "caveat": "neither arm escalated in the event window",
+   "difference_h": null,
+   "legitimate_lead_time": false,
+   "new": {
+    "applicable": true,
+    "arm_id": "new",
+    "basin_id": "basin:skagit",
+    "control_evaluations": 10,
+    "control_firings": 0,
+    "evaluations": 56,
+    "first_cursor": null,
+    "first_time": null,
+    "rule_id": "band_high"
+   },
+   "old": {
+    "applicable": true,
+    "arm_id": "old",
+    "basin_id": "basin:skagit",
+    "control_evaluations": 10,
+    "control_firings": 0,
+    "evaluations": 56,
+    "first_cursor": null,
+    "first_time": null,
+    "rule_id": "band_high"
+   },
+   "rule_id": "band_high",
+   "verdict": "no_difference"
+  },
+  {
+   "basin_id": "basin:snohomish-snoqualmie",
+   "caveat": "neither arm escalated in the event window",
+   "difference_h": null,
+   "legitimate_lead_time": false,
+   "new": {
+    "applicable": true,
+    "arm_id": "new",
+    "basin_id": "basin:snohomish-snoqualmie",
+    "control_evaluations": 10,
+    "control_firings": 0,
+    "evaluations": 56,
+    "first_cursor": null,
+    "first_time": null,
+    "rule_id": "band_high"
+   },
+   "old": {
+    "applicable": true,
+    "arm_id": "old",
+    "basin_id": "basin:snohomish-snoqualmie",
+    "control_evaluations": 10,
+    "control_firings": 0,
+    "evaluations": 56,
+    "first_cursor": null,
+    "first_time": null,
+    "rule_id": "band_high"
+   },
+   "rule_id": "band_high",
+   "verdict": "no_difference"
+  },
+  {
+   "basin_id": "basin:cedar",
+   "caveat": "neither arm escalated in the event window",
+   "difference_h": null,
+   "legitimate_lead_time": false,
+   "new": {
+    "applicable": true,
+    "arm_id": "new",
+    "basin_id": "basin:cedar",
+    "control_evaluations": 10,
+    "control_firings": 0,
+    "evaluations": 56,
+    "first_cursor": null,
+    "first_time": null,
+    "rule_id": "band_very_high"
+   },
+   "old": {
+    "applicable": true,
+    "arm_id": "old",
+    "basin_id": "basin:cedar",
+    "control_evaluations": 10,
+    "control_firings": 0,
+    "evaluations": 56,
+    "first_cursor": null,
+    "first_time": null,
+    "rule_id": "band_very_high"
+   },
+   "rule_id": "band_very_high",
+   "verdict": "no_difference"
+  },
+  {
+   "basin_id": "basin:green-duwamish",
+   "caveat": "neither arm escalated in the event window",
+   "difference_h": null,
+   "legitimate_lead_time": false,
+   "new": {
+    "applicable": true,
+    "arm_id": "new",
+    "basin_id": "basin:green-duwamish",
+    "control_evaluations": 10,
+    "control_firings": 0,
+    "evaluations": 56,
+    "first_cursor": null,
+    "first_time": null,
+    "rule_id": "band_very_high"
+   },
+   "old": {
+    "applicable": true,
+    "arm_id": "old",
+    "basin_id": "basin:green-duwamish",
+    "control_evaluations": 10,
+    "control_firings": 0,
+    "evaluations": 56,
+    "first_cursor": null,
+    "first_time": null,
+    "rule_id": "band_very_high"
+   },
+   "rule_id": "band_very_high",
+   "verdict": "no_difference"
+  },
+  {
+   "basin_id": "basin:nooksack",
+   "caveat": "neither arm escalated in the event window",
+   "difference_h": null,
+   "legitimate_lead_time": false,
+   "new": {
+    "applicable": true,
+    "arm_id": "new",
+    "basin_id": "basin:nooksack",
+    "control_evaluations": 10,
+    "control_firings": 0,
+    "evaluations": 56,
+    "first_cursor": null,
+    "first_time": null,
+    "rule_id": "band_very_high"
+   },
+   "old": {
+    "applicable": true,
+    "arm_id": "old",
+    "basin_id": "basin:nooksack",
+    "control_evaluations": 10,
+    "control_firings": 0,
+    "evaluations": 56,
+    "first_cursor": null,
+    "first_time": null,
+    "rule_id": "band_very_high"
+   },
+   "rule_id": "band_very_high",
+   "verdict": "no_difference"
+  },
+  {
+   "basin_id": "basin:puyallup-white",
+   "caveat": "neither arm escalated in the event window",
+   "difference_h": null,
+   "legitimate_lead_time": false,
+   "new": {
+    "applicable": true,
+    "arm_id": "new",
+    "basin_id": "basin:puyallup-white",
+    "control_evaluations": 10,
+    "control_firings": 0,
+    "evaluations": 56,
+    "first_cursor": null,
+    "first_time": null,
+    "rule_id": "band_very_high"
+   },
+   "old": {
+    "applicable": true,
+    "arm_id": "old",
+    "basin_id": "basin:puyallup-white",
+    "control_evaluations": 10,
+    "control_firings": 0,
+    "evaluations": 56,
+    "first_cursor": null,
+    "first_time": null,
+    "rule_id": "band_very_high"
+   },
+   "rule_id": "band_very_high",
+   "verdict": "no_difference"
+  },
+  {
+   "basin_id": "basin:skagit",
+   "caveat": "neither arm escalated in the event window",
+   "difference_h": null,
+   "legitimate_lead_time": false,
+   "new": {
+    "applicable": true,
+    "arm_id": "new",
+    "basin_id": "basin:skagit",
+    "control_evaluations": 10,
+    "control_firings": 0,
+    "evaluations": 56,
+    "first_cursor": null,
+    "first_time": null,
+    "rule_id": "band_very_high"
+   },
+   "old": {
+    "applicable": true,
+    "arm_id": "old",
+    "basin_id": "basin:skagit",
+    "control_evaluations": 10,
+    "control_firings": 0,
+    "evaluations": 56,
+    "first_cursor": null,
+    "first_time": null,
+    "rule_id": "band_very_high"
+   },
+   "rule_id": "band_very_high",
+   "verdict": "no_difference"
+  },
+  {
+   "basin_id": "basin:snohomish-snoqualmie",
+   "caveat": "neither arm escalated in the event window",
+   "difference_h": null,
+   "legitimate_lead_time": false,
+   "new": {
+    "applicable": true,
+    "arm_id": "new",
+    "basin_id": "basin:snohomish-snoqualmie",
+    "control_evaluations": 10,
+    "control_firings": 0,
+    "evaluations": 56,
+    "first_cursor": null,
+    "first_time": null,
+    "rule_id": "band_very_high"
+   },
+   "old": {
+    "applicable": true,
+    "arm_id": "old",
+    "basin_id": "basin:snohomish-snoqualmie",
+    "control_evaluations": 10,
+    "control_firings": 0,
+    "evaluations": 56,
+    "first_cursor": null,
+    "first_time": null,
+    "rule_id": "band_very_high"
+   },
+   "rule_id": "band_very_high",
+   "verdict": "no_difference"
+  },
+  {
+   "basin_id": "basin:cedar",
+   "caveat": "neither arm escalated in the event window",
+   "difference_h": null,
+   "legitimate_lead_time": false,
+   "new": {
+    "applicable": true,
+    "arm_id": "new",
+    "basin_id": "basin:cedar",
+    "control_evaluations": 10,
+    "control_firings": 0,
+    "evaluations": 56,
+    "first_cursor": null,
+    "first_time": null,
+    "rule_id": "trend_rising_6h"
+   },
+   "old": {
+    "applicable": true,
+    "arm_id": "old",
+    "basin_id": "basin:cedar",
+    "control_evaluations": 10,
+    "control_firings": 0,
+    "evaluations": 56,
+    "first_cursor": null,
+    "first_time": null,
+    "rule_id": "trend_rising_6h"
+   },
+   "rule_id": "trend_rising_6h",
+   "verdict": "no_difference"
+  },
+  {
+   "basin_id": "basin:green-duwamish",
+   "caveat": "neither arm escalated in the event window",
+   "difference_h": null,
+   "legitimate_lead_time": false,
+   "new": {
+    "applicable": true,
+    "arm_id": "new",
+    "basin_id": "basin:green-duwamish",
+    "control_evaluations": 10,
+    "control_firings": 0,
+    "evaluations": 56,
+    "first_cursor": null,
+    "first_time": null,
+    "rule_id": "trend_rising_6h"
+   },
+   "old": {
+    "applicable": true,
+    "arm_id": "old",
+    "basin_id": "basin:green-duwamish",
+    "control_evaluations": 10,
+    "control_firings": 0,
+    "evaluations": 56,
+    "first_cursor": null,
+    "first_time": null,
+    "rule_id": "trend_rising_6h"
+   },
+   "rule_id": "trend_rising_6h",
+   "verdict": "no_difference"
+  },
+  {
+   "basin_id": "basin:nooksack",
+   "caveat": "neither arm escalated in the event window",
+   "difference_h": null,
+   "legitimate_lead_time": false,
+   "new": {
+    "applicable": true,
+    "arm_id": "new",
+    "basin_id": "basin:nooksack",
+    "control_evaluations": 10,
+    "control_firings": 0,
+    "evaluations": 56,
+    "first_cursor": null,
+    "first_time": null,
+    "rule_id": "trend_rising_6h"
+   },
+   "old": {
+    "applicable": true,
+    "arm_id": "old",
+    "basin_id": "basin:nooksack",
+    "control_evaluations": 10,
+    "control_firings": 0,
+    "evaluations": 56,
+    "first_cursor": null,
+    "first_time": null,
+    "rule_id": "trend_rising_6h"
+   },
+   "rule_id": "trend_rising_6h",
+   "verdict": "no_difference"
+  },
+  {
+   "basin_id": "basin:puyallup-white",
+   "caveat": "neither arm escalated in the event window",
+   "difference_h": null,
+   "legitimate_lead_time": false,
+   "new": {
+    "applicable": true,
+    "arm_id": "new",
+    "basin_id": "basin:puyallup-white",
+    "control_evaluations": 10,
+    "control_firings": 0,
+    "evaluations": 56,
+    "first_cursor": null,
+    "first_time": null,
+    "rule_id": "trend_rising_6h"
+   },
+   "old": {
+    "applicable": true,
+    "arm_id": "old",
+    "basin_id": "basin:puyallup-white",
+    "control_evaluations": 10,
+    "control_firings": 0,
+    "evaluations": 56,
+    "first_cursor": null,
+    "first_time": null,
+    "rule_id": "trend_rising_6h"
+   },
+   "rule_id": "trend_rising_6h",
+   "verdict": "no_difference"
+  },
+  {
+   "basin_id": "basin:skagit",
+   "caveat": "neither arm escalated in the event window",
+   "difference_h": null,
+   "legitimate_lead_time": false,
+   "new": {
+    "applicable": true,
+    "arm_id": "new",
+    "basin_id": "basin:skagit",
+    "control_evaluations": 10,
+    "control_firings": 0,
+    "evaluations": 56,
+    "first_cursor": null,
+    "first_time": null,
+    "rule_id": "trend_rising_6h"
+   },
+   "old": {
+    "applicable": true,
+    "arm_id": "old",
+    "basin_id": "basin:skagit",
+    "control_evaluations": 10,
+    "control_firings": 0,
+    "evaluations": 56,
+    "first_cursor": null,
+    "first_time": null,
+    "rule_id": "trend_rising_6h"
+   },
+   "rule_id": "trend_rising_6h",
+   "verdict": "no_difference"
+  },
+  {
+   "basin_id": "basin:snohomish-snoqualmie",
+   "caveat": "neither arm escalated in the event window",
+   "difference_h": null,
+   "legitimate_lead_time": false,
+   "new": {
+    "applicable": true,
+    "arm_id": "new",
+    "basin_id": "basin:snohomish-snoqualmie",
+    "control_evaluations": 10,
+    "control_firings": 0,
+    "evaluations": 56,
+    "first_cursor": null,
+    "first_time": null,
+    "rule_id": "trend_rising_6h"
+   },
+   "old": {
+    "applicable": true,
+    "arm_id": "old",
+    "basin_id": "basin:snohomish-snoqualmie",
+    "control_evaluations": 10,
+    "control_firings": 0,
+    "evaluations": 56,
+    "first_cursor": null,
+    "first_time": null,
+    "rule_id": "trend_rising_6h"
+   },
+   "rule_id": "trend_rising_6h",
+   "verdict": "no_difference"
+  },
+  {
+   "basin_id": "basin:cedar",
+   "caveat": "only the new arm publishes a statement this rule can read; the old arm is unanswerable, not a non-detection. Unanswerable under @0.1.0: that surface publishes no state change at all. Reported as 'the old arm has no such statement', never as a non-detection.",
+   "difference_h": null,
+   "legitimate_lead_time": false,
+   "new": {
+    "applicable": true,
+    "arm_id": "new",
+    "basin_id": "basin:cedar",
+    "control_evaluations": 10,
+    "control_firings": 0,
+    "evaluations": 56,
+    "first_cursor": null,
+    "first_time": null,
+    "rule_id": "rising_24h"
+   },
+   "old": {
+    "applicable": false,
+    "arm_id": "old",
+    "basin_id": "basin:cedar",
+    "control_evaluations": 10,
+    "control_firings": 0,
+    "evaluations": 56,
+    "first_cursor": null,
+    "first_time": null,
+    "rule_id": "rising_24h"
+   },
+   "rule_id": "rising_24h",
+   "verdict": "no_difference"
+  },
+  {
+   "basin_id": "basin:green-duwamish",
+   "caveat": "only the new arm publishes a statement this rule can read; the old arm is unanswerable, not a non-detection. Unanswerable under @0.1.0: that surface publishes no state change at all. Reported as 'the old arm has no such statement', never as a non-detection.",
+   "difference_h": null,
+   "legitimate_lead_time": false,
+   "new": {
+    "applicable": true,
+    "arm_id": "new",
+    "basin_id": "basin:green-duwamish",
+    "control_evaluations": 10,
+    "control_firings": 0,
+    "evaluations": 56,
+    "first_cursor": null,
+    "first_time": null,
+    "rule_id": "rising_24h"
+   },
+   "old": {
+    "applicable": false,
+    "arm_id": "old",
+    "basin_id": "basin:green-duwamish",
+    "control_evaluations": 10,
+    "control_firings": 0,
+    "evaluations": 56,
+    "first_cursor": null,
+    "first_time": null,
+    "rule_id": "rising_24h"
+   },
+   "rule_id": "rising_24h",
+   "verdict": "no_difference"
+  },
+  {
+   "basin_id": "basin:nooksack",
+   "caveat": "only the new arm publishes a statement this rule can read; the old arm is unanswerable, not a non-detection. Unanswerable under @0.1.0: that surface publishes no state change at all. Reported as 'the old arm has no such statement', never as a non-detection.",
+   "difference_h": null,
+   "legitimate_lead_time": false,
+   "new": {
+    "applicable": true,
+    "arm_id": "new",
+    "basin_id": "basin:nooksack",
+    "control_evaluations": 10,
+    "control_firings": 0,
+    "evaluations": 56,
+    "first_cursor": null,
+    "first_time": null,
+    "rule_id": "rising_24h"
+   },
+   "old": {
+    "applicable": false,
+    "arm_id": "old",
+    "basin_id": "basin:nooksack",
+    "control_evaluations": 10,
+    "control_firings": 0,
+    "evaluations": 56,
+    "first_cursor": null,
+    "first_time": null,
+    "rule_id": "rising_24h"
+   },
+   "rule_id": "rising_24h",
+   "verdict": "no_difference"
+  },
+  {
+   "basin_id": "basin:puyallup-white",
+   "caveat": "only the new arm publishes a statement this rule can read; the old arm is unanswerable, not a non-detection. Unanswerable under @0.1.0: that surface publishes no state change at all. Reported as 'the old arm has no such statement', never as a non-detection.",
+   "difference_h": null,
+   "legitimate_lead_time": false,
+   "new": {
+    "applicable": true,
+    "arm_id": "new",
+    "basin_id": "basin:puyallup-white",
+    "control_evaluations": 10,
+    "control_firings": 0,
+    "evaluations": 56,
+    "first_cursor": null,
+    "first_time": null,
+    "rule_id": "rising_24h"
+   },
+   "old": {
+    "applicable": false,
+    "arm_id": "old",
+    "basin_id": "basin:puyallup-white",
+    "control_evaluations": 10,
+    "control_firings": 0,
+    "evaluations": 56,
+    "first_cursor": null,
+    "first_time": null,
+    "rule_id": "rising_24h"
+   },
+   "rule_id": "rising_24h",
+   "verdict": "no_difference"
+  },
+  {
+   "basin_id": "basin:skagit",
+   "caveat": "only the new arm publishes a statement this rule can read; the old arm is unanswerable, not a non-detection. Unanswerable under @0.1.0: that surface publishes no state change at all. Reported as 'the old arm has no such statement', never as a non-detection.",
+   "difference_h": null,
+   "legitimate_lead_time": false,
+   "new": {
+    "applicable": true,
+    "arm_id": "new",
+    "basin_id": "basin:skagit",
+    "control_evaluations": 10,
+    "control_firings": 0,
+    "evaluations": 56,
+    "first_cursor": null,
+    "first_time": null,
+    "rule_id": "rising_24h"
+   },
+   "old": {
+    "applicable": false,
+    "arm_id": "old",
+    "basin_id": "basin:skagit",
+    "control_evaluations": 10,
+    "control_firings": 0,
+    "evaluations": 56,
+    "first_cursor": null,
+    "first_time": null,
+    "rule_id": "rising_24h"
+   },
+   "rule_id": "rising_24h",
+   "verdict": "no_difference"
+  },
+  {
+   "basin_id": "basin:snohomish-snoqualmie",
+   "caveat": "only the new arm publishes a statement this rule can read; the old arm is unanswerable, not a non-detection. Unanswerable under @0.1.0: that surface publishes no state change at all. Reported as 'the old arm has no such statement', never as a non-detection.",
+   "difference_h": null,
+   "legitimate_lead_time": false,
+   "new": {
+    "applicable": true,
+    "arm_id": "new",
+    "basin_id": "basin:snohomish-snoqualmie",
+    "control_evaluations": 10,
+    "control_firings": 0,
+    "evaluations": 56,
+    "first_cursor": null,
+    "first_time": null,
+    "rule_id": "rising_24h"
+   },
+   "old": {
+    "applicable": false,
+    "arm_id": "old",
+    "basin_id": "basin:snohomish-snoqualmie",
+    "control_evaluations": 10,
+    "control_firings": 0,
+    "evaluations": 56,
+    "first_cursor": null,
+    "first_time": null,
+    "rule_id": "rising_24h"
+   },
+   "rule_id": "rising_24h",
+   "verdict": "no_difference"
+  },
+  {
+   "basin_id": "basin:cedar",
+   "caveat": "only the new arm publishes a statement this rule can read; the old arm is unanswerable, not a non-detection.",
+   "difference_h": null,
+   "legitimate_lead_time": false,
+   "new": {
+    "applicable": true,
+    "arm_id": "new",
+    "basin_id": "basin:cedar",
+    "control_evaluations": 10,
+    "control_firings": 0,
+    "evaluations": 56,
+    "first_cursor": null,
+    "first_time": null,
+    "rule_id": "rising_48h"
+   },
+   "old": {
+    "applicable": false,
+    "arm_id": "old",
+    "basin_id": "basin:cedar",
+    "control_evaluations": 10,
+    "control_firings": 0,
+    "evaluations": 56,
+    "first_cursor": null,
+    "first_time": null,
+    "rule_id": "rising_48h"
+   },
+   "rule_id": "rising_48h",
+   "verdict": "no_difference"
+  },
+  {
+   "basin_id": "basin:green-duwamish",
+   "caveat": "only the new arm publishes a statement this rule can read; the old arm is unanswerable, not a non-detection.",
+   "difference_h": null,
+   "legitimate_lead_time": false,
+   "new": {
+    "applicable": true,
+    "arm_id": "new",
+    "basin_id": "basin:green-duwamish",
+    "control_evaluations": 10,
+    "control_firings": 0,
+    "evaluations": 56,
+    "first_cursor": null,
+    "first_time": null,
+    "rule_id": "rising_48h"
+   },
+   "old": {
+    "applicable": false,
+    "arm_id": "old",
+    "basin_id": "basin:green-duwamish",
+    "control_evaluations": 10,
+    "control_firings": 0,
+    "evaluations": 56,
+    "first_cursor": null,
+    "first_time": null,
+    "rule_id": "rising_48h"
+   },
+   "rule_id": "rising_48h",
+   "verdict": "no_difference"
+  },
+  {
+   "basin_id": "basin:nooksack",
+   "caveat": "only the new arm publishes a statement this rule can read; the old arm is unanswerable, not a non-detection.",
+   "difference_h": null,
+   "legitimate_lead_time": false,
+   "new": {
+    "applicable": true,
+    "arm_id": "new",
+    "basin_id": "basin:nooksack",
+    "control_evaluations": 10,
+    "control_firings": 0,
+    "evaluations": 56,
+    "first_cursor": null,
+    "first_time": null,
+    "rule_id": "rising_48h"
+   },
+   "old": {
+    "applicable": false,
+    "arm_id": "old",
+    "basin_id": "basin:nooksack",
+    "control_evaluations": 10,
+    "control_firings": 0,
+    "evaluations": 56,
+    "first_cursor": null,
+    "first_time": null,
+    "rule_id": "rising_48h"
+   },
+   "rule_id": "rising_48h",
+   "verdict": "no_difference"
+  },
+  {
+   "basin_id": "basin:puyallup-white",
+   "caveat": "only the new arm publishes a statement this rule can read; the old arm is unanswerable, not a non-detection.",
+   "difference_h": null,
+   "legitimate_lead_time": false,
+   "new": {
+    "applicable": true,
+    "arm_id": "new",
+    "basin_id": "basin:puyallup-white",
+    "control_evaluations": 10,
+    "control_firings": 0,
+    "evaluations": 56,
+    "first_cursor": null,
+    "first_time": null,
+    "rule_id": "rising_48h"
+   },
+   "old": {
+    "applicable": false,
+    "arm_id": "old",
+    "basin_id": "basin:puyallup-white",
+    "control_evaluations": 10,
+    "control_firings": 0,
+    "evaluations": 56,
+    "first_cursor": null,
+    "first_time": null,
+    "rule_id": "rising_48h"
+   },
+   "rule_id": "rising_48h",
+   "verdict": "no_difference"
+  },
+  {
+   "basin_id": "basin:skagit",
+   "caveat": "only the new arm publishes a statement this rule can read; the old arm is unanswerable, not a non-detection.",
+   "difference_h": null,
+   "legitimate_lead_time": false,
+   "new": {
+    "applicable": true,
+    "arm_id": "new",
+    "basin_id": "basin:skagit",
+    "control_evaluations": 10,
+    "control_firings": 0,
+    "evaluations": 56,
+    "first_cursor": null,
+    "first_time": null,
+    "rule_id": "rising_48h"
+   },
+   "old": {
+    "applicable": false,
+    "arm_id": "old",
+    "basin_id": "basin:skagit",
+    "control_evaluations": 10,
+    "control_firings": 0,
+    "evaluations": 56,
+    "first_cursor": null,
+    "first_time": null,
+    "rule_id": "rising_48h"
+   },
+   "rule_id": "rising_48h",
+   "verdict": "no_difference"
+  },
+  {
+   "basin_id": "basin:snohomish-snoqualmie",
+   "caveat": "only the new arm publishes a statement this rule can read; the old arm is unanswerable, not a non-detection.",
+   "difference_h": null,
+   "legitimate_lead_time": false,
+   "new": {
+    "applicable": true,
+    "arm_id": "new",
+    "basin_id": "basin:snohomish-snoqualmie",
+    "control_evaluations": 10,
+    "control_firings": 0,
+    "evaluations": 56,
+    "first_cursor": null,
+    "first_time": null,
+    "rule_id": "rising_48h"
+   },
+   "old": {
+    "applicable": false,
+    "arm_id": "old",
+    "basin_id": "basin:snohomish-snoqualmie",
+    "control_evaluations": 10,
+    "control_firings": 0,
+    "evaluations": 56,
+    "first_cursor": null,
+    "first_time": null,
+    "rule_id": "rising_48h"
+   },
+   "rule_id": "rising_48h",
+   "verdict": "no_difference"
+  },
+  {
+   "basin_id": "basin:cedar",
+   "caveat": "only the new arm publishes a statement this rule can read; the old arm is unanswerable, not a non-detection.",
+   "difference_h": null,
+   "legitimate_lead_time": false,
+   "new": {
+    "applicable": true,
+    "arm_id": "new",
+    "basin_id": "basin:cedar",
+    "control_evaluations": 10,
+    "control_firings": 0,
+    "evaluations": 56,
+    "first_cursor": null,
+    "first_time": null,
+    "rule_id": "growth_rank_top_0.05_24h"
+   },
+   "old": {
+    "applicable": false,
+    "arm_id": "old",
+    "basin_id": "basin:cedar",
+    "control_evaluations": 10,
+    "control_firings": 0,
+    "evaluations": 56,
+    "first_cursor": null,
+    "first_time": null,
+    "rule_id": "growth_rank_top_0.05_24h"
+   },
+   "rule_id": "growth_rank_top_0.05_24h",
+   "verdict": "no_difference"
+  },
+  {
+   "basin_id": "basin:green-duwamish",
+   "caveat": "only the new arm publishes a statement this rule can read; the old arm is unanswerable, not a non-detection.",
+   "difference_h": null,
+   "legitimate_lead_time": false,
+   "new": {
+    "applicable": true,
+    "arm_id": "new",
+    "basin_id": "basin:green-duwamish",
+    "control_evaluations": 10,
+    "control_firings": 0,
+    "evaluations": 56,
+    "first_cursor": null,
+    "first_time": null,
+    "rule_id": "growth_rank_top_0.05_24h"
+   },
+   "old": {
+    "applicable": false,
+    "arm_id": "old",
+    "basin_id": "basin:green-duwamish",
+    "control_evaluations": 10,
+    "control_firings": 0,
+    "evaluations": 56,
+    "first_cursor": null,
+    "first_time": null,
+    "rule_id": "growth_rank_top_0.05_24h"
+   },
+   "rule_id": "growth_rank_top_0.05_24h",
+   "verdict": "no_difference"
+  },
+  {
+   "basin_id": "basin:nooksack",
+   "caveat": "only the new arm publishes a statement this rule can read; the old arm is unanswerable, not a non-detection.",
+   "difference_h": null,
+   "legitimate_lead_time": false,
+   "new": {
+    "applicable": true,
+    "arm_id": "new",
+    "basin_id": "basin:nooksack",
+    "control_evaluations": 10,
+    "control_firings": 0,
+    "evaluations": 56,
+    "first_cursor": null,
+    "first_time": null,
+    "rule_id": "growth_rank_top_0.05_24h"
+   },
+   "old": {
+    "applicable": false,
+    "arm_id": "old",
+    "basin_id": "basin:nooksack",
+    "control_evaluations": 10,
+    "control_firings": 0,
+    "evaluations": 56,
+    "first_cursor": null,
+    "first_time": null,
+    "rule_id": "growth_rank_top_0.05_24h"
+   },
+   "rule_id": "growth_rank_top_0.05_24h",
+   "verdict": "no_difference"
+  },
+  {
+   "basin_id": "basin:puyallup-white",
+   "caveat": "only the new arm publishes a statement this rule can read; the old arm is unanswerable, not a non-detection.",
+   "difference_h": null,
+   "legitimate_lead_time": false,
+   "new": {
+    "applicable": true,
+    "arm_id": "new",
+    "basin_id": "basin:puyallup-white",
+    "control_evaluations": 10,
+    "control_firings": 0,
+    "evaluations": 56,
+    "first_cursor": null,
+    "first_time": null,
+    "rule_id": "growth_rank_top_0.05_24h"
+   },
+   "old": {
+    "applicable": false,
+    "arm_id": "old",
+    "basin_id": "basin:puyallup-white",
+    "control_evaluations": 10,
+    "control_firings": 0,
+    "evaluations": 56,
+    "first_cursor": null,
+    "first_time": null,
+    "rule_id": "growth_rank_top_0.05_24h"
+   },
+   "rule_id": "growth_rank_top_0.05_24h",
+   "verdict": "no_difference"
+  },
+  {
+   "basin_id": "basin:skagit",
+   "caveat": "only the new arm publishes a statement this rule can read; the old arm is unanswerable, not a non-detection.",
+   "difference_h": null,
+   "legitimate_lead_time": false,
+   "new": {
+    "applicable": true,
+    "arm_id": "new",
+    "basin_id": "basin:skagit",
+    "control_evaluations": 10,
+    "control_firings": 0,
+    "evaluations": 56,
+    "first_cursor": null,
+    "first_time": null,
+    "rule_id": "growth_rank_top_0.05_24h"
+   },
+   "old": {
+    "applicable": false,
+    "arm_id": "old",
+    "basin_id": "basin:skagit",
+    "control_evaluations": 10,
+    "control_firings": 0,
+    "evaluations": 56,
+    "first_cursor": null,
+    "first_time": null,
+    "rule_id": "growth_rank_top_0.05_24h"
+   },
+   "rule_id": "growth_rank_top_0.05_24h",
+   "verdict": "no_difference"
+  },
+  {
+   "basin_id": "basin:snohomish-snoqualmie",
+   "caveat": "only the new arm publishes a statement this rule can read; the old arm is unanswerable, not a non-detection.",
+   "difference_h": null,
+   "legitimate_lead_time": false,
+   "new": {
+    "applicable": true,
+    "arm_id": "new",
+    "basin_id": "basin:snohomish-snoqualmie",
+    "control_evaluations": 10,
+    "control_firings": 0,
+    "evaluations": 56,
+    "first_cursor": null,
+    "first_time": null,
+    "rule_id": "growth_rank_top_0.05_24h"
+   },
+   "old": {
+    "applicable": false,
+    "arm_id": "old",
+    "basin_id": "basin:snohomish-snoqualmie",
+    "control_evaluations": 10,
+    "control_firings": 0,
+    "evaluations": 56,
+    "first_cursor": null,
+    "first_time": null,
+    "rule_id": "growth_rank_top_0.05_24h"
+   },
+   "rule_id": "growth_rank_top_0.05_24h",
+   "verdict": "no_difference"
+  },
+  {
+   "basin_id": "basin:cedar",
+   "caveat": "only the new arm publishes a statement this rule can read; the old arm is unanswerable, not a non-detection.",
+   "difference_h": null,
+   "legitimate_lead_time": false,
+   "new": {
+    "applicable": true,
+    "arm_id": "new",
+    "basin_id": "basin:cedar",
+    "control_evaluations": 10,
+    "control_firings": 0,
+    "evaluations": 56,
+    "first_cursor": null,
+    "first_time": null,
+    "rule_id": "growth_rank_top_0.01_24h"
+   },
+   "old": {
+    "applicable": false,
+    "arm_id": "old",
+    "basin_id": "basin:cedar",
+    "control_evaluations": 10,
+    "control_firings": 0,
+    "evaluations": 56,
+    "first_cursor": null,
+    "first_time": null,
+    "rule_id": "growth_rank_top_0.01_24h"
+   },
+   "rule_id": "growth_rank_top_0.01_24h",
+   "verdict": "no_difference"
+  },
+  {
+   "basin_id": "basin:green-duwamish",
+   "caveat": "only the new arm publishes a statement this rule can read; the old arm is unanswerable, not a non-detection.",
+   "difference_h": null,
+   "legitimate_lead_time": false,
+   "new": {
+    "applicable": true,
+    "arm_id": "new",
+    "basin_id": "basin:green-duwamish",
+    "control_evaluations": 10,
+    "control_firings": 0,
+    "evaluations": 56,
+    "first_cursor": null,
+    "first_time": null,
+    "rule_id": "growth_rank_top_0.01_24h"
+   },
+   "old": {
+    "applicable": false,
+    "arm_id": "old",
+    "basin_id": "basin:green-duwamish",
+    "control_evaluations": 10,
+    "control_firings": 0,
+    "evaluations": 56,
+    "first_cursor": null,
+    "first_time": null,
+    "rule_id": "growth_rank_top_0.01_24h"
+   },
+   "rule_id": "growth_rank_top_0.01_24h",
+   "verdict": "no_difference"
+  },
+  {
+   "basin_id": "basin:nooksack",
+   "caveat": "only the new arm publishes a statement this rule can read; the old arm is unanswerable, not a non-detection.",
+   "difference_h": null,
+   "legitimate_lead_time": false,
+   "new": {
+    "applicable": true,
+    "arm_id": "new",
+    "basin_id": "basin:nooksack",
+    "control_evaluations": 10,
+    "control_firings": 0,
+    "evaluations": 56,
+    "first_cursor": null,
+    "first_time": null,
+    "rule_id": "growth_rank_top_0.01_24h"
+   },
+   "old": {
+    "applicable": false,
+    "arm_id": "old",
+    "basin_id": "basin:nooksack",
+    "control_evaluations": 10,
+    "control_firings": 0,
+    "evaluations": 56,
+    "first_cursor": null,
+    "first_time": null,
+    "rule_id": "growth_rank_top_0.01_24h"
+   },
+   "rule_id": "growth_rank_top_0.01_24h",
+   "verdict": "no_difference"
+  },
+  {
+   "basin_id": "basin:puyallup-white",
+   "caveat": "only the new arm publishes a statement this rule can read; the old arm is unanswerable, not a non-detection.",
+   "difference_h": null,
+   "legitimate_lead_time": false,
+   "new": {
+    "applicable": true,
+    "arm_id": "new",
+    "basin_id": "basin:puyallup-white",
+    "control_evaluations": 10,
+    "control_firings": 0,
+    "evaluations": 56,
+    "first_cursor": null,
+    "first_time": null,
+    "rule_id": "growth_rank_top_0.01_24h"
+   },
+   "old": {
+    "applicable": false,
+    "arm_id": "old",
+    "basin_id": "basin:puyallup-white",
+    "control_evaluations": 10,
+    "control_firings": 0,
+    "evaluations": 56,
+    "first_cursor": null,
+    "first_time": null,
+    "rule_id": "growth_rank_top_0.01_24h"
+   },
+   "rule_id": "growth_rank_top_0.01_24h",
+   "verdict": "no_difference"
+  },
+  {
+   "basin_id": "basin:skagit",
+   "caveat": "only the new arm publishes a statement this rule can read; the old arm is unanswerable, not a non-detection.",
+   "difference_h": null,
+   "legitimate_lead_time": false,
+   "new": {
+    "applicable": true,
+    "arm_id": "new",
+    "basin_id": "basin:skagit",
+    "control_evaluations": 10,
+    "control_firings": 0,
+    "evaluations": 56,
+    "first_cursor": null,
+    "first_time": null,
+    "rule_id": "growth_rank_top_0.01_24h"
+   },
+   "old": {
+    "applicable": false,
+    "arm_id": "old",
+    "basin_id": "basin:skagit",
+    "control_evaluations": 10,
+    "control_firings": 0,
+    "evaluations": 56,
+    "first_cursor": null,
+    "first_time": null,
+    "rule_id": "growth_rank_top_0.01_24h"
+   },
+   "rule_id": "growth_rank_top_0.01_24h",
+   "verdict": "no_difference"
+  },
+  {
+   "basin_id": "basin:snohomish-snoqualmie",
+   "caveat": "only the new arm publishes a statement this rule can read; the old arm is unanswerable, not a non-detection.",
+   "difference_h": null,
+   "legitimate_lead_time": false,
+   "new": {
+    "applicable": true,
+    "arm_id": "new",
+    "basin_id": "basin:snohomish-snoqualmie",
+    "control_evaluations": 10,
+    "control_firings": 0,
+    "evaluations": 56,
+    "first_cursor": null,
+    "first_time": null,
+    "rule_id": "growth_rank_top_0.01_24h"
+   },
+   "old": {
+    "applicable": false,
+    "arm_id": "old",
+    "basin_id": "basin:snohomish-snoqualmie",
+    "control_evaluations": 10,
+    "control_firings": 0,
+    "evaluations": 56,
+    "first_cursor": null,
+    "first_time": null,
+    "rule_id": "growth_rank_top_0.01_24h"
+   },
+   "rule_id": "growth_rank_top_0.01_24h",
+   "verdict": "no_difference"
+  }
+ ],
+ "projection_state": {
+  "disclosure": "KNOWLEDGE_TIME replay: rows were read exactly as the deployed system reads them (available_at <= as_of). Anything UNKNOWN here was genuinely unknown to this platform at that instant.",
+  "mode": "KNOWLEDGE_TIME",
+  "name": "none",
+  "note": "",
+  "rules": []
+ },
+ "surface_reasons": {
+  "No day-of-year climatology stored for station:usgs:12100490": 132,
+  "No day-of-year climatology stored for station:usgs:12113000": 132,
+  "No day-of-year climatology stored for station:usgs:12119000": 132,
+  "No day-of-year climatology stored for station:usgs:12149000": 132,
+  "No day-of-year climatology stored for station:usgs:12189500": 132,
+  "No day-of-year climatology stored for station:usgs:12213100": 132
+ }
+}

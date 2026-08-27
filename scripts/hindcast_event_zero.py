@@ -84,8 +84,10 @@ from cascade_providers_usgs.stats_jobs import (  # noqa: E402
     DISAGREEMENT_FRACTION,
     PERCENTILE_FEATURE,
     PERCENTILE_METHOD_ID,
+    GROWTH_REFERENCE_FEATURE,
     RECORD_CONTEXT_FEATURE,
     _climatology_row,
+    _growth_reference_row,
     _record_context_row,
 )
 from cascade_providers_usgs.stats_parser import parse_daily_csv  # noqa: E402
@@ -390,6 +392,14 @@ async def build_reference(
                 quality=[*flags, PRE_EVENT_QUALITY_FLAG],
             )),
             (RECORD_CONTEXT_FEATURE, susceptibility.RECORD_CONTEXT_METHOD_ID, _record_context_row(
+                context, station_id=station.id, valid_time=valid_time, retrieved_at=fetched_at,
+                artifact_id=source.raw_artifact_id, quality=[*flags, PRE_EVENT_QUALITY_FLAG],
+            )),
+            # The growth reference moved out of the record context on 2026-08-27 and must be
+            # rebuilt here too, or the velocity's rank is unavailable for the whole replay — which
+            # is exactly the defect the split closed, reappearing in the harness instead of the
+            # surface. Same builder, same cutoff, same artifact, same pre-event quality flag.
+            (GROWTH_REFERENCE_FEATURE, susceptibility.GROWTH_REFERENCE_METHOD_ID, _growth_reference_row(
                 context, station_id=station.id, valid_time=valid_time, retrieved_at=fetched_at,
                 artifact_id=source.raw_artifact_id, quality=[*flags, PRE_EVENT_QUALITY_FLAG],
             )),

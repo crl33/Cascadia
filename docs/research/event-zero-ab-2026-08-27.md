@@ -63,11 +63,14 @@ wrong; the fifth is the one that should change what happens next:
    movement is towards STEADY** (§6). It produced one *later* escalation than the endpoint
    difference, on the Skagit, and that single case is a threshold-crossing artefact worth 2 % of
    the rate, not a systematic lag.
-5. **FACT — on five of the six first escalations the growth rank is absent** (§7c), because it is
-   read only at or above p90 and the velocity fires below p90. The number that answers "is ×1.37
-   fast?" without needing a cutoff is missing from exactly the hours the change exists to cover.
-   The gap is disclosed with its own reason and nothing is hidden, but this is the single most
-   actionable follow-up in the change.
+5. **FACT — on five of the six first escalations the growth rank was absent** (§7c), because it
+   was read only at or above p90 and the velocity fires below p90. The number that answers "is
+   ×1.37 fast?" without needing a cutoff was missing from exactly the hours the change exists to
+   cover. **CLOSED 2026-08-27** by splitting the growth reference into its own row read at every
+   percentile: first escalations carrying a rank went **1 of 6 → 6 of 6**, all rising-24 h
+   evaluations **68 of 106 → 100 of 100**, and the lead times did not move — which is the check,
+   not a coincidence. See §7c. The rest of this document is the run BEFORE that fix; §7c carries
+   the re-run.
 
 **Should it ship?** On this evidence, yes — but the brief is right that completeness is not a
 reason, and the honest form of the recommendation is: *ship the exact rank, the seasonal
@@ -91,25 +94,22 @@ with the machine-readable reason naming the missing input
 official forecast came back UNKNOWN too. There were zero escalations under every rule, in both
 arms.
 
-> **UNVERIFIED, flagged 2026-08-27 after adversarial review — read this before quoting §2.**
-> This result is **not reproducible from §12's recipe as published**, and no artifact or test
-> pins it: `tests/fixtures/hindcast/` holds one file and it is the RETROSPECTIVE run, and
-> `tests/unit/test_hindcast.py` asserts `{e.mode} == {RETROSPECTIVE}`. The mechanism: `reference`
-> and `reconstruct` both write `available_at = valid_time` (`scripts/hindcast_event_zero.py`
-> :395, :631) and both run **before** `run --mode knowledge-time` in §12's order, which leaves
-> the ladder and every ranked daily mean already visible in December 2025 — a state in which
-> `susceptibility.assess` does **not** return UNKNOWN. The guard that should refuse the
-> KNOWLEDGE_TIME label cannot see it: `projection_state` ANDs across three row families and
-> observations are never projected, so `projected` is False and the label is permitted.
-> Reaching the published result requires `unproject` first, which the script provides and §12
-> does not list.
+> **RE-RUN AND VERIFIED 2026-08-27, after adversarial review found the recipe wrong.** The
+> figure is correct — 792 evaluations, **0 with a computed surface** — but it was NOT reproducible
+> from §12 as originally published, and nothing pinned it. The mechanism: `reference` and
+> `reconstruct` both write `available_at = valid_time` (`scripts/hindcast_event_zero.py` :395,
+> :631) and both ran **before** the strict run, leaving the ladder and every ranked daily mean
+> visible in December 2025 — a state in which `susceptibility.assess` does **not** return UNKNOWN.
+> The guard could not see it either: `projection_state` ANDs across three row families and
+> observations are never projected, so `projected` was False and the KNOWLEDGE_TIME label was
+> permitted.
 >
-> The figure may well be correct — it is what the doctrine predicts, and `available_at` is 2026
-> on every backfilled row. But it is the sentence that licenses every retrospective figure in
-> this document, and it currently rests on a recipe that produces the opposite. **Until it is
-> re-run with `unproject` and the resulting `kt.json` is checked in, treat §2 as an argument
-> from doctrine rather than as a measured result.** The retrospective figures are unaffected:
-> they are labelled RETROSPECTIVE, and their projection state was measured at run time.
+> Re-run with **`unproject` first** (§12 now says so), the claim holds exactly:
+> `pre_event_reference_visible_at_valid_time: 0/12`, 792/792 UNKNOWN, six distinct reasons each
+> naming the gauge whose climatology is missing, and no escalation under any rule in either arm.
+> It is now pinned by `tests/fixtures/hindcast/event_zero_knowledge_time.json` and
+> `tests/unit/test_hindcast.py::test_the_strict_knowledge_time_replay_computed_nothing`, so the
+> recipe cannot rot again without a test failing.
 
 That is the doctrine working, not a bug, and it is the reason the harness distinguishes two modes
 in its type system rather than in a footnote:
@@ -432,6 +432,45 @@ it, and the measurement is worse than the description:
 | cedar | 12-07 | p62.1 | ×1.93 | **absent** |
 | skagit | 12-06 | p90.2 | ×3.00 | 199 of 36,007 |
 
+> ## CLOSED 2026-08-27 — re-run after the growth reference was split out
+>
+> The gate was not a coincidence, it was an **identity**: `RANK_READ_EDGE` (90.0) and
+> `BAND_EDGES`' top edge are the same constant applied to the same rounded number, so the rank
+> was readable *if and only if* the band already read VERY_HIGH — which made `difference_h`
+> identically the length of the unranked window in all six basins. **100 % of the 264 h of lead
+> this change bought was delivered by a statement that structurally could not carry a rank.**
+>
+> The growth reference now lives in its own row (`method:streamflow-growth-reference@1.0.0`) and
+> is read at every percentile. Re-running the whole A/B on the corrected surface:
+>
+> | | before | after |
+> |---|---|---|
+> | first escalations carrying a growth rank | **1 of 6** | **6 of 6** |
+> | all `rising` 24 h evaluations carrying a rank | 68 of 106 | **100 of 100** |
+> | lead times | 24/48/72/48/0/72 h | **unchanged** |
+>
+> The lead times are unchanged **by design and as a check**: the split changed what a statement
+> carries, not when it fires, so any movement there would have meant a band, epsilon, window or
+> score had also moved. The re-run's first escalations:
+>
+> | basin | first escalation | percentile then | ×24 h | growth rank |
+> |---|---|---|---|---|
+> | snohomish-snoqualmie | 12-06 | **p29.3** | ×1.37 | **2,651 of 34,957** |
+> | puyallup-white | 12-06 | p58.2 | ×1.63 | **138 of 5,875** |
+> | green-duwamish | 12-07 | p52.4 | ×1.34 | **1,595 of 32,598** |
+> | nooksack | 12-07 | p89.8 | ×2.97 | **151 of 21,569** |
+> | skagit | 12-07 | p90.2 | ×3.00 | 199 of 36,007 |
+> | cedar | 12-08 | p62.1 | ×1.93 | **199 of 29,280** |
+>
+> Snohomish–Snoqualmie is the case that makes the point: at **p29.3**, nowhere near the old gate,
+> a ×1.37 daily rise is the 2,651st largest day-over-day change in 34,957 days of record — the
+> top 7.6 %. That is the answer to "is that fast?", and before the split the surface could not
+> give it at any percentile below 90.
+>
+> Measured cost of the split: the growth block is 247 KiB of the 952 KiB record context, so
+> reading it alone is **74 % cheaper than widening the gate**, and total storage is unchanged
+> because `growth` was removed from the context rather than copied out of it.
+
 **Five of the six first escalations carry no rank at all**, because on the day the velocity fires
 the level is still below p90 — which is the entire point of having a velocity. Across the whole
 run, 106 evaluations read `rising` on the 24 h window and only **68** carry a rank; the 38 that do
@@ -621,6 +660,11 @@ CASCADE_DB_URL=... python scripts/backfill_event_zero_fls.py --start 2025-12-01T
 S=scripts/hindcast_event_zero.py
 python $S reference   --db-url ...           # rebuild the pre-event reference (cutoff 2025-10-31)
 python $S reconstruct --db-url ...           # rank Nov-01..Dec-22 daily means as the job would
+# `unproject` FIRST, and this line is load-bearing: `reference` and `reconstruct` both write
+# available_at = valid_time, so without it the ladder is already visible in December 2025 and the
+# "strict" run computes surfaces instead of refusing. Omitting it silently produces the OPPOSITE
+# of §2's result, and `projection_state`'s three-way AND does not catch it.
+python $S unproject   --db-url ...           # restore archive clocks; reference visible 0/12
 python $S run   --db-url ... --mode knowledge-time --out kt.json   # §2: 792/792 UNKNOWN
 python $S project     --db-url ...           # move the visibility clocks
 python $S run   --db-url ... --mode retrospective  --out ab.json   # §1, §3-§6
