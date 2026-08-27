@@ -211,3 +211,54 @@ cd apps/web && unset VITE_API_BASE && rm -rf dist && npm run build
 ls dist/assets/ | grep -o 'index-[A-Za-z0-9_-]*\.js'
 curl -s https://cascadia.papsukkal.com/ | grep -o 'index-[A-Za-z0-9_-]*\.js'   # must be equal
 ```
+
+## Re-seed after a seed-data change
+
+`station`, `basin`, `forecast_point` and the registry rows are CONFIGURED reference data, merged by
+id and idempotent, so re-seeding rewrites them in place and touches no value row. Do it whenever a
+seed file or `cascade_core/seed.py` changes — the running container keeps the old values until you
+do, and nothing warns you.
+
+**`railway run` executes LOCALLY.** Its own help says so: *"Run a local command using variables
+from the active environment"*. It injects the production variables — including the database URL —
+into a process on your machine; it does not run anything inside the container. That is fine for a
+merge-by-id seed, and it is the practical option (this CLI has no `ssh`/`exec`), but be exact about
+what it does and does not prove:
+
+- The **membership** half of `_validate_time_zones` is runtime-independent, so it protects
+  production from here. This is the half that matters (ADR-0017).
+- The **resolution** half (`ZoneInfo(zone)`) reflects *your machine's* tz database, not the image's.
+  A laptop resolves `PST8PDT`; the image does not. Passing locally is not evidence the image can
+  resolve the key.
+- To run the seed in the deployment image itself, use the Railway dashboard one-off command on the
+  service (§7 above) rather than `railway run`.
+
+Deploy the new image first anyway, so the running jobs and the seeded data change together:
+
+```bash
+SHA=$(git rev-parse HEAD)                                     # clean tree, pushed
+railway up --service papsukkal-backend --detach               # + CASCADE_GIT_REVISION=$SHA
+curl -s https://cascadia.papsukkal.com/system/version         # revision must equal $SHA, first
+railway run --service papsukkal-backend -- python -m cascade_worker seed
+```
+
+Note the `--`: the CLI's automation guidance is *"Put Railway flags before the child command"*, and
+flags after it are passed to the child instead.
+
+`seed` prints the merged row counts as JSON and exits non-zero on a refusal. Confirm the value that
+changed actually landed — query it back — before re-running any job that reads it.
+
+Jobs already written under the old configuration are **not** rewritten. Re-run the affected job
+once and let the new rows arrive on their own stamps:
+
+```bash
+railway run --service papsukkal-backend -- python -m cascade_worker run-once
+```
+
+For the ADR-0017 time-zone fix specifically, the check afterwards is that a new
+`streamflow_doy_percentile` row lands at the **local** day boundary — 07:00Z in PDT, 08:00Z in PST —
+with `day_boundary_assumed_utc` absent from `quality`. The list is not empty on a healthy row:
+`stats_jobs` appends the approval status, so a current row reads `['provisional']`. `/viz/basins` still reports the
+24 h `state_change` with `growth: null` at that point and **that is correct**: the velocity needs
+two correctly stamped daily rows 24 h apart, so it returns one cron interval later. Do not backfill
+to make it appear sooner.

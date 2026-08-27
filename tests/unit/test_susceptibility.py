@@ -34,7 +34,7 @@ from cascade_core.knowledge import as_known_at
 from cascade_core.models import Basin, DerivedFeature
 from cascade_core.objectstore import LocalFilesystemStore
 from cascade_core.registry import PRODUCT_AWDB_DAILY, PRODUCT_USGS_DOY_NORMALS, PRODUCT_USGS_OGC_DAILY
-from cascade_core.seed import seed_all
+from cascade_core.seed import PACIFIC_TIME_ZONE, SEEDABLE_TIME_ZONES, seed_all
 from cascade_core.settings import SEED_FILE
 from cascade_hydrology import susceptibility
 from cascade_providers_awdb import jobs as awdb_jobs
@@ -248,12 +248,17 @@ def test_a_thin_day_of_year_sample_is_refused_rather_than_published() -> None:
 
 def test_daily_mean_valid_time_is_the_local_day_boundary_and_says_when_it_guessed() -> None:
     """A daily mean dated D is complete at local midnight ENDING D (DATA_DOCTRINE §3)."""
-    summer, flags = clim.daily_mean_valid_time(date(2026, 8, 23), time_zone="PST8PDT")
+    summer, flags = clim.daily_mean_valid_time(date(2026, 8, 23), time_zone=PACIFIC_TIME_ZONE)
     assert summer == datetime(2026, 8, 24, 7, 0, tzinfo=UTC) and flags == ()  # PDT
-    winter, _ = clim.daily_mean_valid_time(date(2026, 1, 15), time_zone="PST8PDT")
+    winter, _ = clim.daily_mean_valid_time(date(2026, 1, 15), time_zone=PACIFIC_TIME_ZONE)
     assert winter == datetime(2026, 1, 16, 8, 0, tzinfo=UTC)  # PST — DST is not assumed away
     guessed, flags = clim.daily_mean_valid_time(date(2026, 8, 23), time_zone=None)
     assert guessed == datetime(2026, 8, 24, tzinfo=UTC) and flags == ("day_boundary_assumed_utc",)
+    # A zone this runtime cannot resolve degrades the same way an absent one does, and says so.
+    # The key is deliberately fictitious rather than a real legacy alias, so the assertion means
+    # the same thing on a laptop with the full tz database and in the reduced-tzdata image.
+    unresolvable, flags = clim.daily_mean_valid_time(date(2026, 8, 23), time_zone="Cascadia/Nowhere")
+    assert unresolvable == datetime(2026, 8, 24, tzinfo=UTC) and flags == ("day_boundary_assumed_utc",)
 
 
 # --- C. SNOTEL context, and the soil negative result ----------------------------------------
@@ -1141,13 +1146,24 @@ async def test_every_seeded_gauge_has_a_time_zone_so_the_day_boundary_is_never_a
     """A daily mean is labelled by the station's LOCAL calendar day, and the seed must say which.
 
     Measured in production 2026-08-27: three days of `streamflow_doy_percentile` rows carried
-    `day_boundary_assumed_utc` because `station.time_zone` was NULL when they were written, so
-    their `valid_time` landed on UTC midnight while later rows landed on local midnight — 7 hours
-    apart, which is more than `STATE_CHANGE_TOLERANCE_H`. The velocity could not pair them and
-    refused. Nothing failed loudly; the flag was the only trace.
+    `day_boundary_assumed_utc`, so their `valid_time` landed on UTC midnight while a correctly
+    stamped row lands on local midnight — 7 hours apart, more than `STATE_CHANGE_TOLERANCE_H`. The
+    velocity could not pair them and refused. Nothing failed loudly; the flag was the only trace.
+
+    An earlier version of this docstring blamed a NULL `station.time_zone`. That was the wrong
+    diagnosis: the production stations all carried `PST8PDT`, and the zone was unresolvable in the
+    deployment image rather than absent from the row (ADR-0017). The distinction is the whole point
+    of the paragraph below — a seeded, non-NULL, human-looking zone is exactly what failed.
 
     The function's fallback is tested elsewhere and stays: an unknown zone must still produce a
     number with an honest flag. What must never happen is a SEEDED gauge reaching it.
+
+    The `flags == ()` assertion below is necessary and was NOT sufficient. It asks whether THIS
+    runtime's tz database resolves the key, and this suite's runtimes carry the legacy POSIX
+    aliases that `python:3.14-slim` drops — so seeded `PST8PDT` passed here for three days while
+    every container-written row was UTC-assumed (ADR-0017). The membership check is the
+    runtime-independent half: `SEEDABLE_TIME_ZONES` is checked against the deployment image by
+    hand, and refusing anything outside it is what fails in CI instead of degrading in production.
     """
     from sqlalchemy import select
 
@@ -1161,6 +1177,10 @@ async def test_every_seeded_gauge_has_a_time_zone_so_the_day_boundary_is_never_a
             station = await session.get(Station, gid)
             assert station is not None, gid
             assert station.time_zone, f"{gid} has no time_zone; its daily means would assume UTC"
+            assert station.time_zone in SEEDABLE_TIME_ZONES, (
+                f"{gid} time_zone {station.time_zone!r} is not a zone the deployment image is known "
+                "to resolve; a legacy alias would stamp UTC midnight there and only here"
+            )
             # and the zone must actually resolve to a local midnight, not silently fall back
             _, flags = clim.daily_mean_valid_time(date(2026, 8, 26), time_zone=station.time_zone)
             assert flags == (), f"{gid} time_zone {station.time_zone!r} did not resolve: {flags}"
@@ -1168,3 +1188,4 @@ async def test_every_seeded_gauge_has_a_time_zone_so_the_day_boundary_is_never_a
         # every station the platform reads at all, not just the susceptibility gauges
         for station in (await session.execute(select(Station))).scalars():
             assert station.time_zone, f"{station.id} has no time_zone"
+            assert station.time_zone in SEEDABLE_TIME_ZONES, station.id

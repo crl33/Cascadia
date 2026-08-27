@@ -15,6 +15,7 @@ from datetime import UTC, date, datetime, timedelta
 
 import pytest
 
+from cascade_core.seed import PACIFIC_TIME_ZONE
 from cascade_hydrology import susceptibility as sus
 from cascade_hydrology.trend import FALLING, RISING, STEADY, UNKNOWN
 from cascade_providers_usgs import climatology as clim
@@ -317,6 +318,51 @@ def test_the_velocity_refuses_rather_than_interpolates() -> None:
     # endpoint is 10 h from where a 24 h window puts it, so the window is refused, not shortened.
     short = sus.state_change([(D10, 4000.0), (D10 - timedelta(hours=14), 1000.0)], end=D10, window_h=24)
     assert short.growth is None and "within 6 h of" in short.reason
+
+
+def test_a_utc_assumed_row_can_never_pair_with_a_correctly_stamped_one() -> None:
+    """Why the flagged production rows are LEFT rather than superseded (ADR-0017).
+
+    Between 2026-08-24 and 2026-08-27 every container-written daily percentile row was stamped at
+    UTC midnight under `day_boundary_assumed_utc`, because the seeded zone `PST8PDT` is absent
+    from the deployment image's tz database. Those rows are honest, and they are unreachable from
+    the regime that replaces them: the local boundary sits 7 h away in PDT and 8 h in PST, both
+    beyond `STATE_CHANGE_TOLERANCE_H`, so the velocity can neither pair a guessed row with a correct
+    one nor mistake one for the other. Nothing has to be rewritten for the 24 h `growth` to come
+    back — only two correct rows must exist.
+
+    The last case states the LIMIT of that, because the looser claim is false: two UTC-assumed rows
+    are exactly 24 h apart and do pair with each other, given a UTC-assumed endpoint. What retires
+    them is that the fix stops producing such an endpoint — not that they were neutralised. Asserted
+    here so the docs cannot quietly drift back to the stronger, wrong version (ADR-0017).
+    """
+    assert sus.STATE_CHANGE_TOLERANCE_H == 6.0  # the property below is a consequence of this
+    for day, offset_h in ((date(2026, 8, 26), 7), (date(2026, 1, 15), 8)):  # PDT, then PST
+        prior, previous = day - timedelta(days=1), day - timedelta(days=1)
+        local_now, no_flags = clim.daily_mean_valid_time(day, time_zone=PACIFIC_TIME_ZONE)
+        local_then, _ = clim.daily_mean_valid_time(prior, time_zone=PACIFIC_TIME_ZONE)
+        guessed_then, flags = clim.daily_mean_valid_time(previous, time_zone=None)
+        assert no_flags == () and flags == ("day_boundary_assumed_utc",)
+        assert (local_then - guessed_then) == timedelta(hours=offset_h)
+
+        # Two correctly stamped rows 24 h apart: the velocity is computed, exactly.
+        good = sus.state_change([(local_then, 1000.0), (local_now, 3000.0)], end=local_now, window_h=24)
+        assert good.growth == pytest.approx(3.0) and good.direction == RISING
+
+        # The same pair with the prior day GUESSED: refused, not silently stretched to 31 h.
+        mixed = sus.state_change([(guessed_then, 1000.0), (local_now, 3000.0)], end=local_now, window_h=24)
+        assert mixed.growth is None and mixed.direction == UNKNOWN and "within 6 h of" in mixed.reason
+
+        # And a guessed row is not mistaken for the latest observation either.
+        guessed_now, _ = clim.daily_mean_valid_time(day, time_zone=None)
+        stale = sus.state_change([(guessed_then, 1000.0), (guessed_now, 3000.0)], end=local_now, window_h=24)
+        assert stale.growth is None and "at or before" in stale.reason
+
+        # The limit: that SAME pair is perfectly computable against a UTC-assumed endpoint. The
+        # historical rows were never inert in themselves — they simply stop being reachable once
+        # every new row, and so every endpoint, is stamped locally.
+        internally = sus.state_change([(guessed_then, 1000.0), (guessed_now, 3000.0)], end=guessed_now, window_h=24)
+        assert internally.growth == pytest.approx(3.0) and internally.direction == RISING
 
 
 def test_the_velocity_is_computable_when_the_level_is_not() -> None:

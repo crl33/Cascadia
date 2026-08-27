@@ -22,7 +22,9 @@ reference geometry, never value rows — DATA_DOCTRINE append-only rules concern
 from __future__ import annotations
 
 import json
+from collections.abc import Iterable
 from pathlib import Path
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -32,6 +34,36 @@ from cascade_core.registry import PRODUCTS, SOURCES
 
 # Seed addenda, merged in order after the primary seed file. Siblings of the primary file.
 ADDENDUM_FILES: tuple[str, ...] = ("p3_surfaces.json",)
+
+#: Pacific time, by its CANONICAL IANA name. Every Washington gauge the platform seeds is in it.
+PACIFIC_TIME_ZONE = "America/Los_Angeles"
+
+#: Time zones this seed may write to `station.time_zone`, and the reason the set is this narrow.
+#:
+#: `PST8PDT` names the same zone as `America/Los_Angeles`, but the two are NOT interchangeable at
+#: runtime. `PST8PDT` is a legacy POSIX alias, and the deployment image (`python:3.14-slim`,
+#: infra/Dockerfile) ships Debian's `tzdata` WITHOUT `tzdata-legacy`: 486 resolvable keys over
+#: 436 distinct zone files, with the POSIX aliases and most `backward` links dropped. It
+#: resolves `America/Los_Angeles`; it raises `ZoneInfoNotFoundError` for `PST8PDT`,
+#: `US/Pacific`, `EST5EDT` and `MST7MDT` (verified 2026-08-27).
+#:
+#: A developer laptop resolves all of them, which is what made the resulting defect look
+#: intermittent rather than constant. Seeded `PST8PDT` stamped daily means at the local day
+#: boundary from a laptop and at UTC midnight in the container, where
+#: `climatology.daily_mean_valid_time` degraded it and flagged `day_boundary_assumed_utc`. Every
+#: container-written `streamflow_doy_percentile` row from 2026-08-24 to 2026-08-27 carries that
+#: flag, and because the two stampings sit 7 h apart — more than `STATE_CHANGE_TOLERANCE_H` —
+#: `susceptibility.state_change` refused to pair them, so the 24 h entry every basin published
+#: carried `growth: null` with a `reason` instead of a rate.
+#: ADR-0017; docs/research/nwis-stat-successor-2026-08-27.md.
+#:
+#: Widening this set is a deliberate act. Check the new key against the deployment image first:
+#:   docker run --rm python:3.14-slim python -c "from zoneinfo import ZoneInfo; ZoneInfo('<key>')"
+SEEDABLE_TIME_ZONES: frozenset[str] = frozenset({PACIFIC_TIME_ZONE})
+
+#: NWPS forecast points are all Washington gauges, so their stations carry Pacific time. Stated
+#: here rather than per row because the primary seed file does not carry the field at all.
+FORECAST_POINT_TIME_ZONE = PACIFIC_TIME_ZONE
 
 _BASIN_GEOMETRY_UPSERT = text(
     """
@@ -92,6 +124,37 @@ def _validate_addenda(addenda: dict, seed: dict, basin_ids: set[str]) -> None:
             raise ValueError(f"seed addendum station {st['id']!r} names unknown basin {st['basin_id']!r}")
 
 
+def _validate_time_zones(time_zones: Iterable[str | None]) -> None:
+    """Refuse, at seed time, a station time zone this runtime cannot resolve.
+
+    `climatology.daily_mean_valid_time` degrades an unresolvable zone to the UTC day boundary and
+    says so with `day_boundary_assumed_utc` — honest, but quiet: the rows keep coming and only the
+    flag records that the boundary was guessed. The seed is the one place that can refuse instead,
+    and it runs inside the SAME image the jobs do, so a key the container cannot resolve fails
+    here, once and loudly, rather than in every derived row for days.
+
+    Both halves are load-bearing. The membership check is runtime-independent, so a legacy alias
+    is refused even on a laptop whose tz database happily resolves it; the resolution check is
+    runtime-dependent, so an allowed key that this particular image lacks is refused too.
+
+    `None` is not an error. An unknown zone is a legitimate state, and the flag is its whole point.
+    """
+    for zone in sorted({z for z in time_zones if z}):
+        if zone not in SEEDABLE_TIME_ZONES:
+            raise ValueError(
+                f"seed time zone {zone!r} is not in SEEDABLE_TIME_ZONES "
+                f"{sorted(SEEDABLE_TIME_ZONES)}: seed the canonical IANA name, since legacy POSIX "
+                "aliases such as 'PST8PDT' are absent from the deployment image's tz database"
+            )
+        try:
+            ZoneInfo(zone)
+        except (ZoneInfoNotFoundError, ValueError) as exc:
+            raise ValueError(
+                f"seed time zone {zone!r} is allowed but this runtime's tz database cannot resolve "
+                "it, so every daily mean stamped with it would silently assume the UTC day boundary"
+            ) from exc
+
+
 async def seed_all(session: AsyncSession, *, geo_dir: Path, seed_file: Path) -> dict[str, int]:
     counts = {"sources": 0, "products": 0, "basins": 0, "stations": 0, "forecast_points": 0}
     for s in SOURCES:
@@ -105,6 +168,7 @@ async def seed_all(session: AsyncSession, *, geo_dir: Path, seed_file: Path) -> 
     basin_meta = seed.get("basins", {})
     basin_features = load_basin_features(geo_dir, "state")["features"]
     _validate_addenda(addenda, seed, {f["properties"]["id"] for f in basin_features})
+    _validate_time_zones([st.get("time_zone") for st in addenda["stations"]] + [FORECAST_POINT_TIME_ZONE])
     gauges = addenda["basin_susceptibility_gauges"]
     for feature in basin_features:
         props = feature["properties"]
@@ -157,7 +221,7 @@ async def seed_all(session: AsyncSession, *, geo_dir: Path, seed_file: Path) -> 
                 lon=fp["lon"],
                 lat=fp["lat"],
                 vertical_datum=fp["datum"],
-                time_zone="PST8PDT",
+                time_zone=FORECAST_POINT_TIME_ZONE,
                 tidal_class=fp.get("tidal_class"),
             )
         )

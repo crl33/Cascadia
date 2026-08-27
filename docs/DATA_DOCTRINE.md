@@ -44,8 +44,11 @@ visible in the API response.
 `valid_time`, `issued_at`, and `retrieved_at` are distinct and never collapsed. For
 forecasts the UI shows "valid 12:00 PST, issued 06:30 PST by NWRFC, fetched 06:41".
 Observations carry the provider's timestamp with its offset converted to UTC, plus the
-provider's local time zone as metadata. Daily values (SNOTEL) are stored with the provider's
-day boundary, not midnight UTC (V1 got this wrong).
+provider's local time zone as metadata. Daily values (SNOTEL, USGS daily means) are stored with
+the provider's day boundary, not midnight UTC (V1 got this wrong). The zone metadata is what
+computes that boundary, so it is stored as a canonical IANA name and the seed refuses any key the
+running image cannot resolve — a key that will not resolve silently returns the whole platform to
+the UTC boundary V1 assumed ([ADR-0017](adr/ADR-0017-canonical-iana-time-zones-in-the-seed.md)).
 
 ## 4. Missing data is a value, not an absence
 

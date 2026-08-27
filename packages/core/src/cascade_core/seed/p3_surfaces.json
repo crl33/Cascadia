@@ -1,6 +1,6 @@
 {
   "_provenance": {
-    "note": "P3 live-intelligence-surfaces seed addendum. Kept separate from stations.json so each block carries its own verification date and so the surface builders only ever READ seed data. Every value here was fetched live on 2026-08-24 and is recorded in docs/research/p3-surfaces-design-2026-08-24.md: reach ids from https://api.water.noaa.gov/nwps/v1/gauges/{lid} (design \u00a73.1); the Sauk station from https://waterservices.usgs.gov/nwis/site/?format=rdb&sites=12189500 (SAUK RIVER NEAR SAUK, WA; dec_lat_va 48.42455859, dec_long_va -121.5684634, NAD83, rounded to 4 dp for consistency with stations.json; PST). MVEW1 already carries its reach id in stations.json and is deliberately not repeated here. Susceptibility gauges and their confidence ceilings are design \u00a72.3 (Nooksack capped at moderate per design \u00a77 item 6 until tidal contamination of the Ferndale daily mean is checked). All of this is CONFIGURED metadata: it selects and caveats an observation, it never becomes one.",
+    "note": "P3 live-intelligence-surfaces seed addendum. Kept separate from stations.json so each block carries its own verification date and so the surface builders only ever READ seed data. Every value here was fetched live on 2026-08-24 and is recorded in docs/research/p3-surfaces-design-2026-08-24.md: reach ids from https://api.water.noaa.gov/nwps/v1/gauges/{lid} (design \u00a73.1); the Sauk station from https://waterservices.usgs.gov/nwis/site/?format=rdb&sites=12189500 (SAUK RIVER NEAR SAUK, WA; dec_lat_va 48.42455859, dec_long_va -121.5684634, NAD83, rounded to 4 dp for consistency with stations.json; the provider reports tz_cd PST). AMENDED 2026-08-27: `time_zone` is NOT a fetched value \u2014 it is the canonical IANA name for the zone the provider names as PST, chosen because the deployment image cannot resolve provider spellings or POSIX aliases (ADR-0017). Every other value here is still the 2026-08-24 capture. MVEW1 already carries its reach id in stations.json and is deliberately not repeated here. Susceptibility gauges and their confidence ceilings are design \u00a72.3 (Nooksack capped at moderate per design \u00a77 item 6 until tidal contamination of the Ferndale daily mean is checked). All of this is CONFIGURED metadata: it selects and caveats an observation, it never becomes one.",
     "verified_at": "2026-08-24T21:10:00Z",
     "design_ref": "docs/research/p3-surfaces-design-2026-08-24.md"
   },
@@ -21,8 +21,8 @@
       "lon": -121.5685,
       "lat": 48.4246,
       "vertical_datum": null,
-      "time_zone": "PST8PDT",
-      "note": "Unregulated Skagit tributary, 98-year daily record (1929-2026), drainage 714 sq mi. Used for discharge only, so no gauge-zero vertical datum is carried (ADR-0014: flow values never have a datum). Not an NWPS forecast point.",
+      "time_zone": "America/Los_Angeles",
+      "note": "Unregulated Skagit tributary, 98-year daily record (1929-2026), drainage 714 sq mi. Used for discharge only, so no gauge-zero vertical datum is carried (ADR-0014: flow values never have a datum). Not an NWPS forecast point. The time zone is the canonical IANA name, NOT the legacy alias PST8PDT: the deployment image ships tzdata without tzdata-legacy and cannot resolve the alias, which silently pushed every daily mean onto the UTC day boundary (ADR-0017).",
       "tidal_class": "FLUVIAL"
     }
   ],

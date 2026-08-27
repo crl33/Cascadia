@@ -293,10 +293,22 @@ they are recorded in §1 rather than repeated here.
    day pairs, no period of record published at all, and a 25 % maximum p50 difference at 12113000
    from 6–26 extra years of record
    (`research/nwis-stat-successor-2026-08-27.md`, [ADR-0016](adr/ADR-0016-usgs-published-statistics-successor.md)).
-5. **Close the three remaining M2 items**: `/metrics`, database roles with append-only grants,
+~~5. Fix the seeded time zone that was killing `state_change` in production~~ **DONE 2026-08-27**.
+   Stations were seeded `PST8PDT`; `python:3.14-slim` ships `tzdata` without `tzdata-legacy` and
+   cannot resolve the alias, so every container-written daily percentile row was stamped at UTC
+   midnight with `day_boundary_assumed_utc` — 7 h from the local boundary, more than the 6 h
+   pairing tolerance, so every basin's 24 h `state_change` published `growth: null` (and no `rank`)
+   with a refusal reason instead of a rate. The seed now
+   carries `America/Los_Angeles` and refuses any zone outside `SEEDABLE_TIME_ZONES` or
+   unresolvable in the running image, so it fails at seed time instead of degrading per row
+   ([ADR-0017](adr/ADR-0017-canonical-iana-time-zones-in-the-seed.md)). The flagged historical rows
+   are left as they are and nothing is backfilled: the 24 h `growth` returns on its own once two
+   correctly stamped daily rows exist. **Production still needs the re-seed and one re-run** —
+   `infra/RUNBOOK-deploy.md` §"Re-seed after a seed-data change".
+6. **Close the three remaining M2 items**: `/metrics`, database roles with append-only grants,
    mypy in CI.
-6. Re-run the pending research verifications (six categories) as a scheduled, low-concurrency job.
-7. Fix the client's ion credit and CORS preview origin; record the band decision in
+7. Re-run the pending research verifications (six categories) as a scheduled, low-concurrency job.
+8. Fix the client's ion credit and CORS preview origin; record the band decision in
    `SEMANTIC_ZOOM.md` §1 once measured.
 
 **Explicitly NOT next** (owner direction, 2026-08-27): multi-event calibration / the POD-FAR

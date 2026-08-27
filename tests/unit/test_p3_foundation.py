@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 from datetime import UTC, datetime, timedelta
+from zoneinfo import ZoneInfo
 
 import httpx
 import pytest
@@ -35,7 +36,7 @@ from cascade_core.registry import (
     SRC_NBM,
     SRC_NWM,
 )
-from cascade_core.seed import load_addenda, seed_all
+from cascade_core.seed import PACIFIC_TIME_ZONE, SEEDABLE_TIME_ZONES, load_addenda, seed_all
 from cascade_core.settings import SEED_FILE
 from tests.conftest import GEO
 
@@ -388,6 +389,65 @@ def test_addendum_gauges_all_name_a_real_station() -> None:
     for basin_id, cfg in addenda["basin_susceptibility_gauges"].items():
         assert cfg["gauge_station_id"] in known, basin_id
         assert cfg["confidence_ceiling"] in {"high", "moderate", "low", "unknown"}, basin_id
+
+
+async def test_a_legacy_time_zone_alias_is_refused_at_seed_time(tmp_path) -> None:
+    """`PST8PDT` names Pacific time and a laptop resolves it. The deployment image does not.
+
+    `python:3.14-slim` ships tzdata without tzdata-legacy, so the alias raises there while the
+    canonical `America/Los_Angeles` resolves. Seeding the alias therefore stamped every daily mean
+    at UTC midnight in production — flagged `day_boundary_assumed_utc`, honest, and silent enough
+    that every basin's 24 h `state_change` published `growth: null` for three days before anyone
+    read the flag
+    (ADR-0017). The seed refuses the alias outright now, on a check that does not consult the
+    running host's tz database, so the refusal is the same on a laptop and in the container.
+    """
+    seed = json.loads(SEED_FILE.read_text())
+    (tmp_path / "stations.json").write_text(json.dumps(seed))
+    addendum = json.loads((SEED_FILE.parent / "p3_surfaces.json").read_text())
+    addendum["stations"][0]["time_zone"] = "PST8PDT"
+    (tmp_path / "p3_surfaces.json").write_text(json.dumps(addendum))
+    engine = make_engine(f"sqlite+aiosqlite:///{tmp_path}/tz.db")
+    await create_schema(engine)
+    factory = make_session_factory(engine)
+    try:
+        async with factory() as session:
+            with pytest.raises(ValueError, match="SEEDABLE_TIME_ZONES"):
+                await seed_all(session, geo_dir=GEO, seed_file=tmp_path / "stations.json")
+    finally:
+        await engine.dispose()
+
+
+#: The directories a geographic IANA zone lives under. `python:3.14-slim` ships exactly these plus
+#: `Etc`, which holds fixed-offset zones that can never be a station's civil time. Anything outside
+#: this set — bare POSIX names (`PST8PDT`), country prefixes (`US/Pacific`), `Etc/*` — is either
+#: absent from that image or wrong for a gauge.
+_IANA_AREAS = frozenset(
+    {"Africa", "America", "Antarctica", "Arctic", "Asia", "Atlantic", "Australia", "Europe", "Indian", "Pacific"}
+)
+
+
+def test_every_seedable_time_zone_resolves_and_is_not_a_legacy_alias() -> None:
+    """The allowlist is only worth anything if every entry in it actually resolves.
+
+    The membership check in `_validate_time_zones` is runtime-independent by design; this is the
+    other half — the entries themselves must be real, geographic, canonical zones.
+
+    The area check is the load-bearing one, and a bare `"/" in zone` is NOT enough: `US/Pacific`
+    contains a slash and resolves on a developer laptop, while `python:3.14-slim` cannot resolve it
+    at all. Testing only the slash would let exactly the kind of key this ADR exists to keep out
+    pass CI and then degrade in production — the same shape of hole as the original defect.
+    """
+    assert SEEDABLE_TIME_ZONES, "anti-vacuity: an empty allowlist would permit nothing and prove nothing"
+    for zone in SEEDABLE_TIME_ZONES:
+        area, _, location = zone.partition("/")
+        assert location, f"{zone!r} is not an Area/Location IANA name"
+        assert area in _IANA_AREAS, (
+            f"{zone!r} is not under a geographic IANA area {sorted(_IANA_AREAS)}; legacy prefixes "
+            "such as 'US/' are absent from the deployment image's tz database"
+        )
+        ZoneInfo(zone)  # raises ZoneInfoNotFoundError if this runtime cannot resolve it
+    assert PACIFIC_TIME_ZONE in SEEDABLE_TIME_ZONES
 
 
 async def test_a_mistyped_addendum_key_raises_instead_of_seeding_nothing(tmp_path) -> None:

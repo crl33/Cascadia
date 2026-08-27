@@ -272,3 +272,27 @@ deploy; the single correct batch at 09:26 was an off-cron manual run.
 
 It does not make the WaterServices removal unsafe, so it is recorded here and left for its own
 change — the fix is to seed the canonical IANA name, not to install a bigger tz database.
+
+**Fixed 2026-08-27, in its own change** ([ADR-0017](../adr/ADR-0017-canonical-iana-time-zones-in-the-seed.md)).
+Both seed sites now carry `America/Los_Angeles`, and `cascade_core.seed._validate_time_zones`
+refuses any zone outside `SEEDABLE_TIME_ZONES` or unresolvable in the running image — so the seed
+fails once and loudly rather than degrading in every derived row.
+
+**In the repository only.** Production still carries `PST8PDT` and still writes UTC-assumed rows;
+it needs the re-seed and one job re-run described in `infra/RUNBOOK-deploy.md`
+§"Re-seed after a seed-data change". Until then `/viz/basins` keeps reporting `growth: null`, and
+for one cron interval after the re-seed it still will — the velocity needs two correctly stamped
+rows 24 h apart. Two details the fix turned up and depends on:
+
+- The pre-existing test that asserts the seeded zones resolve
+  (`test_every_seeded_gauge_has_a_time_zone_so_the_day_boundary_is_never_assumed`) passed the whole
+  time, because it asks whether the TEST runtime resolves the key and both a laptop and the CI
+  runner carry the aliases the image drops. A runtime-dependent assertion cannot catch a
+  runtime-dependent defect; the allowlist membership check is the runtime-independent half.
+- The UTC-assumed rows are left in place. Besides being honestly flagged, they are unreachable
+  from the regime that replaces them: 7 h in PDT (8 h in PST) from a correctly stamped endpoint
+  exceeds `STATE_CHANGE_TOLERANCE_H` = 6 h, so `state_change` can never mix one with a correct row.
+  The stronger-sounding claim — that they cannot pair at all — is false and worth not making: two
+  UTC-assumed rows are 24 h apart and do pair with each other, given a UTC-assumed endpoint. They
+  retire because the fix stops producing that endpoint, not because they were neutralised. The 24 h
+  `growth` returns once two correct rows exist, and is not backfilled into existence before then.

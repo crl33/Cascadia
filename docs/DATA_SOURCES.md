@@ -761,6 +761,13 @@ Every item below is enforced by an adapter fixture case (TESTING.md §3 case 6/8
 | NWRFC | CHPS T0 12Z; text "Issued 08:05 PDT" | store both; `issued_at` in UTC |
 | NWS API / MRMS / GRIB | UTC; GRIB accumulation windows explicit (`18-24 hour acc`, `300-315 min acc`) | window start/end on every accumulation value |
 
+**A site-local day boundary is only as good as the zone key that computes it.** `station.time_zone`
+must be the CANONICAL IANA name (`America/Los_Angeles`), never a provider's spelling: NWPS reports
+`timeZone 'PST8PDT'` and USGS RDB reports `tz_cd PST`, and neither is resolvable in the deployment
+image, which ships `tzdata` without `tzdata-legacy`. A key that will not resolve degrades every
+daily value onto midnight UTC under the flag `day_boundary_assumed_utc` — measured in production
+2026-08-24 to 08-27. The seed refuses such a key now ([ADR-0017](adr/ADR-0017-canonical-iana-time-zones-in-the-seed.md)).
+
 ### 5.4 Sentinels and missing-data encodings (parse via declared `noDataValue`, never hard-coded)
 
 | Sentinel | Provider |
