@@ -71,3 +71,6 @@ parser — produced it, without joining anything.
 - **`nwis/stat` is NOT covered by this decision.** The published day-of-year statistics
   cross-check (`stats_client.py`, `product:usgs-daily-stats`) still calls
   `waterservices.usgs.gov` and is a separate migration on the same deadline.
+  **Done 2026-08-27 in ADR-0016**, which reached the OPPOSITE conclusion on product identity —
+  and for the reason this ADR gives: one product was right here because parity was measured
+  exact, and two are right there because it was measured absent.

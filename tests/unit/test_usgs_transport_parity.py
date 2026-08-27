@@ -115,9 +115,12 @@ def test_no_production_module_calls_the_decommissioning_legacy_service() -> None
     """§13 of the migration brief, enforced rather than asserted once and forgotten.
 
     Every remaining `waterservices.usgs.gov` reference must be one of: the retired comparator
-    (`client.py`), the still-legacy `nwis/stat` cross-check, the shared host allowlist that both
-    of those need, or prose. A NEW production call site is a regression, and the deadline this
-    migration exists to remove would quietly come back.
+    (`client.py`), the host ceiling it needs, the registry row for the retired statistics source,
+    or prose. A NEW production call site is a regression, and the deadline these migrations exist
+    to remove would quietly come back.
+
+    `stats_client.py` left this list on 2026-08-27 when `nwis/stat` was retired in favour of the
+    OGC statistics API. It must not come back: nothing in `packages/` may request that host again.
     """
     import re
 
@@ -125,12 +128,9 @@ def test_no_production_module_calls_the_decommissioning_legacy_service() -> None
     allowed_files = {
         # the retired instantaneous comparator — see its own docstring
         "packages/providers/usgs/src/cascade_providers_usgs/client.py",
-        # `nwis/stat`, the published day-of-year statistics cross-check. STILL LEGACY and on the
-        # same Q1 2027 deadline; a separate migration, deliberately out of this phase's scope.
-        "packages/providers/usgs/src/cascade_providers_usgs/stats_client.py",
-        # the host allowlist both of the above need
+        # the host ceiling the comparator needs; no production module passes these hosts
         "packages/core/src/cascade_core/fetch.py",
-        # the registry entry for the statistics source
+        # the registry row for the RETIRED statistics source, kept so historical rows resolve
         "packages/core/src/cascade_core/registry.py",
     }
     offenders = []

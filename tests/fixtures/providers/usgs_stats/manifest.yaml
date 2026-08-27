@@ -1,5 +1,5 @@
 provider: usgs-statistics-and-daily
-design_ref: "docs/research/p3-surfaces-design-2026-08-24.md \xA72"
+design_ref: docs/research/p3-surfaces-design-2026-08-24.md §2
 captured:
 - file: daily_12200500.csv
   url: https://api.waterdata.usgs.gov/ogcapi/v0/collections/daily/items?monitoring_location_id=USGS-12200500&parameter_code=00060&statistic_id=00003&f=csv&skipGeometry=true&limit=50000&properties=time%2Cvalue%2Capproval_status
@@ -8,10 +8,10 @@ captured:
   content_type: text/csv; charset=utf-8
   bytes: 903170
   sha256: ece51711820d16596bf2aaab9ad2486c6ddc3d0f2237a1d9a90866477cc5199a
-  notes: "REAL capture: the ENTIRE daily-mean discharge record for the Skagit at Mount\
-    \ Vernon in one request (design \xA72.1). Rows are NOT time-ordered \u2014 the\
-    \ parser sorts. This is the golden climatology input: method:streamflow-doy-climatology@1.0.0\
-    \ is reproduced from these bytes offline."
+  notes: 'REAL capture: the ENTIRE daily-mean discharge record for the Skagit at Mount
+    Vernon in one request (design §2.1). Rows are NOT time-ordered — the parser sorts.
+    This is the golden climatology input: method:streamflow-doy-climatology@1.0.0
+    is reproduced from these bytes offline.'
 - file: daily_12189500_2000.csv
   url: https://api.waterdata.usgs.gov/ogcapi/v0/collections/daily/items?monitoring_location_id=USGS-12189500&parameter_code=00060&statistic_id=00003&f=csv&skipGeometry=true&limit=50000&datetime=2000-01-01%2F2026-08-24&properties=time%2Cvalue%2Capproval_status
   captured_at: '2026-08-24T22:07:01.399042+00:00'
@@ -30,11 +30,10 @@ captured:
   content_type: text/plain;charset=UTF-8
   bytes: 48241
   sha256: c64c3750adaeddf847d8dd998e89658e51c5726836db5c239ac8a3eb75d93463
-  notes: "REAL capture: the LEGACY USGS published day-of-year statistics for 12200500.\
-    \ This is the CROSS-CHECK, never a dependency \u2014 WaterServices decommissions\
-    \ Q1 2027 (design \xA72.1/\xA72.2 step 2). USGS states these statistics may not\
-    \ match official USGS publications; that sentence is reproduced in the method\
-    \ row."
+  notes: 'REAL capture: the LEGACY USGS published day-of-year statistics for 12200500.
+    This is the CROSS-CHECK, never a dependency — WaterServices decommissions Q1 2027
+    (design §2.1/§2.2 step 2). USGS states these statistics may not match official
+    USGS publications; that sentence is reproduced in the method row.'
 - file: stat_12189500.rdb
   url: https://waterservices.usgs.gov/nwis/stat/?format=rdb&sites=12189500&statReportType=daily&statTypeCd=all&parameterCd=00060
   captured_at: '2026-08-24T22:07:04.658366+00:00'
@@ -42,11 +41,10 @@ captured:
   content_type: text/plain;charset=UTF-8
   bytes: 45369
   sha256: 0b5eadff93842dbf8621cd9d1e5642b258deec2d06a7794916cc7b1bd6ad2c8a
-  notes: "REAL capture: the LEGACY USGS published day-of-year statistics for 12189500.\
-    \ This is the CROSS-CHECK, never a dependency \u2014 WaterServices decommissions\
-    \ Q1 2027 (design \xA72.1/\xA72.2 step 2). USGS states these statistics may not\
-    \ match official USGS publications; that sentence is reproduced in the method\
-    \ row."
+  notes: 'REAL capture: the LEGACY USGS published day-of-year statistics for 12189500.
+    This is the CROSS-CHECK, never a dependency — WaterServices decommissions Q1 2027
+    (design §2.1/§2.2 step 2). USGS states these statistics may not match official
+    USGS publications; that sentence is reproduced in the method row.'
 - file: latest_daily_gauges.json
   url: https://api.waterdata.usgs.gov/ogcapi/v0/collections/latest-daily/items?monitoring_location_id=USGS-12213100%2CUSGS-12149000%2CUSGS-12119000%2CUSGS-12189500%2CUSGS-12113000%2CUSGS-12100490&parameter_code=00060&f=json&skipGeometry=true&limit=50
   captured_at: '2026-08-24T22:07:06.258868+00:00'
@@ -58,16 +56,29 @@ captured:
     gauges in one request, each with its approval_status.'
 - file: observation_normals_12200500_00060.json
   url: https://api.waterdata.usgs.gov/statistics/v0/observationNormals?monitoring_location_id=USGS-12200500&normal_type=DOY&parameter_code=00060
-  captured_at: '2026-08-24T22:07:07.959420+00:00'
+  captured_at: '2026-08-27T18:52:54.909707+00:00'
   http_status: 200
   content_type: application/json
   bytes: 54
   sha256: eb9ee884f7d731a4bbcea08f65ae853a48ac3c180970308cde7d333f16fb0062
-  notes: "NEGATIVE RESULT, captured on purpose: the modern USGS statistics API (BETA)\
-    \ serves NO discharge (00060) day-of-year normals at 12200500. This is why the\
-    \ platform builds its own climatology instead of depending on a published one\
-    \ (design \xA72.1). Re-probe quarterly; if this file ever stops being empty, the\
-    \ cross-check gains a second source \u2014 it still never becomes the dependency."
+  notes: 'NEGATIVE RESULT, captured on purpose and RE-PROBED 2026-08-27: the USGS
+    statistics API serves no discharge (00060) day-of-year normals at 12200500. Neither
+    published source covers Mount Vernon — nwis/stat has no discharge statistics here
+    either, which is why stats_canary.GAUGES excludes it. The platform builds its
+    own climatology and never depends on a published one (design §2.1).'
+- file: observation_normals_12189500_00060.json
+  url: https://api.waterdata.usgs.gov/statistics/v0/observationNormals?monitoring_location_id=USGS-12189500&normal_type=DOY&parameter_code=00060
+  captured_at: '2026-08-27T18:52:56.560685+00:00'
+  http_status: 200
+  content_type: application/json
+  bytes: 415888
+  sha256: c85360ead8d7c800f4cb4bb1c281066951c94f20d9060afcf5d14e404fb140c8
+  notes: 'REAL capture: the SUCCESSOR cross-check. The 2026-08-24 conclusion that
+    this API served no discharge normals held only for 12200500; re-probed 2026-08-27
+    it serves 366 day-of-year percentile records at 5/10/25/50/75/90/95 — exactly
+    climatology.PERCENTILES. Each record carries sample_count but NO begin/end year,
+    so the period of record CANNOT be reproduced from it (docs/research/nwis-stat-successor-2026-08-27.md
+    §4).'
 derived:
 - file: daily_malformed.csv
   derived_from: daily_12200500.csv
@@ -90,3 +101,13 @@ derived:
     reproduces it offline, so a change to the estimator, the +/-2-day window or the
     approved-only filter fails loudly instead of silently moving every percentile
     the product shows. Regenerate ONLY with a method version bump.'
+- file: observation_normals_nan_days.json
+  derived_from: observationNormals?monitoring_location_id=USGS-12100490 (live capture
+    2026-08-27)
+  sha256: a6e55ac7bbd7fd660b5d42b52d3dd9b8ba303a1d98b86eeffb82b9c5186a2e0e
+  bytes: 4113
+  notes: 'REAL bytes, trimmed to the day-of-year records that carry them: this API
+    serves the literal string "nan" for percentiles it cannot compute (735 such entries
+    at 12100490''s 17-year record, 2 at 12213100''s Feb 29). nwis/stat omitted the
+    column instead. A parser calling float() unguarded turns these into silent NaN
+    percentiles.'

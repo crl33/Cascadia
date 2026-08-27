@@ -67,6 +67,19 @@ def derived(out: Path, content: bytes, source: str, notes: str) -> dict:
     return {"file": out.name, "derived_from": source, "sha256": hashlib.sha256(content).hexdigest(), "bytes": len(content), "notes": notes}
 
 
+def _trim_to_nan_days(content: bytes, days: int) -> bytes:
+    """Keep only the day-of-year records whose percentile list carries a non-numeric entry."""
+    doc = json.loads(content)
+    for feature in doc.get("features", []):
+        for series in feature["properties"]["data"]:
+            kept = [
+                v for v in series["values"]
+                if any(str(x).strip().lower() == "nan" for x in (v.get("values") or [v.get("value")]))
+            ]
+            series["values"] = kept[:days]
+    return json.dumps(doc, indent=1).encode()
+
+
 def capture_usgs_stats(c: httpx.Client) -> None:
     d = FIX / "usgs_stats"
     d.mkdir(parents=True, exist_ok=True)
@@ -125,11 +138,42 @@ def capture_usgs_stats(c: httpx.Client) -> None:
             f"{STATS_V0}/observationNormals",
             {"monitoring_location_id": "USGS-12200500", "normal_type": "DOY", "parameter_code": "00060"},
             d / "observation_normals_12200500_00060.json",
-            "NEGATIVE RESULT, captured on purpose: the modern USGS statistics API (BETA) serves NO "
-            "discharge (00060) day-of-year normals at 12200500. This is why the platform builds its "
-            "own climatology instead of depending on a published one (design §2.1). Re-probe "
-            "quarterly; if this file ever stops being empty, the cross-check gains a second source "
-            "— it still never becomes the dependency.",
+            "NEGATIVE RESULT, captured on purpose and RE-PROBED 2026-08-27: the USGS statistics API "
+            "serves no discharge (00060) day-of-year normals at 12200500. Neither published source "
+            "covers Mount Vernon \u2014 nwis/stat has no discharge statistics here either, which is why "
+            "stats_canary.GAUGES excludes it. The platform builds its own climatology and never "
+            "depends on a published one (design \u00a72.1).",
+        )
+    )
+    entries.append(
+        capture(
+            c,
+            f"{STATS_V0}/observationNormals",
+            {"monitoring_location_id": "USGS-12189500", "normal_type": "DOY", "parameter_code": "00060"},
+            d / "observation_normals_12189500_00060.json",
+            "REAL capture: the SUCCESSOR cross-check. The 2026-08-24 conclusion that this API served "
+            "no discharge normals held only for 12200500; re-probed 2026-08-27 it serves 366 "
+            "day-of-year percentile records at 5/10/25/50/75/90/95 \u2014 exactly "
+            "climatology.PERCENTILES. Each record carries sample_count but NO begin/end year, so the "
+            "period of record CANNOT be reproduced from it "
+            "(docs/research/nwis-stat-successor-2026-08-27.md \u00a74).",
+        )
+    )
+    nan_src = c.get(
+        f"{STATS_V0}/observationNormals",
+        params={"monitoring_location_id": "USGS-12100490", "normal_type": "DOY", "parameter_code": "00060"},
+    )
+    nan_src.raise_for_status()
+    time.sleep(PAUSE_S)
+    entries.append(
+        derived(
+            d / "observation_normals_nan_days.json",
+            _trim_to_nan_days(nan_src.content, 6),
+            "observationNormals?monitoring_location_id=USGS-12100490 (live capture 2026-08-27)",
+            "REAL bytes, trimmed to the day-of-year records that carry them: this API serves the "
+            "literal string \"nan\" for percentiles it cannot compute (735 such entries at "
+            "12100490's 17-year record, 2 at 12213100's Feb 29). nwis/stat omitted the column "
+            "instead. A parser calling float() unguarded turns these into silent NaN percentiles.",
         )
     )
     head = (d / "daily_12200500.csv").read_bytes().split(b"\n")

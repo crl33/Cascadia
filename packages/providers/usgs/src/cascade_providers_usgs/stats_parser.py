@@ -21,6 +21,7 @@ from __future__ import annotations
 import csv
 import io
 import json
+import math
 from dataclasses import dataclass
 from datetime import date
 
@@ -30,6 +31,8 @@ DISCHARGE_CODE = "00060"
 DAILY_MEAN_STATISTIC = "00003"
 # nwis/stat spells its percentile columns pNN_va; these are the seven the ladder carries.
 RDB_PERCENTILE_COLUMNS = {"p05_va": 5, "p10_va": 10, "p25_va": 25, "p50_va": 50, "p75_va": 75, "p90_va": 90, "p95_va": 95}
+# The one definition of "which levels the published ladder carries", shared by both parsers.
+LADDER_LEVELS = frozenset(RDB_PERCENTILE_COLUMNS.values())
 
 
 @dataclass(frozen=True)
@@ -198,3 +201,86 @@ def _int_or_none(raw: str | None) -> int | None:
         return int((raw or "").strip())
     except ValueError:
         return None
+
+
+def parse_ogc_normals_json(content: bytes) -> tuple[PublishedDoyStat, ...]:
+    """Parse USGS OGC ``statistics/v0/observationNormals`` day-of-year percentile records.
+
+    The successor to ``nwis/stat`` for the published cross-check. Same shape out
+    (``PublishedDoyStat``) so the ladder builder is untouched, but three differences are
+    load-bearing and must not be normalised away (nwis-stat-successor-2026-08-27 §4):
+
+    1. It publishes **no period of record** — only ``sample_count`` per day. ``begin_year`` and
+       ``end_year`` are therefore always None here, and the provenance ref has to say so rather
+       than carry years this source never stated.
+    2. It serves the literal string ``"nan"`` for percentiles it cannot compute (735 such entries
+       at 12100490's 17-year record). ``float("nan")`` does NOT raise, so the guard is
+       ``math.isfinite`` — a ``try/except ValueError`` would let a NaN percentile through silently.
+    3. Levels arrive as two parallel arrays (``percentiles`` / ``values``), not named columns. A
+       length mismatch is a ParseError, never a ``zip`` that silently drops the tail.
+
+    Only ``00060``/``00003`` (daily-mean discharge) day-of-year percentile records are read;
+    anything else in the payload is ignored rather than coerced.
+    """
+    try:
+        doc = json.loads(content)
+    except (UnicodeDecodeError, json.JSONDecodeError) as e:
+        raise ParseError(f"not JSON observationNormals: {e}") from e
+    if not isinstance(doc, dict) or "features" not in doc:
+        raise ParseError("observationNormals payload has no 'features'")
+    out: list[PublishedDoyStat] = []
+    for feature in doc["features"]:
+        props = _req(feature, "properties", "normals feature")
+        site = str(_req(props, "monitoring_location_id", "normals feature")).removeprefix("USGS-").strip()
+        if not site:
+            raise ParseError("normals feature has an empty monitoring_location_id")
+        for series in props.get("data") or []:
+            if series.get("parameter_code") != DISCHARGE_CODE:
+                continue
+            if series.get("parent_statistic_id") != DAILY_MEAN_STATISTIC:
+                continue
+            for record in series.get("values") or []:
+                if record.get("computation") != "percentile":
+                    continue
+                if record.get("time_of_year_type") != "day_of_year":
+                    continue
+                key = str(_req(record, "time_of_year", "normals percentile record"))
+                try:
+                    month, day = (int(part) for part in key.split("-"))
+                except ValueError as e:
+                    raise ParseError(f"time_of_year {key!r} is not MM-DD") from e
+                if not (1 <= month <= 12 and 1 <= day <= 31):
+                    raise ParseError(f"time_of_year {key!r} is not a calendar day")
+                levels = _req(record, "percentiles", f"normals record {key}")
+                values = _req(record, "values", f"normals record {key}")
+                if len(levels) != len(values):
+                    raise ParseError(
+                        f"normals record {key}: {len(levels)} percentile levels but {len(values)} values"
+                    )
+                percentiles: dict[int, float] = {}
+                for level, raw in zip(levels, values, strict=True):
+                    try:
+                        p = int(level)
+                    except (TypeError, ValueError):
+                        continue
+                    if p not in LADDER_LEVELS:
+                        continue
+                    try:
+                        number = float(raw)
+                    except (TypeError, ValueError):
+                        continue  # a non-numeric statistic is absent, never zero
+                    if not math.isfinite(number):
+                        continue  # the literal "nan" this API serves; float() accepts it, we do not
+                    percentiles[p] = number
+                out.append(
+                    PublishedDoyStat(
+                        site=site,
+                        month=month,
+                        day=day,
+                        begin_year=None,  # this API publishes no period of record (§4)
+                        end_year=None,
+                        count=record.get("sample_count"),
+                        percentiles=percentiles,
+                    )
+                )
+    return tuple(out)

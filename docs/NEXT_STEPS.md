@@ -37,9 +37,12 @@ when a milestone closes; delete lines that stop being true.
    database roles, and no mypy in CI. Freshness-per-product and a provider health board DO exist,
    in `/system/health`.
 3. ~~USGS instantaneous values are still on the legacy IV endpoint~~ **closed 2026-08-27**: the
-   instantaneous path is the OGC `continuous` collection. **What remains on the same Q1 2027
-   deadline** is `nwis/stat` — the published day-of-year statistics used as the climatology
-   cross-check — which is now the only production code calling `waterservices.usgs.gov`.
+   instantaneous path is the OGC `continuous` collection ([ADR-0015](adr/ADR-0015-usgs-instantaneous-transport.md)).
+   ~~`nwis/stat` remains on the same Q1 2027 deadline~~ **also closed 2026-08-27**: the published
+   day-of-year cross-check now reads the OGC statistics API's `observationNormals`
+   ([ADR-0016](adr/ADR-0016-usgs-published-statistics-successor.md)). **Cascadia has no production
+   call site for `waterservices.usgs.gov`.** Both hosts stay in the fetch ceiling for the retired
+   instantaneous comparator alone, pinned by a test.
 4. ~~No continuous history yet~~ **closed 2026-08-24**: the Railway worker runs the registered
    crons continuously and `/system/health` reports freshness per product. The 30-day freshness
    SLO can now be measured; it has not been.
@@ -284,10 +287,12 @@ they are recorded in §1 rather than repeated here.
    path is the Water Data OGC API `continuous` collection; parity was measured over 1,100 semantic
    rows with zero one-sided rows and zero value/unit/datum/quality differences
    (`research/usgs-ogc-instantaneous-parity-2026-08-27.md`, [ADR-0015](adr/ADR-0015-usgs-instantaneous-transport.md)).
-   The legacy adapter is retired to comparator-only and there is no fallback. **Still on the same
-   deadline and NOT done: the published day-of-year statistics cross-check (`nwis/stat`,
-   `product:usgs-daily-stats`)**, which is the last production caller of
-   `waterservices.usgs.gov`.
+   The legacy adapter is retired to comparator-only and there is no fallback. **The published
+   day-of-year cross-check followed the same day**: `observationNormals` under a NEW source,
+   product and method id, because parity there was measured ABSENT — p50 equal on 1,213 of 2,196
+   day pairs, no period of record published at all, and a 25 % maximum p50 difference at 12113000
+   from 6–26 extra years of record
+   (`research/nwis-stat-successor-2026-08-27.md`, [ADR-0016](adr/ADR-0016-usgs-published-statistics-successor.md)).
 5. **Close the three remaining M2 items**: `/metrics`, database roles with append-only grants,
    mypy in CI.
 6. Re-run the pending research verifications (six categories) as a scheduled, low-concurrency job.

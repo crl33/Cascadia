@@ -33,7 +33,7 @@ from cascade_core.fetch import ArchivingFetcher
 from cascade_core.knowledge import as_known_at
 from cascade_core.models import Basin, DerivedFeature
 from cascade_core.objectstore import LocalFilesystemStore
-from cascade_core.registry import PRODUCT_AWDB_DAILY, PRODUCT_USGS_DAILY_STATS, PRODUCT_USGS_OGC_DAILY
+from cascade_core.registry import PRODUCT_AWDB_DAILY, PRODUCT_USGS_DOY_NORMALS, PRODUCT_USGS_OGC_DAILY
 from cascade_core.seed import seed_all
 from cascade_core.settings import SEED_FILE
 from cascade_hydrology import susceptibility
@@ -48,6 +48,7 @@ from cascade_providers_usgs.stats_parser import (
     parse_daily_csv,
     parse_latest_daily_json,
     parse_nwis_stat_rdb,
+    parse_ogc_normals_json,
 )
 from tests.conftest import FIXTURES, GEO
 
@@ -62,7 +63,7 @@ GAUGE_SITES = ("12100490", "12113000", "12119000", "12149000", "12189500", "1221
 
 DAILY_URL = "https://api.waterdata.usgs.gov/ogcapi/v0/collections/daily/items"
 LATEST_URL = "https://api.waterdata.usgs.gov/ogcapi/v0/collections/latest-daily/items"
-NWIS_STAT_URL = "https://waterservices.usgs.gov/nwis/stat/"
+NORMALS_URL = "https://api.waterdata.usgs.gov/statistics/v0/observationNormals"
 AWDB_STATIONS_URL = "https://wcc.sc.egov.usda.gov/awdbRestApi/services/v1/stations"
 AWDB_DATA_URL = "https://wcc.sc.egov.usda.gov/awdbRestApi/services/v1/data"
 
@@ -95,24 +96,25 @@ def _mock_usgs_stats() -> None:
     """
     skagit = (STATS / "daily_12200500.csv").read_bytes()
     sauk = (STATS / "daily_12189500_2000.csv").read_bytes()
-    stat_skagit = (STATS / "stat_12200500.rdb").read_bytes()
-    stat_sauk = (STATS / "stat_12189500.rdb").read_bytes()
+    normals_sauk = (STATS / "observation_normals_12189500_00060.json").read_bytes()
 
     def daily(request: httpx.Request) -> httpx.Response:
         site = request.url.params["monitoring_location_id"].removeprefix("USGS-")
         body = skagit if site == SKAGIT_SITE else sauk
         return httpx.Response(200, content=body, headers={"content-type": "text/csv; charset=utf-8"})
 
-    def stat(request: httpx.Request) -> httpx.Response:
-        site = request.url.params["sites"]
-        # The Sauk's real table, relabelled to the requested site_no. The relabelling is what
-        # makes the plumbing testable at all: `published_climatology` REFUSES rows whose site_no
-        # does not match the site asked for, which the next test asserts directly.
-        body = stat_skagit if site == SKAGIT_SITE else stat_sauk.replace(SAUK_SITE.encode(), site.encode())
-        return httpx.Response(200, content=body, headers={"content-type": "text/plain"})
+    def normals(request: httpx.Request) -> httpx.Response:
+        site = request.url.params["monitoring_location_id"].removeprefix("USGS-")
+        # The Sauk's real normals, relabelled to the requested site. The relabelling is what makes
+        # the plumbing testable at all: `published_climatology` REFUSES rows whose site does not
+        # match the site asked for, which a later test asserts directly. There is deliberately no
+        # 12200500 branch — the successor genuinely serves nothing there, and no susceptibility
+        # gauge is that station (docs/research/nwis-stat-successor-2026-08-27.md §4).
+        body = normals_sauk.replace(SAUK_SITE.encode(), site.encode())
+        return httpx.Response(200, content=body, headers={"content-type": "application/json"})
 
     respx.get(DAILY_URL).mock(side_effect=daily)
-    respx.get(NWIS_STAT_URL).mock(side_effect=stat)
+    respx.get(NORMALS_URL).mock(side_effect=normals)
     respx.get(LATEST_URL).mock(
         return_value=httpx.Response(200, content=(STATS / "latest_daily_gauges.json").read_bytes(),
                                     headers={"content-type": "application/json"})
@@ -168,7 +170,13 @@ def test_latest_daily_carries_every_gauge_with_its_approval_status() -> None:
     assert all(r.approval_status == "Provisional" for r in rows)
 
 
-def test_published_statistics_table_parses_366_days() -> None:
+def test_the_retired_nwis_stat_table_still_parses_366_days() -> None:
+    """`nwis/stat` left production on 2026-08-27; its parser is kept to read archived artifacts.
+
+    This fixture is also the evidence for the one place the successor is a REGRESSION: the legacy
+    service published a full ladder at the Skagit outlet and `observationNormals` publishes none
+    (see the test below).
+    """
     stats = parse_nwis_stat_rdb((STATS / "stat_12200500.rdb").read_bytes())
     assert len(stats) == 366
     jan1 = next(s for s in stats if (s.month, s.day) == (1, 1))
@@ -176,17 +184,20 @@ def test_published_statistics_table_parses_366_days() -> None:
     assert set(jan1.percentiles) == {5, 10, 25, 50, 75, 90, 95}
 
 
-def test_the_modern_statistics_api_serves_no_discharge_normals_at_the_skagit_outlet() -> None:
+def test_the_successor_serves_no_discharge_normals_at_the_skagit_outlet() -> None:
     """Coverage is per-SITE, which is itself the argument for owning the climatology.
 
-    Verified live 2026-08-24 by the canary: `USGS-12189500` (the Sauk) now returns a full
-    366-day discharge percentile ladder from this API, while `USGS-12200500` still returns
-    nothing at all. A published climatology that exists at one gauge and not its neighbour
-    cannot be the dependency for a six-basin surface; it can only be a cross-check. See
-    DATA_SOURCES H9.
+    Re-probed 2026-08-27, byte-identical to the 2026-08-24 capture: the Sauk returns a full
+    366-day discharge percentile ladder and the Skagit outlet returns nothing at all. The RETIRED
+    `nwis/stat` did publish a ladder at 12200500, so this is a real coverage regression — it costs
+    nothing only because the Skagit basin's susceptibility gauge is the Sauk, not the outlet. A
+    published climatology that exists at one gauge and not its neighbour cannot be the dependency
+    for a six-basin surface; it can only be a cross-check. See DATA_SOURCES H9.
     """
     doc = json.loads((STATS / "observation_normals_12200500_00060.json").read_bytes())
     assert doc["features"] == []
+    legacy = parse_nwis_stat_rdb((STATS / "stat_12200500.rdb").read_bytes())
+    assert len([r for r in legacy if r.percentiles]) == 366, "the regression is real, not a fixture artefact"
 
 
 # --- B. the climatology -------------------------------------------------------------------
@@ -208,7 +219,8 @@ def test_cascade_and_published_p50_agree_on_at_least_350_of_366_days() -> None:
     rows = parse_daily_csv((STATS / "daily_12200500.csv").read_bytes(), site=SKAGIT_SITE)
     cascade = clim.build_doy_climatology(rows, site=SKAGIT_SITE, unit="cfs")
     published = clim.published_climatology(
-        parse_nwis_stat_rdb((STATS / "stat_12200500.rdb").read_bytes()), site=SKAGIT_SITE, unit="cfs"
+        parse_nwis_stat_rdb((STATS / "stat_12200500.rdb").read_bytes()), site=SKAGIT_SITE, unit="cfs",
+        method_id=clim.PUBLISHED_METHOD_ID_V1,
     )
     within = [k for k in clim.DOY_KEYS
               if (d := clim.p50_disagreement(cascade, published, k)) is not None and abs(d) <= 0.10]
@@ -334,7 +346,7 @@ async def test_build_climatology_stores_both_ladders_separately_and_never_fuses_
     assert len(by_method[clim.METHOD_ID]) == 6 and len(by_method[clim.PUBLISHED_METHOD_ID]) == 6
     # the two products are distinct, so the registry can resolve two different source kinds
     assert {r.product_id for r in by_method[clim.METHOD_ID]} == {PRODUCT_USGS_OGC_DAILY}
-    assert {r.product_id for r in by_method[clim.PUBLISHED_METHOD_ID]} == {PRODUCT_USGS_DAILY_STATS}
+    assert {r.product_id for r in by_method[clim.PUBLISHED_METHOD_ID]} == {PRODUCT_USGS_DOY_NORMALS}
     assert all(r.value is None and r.values_json["ladder"] for r in rows)  # a ladder is not one number
     assert all(r.raw_artifact_id is not None for r in rows)
 
@@ -355,9 +367,9 @@ async def test_climatology_job_is_append_only_and_a_rerun_writes_nothing(session
 
 @respx.mock
 async def test_the_cross_check_may_fail_without_costing_the_surface_its_value(sessions, tmp_path) -> None:
-    """WaterServices decommissions Q1 2027. This is the rehearsal."""
+    """An absent cross-check costs a confidence input, never a value — and never falls back."""
     _mock_usgs_stats()
-    respx.get(NWIS_STAT_URL).mock(return_value=httpx.Response(503))
+    respx.get(NORMALS_URL).mock(return_value=httpx.Response(503))
     async with sessions() as session:
         written = await stats_jobs.run_build_climatology(session, fetcher(tmp_path), now=NOW)
         await session.commit()
@@ -625,7 +637,7 @@ def test_the_band_table_is_monotone_and_uncalibrated() -> None:
 
 def test_a_published_table_for_the_wrong_site_is_refused_rather_than_merged() -> None:
     """A cross-check must be the SAME gauge or it is not a cross-check."""
-    stats = parse_nwis_stat_rdb((STATS / "stat_12189500.rdb").read_bytes())
+    stats = parse_ogc_normals_json((STATS / "observation_normals_12189500_00060.json").read_bytes())
     assert clim.published_climatology(stats, site=SAUK_SITE).ladders
     wrong = clim.published_climatology(stats, site=SKAGIT_SITE)
     assert wrong.ladders == {} and wrong.skipped["other_site"] == 366

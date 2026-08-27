@@ -54,7 +54,7 @@ SAUK = "station:usgs:12189500"
 
 DAILY_URL = "https://api.waterdata.usgs.gov/ogcapi/v0/collections/daily/items"
 LATEST_URL = "https://api.waterdata.usgs.gov/ogcapi/v0/collections/latest-daily/items"
-NWIS_STAT_URL = "https://waterservices.usgs.gov/nwis/stat/"
+NORMALS_URL = "https://api.waterdata.usgs.gov/statistics/v0/observationNormals"
 
 
 @pytest.fixture()
@@ -86,7 +86,7 @@ def _mock_usgs() -> None:
     respx.get(DAILY_URL).mock(
         return_value=httpx.Response(200, content=body, headers={"content-type": "text/csv; charset=utf-8"})
     )
-    respx.get(NWIS_STAT_URL).mock(return_value=httpx.Response(503))  # the cross-check may be gone
+    respx.get(NORMALS_URL).mock(return_value=httpx.Response(503))  # the cross-check may be gone
     respx.get(LATEST_URL).mock(
         return_value=httpx.Response(200, content=(STATS / "latest_daily_gauges.json").read_bytes(),
                                     headers={"content-type": "application/json"})

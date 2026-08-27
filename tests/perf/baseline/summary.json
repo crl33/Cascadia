@@ -1,22 +1,22 @@
 {
   "basin_skagit_state": {
-    "distinct_queries": 13,
+    "distinct_queries": 14,
     "exact_repeats": 0,
     "params": {
       "as_of": "2026-08-24T23:00:00Z"
     },
     "path": "/basins/basin:skagit/state",
-    "sql_wall_ms": 11.72,
-    "total_queries": 13
+    "sql_wall_ms": 12.61,
+    "total_queries": 14
   },
   "viz_basins": {
-    "distinct_queries": 13,
+    "distinct_queries": 14,
     "exact_repeats": 0,
     "params": {
       "as_of": "2026-08-24T23:00:00Z"
     },
     "path": "/viz/basins",
-    "sql_wall_ms": 18.77,
-    "total_queries": 13
+    "sql_wall_ms": 15.83,
+    "total_queries": 14
   }
 }

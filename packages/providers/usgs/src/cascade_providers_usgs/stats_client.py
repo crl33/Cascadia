@@ -1,18 +1,23 @@
-"""USGS clients for the day-of-year climatology path: OGC ``daily``/``latest-daily`` + ``nwis/stat``.
+"""USGS clients for the day-of-year climatology path, all three on the OGC host.
 
 Three endpoints, two products, one deliberate asymmetry:
 
 - ``product:usgs-ogc-daily`` (``api.waterdata.usgs.gov``) is the **dependency**. One request
   returns a station's entire daily-mean record, so the platform owns its climatology and the
   Q1-2027 WaterServices decommission cannot take it away (p3-surfaces-design §2.1).
-- ``product:usgs-daily-stats`` (``waterservices.usgs.gov/nwis/stat``) is the **cross-check**,
+- ``product:usgs-doy-normals`` (``api.waterdata.usgs.gov/statistics/v0``) is the **cross-check**,
   never a dependency. If it disappears the surface keeps working and loses only a confidence
   input (design §2.2 step 2).
 
+Nothing here calls ``waterservices.usgs.gov`` any more. The ``nwis/stat`` cross-check was retired
+on 2026-08-27 in favour of ``observationNormals``, which is not the same numbers — a different
+period of record and no published begin/end year — which is why it carries its own product and a
+method-id bump rather than being treated as a transport swap
+(docs/research/nwis-stat-successor-2026-08-27.md).
+
 Base URLs are compile-time constants (vibesec addendum §1); every call goes through
 ArchivingFetcher, so the bytes are archived before any parser sees them. ``accept`` is passed
-per call because two of these three are not JSON: the daily record is CSV and the statistics
-table is RDB text.
+per call because the daily record is CSV while the other two are JSON.
 """
 
 from __future__ import annotations
@@ -23,31 +28,25 @@ from datetime import date
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from cascade_core.fetch import ArchivingFetcher, FetchResult
-from cascade_core.registry import PRODUCT_USGS_DAILY_STATS, PRODUCT_USGS_OGC_DAILY
+from cascade_core.registry import PRODUCT_USGS_DOY_NORMALS, PRODUCT_USGS_OGC_DAILY
 from cascade_providers_usgs.ogc_client import build_backfill_fetcher, close_fetcher
 
 __all__ = [
     "DAILY_URL",
     "LATEST_DAILY_URL",
-    "NWIS_STAT_URL",
     "OBSERVATION_NORMALS_URL",
     "build_stats_fetcher",
     "close_fetcher",
     "fetch_daily_record",
     "fetch_latest_daily",
-    "fetch_published_doy_stats",
+    "fetch_published_doy_normals",
 ]
 
 DAILY_URL = "https://api.waterdata.usgs.gov/ogcapi/v0/collections/daily/items"
 LATEST_DAILY_URL = "https://api.waterdata.usgs.gov/ogcapi/v0/collections/latest-daily/items"
-NWIS_STAT_URL = "https://waterservices.usgs.gov/nwis/stat/"
-# Documented for the quarterly re-probe in the canary only: on 2026-08-24 this served no
-# discharge normals at any seed gauge, which is why it is not a code path (design §2.1).
 OBSERVATION_NORMALS_URL = "https://api.waterdata.usgs.gov/statistics/v0/observationNormals"
 
 OGC_HOSTS = frozenset({"api.waterdata.usgs.gov"})
-# nwis/stat 301-redirects some query shapes onto the nwis. host (DATA_SOURCES H1).
-NWIS_HOSTS = frozenset({"waterservices.usgs.gov", "nwis.waterservices.usgs.gov"})
 
 DISCHARGE_CODE = "00060"
 DAILY_MEAN_STATISTIC = "00003"
@@ -117,20 +116,23 @@ async def fetch_latest_daily(fetcher: ArchivingFetcher, session: AsyncSession, *
     )
 
 
-async def fetch_published_doy_stats(fetcher: ArchivingFetcher, session: AsyncSession, *, site: str) -> FetchResult:
-    """The LEGACY published day-of-year statistics table (RDB) — cross-check only.
+async def fetch_published_doy_normals(fetcher: ArchivingFetcher, session: AsyncSession, *, site: str) -> FetchResult:
+    """The USGS published day-of-year discharge normals — CROSS-CHECK, never a dependency.
 
-    Sunsets in Q1 2027. A failure here must be tolerated by the caller: it costs the surface a
-    confidence input, never its value.
+    A failure here must be tolerated by the caller: it costs the surface a confidence input, never
+    its value. There is no fallback to the retired ``nwis/stat``; an absent cross-check is a state
+    the surface already knows how to say.
+
+    ``parameter_code`` is what makes this affordable. Unfiltered, the response carries every
+    parameter the station publishes — sediment, turbidity, temperature — at 2.4-3.6 MB; filtered
+    to discharge it is ~415 KB (nwis-stat-successor-2026-08-27 §4, §13).
     """
     params = {
-        "format": "rdb",
-        "sites": _site(site),
-        "statReportType": "daily",
-        "statTypeCd": "all",
-        "parameterCd": DISCHARGE_CODE,
+        "monitoring_location_id": f"USGS-{_site(site)}",
+        "normal_type": "DOY",
+        "parameter_code": DISCHARGE_CODE,
     }
     return await fetcher.fetch(
-        session, url=NWIS_STAT_URL, params=params, allowed_hosts=NWIS_HOSTS,
-        product_id=PRODUCT_USGS_DAILY_STATS, suffix=".rdb", accept="text/plain",
+        session, url=OBSERVATION_NORMALS_URL, params=params, allowed_hosts=OGC_HOSTS,
+        product_id=PRODUCT_USGS_DOY_NORMALS, suffix=".json",
     )

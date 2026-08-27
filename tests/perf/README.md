@@ -8,6 +8,19 @@ any of them is expensive — and whatever is done about that, the body it return
 > byte-for-byte unchanged. Everything below is the measurement as it was taken; where each of
 > the 120 went is in [What happened to the 120](#what-happened-to-the-120) at the end. The
 > `baseline/` bodies were NOT regenerated — they are what proves the answer did not move.
+>
+> **Regenerated once, 2026-08-27**, when `nwis/stat` was retired for the OGC statistics API
+> (`docs/research/nwis-stat-successor-2026-08-27.md`). The semantic diff was **four fields, all
+> provenance**, on the cross-check ref of each gauge — `source_id`, `product_id`, `method_id` and
+> `label`. No percentile, band, score, rank, seasonal multiple, velocity, driver value or
+> confidence moved; the `climatology_p50_disagreement` driver kept its exact value because the
+> two published sources agree to the cent at the fixture's day-of-year.
+>
+> The same regeneration refreshed two things that had gone stale earlier and that no test guards:
+> `total_queries` 13 → **14**, which is the growth-rank split (`595fc92`) reading the growth
+> reference as its own prefetch, and the per-station observation timestamps in
+> `*.queries.json`, which follow the instantaneous fixtures replaced in `e7ba235`. Neither came
+> from the statistics migration. If the count moves again, it is a regression until explained.
 
 Nothing here is imported by `cascade_api`, `cascade_core` or `cascade_hydrology`. The
 instrumentation attaches from the outside at measurement time and detaches again, and

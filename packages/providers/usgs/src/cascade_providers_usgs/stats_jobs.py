@@ -9,11 +9,14 @@ approved daily-mean record in one request and build `method:streamflow-doy-clima
 then, from the SAME parsed rows and the same raw artifact, build
 `method:streamflow-record-context@1.0.0` — the tail of each day-of-year window and the gauge's
 own day-over-day growth distribution, which the seven-point ladder throws away and the high-tail
-level needs (research/high-tail-selection-2026-08-27.md); then pull the legacy USGS published
-table and store it SEPARATELY under `method:usgs-published-doy-stats@1.0.0`. None of the three is
-ever averaged with another. The published fetch is allowed to fail: it is the cross-check, and
-WaterServices decommissions in Q1 2027 (design §2.2 step 2). Each is one row with its whole
-366-day structure in `values_json` — see `_climatology_row` for why.
+level needs (research/high-tail-selection-2026-08-27.md); then pull the USGS published
+day-of-year normals and store them SEPARATELY under `method:usgs-published-doy-stats@2.0.0`. None
+of the three is ever averaged with another. The published fetch is allowed to fail: it is the
+cross-check, and its absence costs a confidence input, never a value (design §2.2 step 2). There
+is no second transport to fall back to, by design — see the `except FetchError` handler below and
+`test_usgs_normals_successor::test_the_climatology_job_cannot_reach_the_retired_service_at_all`.
+Each is one row with its whole 366-day structure in `values_json` — see `_climatology_row` for
+why.
 
 **Why the record context is a separate feature and method rather than more keys in the ladder
 blob.** `method:streamflow-doy-climatology@1.0.0` must keep producing byte-identical output:
@@ -43,7 +46,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from cascade_core.fetch import ArchivingFetcher, FetchError
 from cascade_core.models import Basin, DerivedFeature, Station
-from cascade_core.registry import PRODUCT_USGS_DAILY_STATS, PRODUCT_USGS_OGC_DAILY
+from cascade_core.registry import PRODUCT_USGS_DOY_NORMALS, PRODUCT_USGS_OGC_DAILY
 from cascade_core.timeutils import available_at, utcnow
 from cascade_providers_usgs.climatology import (
     GROWTH_REFERENCE_METHOD_ID,
@@ -64,12 +67,12 @@ from cascade_providers_usgs.climatology import (
 from cascade_providers_usgs.stats_client import (
     fetch_daily_record,
     fetch_latest_daily,
-    fetch_published_doy_stats,
+    fetch_published_doy_normals,
 )
 from cascade_providers_usgs.stats_parser import (
     parse_daily_csv,
     parse_latest_daily_json,
-    parse_nwis_stat_rdb,
+    parse_ogc_normals_json,
 )
 
 BUILD_JOB_NAME = "usgs.build_climatology"
@@ -314,18 +317,20 @@ async def run_build_climatology(
         if not with_cross_check:
             continue
         try:
-            stat_result = await fetch_published_doy_stats(fetcher, session, site=site)
+            stat_result = await fetch_published_doy_normals(fetcher, session, site=site)
         except FetchError:
             # The cross-check is allowed to be unavailable; the surface loses a confidence input,
-            # never its value. WaterServices decommissions Q1 2027 and this is the rehearsal.
+            # never its value. There is deliberately NO fallback to the retired nwis/stat: an
+            # absent cross-check is a state the surface already says (`no_published_cross_check`),
+            # and a silent second transport would make "checked" and "unchecked" indistinguishable.
             continue
-        published = published_climatology(parse_nwis_stat_rdb(stat_result.content), site=site, unit=FLOW_UNIT)
+        published = published_climatology(parse_ogc_normals_json(stat_result.content), site=site, unit=FLOW_UNIT)
         if not published.ladders:
             continue
         if not await _exists(session, method_id=PUBLISHED_METHOD_ID, feature=CLIMATOLOGY_FEATURE, scope_id=station.id, valid_time=valid_time):
             session.add(_climatology_row(
                 published, station_id=station.id, valid_time=valid_time, retrieved_at=stat_result.fetched_at,
-                product_id=PRODUCT_USGS_DAILY_STATS, artifact_id=stat_result.artifact_id, quality=["cross_check_only"],
+                product_id=PRODUCT_USGS_DOY_NORMALS, artifact_id=stat_result.artifact_id, quality=["cross_check_only"],
             ))
             written += 1
     await session.flush()

@@ -1,7 +1,7 @@
 {
   "as_of": "2026-08-24T23:00:00Z",
   "contract": "BasinVisualizationState",
-  "generated_at": "2026-08-27T09:36:34.006950Z",
+  "generated_at": "2026-08-27T19:49:49.062451Z",
   "items": [
     {
       "geometry_ref": {
@@ -509,13 +509,13 @@
         "state": "unknown"
       },
       "issued_at": null,
-      "label": "USGS published day-of-year statistics, held as an independent cross-check and never averaged with the Cascade-built climatology (disagreement is information)",
-      "method_id": "method:usgs-published-doy-stats@1.0.0",
-      "product_id": "product:usgs-daily-stats",
+      "label": "USGS published day-of-year normals, held as a separate cross-check and never averaged with the Cascade-built climatology (disagreement is information). It checks how the ladder was CONSTRUCTED, not the river: both sides derive from USGS daily values, so it is not independent evidence about the flow",
+      "method_id": "method:usgs-published-doy-stats@2.0.0",
+      "product_id": "product:usgs-doy-normals",
       "quality": [],
       "raw_artifact_id": null,
       "retrieved_at": null,
-      "source_id": "src:usgs-wdfn-statistics",
+      "source_id": "src:usgs-wdfn-normals",
       "source_kind": "OBSERVED",
       "valid_time": null
     }

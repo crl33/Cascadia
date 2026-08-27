@@ -90,7 +90,7 @@ BEFORE = datetime(2026, 8, 21, 12, 0, tzinfo=UTC)
 QMD_URL = "https://nomads.ncep.noaa.gov/cgi-bin/filter_blend.pl"
 DAILY_URL = "https://api.waterdata.usgs.gov/ogcapi/v0/collections/daily/items"
 LATEST_URL = "https://api.waterdata.usgs.gov/ogcapi/v0/collections/latest-daily/items"
-NWIS_STAT_URL = "https://waterservices.usgs.gov/nwis/stat/"
+NORMALS_URL = "https://api.waterdata.usgs.gov/statistics/v0/observationNormals"
 AWDB_STATIONS_URL = "https://wcc.sc.egov.usda.gov/awdbRestApi/services/v1/stations"
 AWDB_DATA_URL = "https://wcc.sc.egov.usda.gov/awdbRestApi/services/v1/data"
 
@@ -141,20 +141,21 @@ def _mock_usgs_stats() -> None:
     hydrology — the hydrological assertions live in tests/unit/test_susceptibility.py)."""
     skagit = (STATS_DIR / "daily_12200500.csv").read_bytes()
     sauk = (STATS_DIR / "daily_12189500_2000.csv").read_bytes()
-    stat_skagit = (STATS_DIR / "stat_12200500.rdb").read_bytes()
-    stat_sauk = (STATS_DIR / "stat_12189500.rdb").read_bytes()
+    normals_sauk = (STATS_DIR / "observation_normals_12189500_00060.json").read_bytes()
 
     def daily(request: httpx.Request) -> httpx.Response:
         site = request.url.params["monitoring_location_id"].removeprefix("USGS-")
         return httpx.Response(200, content=skagit if site == SKAGIT_SITE else sauk, headers={"content-type": "text/csv"})
 
-    def stat(request: httpx.Request) -> httpx.Response:
-        site = request.url.params["sites"]
-        body = stat_skagit if site == SKAGIT_SITE else stat_sauk.replace(SAUK_SITE.encode(), site.encode())
-        return httpx.Response(200, content=body, headers={"content-type": "text/plain"})
+    def normals(request: httpx.Request) -> httpx.Response:
+        # No 12200500 branch: the successor serves nothing there and no susceptibility gauge is
+        # that station (docs/research/nwis-stat-successor-2026-08-27.md §4).
+        site = request.url.params["monitoring_location_id"].removeprefix("USGS-")
+        body = normals_sauk.replace(SAUK_SITE.encode(), site.encode())
+        return httpx.Response(200, content=body, headers={"content-type": "application/json"})
 
     respx.get(DAILY_URL).mock(side_effect=daily)
-    respx.get(NWIS_STAT_URL).mock(side_effect=stat)
+    respx.get(NORMALS_URL).mock(side_effect=normals)
     respx.get(LATEST_URL).mock(
         return_value=httpx.Response(200, content=(STATS_DIR / "latest_daily_gauges.json").read_bytes(),
                                     headers={"content-type": "application/json"})

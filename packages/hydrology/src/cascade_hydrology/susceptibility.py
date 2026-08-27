@@ -101,13 +101,13 @@ from cascade_core.knowledge import Knowledge
 from cascade_core.models import Basin, DerivedFeature, SourceProduct
 from cascade_core.registry import (
     PRODUCT_AWDB_DAILY,
-    PRODUCT_USGS_DAILY_STATS,
+    PRODUCT_USGS_DOY_NORMALS,
     PRODUCT_USGS_OGC_DAILY,
     SOURCES,
     SRC_AWDB,
     SRC_CASCADE,
+    SRC_USGS_NORMALS,
     SRC_USGS_OGC,
-    SRC_USGS_STATS,
 )
 from cascade_hydrology.trend import (
     FALLING,
@@ -135,7 +135,7 @@ _SURFACE_METHOD_BY_VERSION = {"0.1.0": SURFACE_METHOD_V1, "0.2.0": SURFACE_METHO
 PERCENTILE_ROW_METHOD_ID = "method:susceptibility-index@0.1.0"
 
 CLIMATOLOGY_METHOD_ID = "method:streamflow-doy-climatology@1.0.0"
-PUBLISHED_CLIMATOLOGY_METHOD_ID = "method:usgs-published-doy-stats@1.0.0"
+PUBLISHED_CLIMATOLOGY_METHOD_ID = "method:usgs-published-doy-stats@2.0.0"
 RECORD_CONTEXT_METHOD_ID = "method:streamflow-record-context@2.0.0"
 #: The growth distribution, stored separately from the window tail so the VELOCITY can read
 #: it on every request without paying for the tail. Read unconditionally; the tail is not.
@@ -1037,14 +1037,16 @@ async def assess(
     if fraction is not None and abs(float(fraction)) > float(cross_check.get("threshold", 0.10)):
         xkey = f"usgs-published-stats-{site}"
         refs[xkey] = ProvenanceRef(
-            source_id=SRC_USGS_STATS,
-            source_kind=resolved_source_kind(SRC_USGS_STATS),
-            product_id=PRODUCT_USGS_DAILY_STATS,
+            source_id=SRC_USGS_NORMALS,
+            source_kind=resolved_source_kind(SRC_USGS_NORMALS),
+            product_id=PRODUCT_USGS_DOY_NORMALS,
             method_id=PUBLISHED_CLIMATOLOGY_METHOD_ID,
             freshness=Freshness(state=FreshnessState.UNKNOWN),
             label=(
-                "USGS published day-of-year statistics, held as an independent cross-check and "
-                "never averaged with the Cascade-built climatology (disagreement is information)"
+                "USGS published day-of-year normals, held as a separate cross-check and never "
+                "averaged with the Cascade-built climatology (disagreement is information). It "
+                "checks how the ladder was CONSTRUCTED, not the river: both sides derive from "
+                "USGS daily values, so it is not independent evidence about the flow"
             ),
         )
         drivers.append(Driver(

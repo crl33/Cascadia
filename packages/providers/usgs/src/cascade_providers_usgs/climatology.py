@@ -39,7 +39,14 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from cascade_providers_usgs.stats_parser import DailyMean, PublishedDoyStat
 
 METHOD_ID = "method:streamflow-doy-climatology@1.0.0"
-PUBLISHED_METHOD_ID = "method:usgs-published-doy-stats@1.0.0"
+#: The published cross-check. @1.0.0 read `nwis/stat`; @2.0.0 reads the OGC statistics API's
+#: `observationNormals`. A version bump, not a rename, because the concept is unchanged — but
+#: it IS a bump rather than a transport swap because the numbers differ: a different period of
+#: record (up to 26 more years) and no published begin/end year at all
+#: (docs/research/nwis-stat-successor-2026-08-27.md §4). Rows written under @1.0.0 stay as they
+#: are; they were true of the source that produced them.
+PUBLISHED_METHOD_ID = "method:usgs-published-doy-stats@2.0.0"
+PUBLISHED_METHOD_ID_V1 = "method:usgs-published-doy-stats@1.0.0"  # RETIRED 2026-08-27
 #: The record the seven-point ladder throws away, kept under its OWN method id so
 #: `method:streamflow-doy-climatology@1.0.0` keeps producing byte-identical output and register
 #: X8 (which ladder vintage?) is untouched by this. See :func:`build_record_context`.
@@ -65,6 +72,18 @@ RECORD_CONTEXT_METHOD_ID = "method:streamflow-record-context@2.0.0"
 #: nothing is duplicated.
 GROWTH_REFERENCE_METHOD_ID = "method:streamflow-growth-reference@1.0.0"
 PERCENTILES: tuple[int, ...] = (5, 10, 25, 50, 75, 90, 95)
+
+#: Which service a stored ladder came from, keyed by method id. Retired ids stay listed so
+#: historical rows keep resolving to the service that actually produced them.
+_REF_ORIGIN: dict[str, str] = {
+    METHOD_ID: "usgs-ogc-daily",
+    PUBLISHED_METHOD_ID: "usgs-ogc-normals",
+    PUBLISHED_METHOD_ID_V1: "usgs-nwis-stat",
+}
+_PUBLISHED_SOURCE: dict[str, str] = {
+    PUBLISHED_METHOD_ID: "USGS published day-of-year normals (OGC statistics observationNormals)",
+    PUBLISHED_METHOD_ID_V1: "USGS published nwis/stat table",
+}
 WINDOW_DAYS = 2
 APPROVED = "Approved"
 MIN_SAMPLE = 10  # below this a day's ladder is refused rather than published from a handful of years
@@ -143,8 +162,18 @@ class DoyClimatology:
 
     @property
     def climatology_ref(self) -> str:
-        span = f"{self.begin_year}-{self.end_year}" if self.begin_year and self.end_year else "unknown"
-        origin = "usgs-ogc-daily" if self.method_id == METHOD_ID else "usgs-nwis-stat"
+        """`<origin>:<site>:<span>`, where the span says what the source actually published.
+
+        `observationNormals` publishes NO period of record — only a per-day `sample_count` — so a
+        ladder built from it carries `nN-M`, the range of those counts, rather than years it never
+        stated. Inventing a year span there would be a fabricated provenance claim.
+        """
+        origin = _REF_ORIGIN.get(self.method_id, "usgs-published")
+        if self.begin_year and self.end_year:
+            span = f"{self.begin_year}-{self.end_year}"
+        else:
+            counts = sorted(rung.sample_count for rung in self.ladders.values() if rung.sample_count)
+            span = f"n{counts[0]}-{counts[-1]}" if counts else "unknown"
         return f"{origin}:{self.site}:{span}"
 
     def to_values_json(self) -> dict[str, Any]:
@@ -157,7 +186,7 @@ class DoyClimatology:
             "end_year": self.end_year,
             "used_rows": self.used_rows,
             "skipped": dict(self.skipped),
-            "parameters": METHOD_PARAMETERS if self.method_id == METHOD_ID else {"source": "USGS published nwis/stat table", "disclaimer": USGS_STATISTICS_DISCLAIMER},
+            "parameters": METHOD_PARAMETERS if self.method_id == METHOD_ID else {"source": _PUBLISHED_SOURCE.get(self.method_id, "USGS published statistics"), "disclaimer": USGS_STATISTICS_DISCLAIMER},
             "ladder": {
                 key: {"n": ladder.sample_count, **{f"p{p:02d}": ladder.values[p] for p in PERCENTILES if p in ladder.values}}
                 for key, ladder in sorted(self.ladders.items())
@@ -239,10 +268,17 @@ def build_doy_climatology(
     )
 
 
-def published_climatology(stats: Iterable[PublishedDoyStat], *, site: str, unit: str = "cfs") -> DoyClimatology:
-    """Wrap the USGS published nwis/stat table in the same shape, under ITS OWN method id.
+def published_climatology(
+    stats: Iterable[PublishedDoyStat], *, site: str, unit: str = "cfs", method_id: str = PUBLISHED_METHOD_ID
+) -> DoyClimatology:
+    """Wrap a USGS PUBLISHED day-of-year table in the same shape, under ITS OWN method id.
 
     Stored separately and never fused with the Cascade-built ladder (design §2.2 step 2).
+
+    ``method_id`` exists so a ladder is labelled by the service that actually produced it. It
+    defaults to the live cross-check; pass ``PUBLISHED_METHOD_ID_V1`` when reading an archived
+    ``nwis/stat`` RDB, so the stored ref still says `usgs-nwis-stat:` rather than claiming the
+    bytes came from a service that never served them.
     """
     ladders: dict[str, DoyLadder] = {}
     begin: list[int] = []
@@ -264,7 +300,7 @@ def published_climatology(stats: Iterable[PublishedDoyStat], *, site: str, unit:
         if stat.end_year:
             end.append(stat.end_year)
     return DoyClimatology(
-        site=site, unit=unit, method_id=PUBLISHED_METHOD_ID, ladders=ladders,
+        site=site, unit=unit, method_id=method_id, ladders=ladders,
         begin_year=min(begin) if begin else None, end_year=max(end) if end else None,
         used_rows=used, skipped=skipped,
     )

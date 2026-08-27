@@ -15,8 +15,9 @@ fails if that changes: a transport that switches itself under failure makes both
 outage interpretation ambiguous, and health would read green on data from somewhere else.
 
 The service is scheduled for decommission in Q1 2027. Some queries 301 to
-`nwis.waterservices.usgs.gov`; both hosts stay allowlisted because the comparator and the still-
-legacy `nwis/stat` cross-check (`stats_client.py`) need them.
+`nwis.waterservices.usgs.gov`; both hosts stay in the fetch ceiling for THIS comparator alone —
+the `nwis/stat` cross-check that was the other reason was retired on 2026-08-27
+(docs/research/nwis-stat-successor-2026-08-27.md).
 
 Base URL is a compile-time constant (vibesec addendum §1).
 """

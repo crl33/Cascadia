@@ -38,8 +38,14 @@ from cascade_core.timeutils import utcnow
 # `allowed_hosts` set that reaches outside it, so a new host is an explicit, reviewable edit.
 PROVIDER_HOSTS: frozenset[str] = frozenset(
     {
-        "waterservices.usgs.gov",            # H1 USGS NWIS instantaneous values + nwis/stat (statistics)
-        "nwis.waterservices.usgs.gov",       # H1 redirect target
+        # H1 legacy WaterServices. NO production module requests these any more: instantaneous
+        # moved to the OGC `continuous` collection 2026-08-27 (ADR-0015) and the `nwis/stat`
+        # cross-check to the OGC statistics API the same day. They stay in the CEILING only so
+        # the kept parity comparator (`usgs/client.py`) and its tests can still run; a
+        # production caller is a regression, pinned by
+        # test_usgs_transport_parity::test_no_production_module_calls_the_decommissioning_legacy_service.
+        "waterservices.usgs.gov",            # H1 comparator only
+        "nwis.waterservices.usgs.gov",       # H1 redirect target, comparator only
         "api.waterdata.usgs.gov",            # H2 USGS OGC API-Features; statistics v0 (BETA)
         "api.water.noaa.gov",                # H3 NWPS gauges/stageflow; H6 NWM reaches via NWPS
         "mesonet.agron.iastate.edu",         # AFOS text archive (IEM) for FLW/FLS reconstruction

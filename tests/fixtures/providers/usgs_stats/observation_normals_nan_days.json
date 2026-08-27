@@ -1,0 +1,192 @@
+{
+ "type": "FeatureCollection",
+ "features": [
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -122.2078761,
+     47.27479497
+    ]
+   },
+   "properties": {
+    "monitoring_location_id": "USGS-12100490",
+    "monitoring_location_name": "WHITE RIVER AT R STREET NEAR AUBURN, WA",
+    "site_type": "Stream",
+    "site_type_code": "ST",
+    "country_code": "US",
+    "state_code": "53",
+    "county_code": "033",
+    "data": [
+     {
+      "parameter_code": "00060",
+      "unit_of_measure": "ft^3/s",
+      "parent_time_series_id": "915de48bbd5e477797f72b7c8292a7cf",
+      "parent_statistic_id": "00003",
+      "parent_statistic_name": "Mean",
+      "values": [
+       {
+        "time_of_year": "06-17",
+        "time_of_year_type": "day_of_year",
+        "values": [
+         "nan",
+         "1037.2",
+         "1227.5",
+         "1790.0",
+         "2427.5",
+         "3041.0",
+         "nan"
+        ],
+        "percentiles": [
+         "5",
+         "10",
+         "25",
+         "50",
+         "75",
+         "90",
+         "95"
+        ],
+        "sample_count": 16,
+        "approval_status": "approved",
+        "computation_id": "ce05f85c-9d55-4381-ad64-a3fd905687cd",
+        "computation": "percentile"
+       },
+       {
+        "time_of_year": "06-18",
+        "time_of_year_type": "day_of_year",
+        "values": [
+         "nan",
+         "1003.0",
+         "1257.5",
+         "1770.0",
+         "2470.0",
+         "3075.0",
+         "nan"
+        ],
+        "percentiles": [
+         "5",
+         "10",
+         "25",
+         "50",
+         "75",
+         "90",
+         "95"
+        ],
+        "sample_count": 16,
+        "approval_status": "approved",
+        "computation_id": "fa32fe4c-31bd-4fac-8c33-2a1ad766febf",
+        "computation": "percentile"
+       },
+       {
+        "time_of_year": "06-19",
+        "time_of_year_type": "day_of_year",
+        "values": [
+         "nan",
+         "924.0",
+         "1270.0",
+         "1740.0",
+         "2585.0",
+         "3184.0",
+         "nan"
+        ],
+        "percentiles": [
+         "5",
+         "10",
+         "25",
+         "50",
+         "75",
+         "90",
+         "95"
+        ],
+        "sample_count": 16,
+        "approval_status": "approved",
+        "computation_id": "3d9a5905-7710-4fa1-8d4c-c1bdd46fc22c",
+        "computation": "percentile"
+       },
+       {
+        "time_of_year": "06-20",
+        "time_of_year_type": "day_of_year",
+        "values": [
+         "nan",
+         "919.2",
+         "1225.0",
+         "1745.0",
+         "2482.5",
+         "2945.0",
+         "nan"
+        ],
+        "percentiles": [
+         "5",
+         "10",
+         "25",
+         "50",
+         "75",
+         "90",
+         "95"
+        ],
+        "sample_count": 16,
+        "approval_status": "approved",
+        "computation_id": "918c64da-9c5c-40e8-8261-14e28e4ed927",
+        "computation": "percentile"
+       },
+       {
+        "time_of_year": "06-21",
+        "time_of_year_type": "day_of_year",
+        "values": [
+         "nan",
+         "939.6",
+         "1137.5",
+         "1785.0",
+         "2492.5",
+         "2845.0",
+         "nan"
+        ],
+        "percentiles": [
+         "5",
+         "10",
+         "25",
+         "50",
+         "75",
+         "90",
+         "95"
+        ],
+        "sample_count": 16,
+        "approval_status": "approved",
+        "computation_id": "234bf97e-3a99-4eba-b151-2ce328b0a3c6",
+        "computation": "percentile"
+       },
+       {
+        "time_of_year": "06-22",
+        "time_of_year_type": "day_of_year",
+        "values": [
+         "nan",
+         "834.1",
+         "1095.0",
+         "1710.0",
+         "2472.5",
+         "2889.0",
+         "nan"
+        ],
+        "percentiles": [
+         "5",
+         "10",
+         "25",
+         "50",
+         "75",
+         "90",
+         "95"
+        ],
+        "sample_count": 16,
+        "approval_status": "approved",
+        "computation_id": "fec674ef-957e-4eaf-ba92-90cd86da2640",
+        "computation": "percentile"
+       }
+      ]
+     }
+    ]
+   }
+  }
+ ],
+ "next": null
+}

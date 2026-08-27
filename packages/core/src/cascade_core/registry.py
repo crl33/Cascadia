@@ -30,7 +30,8 @@ SRC_NWS_AFOS = "src:nws-afos"
 SRC_NBM = "src:nbm-v5"
 SRC_NWM = "src:nwm-v3.1"
 SRC_USGS_OGC = "src:usgs-wdfn-ogc"
-SRC_USGS_STATS = "src:usgs-wdfn-statistics"
+SRC_USGS_STATS = "src:usgs-wdfn-statistics"  # RETIRED 2026-08-27; historical rows only
+SRC_USGS_NORMALS = "src:usgs-wdfn-normals"
 SRC_AWDB = "src:nrcs-awdb"
 
 PRODUCT_USGS_IV = "product:usgs-iv"
@@ -42,7 +43,8 @@ PRODUCT_NBM_QMD = "product:nbm-v5-qmd"
 PRODUCT_NBM_CORE = "product:nbm-v5-core"
 PRODUCT_NWM_MR = "product:nwm-mr-via-nwps"
 PRODUCT_USGS_OGC_DAILY = "product:usgs-ogc-daily"
-PRODUCT_USGS_DAILY_STATS = "product:usgs-daily-stats"
+PRODUCT_USGS_DAILY_STATS = "product:usgs-daily-stats"  # RETIRED 2026-08-27; historical rows only
+PRODUCT_USGS_DOY_NORMALS = "product:usgs-doy-normals"
 PRODUCT_AWDB_DAILY = "product:awdb-snotel-daily"
 PRODUCT_AWDB_STATIONS = "product:awdb-stations"
 
@@ -63,6 +65,14 @@ SOURCES: tuple[dict[str, str], ...] = (
     # means computed by Cascadia Papsukkal. The Cascade-built climatology is the DERIVED one,
     # is stored separately, and the two are never averaged (design §2.2 step 2).
     {"id": SRC_USGS_STATS, "authority": "U.S. Geological Survey (published daily statistics; USGS states these may not match official USGS publications)", "kind": "OBSERVED", "base_url": "https://waterservices.usgs.gov/nwis/stat/", "docs_url": "https://waterservices.usgs.gov/docs/statistics/"},
+    # The successor, on the host Cascadia already depends on. NOT the same numbers as the
+    # retired nwis/stat source and deliberately not the same id: it computes over a different
+    # period of record (up to 26 more years) and publishes no begin/end year at all, so p50
+    # disagrees with nwis/stat past the 10% cross-check threshold at 12113000. ADR-0015 kept
+    # ONE product across the instantaneous transports because parity was measured exact; the
+    # opposite finding here is why this gets its own identity
+    # (docs/research/nwis-stat-successor-2026-08-27.md §4, §6).
+    {"id": SRC_USGS_NORMALS, "authority": "U.S. Geological Survey Water Data for the Nation (published day-of-year normals; USGS states these may not match official USGS publications)", "kind": "OBSERVED", "base_url": "https://api.waterdata.usgs.gov/statistics/v0/", "docs_url": "https://api.waterdata.usgs.gov/docs/statistics/"},
     {"id": SRC_AWDB, "authority": "USDA NRCS National Water and Climate Center (AWDB: SNOTEL/SNOLITE/SCAN)", "kind": "OBSERVED", "base_url": "https://wcc.sc.egov.usda.gov/awdbRestApi/services/v1/", "docs_url": "https://wcc.sc.egov.usda.gov/awdbRestApi/v3/api-docs"},
 )
 
@@ -104,7 +114,11 @@ PRODUCTS: tuple[dict[str, object], ...] = (
     # surface UNKNOWN rather than falling back to the instantaneous value (design §2.2).
     {"id": PRODUCT_USGS_OGC_DAILY, "source_id": SRC_USGS_OGC, "label": "USGS daily mean discharge (OGC API daily/latest-daily, 00060 statistic 00003)", "variables": ["flow"], "expected_cadence_seconds": 86400, "grace_seconds": 129600},
     # Recomputed annually (design §2.2 step 1); grace P30D. Effectively static reference data.
-    {"id": PRODUCT_USGS_DAILY_STATS, "source_id": SRC_USGS_STATS, "label": "USGS published day-of-year discharge statistics (nwis/stat, approved daily means)", "variables": ["flow"], "expected_cadence_seconds": 31536000, "grace_seconds": 2592000},
+    # RETIRED 2026-08-27. Kept registered so historical rows keep a valid product_id and their
+    # provenance still resolves; no job writes it, so PRODUCT_WRITERS drops it and
+    # /system/health stops expecting it to arrive.
+    {"id": PRODUCT_USGS_DAILY_STATS, "source_id": SRC_USGS_STATS, "label": "USGS published day-of-year discharge statistics (nwis/stat, approved daily means) — RETIRED 2026-08-27, superseded by product:usgs-doy-normals", "variables": ["flow"], "expected_cadence_seconds": 31536000, "grace_seconds": 2592000},
+    {"id": PRODUCT_USGS_DOY_NORMALS, "source_id": SRC_USGS_NORMALS, "label": "USGS published day-of-year discharge normals (OGC statistics observationNormals, 00060 statistic 00003)", "variables": ["flow"], "expected_cadence_seconds": 31536000, "grace_seconds": 2592000},
     # P1D / PT36H (DATA_SOURCES S1, doctrine defaults). SNOTEL SWE and precipitation are
     # CONTEXT drivers only: more SWE is not more risk (HYDROLOGY §7), so nothing here is scored.
     {"id": PRODUCT_AWDB_DAILY, "source_id": SRC_AWDB, "label": "SNOTEL daily values (WTEQ, PREC) with per-value median, point network", "variables": ["swe", "precip_accum"], "expected_cadence_seconds": 86400, "grace_seconds": 129600},
@@ -161,7 +175,7 @@ JOBS: tuple[JobSpec, ...] = (
     JobSpec("nwm.fetch_reach_medium_range", "nwm", SRC_NWM, (PRODUCT_NWM_MR,), 6 * 3600),
     # Builds both ladders in one pass: Cascade's own from the OGC daily record, and the USGS
     # published day-of-year table as the cross-check. They are stored separately and never averaged.
-    JobSpec("usgs.build_climatology", "usgs-stats", SRC_USGS_STATS, (PRODUCT_USGS_OGC_DAILY, PRODUCT_USGS_DAILY_STATS), 31_536_000),
+    JobSpec("usgs.build_climatology", "usgs-stats", SRC_USGS_NORMALS, (PRODUCT_USGS_OGC_DAILY, PRODUCT_USGS_DOY_NORMALS), 31_536_000),
     JobSpec("usgs.fetch_daily_percentile", "usgs-ogc", SRC_USGS_OGC, (PRODUCT_USGS_OGC_DAILY,), 86400),
     JobSpec("awdb.fetch_snotel_context", "awdb", SRC_AWDB, (PRODUCT_AWDB_DAILY, PRODUCT_AWDB_STATIONS), 86400),
     # Registered on the QUEUE only, never in `scheduler.JOBS` (it needs PostgreSQL, and `run-once`
@@ -181,6 +195,10 @@ JOBS_BY_NAME: dict[str, JobSpec] = {job.name: job for job in JOBS}
 UNSCHEDULED_PRODUCTS: dict[str, str] = {
     # Event Zero reconstruction only: written by the December-2025 backfill, never on a cron.
     PRODUCT_NWS_FLS_CREST: "backfill-only (Event Zero); no scheduled job writes it",
+    # RETIRED 2026-08-27 with the last call to waterservices.usgs.gov. Kept registered so the
+    # historical rows that reference it still resolve to the service that actually produced them;
+    # `usgs.build_climatology` now writes product:usgs-doy-normals instead.
+    PRODUCT_USGS_DAILY_STATS: "retired 2026-08-27 (nwis/stat); superseded by product:usgs-doy-normals",
 }
 
 #: product id -> the jobs that write it, in `JOBS` order. Derived, never hand-listed.
