@@ -56,12 +56,12 @@ export async function onRequest(context) {
       const resp = await fetch(upstream, {
         method: 'GET',
         headers: { Accept: 'application/json', 'User-Agent': 'CascadiaPapsukkal-gateway/0.1' },
-        // 60 s: /viz/basins computes three intelligence surfaces for six basins and measured
-        // 21.8 s in production on 2026-08-25 (single basin 4.6 s), which the previous 20 s
-        // abort turned into a 503 the moment P3 landed. The timeout is a backstop against a
-        // hung backend, not a latency budget — the latency itself is recorded as the top P4
-        // performance item in docs/NEXT_STEPS.md and belongs in the API, not here.
-        signal: AbortSignal.timeout(60000),
+        // 30 s backstop against a hung backend — NOT a latency budget. /viz/basins was 21.8 s
+        // when P3 landed (120 round trips) and forced a temporary 60 s abort; the read path was
+        // batched to 13 statements and it now measures ~2.6-2.8 s in production, so 30 s is ~10x
+        // headroom over normal behaviour. The residual is ~195 ms per query of cross-region round
+        // trip, not amplification (docs/NEXT_STEPS.md).
+        signal: AbortSignal.timeout(30000),
       });
       const headers = new Headers(resp.headers);
       for (const [k, v] of Object.entries(HEADERS)) headers.set(k, v);
