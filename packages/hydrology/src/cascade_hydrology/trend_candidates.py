@@ -3,7 +3,7 @@
 `trend.py` ships `rate = (pts[-1] - pts[0]) / span_h`, an endpoint difference that
 `HYDROLOGY.md` §9 already forbids in words ("trend never comes from the two endpoints of a
 response window"). This module holds the candidates that were measured against real hydrographs
-in `docs/research/trend-estimator-selection-2026-08-27.md`, plus the metadata envelope and the
+in `docs/research/trend-estimator-selection-2026-08-26.md`, plus the metadata envelope and the
 tidal guard the same document specifies.
 
 **Nothing here is called by `assemble.py`.** This phase decides; the next phase implements.
@@ -142,6 +142,10 @@ def repeated_median_slope(xs: list[float], ys: list[float]) -> float:
     USGS gauge is a *run* of bad values (a frozen sensor, an ice-affected stage, a datalogger
     holding its last reading), not an isolated spike, and a run longer than ~29 % of the
     window defeats Theil-Sen.
+
+    MEASURED, and this is the estimator the selection note chose: on a 40 % held run it errs by
+    0.14 STEADY epsilons against Theil-Sen's 0.24, and on a corrupted endpoint reading by 0.00
+    against the shipped endpoint difference's 45.69 (selection note §3).
     """
     n = len(xs)
     inner: list[float] = []
@@ -220,8 +224,9 @@ def tidal_refusal(tidal_class: TidalClass | None) -> TrendRefusal | None:
     - `TIDAL`  -> refuse, `TIDAL_CONTAMINATION`. Rate of rise at a tidal gauge is not noisy,
       it is meaningless: a pure M2 tide of amplitude A injects a false endpoint rate of
       A/3 to A/2 ft/h at any window shorter than half a tidal cycle, and no robust estimator
-      removes it (verification §5.1, and §4 of the selection note measures OLS/Theil-Sen/RM
-      on a synthetic tide to show they do not).
+      removes it (verification §5.1, and §5 of the selection note injects a 1.0 ft M2 tide onto a real
+      record: every candidate reports 4.6-6.5x the STEADY epsilon, and the most robust one is
+      the WORST of them).
     - `None` / `UNVERIFIED` -> refuse, `TIDAL_CLASS_UNVERIFIED`. This is the property the
       brief asks for: a future tidally-affected station **cannot silently bypass** the guard,
       because there is no code path in which an unmarked station is treated as fluvial.
@@ -304,7 +309,7 @@ class TrendEstimate:
 NAMED_WINDOWS_H = (1.0, 3.0, 6.0)
 
 #: Minimum samples. Three, not two: with two points every estimator in this module collapses
-#: to the endpoint difference, which is the defect being removed. See selection note §6 D.
+#: to the endpoint difference, which is the defect being removed.
 MIN_SAMPLES = 3
 
 #: How wide the pair-slope IQR may be, as a multiple of |slope|, before the estimate is marked

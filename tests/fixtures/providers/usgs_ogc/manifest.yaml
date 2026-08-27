@@ -7,9 +7,8 @@ captured:
   content_type: application/json; charset=utf-8
   bytes: 162983
   sha256: 8485ce568abd89549db534459cdf0139bced41808d89caca8ccaadc039286ff3
-  notes: 'REAL capture: site 12200500 (MVEW1), stage 00065 + flow 00060, full UTC
-    day 2025-12-12 (contains the record crest 37.73 ft @ 08:15Z and peak flow @ 09:00Z).
-    One page, limit=10000.'
+  notes: 'REAL capture: site 12200500 (MVEW1), stage 00065 + flow 00060, full UTC day 2025-12-12 (contains
+    the record crest 37.73 ft @ 08:15Z and peak flow @ 09:00Z). One page, limit=10000.'
 - file: paged_12200500_p1.json
   url: https://api.waterdata.usgs.gov/ogcapi/v0/collections/continuous/items?monitoring_location_id=USGS-12200500&parameter_code=00065%2C00060&datetime=2025-12-12T00%3A00%3A00Z%2F2025-12-13T00%3A00%3A00Z&f=json&limit=120
   captured_at: '2026-08-24T12:32:56.906765+00:00'
@@ -17,8 +16,7 @@ captured:
   content_type: application/json; charset=utf-8
   bytes: 101778
   sha256: 25a0434b19e613986e89d1205f8316fd9ae5fd20a6377edb669f11c578411868
-  notes: 'REAL capture: same request at limit=120 so numberReturned == limit and a
-    rel=next link is present.'
+  notes: 'REAL capture: same request at limit=120 so numberReturned == limit and a rel=next link is present.'
 - file: paged_12200500_p2.json
   url: https://api.waterdata.usgs.gov/ogcapi/v0/collections/continuous/items?cursor=OWYyZmIyZWMyZGU0NDM5OWEyMzEyYjEwM2U4ZjIwNGJ8MjAyNS0xMi0xMiAwNTozMDowMCswMDowMA&monitoring_location_id=USGS-12200500&parameter_code=00065,00060&datetime=2025-12-12T00%3A00%3A00Z%2F2025-12-13T00%3A00%3A00Z&limit=120&f=json
   captured_at: '2026-08-24T12:32:56.977494+00:00'
@@ -27,6 +25,79 @@ captured:
   bytes: 63499
   sha256: aa64f96f57d029e989f7486f167884b144db349264657a2e5b75dcac294666bd
   notes: 'REAL capture: the page fetched by following page 1''s rel=next link verbatim.'
+- file: trend_dec_rising_12213100.json
+  url: https://api.waterdata.usgs.gov/ogcapi/v0/collections/continuous/items?monitoring_location_id=USGS-12213100&parameter_code=00065%2C00060&datetime=2025-12-09T07%3A00%3A00Z%2F2025-12-09T13%3A00%3A00Z&f=json&limit=10000
+  captured_at: '2026-08-27T02:58:38.112190+00:00'
+  http_status: 200
+  content_type: application/json; charset=utf-8
+  bytes: 35755
+  sha256: 932240994a89b881056d518a1624d031adc54326e6125832c8b3ab2634c77b12
+  notes: 'REAL capture for docs/research/trend-estimator-selection-2026-08-27.md conditions A and F: NKSW1
+    (Nooksack at Ferndale, 12213100), the steepest 6 h Theil-Sen stage rise of Event Zero, 2025-12-09T07:00-13:00Z,
+    stage 00065 + flow 00060, 25 regular 15-minute samples per parameter. Stage 9.74 -> 15.26 ft: endpoint
+    0.920, OLS 1.007, Theil-Sen 1.013, repeated-median 1.045 ft/h -- the endpoint estimator under-reads
+    the rate of rise by 9.2 %. Official minor stage 18.0 ft NAVD88.'
+- file: trend_dec_rising_12200500.json
+  url: https://api.waterdata.usgs.gov/ogcapi/v0/collections/continuous/items?monitoring_location_id=USGS-12200500&parameter_code=00065%2C00060&datetime=2025-12-11T17%3A00%3A00Z%2F2025-12-11T23%3A00%3A00Z&f=json&limit=10000
+  captured_at: '2026-08-27T02:58:38.208031+00:00'
+  http_status: 200
+  content_type: application/json; charset=utf-8
+  bytes: 35630
+  sha256: 22c25eac5145978fc3030af6a5ca4f29df13b637c71e8adbfc659659628e7ffd
+  notes: 'REAL capture, condition A (the estimators must AGREE on clean data): MVEW1 (Skagit near Mount
+    Vernon, 12200500), steepest 6 h stage rise into the record crest, 2025-12-11T17:00-23:00Z. Stage 32.30
+    -> 35.28 ft: endpoint 0.4967, OLS 0.4925, Theil-Sen 0.4900, repeated-median 0.4890 ft/h -- a 1.4 %
+    spread. Flow 90,900 -> 113,000 cfs: 3683 / 3662 / 3662 / 3709 cfs/h.'
+- file: trend_dec_spike_12100490.json
+  url: https://api.waterdata.usgs.gov/ogcapi/v0/collections/continuous/items?monitoring_location_id=USGS-12100490&parameter_code=00065%2C00060&datetime=2025-12-10T04%3A45%3A00Z%2F2025-12-10T10%3A45%3A00Z&f=json&limit=10000
+  captured_at: '2026-08-27T02:58:38.292542+00:00'
+  http_status: 200
+  content_type: application/json; charset=utf-8
+  bytes: 35766
+  sha256: 62ac3981834af06c38dc3a8b88bc20f9cd4030b5529fa682a7b69c5fe211cf49
+  notes: 'REAL capture, conditions B and C on real data and the decisive case of the selection note: WRAW1
+    (White at R St near Auburn, 12100490), 2025-12-10T04:45-10:45Z, 25 regular samples. The last two samples
+    (10:30 = 7,090 cfs / 114.95 ft; 10:45 = 7,480 / 115.11) are a short real transient at the trailing
+    edge of a rising window. The shipped endpoint estimator reads -61.7 cfs/h (STEADY) and -0.025 ft/h;
+    Theil-Sen reads +100 cfs/h (RISING) and +0.040 ft/h; repeated-median +115.3 cfs/h. Over the following
+    6 h the river rose to 8,900 cfs, +237 cfs/h -- the robust estimators were directionally right and
+    the shipped one was not. Leave-one-out: removing one sample moves the endpoint slope by 114-116 %
+    and flips it to FALLING; it moves Theil-Sen by 20-21 % and does not change its direction.'
+- file: trend_dec_gap_12149000.json
+  url: https://api.waterdata.usgs.gov/ogcapi/v0/collections/continuous/items?monitoring_location_id=USGS-12149000&parameter_code=00065%2C00060&datetime=2025-12-12T11%3A00%3A00Z%2F2025-12-12T17%3A00%3A00Z&f=json&limit=10000
+  captured_at: '2026-08-27T02:58:38.355001+00:00'
+  http_status: 200
+  content_type: application/json; charset=utf-8
+  bytes: 28253
+  sha256: 8ab699131dad487a7c4cf72ee895b81a78dda7e21472250dff70c4a2c3a753d8
+  notes: 'REAL capture, condition D (missing observations, irregular cadence, actual timestamps): CRNW1
+    (Snoqualmie near Carnation, 12149000), 2025-12-12T11:00-17:00Z during the Event Zero recession. The
+    flow record carries a genuine 105-minute gap -- 14 flow samples where 25 are nominal, spacing 15 to
+    105 minutes -- while stage over the same window is complete at 25. Inside the 2 h max_gap_h tolerance,
+    so the method must ANSWER here, from the actual timestamps: endpoint -2683, OLS -2253, Theil-Sen -2400,
+    repeated-median -2445 cfs/h.'
+- file: trend_aug_flat_12213100.json
+  url: https://api.waterdata.usgs.gov/ogcapi/v0/collections/continuous/items?monitoring_location_id=USGS-12213100&parameter_code=00065%2C00060&datetime=2026-08-20T00%3A00%3A00Z%2F2026-08-20T06%3A00%3A00Z&f=json&limit=10000
+  captured_at: '2026-08-27T02:58:38.437777+00:00'
+  http_status: 200
+  content_type: application/json; charset=utf-8
+  bytes: 35866
+  sha256: 2d20f6a3786ce2952dfd84393c00ee9745667b9fc60c5ce596d3d603561f18d7
+  notes: 'REAL capture, condition E (a flat hydrograph must read STEADY): NKSW1 low-flow window 2026-08-20T00:00-06:00Z,
+    stage 4.20 -> 4.11 ft, flow 1,240 -> 1,180 cfs. All four estimators read STEADY on stage (|slope|
+    0.014-0.015 ft/h against the 0.05 ft/h epsilon) and on flow (9.0-10.0 cfs/h against an 11.8 cfs/h
+    epsilon). Provisional data.'
+- file: trend_aug_irregular_12189500.json
+  url: https://api.waterdata.usgs.gov/ogcapi/v0/collections/continuous/items?monitoring_location_id=USGS-12189500&parameter_code=00065%2C00060&datetime=2026-08-12T16%3A00%3A00Z%2F2026-08-12T22%3A00%3A00Z&f=json&limit=10000
+  captured_at: '2026-08-27T02:58:38.537819+00:00'
+  http_status: 200
+  content_type: application/json; charset=utf-8
+  bytes: 20756
+  sha256: c43ac8bebf59214b2fe8b94d04161c6ed7bd8e0561b9d3e31f6fbf3f502244bb
+  notes: 'REAL capture, condition D refusal: the Sauk (12189500), the Skagit basin''s susceptibility gauge,
+    2026-08-12T16:00-22:00Z. Both parameters carry a real 3.0 h gap -- 14 samples where 25 are nominal
+    -- which exceeds the 2 h max_gap_h tolerance, so the method must return UNKNOWN with GAP_EXCEEDS_TOLERANCE
+    rather than a slope. Provisional data.'
 derived:
 - file: derived_missing_field.json
   derived_from: day_12200500.json
@@ -35,7 +106,6 @@ derived:
 - file: derived_edge_cases.json
   derived_from: day_12200500.json
   sha256: 4bbbf1b5ae92c7321dd9106583e0499d0c6bd537f32af640e6e9a65ab0b88946
-  notes: 'Handcrafted on the real schema: value ''n/a'' (unparseable), negative flow
-    (out_of_range), Provisional+qualifier [''Ice''], null value, statistic_id 00003
-    (non-instantaneous, skipped), plain Approved. Plus Provisional+qualifier [''ESTIMATED'']
-    (the caps spelling observed live) -> ''estimated''.'
+  notes: 'Handcrafted on the real schema: value ''n/a'' (unparseable), negative flow (out_of_range), Provisional+qualifier
+    [''Ice''], null value, statistic_id 00003 (non-instantaneous, skipped), plain Approved. Plus Provisional+qualifier
+    [''ESTIMATED''] (the caps spelling observed live) -> ''estimated''.'
