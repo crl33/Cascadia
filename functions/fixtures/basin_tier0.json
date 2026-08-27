@@ -1,0 +1,647 @@
+{
+ "_provenance": {
+  "note": "Tier 0 overlay for the offline stub, keyed by knowledge time. The two populated positions carry MEASURED Event Zero values taken from tests/fixtures/hindcast/event_zero_ab.json (snohomish-snoqualmie 2025-12-06 and skagit 2025-12-11) so the client is exercised against numbers the platform really produced, not invented ones. The early position is the strict knowledge-time state: no reference existed yet, so every Tier 0 statement is absent with its reason. The susceptibility band is derived from the same fixture percentile using the shipped BAND_EDGES (25/75/90) so the panel shows the real contrast the design exists for: a MODERATE band beside a large, high-ranked change. Each position is a HALF-OPEN window [from, until). A knowledge time outside every window gets no overlay at all, and LIVE mode (no as_of) is deliberately one of those: this stub has no live Tier 0 data, and serving December 2025 values as though they were current would be the exact staleness the replay tests exist to forbid.",
+  "measured_from": "tests/fixtures/hindcast/event_zero_ab.json"
+ },
+ "positions": [
+  {
+   "id": "event-zero-populated",
+   "from": "2025-12-05T00:00:00Z",
+   "note": "Event Zero, the days the velocity earned its lead. Tier 0 populated.",
+   "items": {
+    "basin:snohomish-snoqualmie": {
+     "hydrologic_state": {
+      "prov": "cascade-tail-snohomish-snoqualmie",
+      "truth": "cascade_derived",
+      "observed": {
+       "value": 6110.0,
+       "unit": "cfs",
+       "datum": null
+      },
+      "day": "2025-12-06",
+      "percentile": 72.4,
+      "percentile_clamped": false,
+      "reference": {
+       "doy_key": "12-06",
+       "window_days": 2,
+       "n": 475,
+       "independent_years": 95,
+       "period_start": 1929,
+       "period_end": 2024,
+       "method_id": "method:streamflow-doy-climatology@1.0.0"
+      },
+      "rank": {
+       "rank": null,
+       "of": 476,
+       "exceeds_record": false,
+       "previous_max": null,
+       "previous_max_day": null,
+       "prov": "cascade-tail-snohomish-snoqualmie",
+       "reason": "Not read: the exact rank is fetched only at or above p90, where the stored ladder is within one breakpoint of clamping and the percentile stops discriminating. Below that edge the percentile resolves the value on its own and the rank would be a round trip bought for nothing. The value here is NOT unranked because the record is missing \u2014 see the seasonal multiple, computed from the same reference."
+      },
+      "multiple": null,
+      "boundary": "near_band_edge",
+      "bands_within_sampling_error": [
+       "moderate",
+       "high"
+      ],
+      "reason": null
+     },
+     "state_change": [
+      {
+       "window_h": 24,
+       "growth": 2.0997,
+       "direction": "rising",
+       "from_value": {
+        "value": 2910.0,
+        "unit": "cfs",
+        "datum": null
+       },
+       "to_value": {
+        "value": 6110.0,
+        "unit": "cfs",
+        "datum": null
+       },
+       "span_h": 24.0,
+       "rank": 759,
+       "rank_of": 34957,
+       "rank_reason": null,
+       "reason": null,
+       "prov": "cascade-change-snohomish-snoqualmie-24h"
+      },
+      {
+       "window_h": 48,
+       "growth": 2.8823,
+       "direction": "rising",
+       "from_value": {
+        "value": 2120.0,
+        "unit": "cfs",
+        "datum": null
+       },
+       "to_value": {
+        "value": 6110.0,
+        "unit": "cfs",
+        "datum": null
+       },
+       "span_h": 48.0,
+       "rank": 402,
+       "rank_of": 34956,
+       "rank_reason": null,
+       "reason": null,
+       "prov": "cascade-change-snohomish-snoqualmie-48h"
+      }
+     ],
+     "susceptibility": {
+      "prov": "cascade-susceptibility-snohomish-snoqualmie",
+      "truth": "cascade_derived",
+      "state": "moderate",
+      "score": 0.724,
+      "value": {
+       "value": 72.4,
+       "unit": "pct",
+       "datum": null
+      },
+      "spread": null,
+      "confidence": "moderate",
+      "experimental": true,
+      "reason": null
+     }
+    },
+    "basin:skagit": {
+     "hydrologic_state": {
+      "prov": "cascade-tail-skagit",
+      "truth": "cascade_derived",
+      "observed": {
+       "value": 62600.0,
+       "unit": "cfs",
+       "datum": null
+      },
+      "day": "2025-12-11",
+      "percentile": 95.0,
+      "percentile_clamped": true,
+      "reference": {
+       "doy_key": "12-11",
+       "window_days": 2,
+       "n": 490,
+       "independent_years": 98,
+       "period_start": 1911,
+       "period_end": 2025,
+       "method_id": "method:streamflow-doy-climatology@1.0.0"
+      },
+      "rank": {
+       "rank": 1,
+       "of": 491,
+       "exceeds_record": true,
+       "previous_max": {
+        "value": 37400.0,
+        "unit": "cfs",
+        "datum": null
+       },
+       "previous_max_day": "2004-12-11",
+       "prov": "cascade-tail-skagit",
+       "reason": null
+      },
+      "multiple": {
+       "multiple": 4.988,
+       "reference": {
+        "value": 12550.0,
+        "unit": "cfs",
+        "datum": null
+       },
+       "reference_percentile": 95,
+       "prov": "cascade-tail-skagit"
+      },
+      "boundary": "unquantified",
+      "bands_within_sampling_error": [],
+      "reason": null
+     },
+     "state_change": [
+      {
+       "window_h": 24,
+       "growth": 1.5084,
+       "direction": "rising",
+       "from_value": {
+        "value": 41500.0,
+        "unit": "cfs",
+        "datum": null
+       },
+       "to_value": {
+        "value": 62600.0,
+        "unit": "cfs",
+        "datum": null
+       },
+       "span_h": 24.0,
+       "rank": 1517,
+       "rank_of": 36007,
+       "rank_reason": null,
+       "reason": null,
+       "prov": "cascade-change-skagit-24h"
+      },
+      {
+       "window_h": 48,
+       "growth": 2.5641,
+       "direction": "rising",
+       "from_value": {
+        "value": 24413.0,
+        "unit": "cfs",
+        "datum": null
+       },
+       "to_value": {
+        "value": 62600.0,
+        "unit": "cfs",
+        "datum": null
+       },
+       "span_h": 47.5,
+       "rank": 96,
+       "rank_of": 36006,
+       "rank_reason": null,
+       "reason": null,
+       "prov": "cascade-change-skagit-48h"
+      }
+     ],
+     "susceptibility": {
+      "prov": "cascade-susceptibility-skagit",
+      "truth": "cascade_derived",
+      "state": "very_high",
+      "score": 0.95,
+      "value": {
+       "value": 95.0,
+       "unit": "pct",
+       "datum": null
+      },
+      "spread": null,
+      "confidence": "moderate",
+      "experimental": true,
+      "reason": null
+     }
+    },
+    "basin:cedar": {
+     "hydrologic_state": {
+      "prov": "cascade-tail-cedar",
+      "truth": "cascade_derived",
+      "observed": {
+       "value": 1190.0,
+       "unit": "cfs",
+       "datum": null
+      },
+      "day": "2025-12-06",
+      "percentile": 17.9,
+      "percentile_clamped": false,
+      "reference": {
+       "doy_key": "12-06",
+       "window_days": 2,
+       "n": 400,
+       "independent_years": 80,
+       "period_start": 1945,
+       "period_end": 2025,
+       "method_id": "method:streamflow-doy-climatology@1.0.0"
+      },
+      "rank": {
+       "rank": null,
+       "of": 401,
+       "exceeds_record": false,
+       "previous_max": null,
+       "previous_max_day": null,
+       "prov": "cascade-tail-cedar",
+       "reason": "Not read: the exact rank is fetched only at or above p90, where the stored ladder is within one breakpoint of clamping and the percentile stops discriminating. Below that edge the percentile resolves the value on its own and the rank would be a round trip bought for nothing. The value here is NOT unranked because the record is missing \u2014 see the seasonal multiple, computed from the same reference."
+      },
+      "multiple": null,
+      "boundary": "separated",
+      "bands_within_sampling_error": [],
+      "reason": null
+     },
+     "state_change": [
+      {
+       "window_h": 24,
+       "growth": null,
+       "direction": "unknown",
+       "from_value": null,
+       "to_value": {
+        "value": 1190.0,
+        "unit": "cfs",
+        "datum": null
+       },
+       "span_h": null,
+       "rank": null,
+       "rank_of": null,
+       "rank_reason": null,
+       "reason": "no daily mean within 6 h of 2025-12-05T08:00:00+00:00",
+       "prov": "cascade-change-cedar-24h"
+      },
+      {
+       "window_h": 48,
+       "growth": null,
+       "direction": "unknown",
+       "from_value": null,
+       "to_value": {
+        "value": 1190.0,
+        "unit": "cfs",
+        "datum": null
+       },
+       "span_h": null,
+       "rank": null,
+       "rank_of": null,
+       "rank_reason": null,
+       "reason": "no daily mean within 6 h of 2025-12-04T08:00:00+00:00",
+       "prov": "cascade-change-cedar-48h"
+      }
+     ],
+     "susceptibility": {
+      "prov": "cascade-susceptibility-cedar",
+      "truth": "cascade_derived",
+      "state": "low",
+      "score": 0.179,
+      "value": {
+       "value": 17.9,
+       "unit": "pct",
+       "datum": null
+      },
+      "spread": null,
+      "confidence": "moderate",
+      "experimental": true,
+      "reason": null
+     }
+    },
+    "basin:green-duwamish": {
+     "hydrologic_state": {
+      "prov": "cascade-tail-green-duwamish",
+      "truth": "cascade_derived",
+      "observed": {
+       "value": 3180.0,
+       "unit": "cfs",
+       "datum": null
+      },
+      "day": "2025-12-06",
+      "percentile": 52.4,
+      "percentile_clamped": false,
+      "reference": {
+       "doy_key": "12-06",
+       "window_days": 2,
+       "n": 445,
+       "independent_years": 89,
+       "period_start": 1936,
+       "period_end": 2025,
+       "method_id": "method:streamflow-doy-climatology@1.0.0"
+      },
+      "rank": null,
+      "multiple": null,
+      "boundary": "separated",
+      "bands_within_sampling_error": [],
+      "reason": null
+     },
+     "state_change": [
+      {
+       "window_h": 24,
+       "growth": 1.3438,
+       "direction": "rising",
+       "from_value": {
+        "value": 2366.0,
+        "unit": "cfs",
+        "datum": null
+       },
+       "to_value": {
+        "value": 3180.0,
+        "unit": "cfs",
+        "datum": null
+       },
+       "span_h": 24.0,
+       "rank": null,
+       "rank_of": null,
+       "rank_reason": "No stored growth reference for this gauge, so the change cannot be ranked against its own history. It is written by the annual `usgs.build_climatology` job under `method:streamflow-growth-reference@1.0.0`; until that has run, the change is published without a rank. The change itself is exact either way, and it is NOT withheld because the percentile is low \u2014 the reference is read at every percentile.",
+       "reason": null,
+       "prov": "cascade-change-green-duwamish-24h"
+      }
+     ],
+     "susceptibility": {
+      "prov": "cascade-susceptibility-green-duwamish",
+      "truth": "cascade_derived",
+      "state": "moderate",
+      "score": 0.524,
+      "value": {
+       "value": 52.4,
+       "unit": "pct",
+       "datum": null
+      },
+      "spread": null,
+      "confidence": "moderate",
+      "experimental": true,
+      "reason": null
+     }
+    },
+    "basin:nooksack": {
+     "hydrologic_state": null,
+     "state_change": []
+    }
+   },
+   "provenance_refs": {
+    "cascade-tail-snohomish-snoqualmie": {
+     "source_id": "src:cascade",
+     "source_kind": "EXPERIMENTAL",
+     "product_id": null,
+     "method_id": "method:streamflow-tail-state@0.1.0",
+     "issued_at": null,
+     "valid_time": "2025-12-06T08:00:00Z",
+     "retrieved_at": "2025-12-06T09:00:00Z",
+     "freshness": {
+      "state": "current",
+      "age_seconds": 3600,
+      "expected_cadence_seconds": 86400
+     },
+     "quality": [],
+     "label": "Cascade exact rank and seasonal multiple for the daily mean at 12149000, read in the gauge's own 12-06 day-of-year window (n=475 across 95 independent years, 1929-2024)",
+     "raw_artifact_id": null
+    },
+    "cascade-change-snohomish-snoqualmie-24h": {
+     "source_id": "src:cascade",
+     "source_kind": "DERIVED",
+     "product_id": null,
+     "method_id": "method:streamflow-state-change@0.1.0",
+     "issued_at": null,
+     "valid_time": "2025-12-06T08:00:00Z",
+     "retrieved_at": "2025-12-06T09:00:00Z",
+     "freshness": {
+      "state": "current",
+      "age_seconds": 3600,
+      "expected_cadence_seconds": 86400
+     },
+     "quality": [],
+     "label": "Cascade 24 h multiplicative change of the daily mean at 12149000 (2,910 -> 6,110 cfs over 24.0 h), ranked 759th of 34,957 day-over-day changes in this gauge's record",
+     "raw_artifact_id": null
+    },
+    "cascade-change-snohomish-snoqualmie-48h": {
+     "source_id": "src:cascade",
+     "source_kind": "DERIVED",
+     "product_id": null,
+     "method_id": "method:streamflow-state-change@0.1.0",
+     "issued_at": null,
+     "valid_time": "2025-12-06T08:00:00Z",
+     "retrieved_at": "2025-12-06T09:00:00Z",
+     "freshness": {
+      "state": "current",
+      "age_seconds": 3600,
+      "expected_cadence_seconds": 86400
+     },
+     "quality": [],
+     "label": "Cascade 48 h multiplicative change of the daily mean at 12149000 (2,120 -> 6,110 cfs over 48.0 h), ranked 402nd of 34,956",
+     "raw_artifact_id": null
+    },
+    "cascade-tail-skagit": {
+     "source_id": "src:cascade",
+     "source_kind": "EXPERIMENTAL",
+     "product_id": null,
+     "method_id": "method:streamflow-tail-state@0.1.0",
+     "issued_at": null,
+     "valid_time": "2025-12-11T08:00:00Z",
+     "retrieved_at": "2025-12-06T09:00:00Z",
+     "freshness": {
+      "state": "current",
+      "age_seconds": 3600,
+      "expected_cadence_seconds": 86400
+     },
+     "quality": [
+      "outside_climatology_range",
+      "exceeds_window_record"
+     ],
+     "label": "Cascade exact rank and seasonal multiple for the daily mean at 12189500 (the Sauk), read in the 12-11 day-of-year window (n=490 across 98 independent years, 1911-2025)",
+     "raw_artifact_id": null
+    },
+    "cascade-change-skagit-24h": {
+     "source_id": "src:cascade",
+     "source_kind": "DERIVED",
+     "product_id": null,
+     "method_id": "method:streamflow-state-change@0.1.0",
+     "issued_at": null,
+     "valid_time": "2025-12-11T08:00:00Z",
+     "retrieved_at": "2025-12-06T09:00:00Z",
+     "freshness": {
+      "state": "current",
+      "age_seconds": 3600,
+      "expected_cadence_seconds": 86400
+     },
+     "quality": [],
+     "label": "Cascade 24 h multiplicative change of the daily mean at 12189500 (41,500 -> 62,600 cfs over 24.0 h), ranked 1,517th of 36,007",
+     "raw_artifact_id": null
+    },
+    "cascade-change-skagit-48h": {
+     "source_id": "src:cascade",
+     "source_kind": "DERIVED",
+     "product_id": null,
+     "method_id": "method:streamflow-state-change@0.1.0",
+     "issued_at": null,
+     "valid_time": "2025-12-11T08:00:00Z",
+     "retrieved_at": "2025-12-06T09:00:00Z",
+     "freshness": {
+      "state": "current",
+      "age_seconds": 3600,
+      "expected_cadence_seconds": 86400
+     },
+     "quality": [],
+     "label": "Cascade 48 h multiplicative change of the daily mean at 12189500 (24,413 -> 62,600 cfs over 47.5 h), ranked 96th of 36,006",
+     "raw_artifact_id": null
+    },
+    "cascade-tail-cedar": {
+     "source_id": "src:cascade",
+     "source_kind": "EXPERIMENTAL",
+     "product_id": null,
+     "method_id": "method:streamflow-tail-state@0.1.0",
+     "issued_at": null,
+     "valid_time": "2025-12-06T08:00:00Z",
+     "retrieved_at": "2025-12-06T09:00:00Z",
+     "freshness": {
+      "state": "current",
+      "age_seconds": 3600,
+      "expected_cadence_seconds": 86400
+     },
+     "quality": [],
+     "label": "Cascade exact rank and seasonal multiple for the daily mean at 12119000, read in the 12-06 day-of-year window (n=400 across 80 independent years, 1945-2025)",
+     "raw_artifact_id": null
+    },
+    "cascade-change-cedar-24h": {
+     "source_id": "src:cascade",
+     "source_kind": "DERIVED",
+     "product_id": null,
+     "method_id": "method:streamflow-state-change@0.1.0",
+     "issued_at": null,
+     "valid_time": "2025-12-06T08:00:00Z",
+     "retrieved_at": "2025-12-06T09:00:00Z",
+     "freshness": {
+      "state": "partial",
+      "age_seconds": 3600,
+      "expected_cadence_seconds": 86400
+     },
+     "quality": [],
+     "label": "Cascade 24 h multiplicative change of the daily mean at 12119000 \u2014 not computed at this knowledge time",
+     "raw_artifact_id": null
+    },
+    "cascade-change-cedar-48h": {
+     "source_id": "src:cascade",
+     "source_kind": "DERIVED",
+     "product_id": null,
+     "method_id": "method:streamflow-state-change@0.1.0",
+     "issued_at": null,
+     "valid_time": "2025-12-06T08:00:00Z",
+     "retrieved_at": "2025-12-06T09:00:00Z",
+     "freshness": {
+      "state": "partial",
+      "age_seconds": 3600,
+      "expected_cadence_seconds": 86400
+     },
+     "quality": [],
+     "label": "Cascade 48 h multiplicative change of the daily mean at 12119000 \u2014 not computed at this knowledge time",
+     "raw_artifact_id": null
+    },
+    "cascade-tail-green-duwamish": {
+     "source_id": "src:cascade",
+     "source_kind": "EXPERIMENTAL",
+     "product_id": null,
+     "method_id": "method:streamflow-tail-state@0.1.0",
+     "issued_at": null,
+     "valid_time": "2025-12-06T08:00:00Z",
+     "retrieved_at": "2025-12-06T09:00:00Z",
+     "freshness": {
+      "state": "current",
+      "age_seconds": 3600,
+      "expected_cadence_seconds": 86400
+     },
+     "quality": [],
+     "label": "Cascade exact rank and seasonal multiple for the daily mean at 12113000, read in the 12-06 day-of-year window (n=445 across 89 independent years, 1936-2025)",
+     "raw_artifact_id": null
+    },
+    "cascade-change-green-duwamish-24h": {
+     "source_id": "src:cascade",
+     "source_kind": "DERIVED",
+     "product_id": null,
+     "method_id": "method:streamflow-state-change@0.1.0",
+     "issued_at": null,
+     "valid_time": "2025-12-06T08:00:00Z",
+     "retrieved_at": "2025-12-06T09:00:00Z",
+     "freshness": {
+      "state": "current",
+      "age_seconds": 3600,
+      "expected_cadence_seconds": 86400
+     },
+     "quality": [],
+     "label": "Cascade 24 h multiplicative change of the daily mean at 12113000 (2,366 -> 3,180 cfs over 24.0 h); no growth reference is stored for this gauge, so the change is published without a rank",
+     "raw_artifact_id": null
+    },
+    "cascade-susceptibility-snohomish-snoqualmie": {
+     "source_id": "src:cascade",
+     "source_kind": "EXPERIMENTAL",
+     "product_id": null,
+     "method_id": "method:susceptibility-index@0.2.0",
+     "issued_at": null,
+     "valid_time": "2025-12-06T08:00:00Z",
+     "retrieved_at": "2025-12-11T09:00:00Z",
+     "freshness": {
+      "state": "current",
+      "age_seconds": 3600,
+      "expected_cadence_seconds": 86400
+     },
+     "quality": [],
+     "raw_artifact_id": null,
+     "label": "Cascade experimental susceptibility index from the USGS daily-mean flow percentile (72.4 pct) at this basin's configured gauge \u2014 uncalibrated, never a probability"
+    },
+    "cascade-susceptibility-skagit": {
+     "source_id": "src:cascade",
+     "source_kind": "EXPERIMENTAL",
+     "product_id": null,
+     "method_id": "method:susceptibility-index@0.2.0",
+     "issued_at": null,
+     "valid_time": "2025-12-11T08:00:00Z",
+     "retrieved_at": "2025-12-11T09:00:00Z",
+     "freshness": {
+      "state": "current",
+      "age_seconds": 3600,
+      "expected_cadence_seconds": 86400
+     },
+     "quality": [],
+     "raw_artifact_id": null,
+     "label": "Cascade experimental susceptibility index from the USGS daily-mean flow percentile (95.0 pct) at this basin's configured gauge \u2014 uncalibrated, never a probability"
+    },
+    "cascade-susceptibility-cedar": {
+     "source_id": "src:cascade",
+     "source_kind": "EXPERIMENTAL",
+     "product_id": null,
+     "method_id": "method:susceptibility-index@0.2.0",
+     "issued_at": null,
+     "valid_time": "2025-12-06T08:00:00Z",
+     "retrieved_at": "2025-12-11T09:00:00Z",
+     "freshness": {
+      "state": "current",
+      "age_seconds": 3600,
+      "expected_cadence_seconds": 86400
+     },
+     "quality": [],
+     "raw_artifact_id": null,
+     "label": "Cascade experimental susceptibility index from the USGS daily-mean flow percentile (17.9 pct) at this basin's configured gauge \u2014 uncalibrated, never a probability"
+    },
+    "cascade-susceptibility-green-duwamish": {
+     "source_id": "src:cascade",
+     "source_kind": "EXPERIMENTAL",
+     "product_id": null,
+     "method_id": "method:susceptibility-index@0.2.0",
+     "issued_at": null,
+     "valid_time": "2025-12-06T08:00:00Z",
+     "retrieved_at": "2025-12-11T09:00:00Z",
+     "freshness": {
+      "state": "current",
+      "age_seconds": 3600,
+      "expected_cadence_seconds": 86400
+     },
+     "quality": [],
+     "raw_artifact_id": null,
+     "label": "Cascade experimental susceptibility index from the USGS daily-mean flow percentile (52.4 pct) at this basin's configured gauge \u2014 uncalibrated, never a probability"
+    }
+   },
+   "until": "2026-01-01T00:00:00Z"
+  },
+  {
+   "id": "before-any-reference",
+   "from": "1970-01-01T00:00:00Z",
+   "note": "A knowledge time before any day-of-year reference was stored. This is what the strict replay returns: no level, no velocity, and a reason naming the missing input. It exists so the client is tested on refusal, not only on data.",
+   "items": {},
+   "provenance_refs": {},
+   "until": "2025-12-05T00:00:00Z"
+  }
+ ]
+}

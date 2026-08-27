@@ -14,8 +14,9 @@ import stateLod from './fixtures/basins_seed_state_lod.json';
 import basinEnvelope from './fixtures/basin_skagit_envelope.json';
 import riverEnvelope from './fixtures/river_mvew1_envelope.json';
 import samples from './fixtures/mvew1-samples.json';
+import tier0 from './fixtures/basin_tier0.json';
 
-const fx = { basinLod, stateLod, basinEnvelope, riverEnvelope, samples };
+const fx = { basinLod, stateLod, basinEnvelope, riverEnvelope, samples, tier0 };
 
 const HEADERS = {
   'Content-Type': 'application/json; charset=utf-8',

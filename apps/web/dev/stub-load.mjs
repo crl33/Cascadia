@@ -18,5 +18,6 @@ export function loadFixtures(root = REPO_ROOT) {
     basinEnvelope: readJson(resolve(root, 'packages/contracts/fixtures/basin_skagit_envelope.json')),
     riverEnvelope: readJson(resolve(root, 'packages/contracts/fixtures/river_mvew1_envelope.json')),
     samples: readJson(resolve(here, 'fixtures/mvew1-samples.json')),
+    tier0: readJson(resolve(root, 'functions/fixtures/basin_tier0.json')),
   };
 }

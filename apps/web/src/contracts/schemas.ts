@@ -88,6 +88,78 @@ const OfficialAlertSchema = z.object({
   issuer: z.string(), prov: z.string(),
 });
 
+/* ---- Tier 0 (contract 1.3.0): level, velocity and the record they are read against --------
+ *
+ * These existed in `generated.ts` from the day the contract was bumped and were absent HERE, so
+ * `z.object`'s minor-version tolerance stripped every one of them before the UI could see it:
+ * the exact rank, the seasonal multiple, the state change and the boundary condition were
+ * fetched, parsed away, and never rendered. Minor-version tolerance is still what we want for
+ * genuinely unknown future fields — the fix is that a field the contract ALREADY declares must
+ * not be unknown here, which the key check at the bottom of this file now enforces.
+ *
+ * `direction` is `z.string()` and not an enum on purpose: the generated contract types it as a
+ * string, and a stricter runtime schema would drop an entire basin over a direction word this
+ * build has not seen. The panel renders the word it is given.
+ */
+
+export const BandBoundarySchema = z.enum(['separated', 'near_band_edge', 'unquantified']);
+
+export const SeasonalMultipleSchema = z.object({
+  multiple: z.number(),
+  reference: QuantitySchema,
+  reference_percentile: z.number(),
+  prov: z.string(),
+});
+
+export const RecordRankSchema = z.object({
+  rank: z.number().nullable().optional(),
+  of: z.number(),
+  exceeds_record: z.boolean().optional(),
+  previous_max: QuantitySchema.nullable().optional(),
+  previous_max_day: z.string().nullable().optional(),
+  reason: z.string().nullable().optional(),
+  prov: z.string(),
+});
+
+export const ReferenceWindowSchema = z.object({
+  doy_key: z.string(),
+  window_days: z.number(),
+  n: z.number(),
+  independent_years: z.number(),
+  period_start: z.number().nullable().optional(),
+  period_end: z.number().nullable().optional(),
+  method_id: z.string(),
+});
+
+export const HydrologicStateSchema = z.object({
+  prov: z.string(),
+  truth: TruthClassSchema,
+  observed: QuantitySchema,
+  day: z.string(),
+  percentile: z.number().nullable().optional(),
+  percentile_clamped: z.boolean().optional(),
+  reference: ReferenceWindowSchema.nullable().optional(),
+  rank: RecordRankSchema.nullable().optional(),
+  multiple: SeasonalMultipleSchema.nullable().optional(),
+  boundary: BandBoundarySchema.optional(),
+  bands_within_sampling_error: z.array(SurfaceLevelSchema).optional(),
+  reason: z.string().nullable().optional(),
+});
+
+export const StateChangeEntrySchema = z.object({
+  window_h: z.number(),
+  growth: z.number().nullable().optional(),
+  direction: z.string(),
+  from_value: QuantitySchema.nullable().optional(),
+  to_value: QuantitySchema.nullable().optional(),
+  span_h: z.number().nullable().optional(),
+  rank: z.number().nullable().optional(),
+  rank_of: z.number().nullable().optional(),
+  rank_reason: z.string().nullable().optional(),
+  reason: z.string().nullable().optional(),
+  prov: z.string(),
+});
+
 export const BasinVisualizationStateSchema = z.object({
   id: z.string().regex(/^basin:[a-z0-9-]+$/),
   name: z.string(),
@@ -99,6 +171,11 @@ export const BasinVisualizationStateSchema = z.object({
   outlet_forecast_point_id: z.string().nullable().optional(),
   geometry_ref: z.object({ lod: z.string(), feature_id: z.string(), url: z.string().nullable().optional() }),
   label_priority: z.number().optional(),
+  // Tier 0. Both are OUTSIDE `surfaces` in the contract and stay outside here, because a client
+  // that nested them under the susceptibility surface would be one step from fusing them into
+  // its state — which is the composite the doctrine forbids.
+  hydrologic_state: HydrologicStateSchema.nullable().optional(),
+  state_change: z.array(StateChangeEntrySchema).optional(),
 });
 
 const ObservedRiverStateSchema = z.object({
@@ -296,11 +373,44 @@ export type ForecastRun = z.infer<typeof ForecastRunSchema>;
 export type RunListItem = z.infer<typeof RunListItemSchema>;
 export type RunsList = z.infer<typeof RunsListSchema>;
 
-/* ---- compile-time drift check: zod-inferred types must be assignable to the generated ones ---- */
+/* ---- compile-time drift check ------------------------------------------------------------
+ *
+ * TWO checks, because one of them cannot see the failure that actually happened.
+ *
+ * `Assignable` proves the runtime schema does not INVENT or mistype anything: whatever zod
+ * infers has to fit the generated contract. It is one-directional by construction, and every
+ * generated Tier 0 field is optional, so a schema that simply OMITS `hydrologic_state` is still
+ * perfectly assignable. That is exactly what shipped: the fields were in `generated.ts`, absent
+ * here, and silently stripped at parse time with a green CI.
+ *
+ * `NoMissingKeys` is the other direction and the one that would have caught it: every key the
+ * generated contract declares must EXIST in the runtime schema. It reports the missing names in
+ * the type error rather than a bare `false`, so the failure says what to add. It deliberately
+ * compares keys and not full types — the value types are already covered by `Assignable`, and a
+ * whole-type bidirectional check would fail on legitimate narrowing (zod enums where the
+ * generator emits `string`).
+ *
+ * Minor-version tolerance is unaffected: a field the contract has NOT yet declared is still
+ * unknown to both sides and still stripped. What is forbidden is a field the contract already
+ * declares being unknown to the parser.
+ */
 type Assignable<T extends U, U> = T;
+type MissingKeys<Contract, Runtime> = Exclude<keyof Contract, keyof Runtime>;
+type NoMissingKeys<Contract, Runtime> =
+  MissingKeys<Contract, Runtime> extends never ? true : MissingKeys<Contract, Runtime>;
+
+export const _noMissingBasinKeys: NoMissingKeys<Generated.BasinVisualizationState, BasinVisualizationState> = true;
+export const _noMissingRiverKeys: NoMissingKeys<Generated.RiverVisualizationState, RiverVisualizationState> = true;
+export const _noMissingHydrologicStateKeys: NoMissingKeys<Generated.HydrologicState, z.infer<typeof HydrologicStateSchema>> = true;
+export const _noMissingStateChangeKeys: NoMissingKeys<Generated.StateChange1, z.infer<typeof StateChangeEntrySchema>> = true;
+export const _noMissingSeasonalMultipleKeys: NoMissingKeys<Generated.SeasonalMultiple, z.infer<typeof SeasonalMultipleSchema>> = true;
+export const _noMissingRecordRankKeys: NoMissingKeys<Generated.RecordRank, z.infer<typeof RecordRankSchema>> = true;
+export const _noMissingReferenceWindowKeys: NoMissingKeys<Generated.ReferenceWindow, z.infer<typeof ReferenceWindowSchema>> = true;
 export type _DriftEnvelope = Assignable<ContractEnvelope, Generated.ContractEnvelope>;
 export type _DriftBasin = Assignable<BasinVisualizationState, Generated.BasinVisualizationState>;
 export type _DriftRiver = Assignable<RiverVisualizationState, Generated.RiverVisualizationState>;
 export type _DriftProv = Assignable<ProvenanceRef, Generated.ProvenanceRef>;
 export type _DriftFreshness = Assignable<Freshness, Generated.Freshness>;
 export type _DriftScene = Assignable<SceneSummary, Generated.SceneSummary>;
+export type _DriftHydrologicState = Assignable<z.infer<typeof HydrologicStateSchema>, Generated.HydrologicState>;
+export type _DriftStateChange = Assignable<z.infer<typeof StateChangeEntrySchema>, Generated.StateChange1>;

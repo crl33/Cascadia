@@ -118,3 +118,55 @@ body { background: var(--canvas); color: var(--text-primary); font-family: var(-
 .evolution-table-wrap { overflow-x: auto; }
 .evolution-table th, .evolution-table td { white-space: nowrap; padding-right: 10px; }
 .evolution-superseded td { color: var(--text-muted); }
+
+/* --- Tier 0: level, change, and whether the change is unusual -------------------------------
+ *
+ * Deliberately NOT a card grid and deliberately NOT in the alarm register. These are
+ * C-EXPERIMENTAL and DERIVED statements and VISUAL_TRUTH_DOCTRINE §2 reserves the red family
+ * for official flood categories; an NWS warning must never look the same as a Cascadia-derived
+ * velocity. The whole section reads in --text-secondary / --text-muted with one --glacier rule
+ * marking it as derived context inside the susceptibility row.
+ */
+.t0 { margin: 6px 0 2px; border-left: 2px solid var(--glacier); padding-left: 10px; }
+.t0-block + .t0-block { margin-top: 10px; padding-top: 8px; border-top: 1px dotted var(--stroke); }
+.t0-kicker {
+  margin: 0 0 4px; font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--text-muted);
+}
+.t0-line { margin: 2px 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px; font-size: 13px; }
+/* the figure is the scannable part; the sentence beside it is what makes it mean something */
+.t0-figure { color: var(--text-primary); font-size: 14px; }
+.t0-direction { font-size: 11px; color: var(--text-secondary); letter-spacing: 0.04em; }
+.t0-note { margin: 2px 0; font-size: 12px; color: var(--text-muted); }
+.t0-ref { margin: 4px 0 2px; font-size: 11px; }
+.t0-changes { list-style: none; margin: 4px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.t0-change + .t0-change { padding-top: 8px; border-top: 1px dotted var(--stroke); }
+
+/* A refusal is one scannable line plus the backend's own sentence, one interaction away — not
+ * hidden behind a popover and never replaced with a generic "Unavailable". */
+.t0-refusal { margin: 2px 0; }
+.t0-refusal > summary {
+  display: flex; align-items: baseline; gap: 8px; cursor: pointer; list-style: none;
+  font-size: 13px; color: var(--text-secondary);
+}
+.t0-refusal > summary::-webkit-details-marker { display: none; }
+.t0-refusal > summary:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; border-radius: 3px; }
+.t0-refusal-more { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); }
+.t0-refusal-more::before { content: '▸ '; }
+.t0-refusal[open] .t0-refusal-more::before { content: '▾ '; }
+.t0-refusal .reason { margin: 4px 0 0; }
+
+/* Long backend sentences must wrap, never widen the panel or clip. */
+.t0 .reason, .t0-note, .t0-ref { overflow-wrap: anywhere; }
+
+@media (max-width: 640px) {
+  /* `min(420px, 40vw)` is 156 px at a 390 px viewport, which is narrower than the panel's own
+   * row header — the panel scrolled sideways at mobile width before Tier 0 existed and would
+   * have been unreadable with it. Below 640 px the panel takes the width it needs; the scene
+   * stays interactive because `.panels` keeps `pointer-events: none` and only the panel itself
+   * re-enables them. */
+  .panels { left: 12px; width: auto; max-width: none; }
+  .t0 { padding-left: 8px; }
+  .t0-line { gap: 4px; }
+  .t0-figure { font-size: 13px; }
+}

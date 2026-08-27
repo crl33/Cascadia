@@ -73,11 +73,33 @@ export function unknownBasinItem(basinFeature) {
   };
 }
 
+/**
+ * The Tier 0 overlay for one knowledge time. Positions are ordered oldest-first in the fixture
+ * and the LAST one whose `from` is at or before `as_of` wins, so a replay cursor dragged
+ * backwards lands on the earlier position and the later position's values do not stay on screen.
+ * Absent `as_of` means "now", which is the most recent position.
+ */
+export function tier0At(fx, asOf) {
+  // LIVE mode (no as_of) gets NO overlay: this stub carries no live Tier 0 data, and serving
+  // December 2025 values as though they were current is exactly the stale-knowledge-time bug the
+  // replay tests exist to forbid. Positions are half-open windows [from, until).
+  if (!asOf) return null;
+  const at = Date.parse(asOf);
+  if (!Number.isFinite(at)) return null;
+  for (const p of fx.tier0?.positions ?? []) {
+    const from = Date.parse(p.from);
+    const until = p.until ? Date.parse(p.until) : Number.POSITIVE_INFINITY;
+    if (at >= from && at < until) return p;
+  }
+  return null;
+}
+
 export function buildVizBasins(fx, asOf = null) {
   const env = fx.basinEnvelope;
   const items = [];
   const provenance_refs = {};
   const fixtureById = new Map(env.items.map((i) => [i.id, i]));
+  const tier0 = tier0At(fx, asOf);
   for (const f of fx.basinLod.features) {
     const fixtureItem = fixtureById.get(f.properties.id);
     if (fixtureItem) {
@@ -92,7 +114,43 @@ export function buildVizBasins(fx, asOf = null) {
       }, u.provenance_refs);
     }
   }
-  return { ...env, as_of: asOf ?? env.as_of, items, provenance_refs };
+  // Tier 0 rides ON TOP of the item for this knowledge time. A basin with no entry at this
+  // position gets `hydrologic_state: null` and `state_change: []` EXPLICITLY rather than by
+  // omission, so a cursor moved back in time clears the previous position's values instead of
+  // leaving them on screen — the property tests/e2e/web/tier0-replay.spec.ts asserts.
+  const overlaid = items.map((item) => {
+    const patch = tier0?.items?.[item.id];
+    if (!tier0) return item;
+    const next = { ...item, hydrologic_state: patch?.hydrologic_state ?? null, state_change: patch?.state_change ?? [] };
+    // The banded susceptibility index for this knowledge time, so the stub shows the SEPARATION
+    // the design exists for: a MODERATE band beside a large, high-ranked change. Without it the
+    // spike fixture's permanent UNKNOWN would hide the one contrast worth demonstrating.
+    if (patch?.susceptibility) next.surfaces = { ...item.surfaces, susceptibility: patch.susceptibility };
+    return next;
+  });
+  const refs = { ...provenance_refs };
+  if (tier0) {
+    for (const [key, ref] of Object.entries(tier0.provenance_refs ?? {})) {
+      if (provKeysIn(overlaid).has(key)) refs[key] = ref;
+    }
+  }
+  return { ...env, as_of: asOf ?? env.as_of, items: overlaid, provenance_refs: refs };
+}
+
+/** Every `prov` key actually referenced by these items — so the overlay adds no orphan refs. */
+function provKeysIn(items) {
+  const keys = new Set();
+  const walk = (v) => {
+    if (Array.isArray(v)) { v.forEach(walk); return; }
+    if (v && typeof v === 'object') {
+      for (const [k, x] of Object.entries(v)) {
+        if (k === 'prov' && typeof x === 'string') keys.add(x);
+        else walk(x);
+      }
+    }
+  };
+  walk(items);
+  return keys;
 }
 
 export function buildBasinState(fx, id, asOf = null) {

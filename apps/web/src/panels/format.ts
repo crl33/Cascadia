@@ -36,3 +36,26 @@ export const formatFreshness = (f: Freshness): string => {
 };
 
 export const words = (s: string | null | undefined): string => (s ?? 'unknown').replace(/_/g, ' ');
+
+/**
+ * `2.0997` → `2.10×`. Two decimals because a growth of 1.37 and one of 1.38 are different
+ * statements at this scale, and a third decimal is precision the daily mean does not carry.
+ */
+export const formatMultiplier = (n: number): string => `${n.toFixed(2)}×`;
+
+/**
+ * `2651` → `2,651st`. An ORDINAL, because that is what a rank is — deliberately not converted
+ * to a percentile or a percentage. "the 2,651st largest of 34,957" states its own denominator;
+ * "top 7.6 %" would advertise a resolution the count does not have and would invite comparison
+ * with the day-of-year percentile, which is a different quantity against a different sample.
+ */
+export const formatOrdinal = (n: number): string => {
+  const abs = Math.abs(n);
+  const lastTwo = abs % 100;
+  const last = abs % 10;
+  const suffix = lastTwo >= 11 && lastTwo <= 13 ? 'th' : last === 1 ? 'st' : last === 2 ? 'nd' : last === 3 ? 'rd' : 'th';
+  return `${n.toLocaleString('en-US')}${suffix}`;
+};
+
+/** `34957` → `34,957`. Grouped for reading; never rounded — a sample size is a count. */
+export const formatCount = (n: number): string => n.toLocaleString('en-US');

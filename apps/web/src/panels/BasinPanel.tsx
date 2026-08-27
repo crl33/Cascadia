@@ -24,6 +24,7 @@ import { CATEGORY_BADGE } from '../design-system/badges';
 import { ProvenancePopover } from '../design-system/ProvenancePopover';
 import type { BasinVisualizationState, ProvenanceRef, TruthClass } from '../contracts/schemas';
 import { ProvenanceLine } from './ProvenanceLine';
+import { Tier0Section } from './Tier0Section';
 import { formatNumber, formatQuantity, formatUtc, words } from './format';
 
 type Surfaces = BasinVisualizationState['surfaces'];
@@ -40,9 +41,12 @@ interface SurfaceRowProps {
   truth: TruthClass | null;
   testId: string;
   extra?: ReactNode;
+  /** Rendered BELOW this surface's own provenance line, so a trailing badge is never misread as
+   *  belonging to the block after it. Tier 0 uses this: its statements carry their own badges. */
+  after?: ReactNode;
 }
 
-function SurfaceRow({ title, state, reason, provKey, refs, truth, testId, extra }: SurfaceRowProps) {
+function SurfaceRow({ title, state, reason, provKey, refs, truth, testId, extra, after }: SurfaceRowProps) {
   return (
     <div className="row" data-testid={testId}>
       <div className="row-head">
@@ -52,6 +56,7 @@ function SurfaceRow({ title, state, reason, provKey, refs, truth, testId, extra 
       {extra}
       {reason ? <p className="reason" data-testid={`${testId}-reason`}>{reason}</p> : null}
       <ProvenanceLine provKey={provKey} prov={refs[provKey]} truth={truth} testId={`${testId}-badge`} />
+      {after}
     </div>
   );
 }
@@ -137,6 +142,18 @@ export function BasinPanel() {
         truth={susceptibility.truth}
         testId="surface-susceptibility"
         extra={<SurfaceValue surface={susceptibility} testId="surface-susceptibility-value" />}
+        // Tier 0 lives INSIDE the susceptibility row because it answers questions about the same
+        // river state — but AFTER the band's own provenance line, so the band keeps its badge and
+        // Tier 0's separately-provenanced statements keep theirs. It is never folded into the
+        // banded index above it, which is unchanged and is still the level state.
+        after={
+          <Tier0Section
+            state={item.hydrologic_state}
+            changes={item.state_change}
+            refs={refs}
+            surfaceReason={susceptibility.reason}
+          />
+        }
       />
       <SurfaceRow
         title={`Meteorological forcing${forcing.horizon_h ? ` · ${forcing.horizon_h} h` : ''}`}
