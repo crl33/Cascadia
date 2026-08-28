@@ -40,6 +40,11 @@ test('scrub into the past: AS OF banner appears, as_of enters the URL, the panel
   const asOfRequest = page.waitForRequest(
     (request) => request.url().includes(MVEW1_STATE) && new URL(request.url()).searchParams.has('as_of'),
   );
+  // ...and so must the weather FIELD: scrubbing is timeline-driven spatial change (C3b) —
+  // the map's precipitation must be re-asked at the scrubbed knowledge time, not frozen at now.
+  const fieldAsOfRequest = page.waitForRequest(
+    (request) => request.url().includes('/viz/fields/precip_observed') && new URL(request.url()).searchParams.has('as_of'),
+  );
 
   const scrubber = page.getByTestId('timeline-scrubber');
   await scrubber.focus();
@@ -51,6 +56,7 @@ test('scrub into the past: AS OF banner appears, as_of enters the URL, the panel
   await expect(page).toHaveURL(/[?&]as_of=/);
 
   const request = await asOfRequest;
+  await fieldAsOfRequest;
   const requestAsOf = new URL(request.url()).searchParams.get('as_of') ?? '';
   const requestKnowledgeTime = new Date(requestAsOf);
   expect(Number.isNaN(requestKnowledgeTime.getTime())).toBe(false);

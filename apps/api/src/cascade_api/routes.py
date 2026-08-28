@@ -21,6 +21,7 @@ from cascade_core.registry import (
     JOBS,
     PRODUCT_HEFS_QUANTILES,
     PRODUCT_MRMS_QPE,
+    PRODUCT_SNODAS_SWE,
     PRODUCT_USGS_IV,
     PRODUCT_WRITERS,
     PRODUCTS,
@@ -171,10 +172,27 @@ async def viz_rivers(session: Session, as_of: AsOf, basin: Annotated[str, Query(
     return _dump(await river_envelope(k, await k.forecast_points(basin), generated_at=utcnow()))
 
 
-#: The field layers the API serves (ADR-0020): layer name -> (product, stored field name,
-#: accumulation window). C4 adds forecast kinds; this map is the whole current catalogue.
-FIELD_LAYERS: dict[str, tuple[str, str, str]] = {
-    "precip_observed": (PRODUCT_MRMS_QPE, "qpe_01h", "1h"),
+#: The field layers the API serves (ADR-0020): the whole current catalogue, each with its
+#: own freshness bound and label — a daily analysis 30 h old is current in a way an hourly
+#: accumulation 30 h old never is. C4 adds forecast kinds.
+class _FieldLayer:
+    def __init__(self, product_id: str, fld: str, window: str, kind: str, truth: str,
+                 lookback: timedelta, label: str) -> None:
+        self.product_id, self.field, self.window = product_id, fld, window
+        self.kind, self.truth, self.lookback, self.label = kind, truth, lookback, label
+
+
+FIELD_LAYERS: dict[str, _FieldLayer] = {
+    "precip_observed": _FieldLayer(
+        PRODUCT_MRMS_QPE, "qpe_01h", "1h", kind="observed", truth="observation",
+        lookback=timedelta(hours=6),
+        label="MRMS multi-sensor QPE pass 2, 1 h accumulation ending {valid:%Y-%m-%d %H:%M}Z",
+    ),
+    "snow_cover": _FieldLayer(
+        PRODUCT_SNODAS_SWE, "swe_daily", "daily", kind="analysis", truth="authoritative_model",
+        lookback=timedelta(hours=36),
+        label="SNODAS modeled snow water equivalent, {valid:%Y-%m-%d %H:%M}Z snapshot — an assimilation analysis, not a gauge measurement",
+    ),
 }
 
 
@@ -190,21 +208,23 @@ async def viz_field(session: Session, as_of: AsOf, layer: Annotated[str, Path(pa
     entry = FIELD_LAYERS.get(layer)
     if entry is None:
         raise HTTPException(status_code=404, detail=f"unknown field layer {layer!r}; known: {sorted(FIELD_LAYERS)}")
-    product_id, fld, window = entry
     k = as_known_at(session, as_of)
-    row = await k.latest_field_raster(product_id, fld)
+    row = await k.latest_field_raster(entry.product_id, entry.field, lookback=entry.lookback)
     if row is None:
         raise HTTPException(
             status_code=404,
-            detail=f"no {layer} field within 6 h of this knowledge time — nothing current to draw",
+            detail=(
+                f"no {layer} field within {int(entry.lookback.total_seconds() // 3600)} h of "
+                "this knowledge time — nothing current to draw"
+            ),
         )
     products = await k.products()
-    product = products.get(product_id)
+    product = products.get(entry.product_id)
     prov_key = f"field-{layer}"
     ref = ProvenanceRef(
-        source_id=product.source_id if product else "src:mrms",
+        source_id=product.source_id if product else "src:unknown",
         source_kind=resolved_source_kind(product),
-        product_id=product_id,
+        product_id=entry.product_id,
         valid_time=row.valid_time,
         retrieved_at=row.retrieved_at,
         freshness=compute_freshness(
@@ -215,20 +235,20 @@ async def viz_field(session: Session, as_of: AsOf, layer: Annotated[str, Path(pa
             now=k.as_of,
         ),
         label=(
-            f"MRMS multi-sensor QPE pass 2, 1 h accumulation ending {row.valid_time:%Y-%m-%d %H:%M}Z, "
-            f"cut to the seeded window ({row.nx}x{row.ny} at {row.dlon:g} deg) and quantized to "
-            f"{row.scale:g} {row.unit} steps ({row.method_id})"
+            entry.label.format(valid=row.valid_time)
+            + f", cut to the seeded window ({row.nx}x{row.ny} at {row.dlon:g} deg) and "
+            f"quantized to {row.scale:g} {row.unit} steps ({row.method_id})"
         ),
         raw_artifact_id=None if row.raw_artifact_id is None else str(row.raw_artifact_id),
     )
     state = FieldRasterState(
-        kind="observed",
-        field=fld,
-        window=window,
+        kind=entry.kind,
+        field=entry.field,
+        window=entry.window,
         valid_time=row.valid_time,
         as_of=k.as_of,
         generated_at=utcnow(),
-        truth="observation",
+        truth=entry.truth,
         unit=row.unit,
         spec=FieldGridSpec(lo1=row.lo1, la1=row.la1, dlon=row.dlon, dlat=row.dlat, nx=row.nx, ny=row.ny),
         scale=row.scale,

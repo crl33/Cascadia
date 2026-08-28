@@ -19,6 +19,7 @@ export function loadFixtures(root = REPO_ROOT) {
     basinEnvelope: readJson(resolve(root, 'packages/contracts/fixtures/viz_basins_envelope.json')),
     riverEnvelope: readJson(resolve(root, 'packages/contracts/fixtures/river_mvew1_envelope.json')),
     fieldPrecip: readJson(resolve(root, 'packages/contracts/fixtures/field_precip_observed.json')),
+    fieldSnow: readJson(resolve(root, 'packages/contracts/fixtures/field_snow_cover.json')),
     samples: readJson(resolve(here, 'fixtures/mvew1-samples.json')),
     tier0: readJson(resolve(root, 'functions/fixtures/basin_tier0.json')),
     riverNetwork: JSON.parse(gunzipSync(readFileSync(resolve(root, 'tests/fixtures/geo/river_network.json.gz'))).toString('utf8')),

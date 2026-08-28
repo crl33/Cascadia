@@ -17,11 +17,11 @@ from cascade_contracts.common import (
     TruthClass,
 )
 from cascade_contracts.visualization import (
-    FieldGridSpec,
-    FieldRasterState,
     BandBoundary,
     BasinVisualizationState,
     ContractEnvelope,
+    FieldGridSpec,
+    FieldRasterState,
     FloodCategory,
     Headroom,
     HydrologicState,

@@ -110,7 +110,7 @@ async def test_one_day_lands_as_twelve_rows_with_the_glacier_truth(sessions, tmp
         rows = list((await s.execute(select(DerivedFeature).where(
             DerivedFeature.feature.in_([snodas_jobs.FEATURE_SWE, snodas_jobs.FEATURE_SCF])))).scalars())
         masks = list((await s.execute(select(GridMask))).scalars())
-    assert written == 12 and len(rows) == 12  # 6 basins x (SWE + fraction)
+    assert written == 13 and len(rows) == 12  # 6 basins x (SWE + fraction) + 1 window raster
     assert len(masks) == 6
     swe = {r.scope_id: r for r in rows if r.feature == snodas_jobs.FEATURE_SWE}
     scf = {r.scope_id: r for r in rows if r.feature == snodas_jobs.FEATURE_SCF}
@@ -149,7 +149,7 @@ async def test_a_second_run_writes_nothing(sessions, tmp_path) -> None:
     async with sessions() as s:
         second = await snodas_jobs.run_fetch_swe(s, _fetcher(tmp_path), geo_dir=GEO, now=NOW)
         await s.commit()
-    assert first == 12 and second == 0
+    assert first == 13 and second == 0  # 12 basin rows + the window raster
 
 
 @respx.mock
@@ -196,7 +196,7 @@ async def test_a_non_utc_now_neither_refetches_nor_wedges(sessions, tmp_path) ->
         second = await snodas_jobs.run_fetch_swe(s, _fetcher(tmp_path), geo_dir=GEO, now=la_now)
         await s.commit()
         total = len((await s.execute(select(DerivedFeature))).scalars().all())
-    assert first == 12 and second == 0 and total == 12
+    assert first == 13 and second == 0 and total == 12
 
 
 @respx.mock
@@ -221,3 +221,82 @@ async def test_a_partial_day_is_completed_row_by_row_never_reinserted(sessions, 
         rows = (await s.execute(select(DerivedFeature))).scalars().all()
     assert written == 2, "exactly the missing basin's two features, nothing re-inserted"
     assert len(rows) == 12
+
+
+@respx.mock
+async def test_the_swe_window_raster_round_trips_at_integer_millimetres(sessions, tmp_path) -> None:
+    """ADR-0020 for SNODAS: the stored raster decodes back to the plane's window at 1 mm
+    steps (the provider's own integers, nothing rounded), sentinels distinct from zero SWE."""
+    import gzip as _gzip
+
+    import numpy as np
+
+    from cascade_core.models import FieldRaster
+    from cascade_core.registry import PRODUCT_SNODAS_SWE
+    from cascade_geo.window_raster import SENTINEL, cut_window
+    from cascade_providers_snodas.parser import parse_snodas_swe
+
+    respx.get(day_tar_url(date(2026, 8, 27))).mock(
+        return_value=httpx.Response(200, content=TAR, headers={"Last-Modified": PUBLISHED}))
+    respx.get(url__startswith="https://noaadata.apps.nsidc.org/").mock(
+        return_value=httpx.Response(404))
+    async with sessions() as s:
+        await snodas_jobs.run_fetch_swe(s, _fetcher(tmp_path), geo_dir=GEO, now=NOW)
+        await s.commit()
+        row = (await s.execute(select(FieldRaster))).scalars().one()
+
+    assert row.product_id == PRODUCT_SNODAS_SWE and row.field == snodas_jobs.FIELD_SWE_RASTER
+    assert row.unit == "mm" and row.scale == 1.0 and row.method_id == "method:field-raster-window@1.0.0"
+
+    field = parse_snodas_swe(TAR)
+    from cascade_providers_snodas.parser import SATURATED
+
+    expected = cut_window(field.grid, field.values, scale=1.0, unit="mm", invalid_values=(SATURATED,))
+    got = np.frombuffer(_gzip.decompress(row.cells), dtype="<u2")
+    want = np.frombuffer(_gzip.decompress(expected.cells), dtype="<u2")
+    assert np.array_equal(got, want) and (row.nx, row.ny) == (expected.nx, expected.ny)
+    # SNODAS marks off-grid/no-data negative; those must be SENTINEL in the packing, never 0
+    assert (SENTINEL in got) == (SENTINEL in want)
+    # 32767 (int16 saturation, the glacier artifact) is a CODE, not 32 metres of snow: it must
+    # be SENTINEL in the packing and must never set max_value
+    assert 32767 not in got[got != SENTINEL] and row.max_value < 32767
+    assert row.max_value == expected.max_value
+
+
+@respx.mock
+async def test_the_snow_field_endpoint_serves_analysis_with_the_daily_freshness_bound(tmp_path) -> None:
+    """/viz/fields/snow_cover: kind `analysis`, truth `authoritative_model`, and a 36 h bound —
+    a daily snapshot 30 h old is current in a way an hourly accumulation never is; past the
+    bound the answer is the reasoned 404, never yesterday presented as now."""
+    import httpx as _httpx
+
+    from datetime import timedelta
+
+    from cascade_api.main import create_app
+    from cascade_contracts import FieldRasterState
+    from cascade_core.settings import Settings
+
+    settings = Settings(db_url=f"sqlite+aiosqlite:///{tmp_path}/snodas_api.db", raw_dir=tmp_path / "raw", geo_dir=GEO)
+    engine = make_engine(settings.db_url)
+    await create_schema(engine)
+    factory = make_session_factory(engine)
+    respx.get(day_tar_url(date(2026, 8, 27))).mock(
+        return_value=_httpx.Response(200, content=TAR, headers={"Last-Modified": PUBLISHED}))
+    respx.get(url__startswith="https://noaadata.apps.nsidc.org/").mock(return_value=_httpx.Response(404))
+    async with factory() as s:
+        await seed_all(s, geo_dir=GEO, seed_file=SEED_FILE)
+        await snodas_jobs.run_fetch_swe(s, _fetcher(tmp_path), geo_dir=GEO, now=NOW)
+        await s.commit()
+
+    app = create_app(settings, engine=engine)
+    async with _httpx.AsyncClient(transport=_httpx.ASGITransport(app=app), base_url="http://test") as c:
+        r = await c.get("/viz/fields/snow_cover", params={"as_of": (NOW + timedelta(hours=20)).isoformat()})
+        assert r.status_code == 200
+        state = FieldRasterState.model_validate(r.json())
+        assert state.kind == "analysis" and state.truth == "authoritative_model"
+        assert state.window == "daily" and state.unit == "mm" and state.scale == 1.0
+        assert "assimilation analysis" in state.provenance_refs[state.prov].label
+
+        stale = await c.get("/viz/fields/snow_cover", params={"as_of": (NOW + timedelta(hours=40)).isoformat()})
+        assert stale.status_code == 404 and "within 36 h" in stale.json()["detail"]
+    await engine.dispose()

@@ -1,0 +1,44 @@
+{
+ "contract": "FieldRasterState",
+ "version": "1.5.0",
+ "kind": "analysis",
+ "field": "swe_daily",
+ "window": "daily",
+ "valid_time": "2026-08-27T06:00:00Z",
+ "as_of": "2026-08-27T06:00:00Z",
+ "generated_at": "2026-08-27T06:00:00Z",
+ "truth": "authoritative_model",
+ "unit": "mm",
+ "spec": {
+  "lo1": -122.86249999999464,
+  "la1": 49.454166666664676,
+  "dlon": 0.008333333333333,
+  "dlat": 0.008333333333333,
+  "nx": 284,
+  "ny": 339
+ },
+ "scale": 1.0,
+ "sentinel": 65535,
+ "display_max": 31651.0,
+ "cells_b64": "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",
+ "prov": "field-snow_cover",
+ "provenance_refs": {
+  "field-snow_cover": {
+   "source_id": "src:snodas",
+   "source_kind": "MODELED",
+   "product_id": "product:snodas-swe-daily",
+   "method_id": null,
+   "issued_at": null,
+   "valid_time": "2026-08-27T06:00:00Z",
+   "retrieved_at": "2026-08-27T06:00:00Z",
+   "freshness": {
+    "state": "current",
+    "age_seconds": null,
+    "expected_cadence_seconds": null
+   },
+   "quality": [],
+   "label": "SNODAS modeled snow water equivalent, 2026-08-27 06:00Z snapshot \u2014 an assimilation analysis, not a gauge measurement (method:field-raster-window@1.0.0) \u2014 STUB FIXTURE",
+   "raw_artifact_id": null
+  }
+ }
+}

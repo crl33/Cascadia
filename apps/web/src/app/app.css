@@ -190,3 +190,25 @@ body { background: var(--canvas); color: var(--text-primary); font-family: var(-
 .summary-state { font-family: var(--font-mono); font-size: 15px; letter-spacing: 0.08em; font-weight: 600; }
 .summary-key { font-family: var(--font-mono); font-size: 14px; font-variant-numeric: tabular-nums; }
 .summary-tag { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.06em; color: var(--text-muted); text-transform: uppercase; min-width: 74px; }
+
+/* --- weather-field legend: the washes named, timed and provenance-chipped -------------- */
+.field-legend {
+  position: absolute;
+  left: 10px;
+  bottom: 76px; /* clear of the compacted timeline bar, measured on the e2e baseline */
+  display: flex;
+  gap: 10px;
+  padding: 3px 8px;
+  background: rgba(10, 16, 24, 0.72);
+  border: 1px solid rgba(122, 156, 186, 0.25);
+  border-radius: 4px;
+  font-size: 10px;
+  z-index: 5;
+  align-items: center;
+}
+.field-legend-entry { display: inline-flex; align-items: center; gap: 5px; }
+.field-swatch { width: 14px; height: 8px; border-radius: 2px; display: inline-block; }
+.field-swatch-precip_observed { background: linear-gradient(90deg, rgba(96, 190, 235, 0.25), rgba(36, 130, 215, 0.6)); }
+.field-swatch-snow_cover { background: linear-gradient(90deg, rgba(180, 200, 255, 0.25), rgba(240, 245, 255, 0.6)); }
+.field-legend-label { letter-spacing: 0.08em; color: var(--text-secondary, #9fb3c8); }
+.field-legend-time { color: var(--text-muted, #6b7f94); }

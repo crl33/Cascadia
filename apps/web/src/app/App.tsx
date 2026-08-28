@@ -13,6 +13,7 @@ import { RiverPanel } from '../panels/RiverPanel';
 import { resolveMotion } from '../design-system/motion';
 import { OSM_ATTRIBUTION } from '../layers/basemap/BasemapProvider';
 import { useSceneStore } from '../state/store';
+import { FieldLegend } from './FieldLegend';
 import { TimelineBar } from '../timeline/TimelineBar';
 import { TimelineController } from '../timeline/TimelineController';
 
@@ -33,6 +34,7 @@ export function App() {
         <ErrorBoundary name="River panel"><RiverPanel /></ErrorBoundary>
         <ErrorBoundary name="Forecast evolution"><ForecastEvolution /></ErrorBoundary>
       </aside>
+      <ErrorBoundary name="Field legend"><FieldLegend /></ErrorBoundary>
       <ErrorBoundary name="Timeline"><TimelineBar controller={timelineController} /></ErrorBoundary>
       <footer className="disclaimer" data-testid="disclaimer">
         <span>{DISCLAIMER}.</span>

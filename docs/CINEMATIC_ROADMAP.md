@@ -710,8 +710,16 @@ ingest (ADR-0020, `field_raster`), served as `FieldRasterState` (contract 1.5.0)
 as a blue-teal wash where dry and unknown are both transparent (the panel carries coverage;
 the map never fabricates it).
 
-Still ahead on this trajectory: snow/freezing-level fields (C3c), chrome compaction,
-terrain (needs an ion-free terrain source decision — ADR territory), atmosphere, and
-timeline-driven spatial change (the field endpoint already answers any `as_of` inside its
-72 h retention — the timeline just has to ask).
+Landed the same evening: **C3c's snow half** — the SNODAS SWE plane through the same
+ADR-0020 machinery (generalized into `cascade_geo.window_raster`; 1 mm integer quantization,
+the 32767 glacier-saturation code packed as sentinel, never as 32 m of snow), served as
+`kind: analysis` / truth `authoritative_model` with a 36 h freshness bound, drawn as a cold
+white-blue veil; a **field legend** (RAIN/SNOW, valid instant, ProvenancePopover) because a
+wash is a rendered scientific value and scene-scoped provenance fits in no basin panel; and a
+**scrub e2e pin**: moving the timeline re-asks the field at the scrubbed knowledge time —
+timeline-driven spatial change is now a tested behavior, limited only by retention depth.
+
+Still ahead on this trajectory: the freezing/snow-level visualization over hypsometry (C3c's
+second half), terrain (ADR-0021 drafted: 3DEP quantized-mesh in R2 — Proposed, build pending),
+atmosphere, and Event Mode's spatial weather (C4).
 

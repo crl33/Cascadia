@@ -14,13 +14,7 @@
  *   range that matters (0–8 mm/h) and stops claiming precision above it.
  */
 
-export interface PrecipPixel {
-  r: number;
-  g: number;
-  b: number;
-  /** 0–255, straight into ImageData. */
-  a: number;
-}
+import type { FieldPixel } from '../fields/WeatherFieldLayer';
 
 /** Below half a quantization step there is nothing to show — 0.0 mm measured is DRY. */
 const DRY_BELOW_MM = 0.05;
@@ -28,7 +22,7 @@ const DRY_BELOW_MM = 0.05;
 const SATURATE_MM = 8;
 const MAX_ALPHA = 150; // ~0.59: a wash the terrain and rivers stay legible through
 
-export function precipPixel(mm: number | null): PrecipPixel {
+export function precipPixel(mm: number | null): FieldPixel {
   if (mm == null || !Number.isFinite(mm) || mm < DRY_BELOW_MM) {
     return { r: 0, g: 0, b: 0, a: 0 };
   }

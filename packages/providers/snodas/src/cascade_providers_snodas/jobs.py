@@ -31,11 +31,12 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from cascade_core.fetch import ArchivingFetcher, FetchError
-from cascade_core.models import Basin, DerivedFeature, GridMask
+from cascade_core.models import Basin, DerivedFeature, FieldRaster, GridMask
 from cascade_core.registry import PRODUCT_SNODAS_SWE
 from cascade_core.timeutils import to_utc, utcnow
 from cascade_geo.latlon import LatLonGridSpec
 from cascade_geo.masks import BasinMask, build_basin_mask
+from cascade_geo.window_raster import METHOD_RASTER, WindowOutsideGridError, cut_window
 from cascade_providers_snodas.client import fetch_day_tar
 from cascade_providers_snodas.parser import NODATA, SATURATED, parse_snodas_swe
 
@@ -50,6 +51,12 @@ CADENCE_SECONDS = 86400
 CRON = "40 13,17 * * *"
 
 METHOD_SWE = "method:basin-snodas-swe@1.0.0"
+#: The window raster (ADR-0020): SNODAS raw values are integer millimetres, so the natural
+#: quantization step is 1 mm — winter SWE to 6,553 mm fits uint16 with nothing rounded.
+FIELD_SWE_RASTER = "swe_daily"
+RASTER_SCALE_MM = 1.0
+#: Three daily snapshots, matching the QPE field's 72 h (ADR-0020 §3).
+RASTER_RETENTION = timedelta(hours=72)
 FEATURE_SWE = "basin_swe_mm"
 FEATURE_SCF = "basin_snow_covered_fraction"
 #: Below this valid-weight fraction the mean is refused. The static water mask costs the
@@ -204,6 +211,17 @@ async def _stored_scopes_by_day(session: AsyncSession, since: datetime) -> dict[
     return out
 
 
+async def _stored_raster_days(session: AsyncSession, since: datetime) -> set[date]:
+    rows = await session.execute(
+        select(FieldRaster.valid_time).where(
+            FieldRaster.product_id == PRODUCT_SNODAS_SWE,
+            FieldRaster.field == FIELD_SWE_RASTER,
+            FieldRaster.valid_time >= since,
+        )
+    )
+    return {t.date() for (t,) in rows}
+
+
 async def run_fetch_swe(
     session: AsyncSession, fetcher: ArchivingFetcher, *, geo_dir: Path, now: datetime | None = None
 ) -> int:
@@ -218,12 +236,13 @@ async def run_fetch_swe(
         return 0
     since = now - timedelta(days=LOOKBACK_DAYS + 1)
     stored_by_day = await _stored_scopes_by_day(session, since)
+    raster_days = await _stored_raster_days(session, since)
     written = 0
     masks_by_hash: dict[str, dict[str, BasinMask]] = {}
     for back in range(LOOKBACK_DAYS, -1, -1):
         day = (now - timedelta(days=back)).date()
         done = stored_by_day.get(day, set())
-        if {b.id for b in basins} <= done:
+        if {b.id for b in basins} <= done and day in raster_days:
             continue
         try:
             result = await fetch_day_tar(fetcher, session, day)
@@ -243,6 +262,27 @@ async def run_fetch_swe(
             masks_by_hash[field.grid.definition_hash] = await _masks_for(session, field.grid, basins, geo_dir)
         masks = masks_by_hash[field.grid.definition_hash]
         available_at = result.last_modified or result.fetched_at
+        if day not in raster_days:
+            try:
+                raster = cut_window(field.grid, field.values, scale=RASTER_SCALE_MM, unit="mm",
+                                    invalid_values=(SATURATED,))
+            except WindowOutsideGridError as e:
+                log.warning("snodas: %s", e)  # basin means still store; their masks match their grid
+            else:
+                session.add(FieldRaster(
+                    product_id=PRODUCT_SNODAS_SWE,
+                    field=FIELD_SWE_RASTER,
+                    valid_time=field.valid_time,
+                    retrieved_at=result.fetched_at,
+                    available_at=available_at,
+                    lo1=raster.lo1, la1=raster.la1, dlon=raster.dlon, dlat=raster.dlat,
+                    nx=raster.nx, ny=raster.ny,
+                    unit=raster.unit, scale=raster.scale, max_value=raster.max_value,
+                    cells=raster.cells,
+                    method_id=METHOD_RASTER,
+                    raw_artifact_id=result.artifact_id,
+                ))
+                written += 1
         for basin in basins:
             if basin.id in done:
                 continue  # complete a partial day row-by-row; never re-insert
@@ -276,5 +316,16 @@ async def run_fetch_swe(
                 feature=FEATURE_SCF, method_id=METHOD_SWE, value=stats["snow_covered_fraction"],
                 unit="fraction", **shared))
             written += 2
+    from sqlalchemy import delete
+
+    pruned = await session.execute(
+        delete(FieldRaster).where(
+            FieldRaster.product_id == PRODUCT_SNODAS_SWE,
+            FieldRaster.field == FIELD_SWE_RASTER,
+            FieldRaster.valid_time < now - RASTER_RETENTION,
+        )
+    )
+    if pruned.rowcount:
+        log.info("snodas: pruned %d field_raster row(s) past %s retention", pruned.rowcount, RASTER_RETENTION)
     await session.flush()
     return written

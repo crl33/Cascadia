@@ -435,7 +435,7 @@ class FieldRasterState(StrictModel):
 
     contract: str = "FieldRasterState"
     version: str = CONTRACT_VERSION
-    kind: str = Field(pattern="^observed$", description="forecast fields arrive with C4, as their own kind")
+    kind: str = Field(pattern="^(observed|analysis)$", description="observed = measured; analysis = observation-constrained model (SNODAS); forecast arrives with C4")
     field: str
     window: str  # accumulation window, e.g. "1h"
     valid_time: datetime  # END of the accumulation

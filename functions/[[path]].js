@@ -17,8 +17,9 @@ import samples from './fixtures/mvew1-samples.json';
 import tier0 from './fixtures/basin_tier0.json';
 import riverNetwork from './fixtures/river_network.json';
 import fieldPrecip from './fixtures/field_precip_observed.json';
+import fieldSnow from './fixtures/field_snow_cover.json';
 
-const fx = { basinLod, stateLod, basinEnvelope, riverEnvelope, samples, tier0, riverNetwork, fieldPrecip };
+const fx = { basinLod, stateLod, basinEnvelope, riverEnvelope, samples, tier0, riverNetwork, fieldPrecip, fieldSnow };
 
 const HEADERS = {
   'Content-Type': 'application/json; charset=utf-8',

@@ -406,7 +406,7 @@ export type RiverNetwork = z.infer<typeof RiverNetworkSchema>;
 export const FieldRasterStateSchema = z.object({
   contract: z.literal('FieldRasterState'),
   version: z.string(),
-  kind: z.literal('observed'),
+  kind: z.enum(['observed', 'analysis']),
   field: z.string(),
   window: z.string(),
   valid_time: iso,

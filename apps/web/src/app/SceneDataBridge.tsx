@@ -81,6 +81,12 @@ export function SceneDataBridge({ controller }: Props) {
     else if (precipField.isError) controller.setData('precip_observed', null);
   }, [controller, precipField.data, precipField.isError]);
 
+  const snowField = useVizField('snow_cover');
+  useEffect(() => {
+    if (snowField.data) controller.setData('snow_cover', snowField.data);
+    else if (snowField.isError) controller.setData('snow_cover', null);
+  }, [controller, snowField.data, snowField.isError]);
+
   const network = useRiverNetwork();
   // The rivers-respond join: the selected basin's per-station flow_visual_intensity (already
   // fetched for the panel) matched onto the network's river names. Pure derivation (match.ts);

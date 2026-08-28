@@ -42,12 +42,14 @@ export function route(fx, pathname, params) {
   if (pathname === '/geo/rivers') return fx.riverNetwork ?? { status: 404, body: { detail: 'no river network in the stub fixtures' } };
   if ((m = pathname.match(/^\/basins\/([^/]+)\/reservoirs$/))) return { basin_id: m[1], as_of: asOf ?? new Date().toISOString(), reservoirs: [], provenance_refs: {} };
   if ((m = pathname.match(/^\/viz\/fields\/([a-z_]+)$/))) {
-    if (m[1] !== 'precip_observed') return { status: 404, body: { detail: `unknown field layer '${m[1]}'; known: [precip_observed]` } };
-    // the archived fixture hour, echoed at the requested knowledge time — freshness is the
-    // live API's business; the stub's business is the raster geometry
-    return fx.fieldPrecip
-      ? { ...fx.fieldPrecip, as_of: asOf ?? fx.fieldPrecip.as_of }
-      : { status: 404, body: { detail: 'no precip_observed field in the stub fixtures — nothing current to draw' } };
+    // the archived fixture hour/day, echoed at the requested knowledge time — freshness is
+    // the live API's business; the stub's business is the raster geometry
+    const fields = { precip_observed: fx.fieldPrecip, snow_cover: fx.fieldSnow };
+    if (!(m[1] in fields)) return { status: 404, body: { detail: `unknown field layer '${m[1]}'; known: [precip_observed, snow_cover]` } };
+    const doc = fields[m[1]];
+    return doc
+      ? { ...doc, as_of: asOf ?? doc.as_of }
+      : { status: 404, body: { detail: `no ${m[1]} field in the stub fixtures — nothing current to draw` } };
   }
   if (pathname === '/viz/basins') return buildVizBasins(fx, asOf);
   if (pathname === '/viz/rivers') {

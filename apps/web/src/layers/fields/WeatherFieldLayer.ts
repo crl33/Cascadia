@@ -1,16 +1,20 @@
 /**
- * PrecipFieldLayer: the observed MRMS QPE hour as a georeferenced wash — C3b, the first
- * weather FIELD on the map ("precipitation is arriving here", design direction 2026-08-28).
+ * WeatherFieldLayer: one FieldRasterState as a georeferenced wash — C3b/C3c, weather FIELDS
+ * on the map ("precipitation is arriving here", design direction 2026-08-28). Parameterized
+ * by id and pixel ramp so QPE and SWE (and later fields) share one implementation; each
+ * ramp's honesty rules — nothing-measured is transparent, unknown is transparent, the ramp
+ * saturates — are pinned in that field's own style.test.
  *
- * OBSERVED register: the document's truth class is `observation` and every pixel comes from
- * `precipPixel` (style.ts), whose honesty rules — dry is transparent, unknown is transparent,
- * the ramp saturates — are pinned there. The raster georeferences itself from its own spec
- * (ADR-0020: the window is a decision, not a constant); the rectangle spans cell EDGES, so
- * the spec's NW cell center gets half a cell of margin on each side.
+ * The raster georeferences itself from its own spec (ADR-0020: the window is a decision, not
+ * a constant); the rectangle spans cell EDGES, so the spec's NW cell center gets half a cell
+ * of margin on each side.
  *
  * Cesium mechanics: one canvas painted per data push, shown as a SingleTileImageryProvider
- * imagery layer under the vector layers. An hourly cadence means replace-not-diff is the
- * right cost; nothing here runs per frame.
+ * imagery layer inserted at index 1 — always above the basemap, always below nothing vector
+ * (entities never live in imageryLayers). Among two washes the most recently refreshed sits
+ * lowest; with hourly/daily cadences and translucent ramps that drift is imperceptible, and
+ * a fixed stack would buy nothing for its bookkeeping. Replace-not-diff per push; nothing
+ * runs per frame.
  */
 import {
   ImageryLayer,
@@ -24,15 +28,38 @@ import type { Band } from '../../scene/bands';
 import type { LayerHit, LayerStatus, SceneHandle, SceneLayer, SelectionState } from '../contract';
 import { viewerOf } from '../cesium-handle';
 import { decodeFieldCells } from './decode';
-import { precipPixel } from './style';
 
-export class PrecipFieldLayer implements SceneLayer<FieldRasterState | null> {
-  readonly id = 'precip_observed' as const;
-  readonly displayName = 'Observed precipitation (MRMS QPE, 1 h)';
-  readonly truthClass = 'observation' as const;
+export interface FieldPixel {
+  r: number;
+  g: number;
+  b: number;
+  a: number;
+}
+
+interface WeatherFieldConfig {
+  id: LayerIdOf;
+  displayName: string;
+  truthClass: 'observation' | 'authoritative_model';
+  pixel: (value: number | null) => FieldPixel;
+}
+
+type LayerIdOf = SceneLayer['id'];
+
+export class WeatherFieldLayer implements SceneLayer<FieldRasterState | null> {
+  readonly id: LayerIdOf;
+  readonly displayName: string;
+  readonly truthClass: 'observation' | 'authoritative_model';
   readonly bands: SceneLayer['bands'] = {
     orbital: 'full', state: 'full', basin: 'full', river: 'full', local: 'full',
   };
+  private readonly pixel: (value: number | null) => FieldPixel;
+
+  constructor(config: WeatherFieldConfig) {
+    this.id = config.id;
+    this.displayName = config.displayName;
+    this.truthClass = config.truthClass;
+    this.pixel = config.pixel;
+  }
 
   status: LayerStatus = 'created';
   statusReason: string | null = 'no data yet';
@@ -119,7 +146,7 @@ export class PrecipFieldLayer implements SceneLayer<FieldRasterState | null> {
     }
     const image = ctx.createImageData(nx, ny);
     for (let i = 0; i < cells.length; i += 1) {
-      const px = precipPixel(Number.isNaN(cells[i]) ? null : cells[i]);
+      const px = this.pixel(Number.isNaN(cells[i]) ? null : cells[i]);
       const o = i * 4;
       image.data[o] = px.r;
       image.data[o + 1] = px.g;
@@ -151,7 +178,10 @@ export class PrecipFieldLayer implements SceneLayer<FieldRasterState | null> {
 
   private attach(imagery: ImageryLayer): void {
     if (!this.viewer) return;
-    if (!this.viewer.imageryLayers.contains(imagery)) this.viewer.imageryLayers.add(imagery);
+    if (!this.viewer.imageryLayers.contains(imagery)) {
+      // index 1: above the basemap (0), among the weather washes by refresh order
+      this.viewer.imageryLayers.add(imagery, Math.min(1, this.viewer.imageryLayers.length));
+    }
     imagery.show = this.visible;
   }
 

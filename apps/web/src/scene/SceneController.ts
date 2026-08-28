@@ -16,7 +16,9 @@ import { BasinsLayer, type BasinsLayerData } from '../layers/basins/BasinsLayer'
 import { BasinSusceptibilityLayer, type BasinSusceptibilityLayerData } from '../layers/susceptibility/BasinSusceptibilityLayer';
 import { osmKeyless, type BasemapProvider } from '../layers/basemap/BasemapProvider';
 import { RiverNetworkLayer, type RiverNetworkDisplay } from '../layers/network/RiverNetworkLayer';
-import { PrecipFieldLayer } from '../layers/precip/PrecipFieldLayer';
+import { WeatherFieldLayer } from '../layers/fields/WeatherFieldLayer';
+import { precipPixel } from '../layers/precip/style';
+import { snowPixel } from '../layers/snow/style';
 import { RiversLayer } from '../layers/rivers/RiversLayer';
 import { CESIUM_RENDERER_CREDIT_HTML } from './credits';
 import { SemanticZoomController } from './SemanticZoomController';
@@ -30,6 +32,7 @@ export type PickedHandler = (hit: LayerHit) => void;
 interface LayerDataMap {
   river_network: RiverNetworkDisplay;
   precip_observed: FieldRasterState | null;
+  snow_cover: FieldRasterState | null;
   basins: BasinsLayerData;
   rivers: RiverEnvelope;
   basin_susceptibility: BasinSusceptibilityLayerData;
@@ -93,7 +96,11 @@ export class SceneController {
     this.unsubscribes.push(this.camera.onSample((sample) => this.zoom.onCameraSample(sample)));
     this.unsubscribes.push(this.zoom.on('bandChanged', (e) => this.applyBand(e.next)));
 
-    for (const layer of [new PrecipFieldLayer(), new BasinSusceptibilityLayer(), new RiverNetworkLayer(), new BasinsLayer(), new RiversLayer()] as SceneLayer[]) {
+    for (const layer of [
+      new WeatherFieldLayer({ id: 'snow_cover', displayName: 'Snow water equivalent (SNODAS, daily)', truthClass: 'authoritative_model', pixel: snowPixel }),
+      new WeatherFieldLayer({ id: 'precip_observed', displayName: 'Observed precipitation (MRMS QPE, 1 h)', truthClass: 'observation', pixel: precipPixel }),
+      new BasinSusceptibilityLayer(), new RiverNetworkLayer(), new BasinsLayer(), new RiversLayer(),
+    ] as SceneLayer[]) {
       this.layers.set(layer.id, layer);
       this.intents.set(layer.id, true);
       layer.mount(this.handle);
