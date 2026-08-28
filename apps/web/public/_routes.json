@@ -9,7 +9,8 @@
     "/scene/*",
     "/search",
     "/system/*",
-    "/geo/*"
+    "/geo/*",
+    "/terrain/*"
   ],
   "exclude": [
     "/_routes.json"

@@ -41,3 +41,4 @@ data/cache/
 # local spike data (sqlite db + raw archive)
 data/
 .wrangler/
+.terrain-work/

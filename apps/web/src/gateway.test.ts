@@ -59,3 +59,38 @@ describe('gateway proxy headers', () => {
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 });
+
+describe('gateway terrain proxy', () => {
+  it('proxies /terrain/* to TERRAIN_ORIGIN with immutable caching, and 404s unconfigured', async () => {
+    let sent: string | null = null;
+    vi.stubGlobal('fetch', vi.fn(async (input: URL | RequestInfo) => {
+      sent = String(input);
+      // R2 serves the type but DROPS the stored Content-Encoding — measured 2026-08-28
+      return new Response('mesh-bytes', {
+        status: 200,
+        headers: { 'Content-Type': 'application/vnd.quantized-mesh' },
+      });
+    }));
+    const res = (await onRequest({
+      request: new Request('https://gateway.example/terrain/v1/11/665/1570.terrain'),
+      env: { ...ENV, TERRAIN_ORIGIN: 'https://terrain.example' },
+    })) as Response;
+    expect(sent).toBe('https://terrain.example/terrain/v1/11/665/1570.terrain');
+    expect(res.headers.get('Cache-Control')).toContain('immutable');
+    expect(res.headers.get('Content-Type')).toBe('application/vnd.quantized-mesh');
+    // the gateway states what the store lost: ctb -C gzipped every tile at build time
+    expect(res.headers.get('Content-Encoding')).toBe('gzip');
+
+    const layerJson = (await onRequest({
+      request: new Request('https://gateway.example/terrain/v1/layer.json'),
+      env: { ...ENV, TERRAIN_ORIGIN: 'https://terrain.example' },
+    })) as Response;
+    expect(layerJson.headers.get('Content-Encoding')).toBeNull(); // only tiles are gzip
+
+    const off = (await onRequest({
+      request: new Request('https://gateway.example/terrain/v1/layer.json'),
+      env: { ...ENV, TERRAIN_ORIGIN: 'off' },
+    })) as Response;
+    expect(off.status).toBe(404); // disabled deployments answer, never hang
+  });
+});

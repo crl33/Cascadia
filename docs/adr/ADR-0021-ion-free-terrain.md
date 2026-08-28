@@ -1,7 +1,7 @@
 # ADR-0021: Terrain comes from a self-built 3DEP quantized-mesh pyramid in R2
 
-- Status: Proposed (decision drafted 2026-08-28; the build and its measurements are their own
-  arc, and this ADR moves to Accepted only with the exit test below green)
+- Status: Proposed → build executed and published 2026-08-28 (measurements below); moves to
+  Accepted when the deployed scene demonstrably renders relief (the remaining exit test)
 - Serves: CINEMATIC_ROADMAP "proper terrain" (design direction 2026-08-28: "snow level is
   rising through these elevations" needs elevations); CINEMATIC_ARCHITECTURE's ion-free rule.
 
@@ -42,6 +42,23 @@ What exists without ion:
    forever (previews, offline dev, and the e2e stub never fetch terrain).
 4. Attribution: "USGS 3DEP" joins the credit line; public-domain data, credit as courtesy and
    provenance, not license.
+
+## Measurements (build of 2026-08-28)
+
+- Source: 12 × 3DEP 1/3-arc-second... corrected: **1 arc-second** (~30 m) 1° tiles, 630 MB
+  download (the 1/3" build is a future refinement if relief demands it; at the bands flown
+  today 30 m reads clean).
+- `ctb-tile -f Mesh -C -N` built z0–14 in ~35 min (875 MB, 133,907 tiles); z13–14 were ~800 MB
+  of past-fidelity interpolation and were dropped, `layer.json.available` capped at z12.
+- Published pyramid: **57 MB, 8,553 objects**, `quantized-mesh-1.0` + `octvertexnormals`,
+  bucket `cascadia-terrain` prefix `terrain/v1/`, R2 managed public domain.
+- A mid-zoom sample decodes to 506–1,921 m over the Cascades — sane.
+- Serving lesson: R2 keeps the uploaded Content-Type but DROPS Content-Encoding, so the
+  gateway states `Content-Encoding: gzip` for `*.terrain` (test-pinned); without it Cesium
+  parses gzip bytes as mesh.
+- The Pages API token cannot edit project env vars (403), so the public bucket domain is the
+  gateway's in-code default with `TERRAIN_ORIGIN` as override ('off' disables) — the same
+  standing as the OSM tile URL in the client.
 
 ## Exit test (gates Accepted)
 

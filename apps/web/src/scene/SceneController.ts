@@ -4,7 +4,7 @@
  * and hover, band → layer visibility, and disposal. Geography (basin bboxes, forecast-point
  * locations) arrives through setGeography/setData — the controller never fetches.
  */
-import { Clock, ClockRange, ClockStep, Credit, CreditDisplay, Entity, JulianDate, ScreenSpaceEventHandler, ScreenSpaceEventType, Viewer } from 'cesium';
+import { CesiumTerrainProvider, Clock, ClockRange, ClockStep, Credit, CreditDisplay, Entity, JulianDate, ScreenSpaceEventHandler, ScreenSpaceEventType, Viewer } from 'cesium';
 import 'cesium/Build/Cesium/Widgets/widgets.css';
 import { CameraController } from '../camera/CameraController';
 import type { FlightReason } from '../camera/types';
@@ -88,7 +88,11 @@ export class SceneController {
     this.viewer.clock.currentTime = clock.currentTime;
     this.viewer.clock.shouldAnimate = false;
     this.viewer.scene.globe.enableLighting = false;
+    // Stays false WITH terrain too, deliberately: every hydrologic layer drapes (clamped
+    // polylines, ground hatches), and a gauge marker hidden behind a ridge would be a
+    // legibility bug, not realism (ADR-0021 exit test names this decision).
     this.viewer.scene.globe.depthTestAgainstTerrain = false;
+    void this.upgradeTerrain();
     this.handle = createSceneHandle(this.viewer);
 
     this.camera = new CameraController(this.viewer, container, options.motion);
@@ -185,6 +189,22 @@ export class SceneController {
 
   layerStatuses(): { id: LayerId; status: string; reason: string | null }[] {
     return [...this.layers.values()].map((l) => ({ id: l.id, status: l.status, reason: l.statusReason }));
+  }
+
+  /** ADR-0021 §3: real relief when a pyramid is served, the ellipsoid otherwise — terrain is
+   * enhancement, never a dependency. The default asks the same-origin gateway (`/terrain/v1`,
+   * proxied to the R2 public domain); previews and the e2e stub 404 there and stay flat with
+   * one console line, which is exactly the honest degraded state. */
+  private async upgradeTerrain(): Promise<void> {
+    const root = (import.meta.env.VITE_TERRAIN_URL as string | undefined) ?? '/terrain/v1';
+    try {
+      const provider = await CesiumTerrainProvider.fromUrl(root);
+      if (this.disposed) return;
+      this.viewer.terrainProvider = provider;
+      this.viewer.scene.requestRender();
+    } catch {
+      console.info(`terrain: no pyramid at ${root}; the ellipsoid stands in`);
+    }
   }
 
   dispose(): void {

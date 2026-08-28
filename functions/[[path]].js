@@ -51,6 +51,35 @@ export async function onRequest(context) {
   }
   if (url.pathname.length > 256) return json(414, { detail: 'path too long' });
 
+  // Terrain tiles (ADR-0021): static public-domain artifacts on their own R2 public domain,
+  // proxied here so the app stays same-origin (no CORS, no second hostname in the client).
+  // Immutable by construction — a DEM pyramid does not change; v-bumps change the prefix.
+  if (url.pathname.startsWith('/terrain/')) {
+    // The default is the deployed pyramid's own public bucket domain — public static assets,
+    // the same standing as the OSM tile URL in the client (the API token cannot edit Pages
+    // env vars, so config-in-code with an env override is the honest arrangement). Set
+    // TERRAIN_ORIGIN to move it; set it to 'off' to disable terrain entirely.
+    const terrainOrigin = (env && env.TERRAIN_ORIGIN) || 'https://pub-1145121e012145ac8173711ab278c913.r2.dev';
+    if (terrainOrigin === 'off') return json(404, { detail: 'terrain is disabled on this deployment' });
+    try {
+      const resp = await fetch(`${terrainOrigin}${url.pathname}`, {
+        headers: { 'User-Agent': 'CascadiaPapsukkal-gateway/0.1' },
+        signal: AbortSignal.timeout(30000),
+      });
+      const headers = new Headers(resp.headers);
+      headers.set('X-Content-Type-Options', 'nosniff');
+      headers.set('Cache-Control', 'public, max-age=31536000, immutable');
+      // ctb -C gzipped every tile at build time, and R2 kept the Content-Type but dropped the
+      // Content-Encoding on upload — so the gateway states it. Without this header Cesium
+      // parses gzip bytes as mesh and every tile fails to decode.
+      if (resp.ok && url.pathname.endsWith('.terrain')) headers.set('Content-Encoding', 'gzip');
+      return new Response(resp.body, { status: resp.status, headers });
+    } catch (err) {
+      console.error('terrain proxy failed', err && err.message);
+      return json(503, { detail: 'terrain origin unavailable', source: 'gateway' });
+    }
+  }
+
   const origin = (env && env.BACKEND_ORIGIN) || '';
   if (origin) {
     const upstream = new URL(origin);
