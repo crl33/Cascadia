@@ -310,6 +310,7 @@ export function hefsBand(
   ladder: HefsLadderLike | null | undefined,
   basis: Basis,
   axisUnit: string | null,
+  sinceMs: number,
   untilMs: number,
 ): HefsBandChoice {
   const none = { band: null, median: null, levels: null, clipped: 0 };
@@ -329,13 +330,17 @@ export function hefsBand(
   const band: HefsBandPoint[] = [];
   const median: TimeValuePoint[] = [];
   let clipped = 0;
+  let inWindow = 0;
   for (const row of ladder.rows) {
     const t = Date.parse(row.valid_time);
     if (!Number.isFinite(t)) continue;
-    if (t > untilMs) {
+    // both sides clip and both COUNT: a stale cycle's early rows drew left of the frame and
+    // were absent from the tally, so the legend under-reported what was cut (review 2026-08-28)
+    if (t > untilMs || t < sinceMs) {
       clipped += 1;
       continue;
     }
+    inWindow += 1;
     const hi = row.values[iHi];
     const lo = row.values[iLo];
     const mid = row.values[iMid];
@@ -344,11 +349,17 @@ export function hefsBand(
     }
     median.push({ t, v: mid ?? null });
   }
-  if (band.length === 0 && clipped === 0) {
-    return { ...none, reason: 'The HEFS ladder carries no drawable rows.' };
-  }
   if (band.length === 0) {
-    return { ...none, clipped, reason: 'Every HEFS row lies beyond the charted window.' };
+    // three distinct absences, each with ITS OWN sentence — the old single wording claimed
+    // "every row lies beyond the window" even when in-window rows existed with null tails,
+    // a false statement in a backend-truthful surface (review 2026-08-28)
+    if (inWindow > 0) {
+      return { ...none, clipped, reason: `${inWindow} HEFS rows lie inside the charted window but carry no values at the 0.05/0.95 levels; nothing is drawn.` };
+    }
+    if (clipped > 0) {
+      return { ...none, clipped, reason: 'Every HEFS row lies outside the charted window.' };
+    }
+    return { ...none, reason: 'The HEFS ladder carries no drawable rows.' };
   }
   return { band, median, levels: [0.05, 0.5, 0.95], clipped, reason: null };
 }

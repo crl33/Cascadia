@@ -24,7 +24,9 @@ const KIND_PREFIXES: Record<string, string[][]> = {
   // ids verbatim from cascade_core.registry PRODUCTS (asserted against the registry-derived
   // fixture in events.test.ts, so a renamed product fails a test instead of going silent here)
   'product:usgs-iv': [['viz'], ['basin-state'], ['river-state'], ['series']],
-  'product:nwps-forecast': [['viz'], ['basin-state'], ['river-state'], ['run'], ['runs']],
+  // ['runs'] deliberately absent: the archived runs-window queries carry no asOf segment
+  // and must never be invalidated — the past does not change (review 2026-08-28).
+  'product:nwps-forecast': [['viz'], ['basin-state'], ['river-state'], ['run']],
   'product:nwps-thresholds': [['viz'], ['basin-state'], ['river-state']],
   'product:nbm-v5-qmd': [['viz'], ['basin-state']],
   'product:nbm-v5-core': [['viz'], ['basin-state']],
@@ -41,7 +43,7 @@ const KIND_PREFIXES: Record<string, string[][]> = {
   'product:awdb-snotel-daily': [['viz'], ['basin-state']],
   'product:snodas-swe-daily': [['viz'], ['basin-state']],
   'product:nwrfc-reservoir-obs': [['viz'], ['basin-state'], ['river-state'], ['series'], ['basin-reservoirs']],
-  'product:nws-fls-crest': [['river-state'], ['runs']],
+  'product:nws-fls-crest': [['river-state']],
   // metadata-only: nothing a live view renders changes when station metadata refreshes
   'product:awdb-stations': [],
 };

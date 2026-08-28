@@ -23,6 +23,13 @@ any of them is expensive — and whatever is done about that, the body it return
 > `direction: context_not_scored`, so no band, score or susceptibility state moved — all six basins
 > are byte-identical on those. The number changing is the point: it was wrong before.
 >
+> **Regenerated a fourth time 2026-08-28** after the adversarial-review remediation: the
+> count is **17** because `active_alerts` deliberately became TWO statements — a time-sliced
+> candidate read (the append-only table's full history no longer materializes per envelope)
+> plus a single-column references scan (supersession must outlive the superseder, so a
+> short-lived Cancel keeps suppressing its long-lived target). One statement more, unbounded
+> growth less; bodies unchanged. If the count moves again, it is a regression until explained.
+>
 > **Regenerated a third time 2026-08-28** for antecedent QPE (contract 1.4.0): ONE more
 > statement — the batched trailing-73 h `basin_qpe_01h` read for all six basins
 > (`derived_features_for`, one `IN` list) — so the count is **16**. The bodies change too:

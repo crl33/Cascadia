@@ -55,3 +55,18 @@ describe('ReservoirsSection', () => {
     expect(html).toBe('');
   });
 });
+
+describe('error state', () => {
+  it('a failed endpoint says so instead of impersonating an unregulated basin', async () => {
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false, retryOnMount: false, staleTime: Infinity } } });
+    const key = keys.basinReservoirs('basin:green-duwamish', null);
+    // settle the query into its error state the way the runtime would
+    await qc.prefetchQuery({ queryKey: key, queryFn: () => Promise.reject(new Error('HTTP 500')) });
+    const html = renderToStaticMarkup(
+      createElement(QueryClientProvider, { client: qc },
+        createElement(ReservoirsSection, { basinId: 'basin:green-duwamish' })),
+    );
+    expect(html).toContain('Reservoir state unavailable');
+    expect(html).toContain('HTTP 500');
+  });
+});

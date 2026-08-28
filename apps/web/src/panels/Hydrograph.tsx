@@ -26,6 +26,11 @@ import {
 } from './hydrograph-math';
 import './hydrograph.css';
 
+/** A 404 from /hefs/latest is an ANSWER (no ladder known at this knowledge time), not a
+ *  failure to report; anything else — 500, timeout, a schema refusal — must say so. */
+const hefsErrorIsAbsence = (error: unknown): boolean =>
+  error instanceof Error && /\b404\b/.test(error.message);
+
 const WIDTH = 384;
 const HEIGHT = 208;
 const MARGIN = { top: 14, right: 10, bottom: 24, left: 46 } as const;
@@ -102,7 +107,13 @@ export function Hydrograph({ item, refs }: HydrographProps) {
   const overlay = thresholdOverlay(thresholds, basis, axisUnit, axisDatum);
   // In event mode the LIVE official_forecast summary (issued now, not during the event) must
   // not stretch the chart to the present: the replay-selected run's crest point is the marker.
-  const replayCrest = event !== null ? forecastPoints.find((p) => p.v != null && Number.isFinite(p.v) && Number.isFinite(p.t)) ?? null : null;
+  // the MAXIMUM of the replayed run, not its first point: correct-by-accident for the
+  // single-point FLS reconstructions, wrong the day a multi-point archived run lands
+  // (adversarial review 2026-08-28)
+  const replayCandidates = event !== null ? forecastPoints.filter((p) => p.v != null && Number.isFinite(p.v) && Number.isFinite(p.t)) : [];
+  const replayCrest = replayCandidates.length > 0
+    ? replayCandidates.reduce((best, p) => (p.v! > best.v! ? p : best))
+    : null;
   const crest = event !== null
     ? { marker: replayCrest === null ? null : { t: replayCrest.t, v: replayCrest.v! }, reason: null }
     : crestMarker(item.official_forecast, basis, axisUnit, axisDatum);
@@ -145,7 +156,7 @@ export function Hydrograph({ item, refs }: HydrographProps) {
   // HEFS band AFTER the domains: untilMs is the chart's own window, so a 30-day ladder can
   // never stretch a 72-hour axis — rows beyond it are clipped and counted in the legend.
   const hefs = event === null ? hefsQuery.data ?? null : null;
-  const hefsChoice = hefsBand(hefs, basis, axisUnit, tDomain.max);
+  const hefsChoice = hefsBand(hefs, basis, axisUnit, tDomain.min, tDomain.max);
   const hefsBandD = hefsChoice.band ? bandPath(hefsChoice.band, linearScale(tDomain, MARGIN.left, WIDTH - MARGIN.right), linearScale(vDomain, HEIGHT - MARGIN.bottom, MARGIN.top)) : '';
   const hefsMedianD = hefsChoice.median ? seriesPath(hefsChoice.median, linearScale(tDomain, MARGIN.left, WIDTH - MARGIN.right), linearScale(vDomain, HEIGHT - MARGIN.bottom, MARGIN.top)) : '';
 
@@ -175,6 +186,14 @@ export function Hydrograph({ item, refs }: HydrographProps) {
       </div>
       <svg className="hydrograph-svg" viewBox={`0 0 ${WIDTH} ${HEIGHT}`} role="img" aria-label={ariaLabel} data-testid="hydrograph-svg">
         <rect className="hg-frame" x={MARGIN.left} y={MARGIN.top} width={WIDTH - MARGIN.left - MARGIN.right} height={HEIGHT - MARGIN.top - MARGIN.bottom} />
+        <defs>
+          {/* The band's 5 %-exceedance bound can exceed the value domain — precisely during a
+              flood watch — and must clip to the plot area, not paint over the axes. The domain
+              itself is NOT stretched by a modeled band; the frame is the honest boundary. */}
+          <clipPath id="hg-plot-clip">
+            <rect x={MARGIN.left} y={MARGIN.top} width={WIDTH - MARGIN.left - MARGIN.right} height={HEIGHT - MARGIN.top - MARGIN.bottom} />
+          </clipPath>
+        </defs>
         {yTicks.map((tick) => (
           <g key={`y-${tick}`}>
             <line className="hg-grid" x1={MARGIN.left} x2={WIDTH - MARGIN.right} y1={y(tick)} y2={y(tick)} />
@@ -187,8 +206,8 @@ export function Hydrograph({ item, refs }: HydrographProps) {
             <text className="hg-axis-text" x={x(tick)} y={HEIGHT - 10} textAnchor="middle">{formatTickUtc(tick, stepMs)}</text>
           </g>
         ))}
-        {hefsBandD ? <path className="hg-hefs-band" d={hefsBandD} data-testid="hydrograph-hefs-band" /> : null}
-        {hefsMedianD ? <path className="hg-hefs-median" d={hefsMedianD} data-testid="hydrograph-hefs-median" /> : null}
+        {hefsBandD ? <path className="hg-hefs-band" d={hefsBandD} clipPath="url(#hg-plot-clip)" data-testid="hydrograph-hefs-band" /> : null}
+        {hefsMedianD ? <path className="hg-hefs-median" d={hefsMedianD} clipPath="url(#hg-plot-clip)" data-testid="hydrograph-hefs-median" /> : null}
         <text className="hg-axis-unit" x={MARGIN.left} y={MARGIN.top - 4} data-testid="hydrograph-axis-unit">{axisUnitLabel}</text>
         <text className="hg-axis-text" x={WIDTH - MARGIN.right} y={HEIGHT - 10} textAnchor="end">UTC</text>
         {overlay.lines.map((line) => (
@@ -279,6 +298,11 @@ export function Hydrograph({ item, refs }: HydrographProps) {
       {runReason ? <p className="reason">{runReason}</p> : null}
       {overlay.refusal ? <p className="reason">{overlay.refusal}</p> : null}
       {hefsChoice.reason ? <p className="reason" data-testid="hydrograph-hefs-reason">{hefsChoice.reason}</p> : null}
+      {event === null && hefsQuery.isError && !hefsErrorIsAbsence(hefsQuery.error) ? (
+        <p className="reason" data-testid="hydrograph-hefs-error">
+          Official probabilistic guidance unavailable: {hefsQuery.error.message}
+        </p>
+      ) : null}
       {crest.reason ? <p className="reason">{crest.reason}</p> : null}
     </div>
   );

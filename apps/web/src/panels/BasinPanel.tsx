@@ -153,6 +153,16 @@ const VARIABLE_LABEL: Record<string, string> = {
 export function ReservoirsSection({ basinId }: { basinId: string }) {
   const query = useBasinReservoirs(basinId);
   const doc = query.data;
+  if (query.isError) {
+    // a failed endpoint must not read as "unregulated": Green with Howard Hanson dark is a
+    // different fact from the Nooksack having no dams (adversarial review 2026-08-28)
+    return (
+      <div className="row" data-testid="reservoirs">
+        <div className="row-head"><span className="row-title">Reservoirs</span></div>
+        <p className="reason" data-testid="reservoirs-error">Reservoir state unavailable: {query.error.message}</p>
+      </div>
+    );
+  }
   if (!doc || doc.reservoirs.length === 0) return null;
   const refs = doc.provenance_refs;
   return (

@@ -210,11 +210,12 @@ const LADDER = {
     { valid_time: '2026-09-20T12:00:00Z', values: [990, 830, 715, 615, 510, 430, 410] },
   ],
 };
+const SINCE = Date.parse('2026-08-25T00:00:00Z');
 const UNTIL = Date.parse('2026-08-31T00:00:00Z');
 
 describe('hefsBand', () => {
   it('draws the 5/50/95 band on a matching flow axis, case-insensitively, clipping and counting', () => {
-    const b = hefsBand(LADDER, 'flow', 'cfs', UNTIL);
+    const b = hefsBand(LADDER, 'flow', 'cfs', SINCE, UNTIL);
     expect(b.reason).toBeNull();
     expect(b.levels).toEqual([0.05, 0.5, 0.95]);
     expect(b.band).toHaveLength(2);
@@ -224,18 +225,35 @@ describe('hefsBand', () => {
   });
 
   it('refuses a stage axis and a genuinely different unit, with the reason', () => {
-    expect(hefsBand(LADDER, 'stage', 'ft', UNTIL).reason).toContain('flow');
+    expect(hefsBand(LADDER, 'stage', 'ft', SINCE, UNTIL).reason).toContain('flow');
     const kcfs = { ...LADDER, unit: 'KCFS' };
-    expect(hefsBand(kcfs, 'flow', 'cfs', UNTIL).reason).toContain('never converted');
+    expect(hefsBand(kcfs, 'flow', 'cfs', SINCE, UNTIL).reason).toContain('never converted');
   });
 
   it('refuses a ladder without the exact levels — never interpolated', () => {
     const coarse = { ...LADDER, exceedance_levels: [0.1, 0.5, 0.9] };
-    expect(hefsBand(coarse, 'flow', 'cfs', UNTIL).reason).toContain('never interpolated');
+    expect(hefsBand(coarse, 'flow', 'cfs', SINCE, UNTIL).reason).toContain('never interpolated');
+  });
+
+  it('clips BOTH sides of the window and counts both — and each absence has its own truth', () => {
+    // a stale cycle: every row before the charted window
+    const stale = hefsBand(LADDER, 'flow', 'cfs', Date.parse('2026-09-25T00:00:00Z'), Date.parse('2026-09-28T00:00:00Z'));
+    expect(stale.band).toBeNull();
+    expect(stale.clipped).toBe(3);
+    expect(stale.reason).toContain('outside the charted window');
+    // in-window rows exist but the tail levels are null: the words must say THAT, not 'beyond'
+    const nullTails = {
+      ...LADDER,
+      rows: [{ valid_time: '2026-08-28T12:00:00Z', values: [null, null, null, 600, null, null, null] },
+             { valid_time: '2026-09-20T12:00:00Z', values: [990, 830, 715, 615, 510, 430, 410] }],
+    };
+    const r = hefsBand(nullTails, 'flow', 'cfs', SINCE, UNTIL);
+    expect(r.band).toBeNull();
+    expect(r.reason).toContain('inside the charted window but carry no values');
   });
 
   it('bandPath closes the polygon along both bounds', () => {
-    const b = hefsBand(LADDER, 'flow', 'cfs', UNTIL);
+    const b = hefsBand(LADDER, 'flow', 'cfs', SINCE, UNTIL);
     const path = bandPath(b.band!, (t) => (t - b.band![0]!.t) / 3_600_000, (v) => 1000 - v);
     expect(path.startsWith('M0 100')).toBe(true); // hi bound first
     expect(path.endsWith('Z')).toBe(true);
