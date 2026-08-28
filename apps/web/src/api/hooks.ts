@@ -94,6 +94,16 @@ export const useVizBasins = () => {
   });
 };
 
+export const useVizField = (layer: string) => {
+  const asOf = useAsOf();
+  return useQuery({
+    queryKey: keys.vizField(layer, asOf),
+    queryFn: ({ signal }) => api.vizField(layer, asOf, signal),
+    staleTime: timeDependentStale(asOf),
+    retry: false, // a 404 is an answer ("nothing current to draw"), rendered as absence
+  });
+};
+
 export const useVizRivers = (basinId: string | null) => {
   const asOf = useAsOf();
   return useQuery({

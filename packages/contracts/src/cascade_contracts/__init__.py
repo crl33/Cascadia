@@ -17,6 +17,8 @@ from cascade_contracts.common import (
     TruthClass,
 )
 from cascade_contracts.visualization import (
+    FieldGridSpec,
+    FieldRasterState,
     BandBoundary,
     BasinVisualizationState,
     ContractEnvelope,
@@ -42,6 +44,8 @@ __all__ = [
     "BasinVisualizationState",
     "ConfidenceLabel",
     "ContractEnvelope",
+    "FieldGridSpec",
+    "FieldRasterState",
     "DisplayRange",
     "FloodCategory",
     "Freshness",

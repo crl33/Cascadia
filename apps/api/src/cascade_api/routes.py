@@ -11,7 +11,7 @@ from fastapi.responses import PlainTextResponse, StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from cascade_api.events import sse_stream
-from cascade_contracts import SceneSummary
+from cascade_contracts import FieldGridSpec, FieldRasterState, SceneSummary
 from cascade_contracts.common import CONTRACT_VERSION
 from cascade_contracts.visualization import ProvenanceRef
 from cascade_core.freshness import DEGRADED_MULTIPLIER, compute_freshness
@@ -20,6 +20,7 @@ from cascade_core.registry import (
     EXPECTED_PRODUCTS,
     JOBS,
     PRODUCT_HEFS_QUANTILES,
+    PRODUCT_MRMS_QPE,
     PRODUCT_USGS_IV,
     PRODUCT_WRITERS,
     PRODUCTS,
@@ -168,6 +169,75 @@ async def viz_rivers(session: Session, as_of: AsOf, basin: Annotated[str, Query(
     if await k.basin(basin) is None:
         raise HTTPException(status_code=404, detail="unknown basin")
     return _dump(await river_envelope(k, await k.forecast_points(basin), generated_at=utcnow()))
+
+
+#: The field layers the API serves (ADR-0020): layer name -> (product, stored field name,
+#: accumulation window). C4 adds forecast kinds; this map is the whole current catalogue.
+FIELD_LAYERS: dict[str, tuple[str, str, str]] = {
+    "precip_observed": (PRODUCT_MRMS_QPE, "qpe_01h", "1h"),
+}
+
+
+@router.get("/viz/fields/{layer}")
+async def viz_field(session: Session, as_of: AsOf, layer: Annotated[str, Path(pattern=r"^[a-z_]{1,40}$")]) -> dict:
+    """The newest window raster for one observed field, known at as_of (ADR-0020, C3b).
+
+    UNKNOWN is a 404 with the reason, never an empty raster: a client that gets 404 renders
+    no field and says why, which is the honest difference from rendering a dry hour.
+    """
+    import base64
+
+    entry = FIELD_LAYERS.get(layer)
+    if entry is None:
+        raise HTTPException(status_code=404, detail=f"unknown field layer {layer!r}; known: {sorted(FIELD_LAYERS)}")
+    product_id, fld, window = entry
+    k = as_known_at(session, as_of)
+    row = await k.latest_field_raster(product_id, fld)
+    if row is None:
+        raise HTTPException(
+            status_code=404,
+            detail=f"no {layer} field within 6 h of this knowledge time — nothing current to draw",
+        )
+    products = await k.products()
+    product = products.get(product_id)
+    prov_key = f"field-{layer}"
+    ref = ProvenanceRef(
+        source_id=product.source_id if product else "src:mrms",
+        source_kind=resolved_source_kind(product),
+        product_id=product_id,
+        valid_time=row.valid_time,
+        retrieved_at=row.retrieved_at,
+        freshness=compute_freshness(
+            expected_cadence_seconds=product.expected_cadence_seconds if product else None,
+            grace_seconds=product.grace_seconds if product else None,
+            valid_time=row.valid_time,
+            retrieved_at=row.retrieved_at,
+            now=k.as_of,
+        ),
+        label=(
+            f"MRMS multi-sensor QPE pass 2, 1 h accumulation ending {row.valid_time:%Y-%m-%d %H:%M}Z, "
+            f"cut to the seeded window ({row.nx}x{row.ny} at {row.dlon:g} deg) and quantized to "
+            f"{row.scale:g} {row.unit} steps ({row.method_id})"
+        ),
+        raw_artifact_id=None if row.raw_artifact_id is None else str(row.raw_artifact_id),
+    )
+    state = FieldRasterState(
+        kind="observed",
+        field=fld,
+        window=window,
+        valid_time=row.valid_time,
+        as_of=k.as_of,
+        generated_at=utcnow(),
+        truth="observation",
+        unit=row.unit,
+        spec=FieldGridSpec(lo1=row.lo1, la1=row.la1, dlon=row.dlon, dlat=row.dlat, nx=row.nx, ny=row.ny),
+        scale=row.scale,
+        display_max=row.max_value,
+        cells_b64=base64.b64encode(row.cells).decode("ascii"),
+        prov=prov_key,
+        provenance_refs={prov_key: ref},
+    )
+    return _dump(state)
 
 
 @router.get("/forecast-points/{lid}/state")

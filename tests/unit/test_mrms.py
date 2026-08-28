@@ -222,7 +222,7 @@ async def test_the_job_stores_both_features_with_the_published_instant(sessions,
         rows = list((await s.execute(select(DerivedFeature))).scalars())
     qpe = [r for r in rows if r.feature == mrms_jobs.FEATURE_QPE]
     gauge = [r for r in rows if r.feature == mrms_jobs.FEATURE_GAUGEINFL]
-    assert written == 12 and len(qpe) == 6 and len(gauge) == 6
+    assert written == 13 and len(qpe) == 6 and len(gauge) == 6  # 12 basin rows + 1 window raster
     for r in qpe:
         assert r.value is not None and r.value >= 0.0
         assert r.unit == "mm" and r.window == "1h"
@@ -246,7 +246,7 @@ async def test_a_second_run_writes_nothing_and_reuses_the_stored_masks(sessions,
         second = await mrms_jobs.run_fetch_qpe(s, _fetcher(tmp_path), geo_dir=GEO, now=NOW)
         await s.commit()
         n_masks = (await s.execute(select(func.count()).select_from(GridMask))).scalar_one()
-    assert first == 12 and second == 0
+    assert first == 13 and second == 0  # 12 basin rows + 1 window raster; a rerun re-stores neither
     assert n_masks == 6, "one mask per basin per grid definition; a rerun must not duplicate them"
 
 
@@ -303,3 +303,91 @@ async def test_a_mask_from_another_grid_definition_is_never_borrowed(sessions, t
     for r in rows:
         assert r.values_json["valid_fraction"] == pytest.approx(1.0, abs=1e-4)
         assert r.values_json["masked_area_km2"] > 100, "aggregated over the basin, not the ocean corner"
+
+
+@respx.mock
+async def test_the_window_raster_stores_the_cut_plane_and_prunes_on_retention(sessions, tmp_path) -> None:
+    """ADR-0020 end to end at the job: the stored raster decodes back to exactly the values the
+    plane held over the window (quantized), carries its own georeferencing and the published
+    instant, and rows older than retention are pruned by the same job that writes."""
+    import gzip as _gzip
+
+    import numpy as np
+
+    from cascade_core.models import FieldRaster
+    from cascade_providers_mrms.parser import parse_mrms_grib
+    from cascade_providers_mrms.raster import SENTINEL, cut_window
+
+    _mock_s3()
+    async with sessions() as s:
+        await mrms_jobs.run_fetch_qpe(s, _fetcher(tmp_path), geo_dir=GEO, now=NOW)
+        await s.commit()
+        row = (await s.execute(select(FieldRaster))).scalars().one()
+
+    # georeferencing rides in the row, and the knowledge time is NODD's LastModified
+    assert (row.nx, row.ny) == (237, 283)
+    assert row.available_at.replace(tzinfo=UTC) == datetime(2026, 8, 28, 3, 57, 19, tzinfo=UTC)
+    assert row.unit == "mm" and row.scale == 0.1 and row.method_id == mrms_jobs.METHOD_RASTER
+
+    # round trip: the stored bytes are the quantized window of the very plane the job decoded
+    field = parse_mrms_grib(QPE_GZ)
+    expected = cut_window(field)
+    got = np.frombuffer(_gzip.decompress(row.cells), dtype="<u2")
+    want = np.frombuffer(_gzip.decompress(expected.cells), dtype="<u2")
+    assert np.array_equal(got, want) and row.max_value == expected.max_value
+    assert SENTINEL not in got, "the fixture hour has full coverage; a sentinel here is a packing bug"
+
+    # retention: the same hour is pruned once `now` moves past RASTER_RETENTION (the prune is
+    # called at the end of every run; exercised directly because a listing 3 days stale is a
+    # NoListingError before the run would reach it — correct, and a different test's subject)
+    async with sessions() as s:
+        pruned = await mrms_jobs._prune_rasters(s, NOW + mrms_jobs.RASTER_RETENTION + timedelta(hours=2))
+        await s.commit()
+        left = list((await s.execute(select(FieldRaster.valid_time))).scalars())
+    assert pruned == 1 and left == [], "the writer prunes its own rows past retention"
+
+
+@respx.mock
+async def test_the_field_endpoint_serves_the_raster_and_a_reasoned_404_before_it(tmp_path) -> None:
+    """`/viz/fields/precip_observed` end to end: ingest one mocked hour, read it back through
+    the API, decode, and match the plane. Before ingestion (and past the 6 h freshness bound)
+    the answer is a 404 with a reason — UNKNOWN is never an empty raster (ADR-0020 §4)."""
+    import base64
+    import gzip as _gzip
+
+    import numpy as np
+
+    from cascade_api.main import create_app
+    from cascade_contracts import FieldRasterState
+    from cascade_core.settings import Settings
+    from cascade_providers_mrms.raster import cut_window
+
+    settings = Settings(db_url=f"sqlite+aiosqlite:///{tmp_path}/mrms_api.db", raw_dir=tmp_path / "raw", geo_dir=GEO)
+    engine = make_engine(settings.db_url)
+    await create_schema(engine)
+    factory = make_session_factory(engine)
+    _mock_s3()
+    async with factory() as s:
+        await seed_all(s, geo_dir=GEO, seed_file=SEED_FILE)
+        await mrms_jobs.run_fetch_qpe(s, _fetcher(tmp_path), geo_dir=GEO, now=NOW)
+        await s.commit()
+
+    app = create_app(settings, engine=engine)
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test") as c:
+        r = await c.get("/viz/fields/precip_observed", params={"as_of": NOW.isoformat()})
+        assert r.status_code == 200
+        state = FieldRasterState.model_validate(r.json())
+        assert state.truth == "observation" and state.kind == "observed" and state.unit == "mm"
+        assert (state.spec.nx, state.spec.ny) == (237, 283)
+        got = np.frombuffer(_gzip.decompress(base64.b64decode(state.cells_b64)), dtype="<u2")
+        want = np.frombuffer(_gzip.decompress(cut_window(parse_mrms_grib(QPE_GZ)).cells), dtype="<u2")
+        assert np.array_equal(got, want)
+        assert state.provenance_refs[state.prov].freshness.state == "current"
+
+        # before the bytes existed: a reasoned 404, never an empty plane
+        early = await c.get("/viz/fields/precip_observed", params={"as_of": "2026-08-28T02:00:00Z"})
+        assert early.status_code == 404 and "nothing current to draw" in early.json()["detail"]
+        # and a layer the catalogue does not know names the catalogue
+        unknown = await c.get("/viz/fields/snow_depth", params={"as_of": NOW.isoformat()})
+        assert unknown.status_code == 404 and "precip_observed" in unknown.json()["detail"]
+    await engine.dispose()

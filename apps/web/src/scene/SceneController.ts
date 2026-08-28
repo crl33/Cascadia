@@ -8,7 +8,7 @@ import { Clock, ClockRange, ClockStep, Credit, CreditDisplay, Entity, JulianDate
 import 'cesium/Build/Cesium/Widgets/widgets.css';
 import { CameraController } from '../camera/CameraController';
 import type { FlightReason } from '../camera/types';
-import type { BasinListItem, RiverEnvelope } from '../contracts/schemas';
+import type { BasinListItem, FieldRasterState, RiverEnvelope } from '../contracts/schemas';
 import type { MotionPreference } from '../design-system/motion';
 import { createSceneHandle } from '../layers/cesium-handle';
 import type { LayerHit, LayerId, SceneHandle, SceneLayer, SelectionState } from '../layers/contract';
@@ -16,6 +16,7 @@ import { BasinsLayer, type BasinsLayerData } from '../layers/basins/BasinsLayer'
 import { BasinSusceptibilityLayer, type BasinSusceptibilityLayerData } from '../layers/susceptibility/BasinSusceptibilityLayer';
 import { osmKeyless, type BasemapProvider } from '../layers/basemap/BasemapProvider';
 import { RiverNetworkLayer, type RiverNetworkDisplay } from '../layers/network/RiverNetworkLayer';
+import { PrecipFieldLayer } from '../layers/precip/PrecipFieldLayer';
 import { RiversLayer } from '../layers/rivers/RiversLayer';
 import { CESIUM_RENDERER_CREDIT_HTML } from './credits';
 import { SemanticZoomController } from './SemanticZoomController';
@@ -28,6 +29,7 @@ export type PickedHandler = (hit: LayerHit) => void;
 
 interface LayerDataMap {
   river_network: RiverNetworkDisplay;
+  precip_observed: FieldRasterState | null;
   basins: BasinsLayerData;
   rivers: RiverEnvelope;
   basin_susceptibility: BasinSusceptibilityLayerData;
@@ -91,7 +93,7 @@ export class SceneController {
     this.unsubscribes.push(this.camera.onSample((sample) => this.zoom.onCameraSample(sample)));
     this.unsubscribes.push(this.zoom.on('bandChanged', (e) => this.applyBand(e.next)));
 
-    for (const layer of [new BasinSusceptibilityLayer(), new RiverNetworkLayer(), new BasinsLayer(), new RiversLayer()] as SceneLayer[]) {
+    for (const layer of [new PrecipFieldLayer(), new BasinSusceptibilityLayer(), new RiverNetworkLayer(), new BasinsLayer(), new RiversLayer()] as SceneLayer[]) {
       this.layers.set(layer.id, layer);
       this.intents.set(layer.id, true);
       layer.mount(this.handle);

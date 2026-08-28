@@ -3,7 +3,7 @@
  * (geography, basin outlines per LOD, hazard categories, forecast points). Renders nothing.
  */
 import { useEffect, useMemo } from 'react';
-import { useBasinGeometries, useBasinGeometry, useBasins, useRiverNetwork, useVizBasins, useVizRivers } from '../api/hooks';
+import { useBasinGeometries, useBasinGeometry, useBasins, useRiverNetwork, useVizBasins, useVizField, useVizRivers } from '../api/hooks';
 import type { FloodCategory, GeoFeature } from '../contracts/schemas';
 import type { BasinSusceptibility } from '../layers/susceptibility/BasinSusceptibilityLayer';
 import { riverIntensities } from '../layers/network/match';
@@ -73,6 +73,14 @@ export function SceneDataBridge({ controller }: Props) {
 
   useEffect(() => { if (rivers.data) controller.setData('rivers', rivers.data); }, [controller, rivers.data]);
   // The cartographic river network: fetched once, drawn for the app's lifetime.
+  const precipField = useVizField('precip_observed');
+  useEffect(() => {
+    // A 404 ("nothing current to draw") pushes null: the layer clears rather than letting a
+    // stale hour linger as if it were now. While loading, push nothing — no flicker to empty.
+    if (precipField.data) controller.setData('precip_observed', precipField.data);
+    else if (precipField.isError) controller.setData('precip_observed', null);
+  }, [controller, precipField.data, precipField.isError]);
+
   const network = useRiverNetwork();
   // The rivers-respond join: the selected basin's per-station flow_visual_intensity (already
   // fetched for the panel) matched onto the network's river names. Pure derivation (match.ts);

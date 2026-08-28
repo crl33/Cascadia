@@ -194,6 +194,12 @@ object for the whole world.
    the sum covers fewer hours than the window. A partial total is a KNOWN UNDERESTIMATE and is
    never scaled up; truth class `observation`; a driver beside the surfaces, fused with
    nothing. Additive, so 1.3.0 consumers keep validating.
+   **1.5.0** (2026-08-28, ADR-0020) added `FieldRasterState` — a standalone document (not an
+   envelope item) serving one observed weather field over the seeded window at
+   `GET /viz/fields/{layer}`: its own grid spec (the window is a decision, not a constant),
+   base64(gzip(uint16)) cells at a stated quantization `scale`, a `sentinel` that renders as
+   absence never zero, `display_max` as the §10-rule-2 display hint, truth `observation`, and
+   a resolving `prov`. UNKNOWN is a reasoned 404, never an empty raster. Additive.
 5. Contract tests: each schema has fixture documents; the web client's generated types are
    checked against them in CI; the API's responses are validated against the schema in
    integration tests.

@@ -411,6 +411,53 @@ class RiverVisualizationState(StrictModel):
     flow_visual_intensity: float | None = Field(default=None, ge=0, le=1, description="display hint from percentile; not depth")
 
 
+class FieldGridSpec(StrictModel):
+    """The raster's own georeferencing (ADR-0020): NW cell center, degrees, lon in -180..180.
+    Rows scan EAST then SOUTH from (la1, lo1) — the provider's order, carried verbatim."""
+
+    lo1: float = Field(ge=-180, le=180)
+    la1: float = Field(ge=-90, le=90)
+    dlon: float = Field(gt=0)
+    dlat: float = Field(gt=0)
+    nx: int = Field(gt=0)
+    ny: int = Field(gt=0)
+
+
+class FieldRasterState(StrictModel):
+    """One observed weather field over the seeded window, packed for display (C3b).
+
+    `cells_b64` is base64 of gzip of little-endian uint16, row-major from the NW corner;
+    value = raw * `scale` in `unit`; raw == `sentinel` means the provider could not say
+    (missing or no radar coverage) and must render as absence, never as zero. `display_max`
+    is the window's real maximum — the display_range top VISUALIZATION_CONTRACTS §10 rule 2
+    allows — and it may legitimately be 0.0 on a dry hour.
+    """
+
+    contract: str = "FieldRasterState"
+    version: str = CONTRACT_VERSION
+    kind: str = Field(pattern="^observed$", description="forecast fields arrive with C4, as their own kind")
+    field: str
+    window: str  # accumulation window, e.g. "1h"
+    valid_time: datetime  # END of the accumulation
+    as_of: datetime
+    generated_at: datetime
+    truth: TruthClass
+    unit: str
+    spec: FieldGridSpec
+    scale: float = Field(gt=0)
+    sentinel: int = 65535
+    display_max: float = Field(ge=0)
+    cells_b64: str
+    prov: str
+    provenance_refs: dict[str, ProvenanceRef]
+
+    @model_validator(mode="after")
+    def _prov_resolves(self) -> FieldRasterState:
+        if self.prov not in self.provenance_refs:
+            raise ValueError(f"unresolved provenance ref: {self.prov}")
+        return self
+
+
 class ContractEnvelope(StrictModel):
     contract: str
     version: str = CONTRACT_VERSION

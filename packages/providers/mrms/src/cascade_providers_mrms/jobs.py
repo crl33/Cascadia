@@ -37,7 +37,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from cascade_core.fetch import ArchivingFetcher, FetchError
-from cascade_core.models import Basin, DerivedFeature, GridMask
+from cascade_core.models import Basin, DerivedFeature, FieldRaster, GridMask
 from cascade_core.registry import PRODUCT_MRMS_GAUGEINFL, PRODUCT_MRMS_QPE
 from cascade_core.timeutils import utcnow
 from cascade_geo.latlon import LatLonGridSpec
@@ -51,6 +51,7 @@ from cascade_providers_mrms.client import (
     parse_listing,
 )
 from cascade_providers_mrms.parser import MISSING, NO_COVERAGE, parse_mrms_grib
+from cascade_providers_mrms.raster import FIELD_QPE, METHOD_RASTER, WindowOutsideGridError, cut_window
 
 log = logging.getLogger("cascade.providers.mrms")
 
@@ -65,6 +66,9 @@ METHOD_GAUGEINFL = "method:basin-gauge-influence@1.0.0"
 FEATURE_GAUGEINFL = "basin_gauge_influence_01h"
 
 LOOKBACK = timedelta(hours=24)
+#: field_raster retention (ADR-0020): the display window the timeline scrubs; the source
+#: gribs stay archived, so a longer view is a backfill away, not a loss.
+RASTER_RETENTION = timedelta(hours=72)
 #: Below this valid-weight fraction the mean is refused. Normal state is 1.0000 (measured).
 MIN_VALID_FRACTION = 0.995
 
@@ -181,6 +185,65 @@ def _flags(stats: dict) -> list[str]:
     return flags
 
 
+async def _stored_raster_times(session: AsyncSession, since: datetime) -> set[datetime]:
+    rows = await session.execute(
+        select(FieldRaster.valid_time).where(
+            FieldRaster.product_id == PRODUCT_MRMS_QPE,
+            FieldRaster.field == FIELD_QPE,
+            FieldRaster.valid_time >= since,
+        )
+    )
+    return {t for (t,) in rows}
+
+
+def _store_raster(session: AsyncSession, *, obj: S3Object, field, qpe_result) -> bool:
+    """Cut, quantize and stage the window raster for one hour (ADR-0020). Returns False —
+    with the refusal logged — when the provider's grid stopped covering the seeded window;
+    the basin means still store, because a mask that matches its grid hash is still right."""
+    try:
+        raster = cut_window(field)
+    except WindowOutsideGridError as e:
+        log.warning("mrms: %s", e)
+        return False
+    session.add(
+        FieldRaster(
+            product_id=PRODUCT_MRMS_QPE,
+            field=FIELD_QPE,
+            valid_time=obj.valid_time,
+            retrieved_at=qpe_result.fetched_at,
+            available_at=obj.last_modified,
+            lo1=raster.lo1,
+            la1=raster.la1,
+            dlon=raster.dlon,
+            dlat=raster.dlat,
+            nx=raster.nx,
+            ny=raster.ny,
+            unit=raster.unit,
+            scale=raster.scale,
+            max_value=raster.max_value,
+            cells=raster.cells,
+            method_id=METHOD_RASTER,
+            raw_artifact_id=qpe_result.artifact_id,
+        )
+    )
+    return True
+
+
+async def _prune_rasters(session: AsyncSession, now: datetime) -> int:
+    """Retention (ADR-0020 §3): the one DELETE this codebase's writer performs on a data
+    table, and it is scoped to rows this same job wrote and can rewrite from the archive."""
+    from sqlalchemy import delete
+
+    result = await session.execute(
+        delete(FieldRaster).where(
+            FieldRaster.product_id == PRODUCT_MRMS_QPE,
+            FieldRaster.field == FIELD_QPE,
+            FieldRaster.valid_time < now - RASTER_RETENTION,
+        )
+    )
+    return int(result.rowcount or 0)
+
+
 async def _stored_times(session: AsyncSession, feature: str, n_basins: int, since: datetime) -> set[datetime]:
     """valid_times already fully written (a row for every basin) — partial writes re-run."""
     rows = (
@@ -224,9 +287,10 @@ async def run_fetch_qpe(
     gaugeinfl_by_time = {o.valid_time: o for o in listings[GAUGEINFL_PRODUCT_DIR]}
 
     have = await _stored_times(session, FEATURE_QPE, len(basins), now - LOOKBACK)
+    have_rasters = await _stored_raster_times(session, now - LOOKBACK)
     written = 0
     for obj in qpe_objects:
-        if obj.valid_time in have:
+        if obj.valid_time in have and obj.valid_time in have_rasters:
             continue
         try:
             qpe_result = await fetch_object(fetcher, session, key=obj.key, product_id=PRODUCT_MRMS_QPE)
@@ -236,6 +300,11 @@ async def run_fetch_qpe(
             continue
         field = parse_mrms_grib(qpe_result.content)
         masks = await _masks_for(session, field.grid, basins, geo_dir)
+
+        if obj.valid_time not in have_rasters and _store_raster(session, obj=obj, field=field, qpe_result=qpe_result):
+            written += 1
+        if obj.valid_time in have:
+            continue  # only the raster was missing for this hour (pre-ADR-0020 rows)
 
         gauge_field = None
         gauge_result = None
@@ -317,5 +386,8 @@ async def run_fetch_qpe(
                     )
                 )
                 written += 1
+    pruned = await _prune_rasters(session, now)
+    if pruned:
+        log.info("mrms: pruned %d field_raster row(s) past %s retention", pruned, RASTER_RETENTION)
     await session.flush()
     return written

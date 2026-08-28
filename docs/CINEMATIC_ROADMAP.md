@@ -702,9 +702,16 @@ Landed the same day (each verified by screenshot):
   still provenance-chipped; the OFFICIAL hazard category and any active alert NEVER fold) over
   three disclosures: Why? / Forecasts / Context. Nothing deleted; everything one level deeper.
 
-Still ahead on this trajectory, in the order the assessment implies: rivers as first-class
-visual objects (width/presence from flow_visual_intensity), precipitation/snow/freezing-level
-FIELDS on the map (C3b/C3c — the map absorbing what the panel carries), chrome compaction,
+Landed 2026-08-28 (same session, later): **rivers responding** — `flow_visual_intensity`
+derived at last (the station's day-of-year percentile / 100, the same row the surface bands),
+joined to the OSM network by name and drawn as width+alpha presence, never hue; and the first
+weather FIELD — **C3b `precip_observed`**: the MRMS QPE hour cut to the seeded window at
+ingest (ADR-0020, `field_raster`), served as `FieldRasterState` (contract 1.5.0) and rendered
+as a blue-teal wash where dry and unknown are both transparent (the panel carries coverage;
+the map never fabricates it).
+
+Still ahead on this trajectory: snow/freezing-level fields (C3c), chrome compaction,
 terrain (needs an ion-free terrain source decision — ADR territory), atmosphere, and
-timeline-driven spatial change.
+timeline-driven spatial change (the field endpoint already answers any `as_of` inside its
+72 h retention — the timeline just has to ask).
 

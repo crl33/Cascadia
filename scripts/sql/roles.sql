@@ -64,6 +64,17 @@ $$;
 -- The ONE DDL capability, through the SECURITY DEFINER function (ADR-0019, migration 0006):
 GRANT EXECUTE ON FUNCTION cascade_ensure_month_partitions(date, date) TO ingest_writer;
 
+-- The one non-queue DELETE (ADR-0020): field_raster holds regenerable display rasters whose
+-- source gribs stay archived, and the job that writes them prunes beyond retention. Guarded
+-- because this file may run before migration 0007 creates the table.
+DO $$
+BEGIN
+    IF to_regclass('public.field_raster') IS NOT NULL THEN
+        GRANT DELETE ON field_raster TO ingest_writer;
+    END IF;
+END
+$$;
+
 -- Objects created later by the role running migrations inherit the same shape.
 -- (ALTER DEFAULT PRIVILEGES applies to objects created by the role executing this
 -- statement — run this file as the same role that runs scripts/migrate.sh.)

@@ -8,6 +8,8 @@
  */
 import type { ZodType } from 'zod';
 import {
+  FieldRasterStateSchema,
+  type FieldRasterState,
   BasinEnvelopeSchema, BasinListSchema, BasinReservoirsSchema, ForecastRunSchema, HefsLatestSchema, RiverNetworkSchema, GeoFeatureSchema, HealthSchema, RiverEnvelopeSchema,
   RunsListSchema, SearchResultsSchema, StationSeriesSchema,
   type BasinEnvelope, type BasinList, type BasinReservoirs, type ForecastRun, type HefsLatest, type RiverNetwork, type GeoFeature, type Health, type RiverEnvelope,
@@ -50,6 +52,9 @@ export const api = {
     getJson(withAsOf(`/basins/${enc(basinId)}/state`, asOf), BasinEnvelopeSchema, signal),
   vizBasins: (asOf: string | null, signal?: AbortSignal): Promise<BasinEnvelope> =>
     getJson(withAsOf('/viz/basins', asOf), BasinEnvelopeSchema, signal),
+  /** One observed weather field (404 = nothing current to draw — an answer, not an error). */
+  vizField: (layer: string, asOf: string | null, signal?: AbortSignal): Promise<FieldRasterState> =>
+    getJson(withAsOf(`/viz/fields/${enc(layer)}`, asOf), FieldRasterStateSchema, signal),
   vizRivers: (basinId: string, asOf: string | null, signal?: AbortSignal): Promise<RiverEnvelope> =>
     getJson(withAsOf(`/viz/rivers?basin=${enc(basinId)}`, asOf), RiverEnvelopeSchema, signal),
   riverState: (forecastPointId: string, asOf: string | null, signal?: AbortSignal): Promise<RiverEnvelope> =>

@@ -1,0 +1,44 @@
+{
+ "contract": "FieldRasterState",
+ "version": "1.5.0",
+ "kind": "observed",
+ "field": "qpe_01h",
+ "window": "1h",
+ "valid_time": "2026-08-28T03:00:00Z",
+ "as_of": "2026-08-28T03:00:00Z",
+ "generated_at": "2026-08-28T03:00:00Z",
+ "truth": "observation",
+ "unit": "mm",
+ "spec": {
+  "lo1": -122.86500000000001,
+  "la1": 49.455,
+  "dlon": 0.01,
+  "dlat": 0.01,
+  "nx": 237,
+  "ny": 283
+ },
+ "scale": 0.1,
+ "sentinel": 65535,
+ "display_max": 6.4,
+ "cells_b64": "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",
+ "prov": "field-precip_observed",
+ "provenance_refs": {
+  "field-precip_observed": {
+   "source_id": "src:mrms",
+   "source_kind": "OBSERVED",
+   "product_id": "product:mrms-qpe-01h-pass2",
+   "method_id": null,
+   "issued_at": null,
+   "valid_time": "2026-08-28T03:00:00Z",
+   "retrieved_at": "2026-08-28T03:00:00Z",
+   "freshness": {
+    "state": "current",
+    "age_seconds": null,
+    "expected_cadence_seconds": null
+   },
+   "quality": [],
+   "label": "MRMS multi-sensor QPE pass 2, 1 h accumulation ending 2026-08-28 03:00Z, cut to the seeded window (237x283 at 0.01 deg) and quantized to 0.1 mm steps (method:field-raster-window@1.0.0) \u2014 STUB FIXTURE, archived hour",
+   "raw_artifact_id": null
+  }
+ }
+}

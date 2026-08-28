@@ -32,6 +32,7 @@ from sqlalchemy.orm import aliased
 from cascade_core.models import (
     Basin,
     DerivedFeature,
+    FieldRaster,
     ForecastPoint,
     ForecastRun,
     ForecastValue,
@@ -769,6 +770,33 @@ class Knowledge:
             latest_per_valid_time=True,
         )
         return rows[-1] if rows else None
+
+    async def latest_field_raster(
+        self, product_id: str, fld: str, *, lookback: timedelta = timedelta(hours=6)
+    ) -> FieldRaster | None:
+        """The newest window raster known at T (ADR-0020), or None with the staleness bound.
+
+        `valid_time <= T` AND `available_at <= T`, like every observation read; the lookback
+        default is deliberately short of the table's 72 h retention — a field six hours stale
+        is not "the current precipitation" and the API's answer for it is a reasoned 404,
+        never an old plane presented as now.
+        """
+        key = ("field_raster", product_id, fld, lookback)
+        if key not in self._memo:
+            q = (
+                select(FieldRaster)
+                .where(
+                    FieldRaster.product_id == product_id,
+                    FieldRaster.field == fld,
+                    FieldRaster.available_at <= self.as_of,
+                    FieldRaster.valid_time <= self.as_of,
+                    FieldRaster.valid_time >= self.as_of - lookback,
+                )
+                .order_by(FieldRaster.valid_time.desc(), FieldRaster.id.desc())
+                .limit(1)
+            )
+            self._memo[key] = (await self.session.execute(q)).scalars().first()
+        return self._memo[key]
 
     async def thresholds(self, fp_id: str) -> dict[str, Threshold]:
         """Latest known-at-T official threshold row per category."""

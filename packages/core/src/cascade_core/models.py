@@ -31,6 +31,7 @@ from sqlalchemy import (
     ForeignKey,
     Index,
     Integer,
+    LargeBinary,
     String,
     UniqueConstraint,
 )
@@ -388,6 +389,47 @@ class GridMask(Base):
     masked_area_km2: Mapped[float] = mapped_column(Float)
     polygon_source: Mapped[str] = mapped_column(String)  # basins_seed_full.geojson.gz@<sha256>
     computed_at: Mapped[datetime] = mapped_column(UTCDateTime)
+
+
+class FieldRaster(Base):
+    """One observed weather field over the seeded window, quantized for display (ADR-0020).
+
+    The plane `mrms.fetch_qpe` already decoded, cut to the basin-union window and kept:
+    `cells` is gzip of little-endian uint16, row-major from the NW corner (the provider's own
+    order), value = raw * `scale`; 0xFFFF is the packed sentinel for missing/no-coverage cells
+    — distinct from any real value, and rendered as absence, never as zero precipitation. The
+    grid spec rides in the row because the window is a decision, not a constant: a reader that
+    assumed the extent would silently misplace the field the day the window changes.
+
+    Deliberately NOT a `derived_feature`: that table's shape is one scalar per scope, its
+    readers are query-budgeted scans that must never risk pulling a 67k-cell plane, and this
+    row is a regenerable display derivative (the source grib stays archived), which is why it
+    is also the one data table `ingest_writer` may DELETE from (retention, ADR-0020 §3).
+    """
+
+    __tablename__ = "field_raster"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    product_id: Mapped[str] = mapped_column(String)  # product:mrms-qpe-01h-pass2
+    field: Mapped[str] = mapped_column(String)  # "qpe_01h"
+    valid_time: Mapped[datetime] = mapped_column(UTCDateTime)  # end of the accumulation hour
+    retrieved_at: Mapped[datetime] = mapped_column(UTCDateTime)
+    available_at: Mapped[datetime] = mapped_column(UTCDateTime)
+    lo1: Mapped[float] = mapped_column(Float)  # NW-corner cell center, degrees east
+    la1: Mapped[float] = mapped_column(Float)  # NW-corner cell center, degrees north
+    dlon: Mapped[float] = mapped_column(Float)
+    dlat: Mapped[float] = mapped_column(Float)
+    nx: Mapped[int] = mapped_column(Integer)
+    ny: Mapped[int] = mapped_column(Integer)
+    unit: Mapped[str] = mapped_column(String)  # "mm"
+    scale: Mapped[float] = mapped_column(Float)  # quantization step: value = raw * scale
+    max_value: Mapped[float] = mapped_column(Float)  # display_range top, in `unit`
+    cells: Mapped[bytes] = mapped_column(LargeBinary)  # gzip(uint16 LE, row-major, NW origin)
+    method_id: Mapped[str] = mapped_column(String)
+    raw_artifact_id: Mapped[int | None] = mapped_column(ForeignKey("raw_artifact.id"))
+    __table_args__ = (
+        UniqueConstraint("product_id", "field", "valid_time", name="uq_field_raster_scope"),
+        Index("ix_field_raster_read", "product_id", "field", "available_at"),
+    )
 
 
 class JobRun(Base):

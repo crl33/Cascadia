@@ -397,6 +397,36 @@ export const RiverNetworkSchema = z.object({
 });
 export type RiverNetwork = z.infer<typeof RiverNetworkSchema>;
 
+/**
+ * One observed weather field over the seeded window (GET /viz/fields/:layer, ADR-0020, C3b).
+ * `cells_b64` is base64(gzip(uint16 LE, row-major from the NW cell center in `spec`));
+ * value = raw * scale in `unit`; raw === sentinel means "cannot say" and renders as absence,
+ * never as zero. UNKNOWN arrives as a 404 with a reason, never as an empty raster.
+ */
+export const FieldRasterStateSchema = z.object({
+  contract: z.literal('FieldRasterState'),
+  version: z.string(),
+  kind: z.literal('observed'),
+  field: z.string(),
+  window: z.string(),
+  valid_time: iso,
+  as_of: iso,
+  generated_at: iso,
+  truth: TruthClassSchema,
+  unit: z.string(),
+  spec: z.object({
+    lo1: z.number(), la1: z.number(), dlon: z.number().positive(), dlat: z.number().positive(),
+    nx: z.number().int().positive(), ny: z.number().int().positive(),
+  }),
+  scale: z.number().positive(),
+  sentinel: z.number().int(),
+  display_max: z.number().min(0),
+  cells_b64: z.string(),
+  prov: z.string(),
+  provenance_refs: z.record(z.string(), ProvenanceRefSchema),
+}).refine((d) => d.prov in d.provenance_refs, { message: 'unresolved provenance ref' });
+export type FieldRasterState = z.infer<typeof FieldRasterStateSchema>;
+
 export const HefsLatestSchema = z.object({
   fp_id: z.string(),
   lid: z.string(),
