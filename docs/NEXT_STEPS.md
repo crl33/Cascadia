@@ -1,4 +1,19 @@
-# NEXT STEPS — what is done, what is not, and the order of work (2026-08-27, second pass)
+# NEXT STEPS — what is done, what is not, and the order of work (2026-08-28, third pass)
+
+**2026-08-28 evening delta** (details: `research/session-checkpoint-2026-08-28b.md`, final
+section): contracts **1.5.0**, Alembic **0007**, role separation live, SSE live through the
+gateway (Content-Type fix), rivers drawn AND responding (`flow_visual_intensity` derived),
+weather FIELDS on the map (`field_raster`: MRMS QPE + SNODAS SWE, `/viz/fields/*`,
+provenance-chipped legend, scrub-driven refetch), terrain deployed ion-free (ADR-0021: 3DEP
+quantized-mesh, 57 MB in the `cascadia-terrain` R2 bucket, gateway `/terrain/*`), ops tooling
+(`defer_job.py`, `requeue_stalled_jobs.py`, `publish_terrain.py`). Production health `ok`
+17/17. The visual proof of the composed scene: `research/img/composed-scene-skagit-2026-08-28.png`.
+
+**Next, in order:** (1) oblique-camera crest showcase (gates ADR-0021 Accepted; churns e2e
+baselines deliberately); (2) C3c second half — snow-level over hypsometry on the map;
+(3) C4 forecast fields (WPC QPF rasters ride the same machinery; needs timeline-future
+design); (4) P6 hindcast harness over ADR-0018; (5) VIIRS SCA (owner Earthdata credentials);
+(6) hydrology mypy burn-down (67).
 
 A plan, not a roadmap: [ROADMAP.md](ROADMAP.md) and [CINEMATIC_ROADMAP.md](CINEMATIC_ROADMAP.md)
 define the phases; this file says where we actually are and what to do next, in order. Update it
