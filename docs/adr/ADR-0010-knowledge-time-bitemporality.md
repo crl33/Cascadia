@@ -1,6 +1,7 @@
 # ADR-0010: Every value carries knowledge time (`available_at`); replay uses it exclusively
 
-- Status: Accepted
+- Status: Accepted (amended by ADR-0018: backfilled `available_at` is the RETRIEVAL instant;
+  the provider's publication time lives on the separate `knowable_at` clock)
 - Date: 2026-08-22
 
 ## Context

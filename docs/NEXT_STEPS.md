@@ -345,3 +345,16 @@ and it is not being started yet.
 > accepts a `region`, returns `true`, and leaves the instance at `region: null`, so it must be set
 > in the Railway dashboard by hand. At ~15 ms per query the present 13 statements would cost well
 > under a second.
+
+## Session addenda (2026-08-28, late)
+
+- **VIIRS SCA (S9) is externally blocked**: no Earthdata credentials exist anywhere in the
+  configured secret stores, and LAADS redirects to URS auth. Creating the Earthdata account is
+  an OWNER action; until credentials land in `~/.config/cascadia-papsukkal/`, the rain-on-snow
+  gate's observed half stays closed (the modeled half — SNODAS snow-covered fraction — is live).
+- **ADR-0018** (hindcast `knowable_at` clock) accepted: resolves the ADR-0010 letter-vs-practice
+  divergence, defines `as_knowable_at` as a harness-only reader with an exclusion count, and
+  obliges backfills to preserve `original_available_at` when the archive offers one. The P2
+  FLS rows want a one-off pass to populate it; USGS instantaneous rows will honestly count as
+  excluded.
+
