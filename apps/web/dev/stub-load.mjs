@@ -23,5 +23,6 @@ export function loadFixtures(root = REPO_ROOT) {
     samples: readJson(resolve(here, 'fixtures/mvew1-samples.json')),
     tier0: readJson(resolve(root, 'functions/fixtures/basin_tier0.json')),
     riverNetwork: JSON.parse(gunzipSync(readFileSync(resolve(root, 'tests/fixtures/geo/river_network.json.gz'))).toString('utf8')),
+    labels: readJson(resolve(root, 'tests/fixtures/geo/labels.json')),
   };
 }

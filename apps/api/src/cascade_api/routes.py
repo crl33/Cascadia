@@ -141,6 +141,19 @@ async def river_network(request: Request) -> dict:
     return geo.river_network
 
 
+@router.get("/geo/labels")
+async def geo_labels(request: Request) -> dict:
+    """The app-owned label set (GNIS names + editorial tiers) — cartographic, static.
+
+    404 when the fixture was not derived for this deployment: an unlabeled world is a loud
+    absence the client falls back from, never an empty document pretending the map has no
+    names."""
+    geo = request.app.state.geo
+    if geo.labels is None:
+        raise HTTPException(status_code=404, detail="no label set derived in this deployment")
+    return geo.labels
+
+
 @router.get("/basins/{basin_id}/geometry")
 async def basin_geometry(request: Request, basin_id: Annotated[str, Path(pattern=BASIN_ID)], lod: Literal["state", "basin"] = "basin") -> dict:
     feature = request.app.state.geo.feature(basin_id, lod)

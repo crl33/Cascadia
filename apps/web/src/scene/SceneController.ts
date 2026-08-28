@@ -14,8 +14,9 @@ import { createSceneHandle } from '../layers/cesium-handle';
 import type { LayerHit, LayerId, SceneHandle, SceneLayer, SelectionState } from '../layers/contract';
 import { BasinsLayer, type BasinsLayerData } from '../layers/basins/BasinsLayer';
 import { BasinSusceptibilityLayer, type BasinSusceptibilityLayerData } from '../layers/susceptibility/BasinSusceptibilityLayer';
-import { osmKeyless, type BasemapProvider } from '../layers/basemap/BasemapProvider';
+import { resolveBasemap, type BasemapProvider } from '../layers/basemap/BasemapProvider';
 import { RiverNetworkLayer, type RiverNetworkDisplay } from '../layers/network/RiverNetworkLayer';
+import { LabelsLayer, type LabelSet as LabelSetData } from '../layers/labels/LabelsLayer';
 import { WeatherFieldLayer } from '../layers/fields/WeatherFieldLayer';
 import { precipPixel } from '../layers/precip/style';
 import { snowPixel } from '../layers/snow/style';
@@ -33,6 +34,7 @@ interface LayerDataMap {
   river_network: RiverNetworkDisplay;
   precip_observed: FieldRasterState | null;
   snow_cover: FieldRasterState | null;
+  labels: LabelSetData;
   basins: BasinsLayerData;
   rivers: RiverEnvelope;
   basin_susceptibility: BasinSusceptibilityLayerData;
@@ -60,7 +62,7 @@ export class SceneController {
   private disposed = false;
 
   constructor(container: HTMLElement, options: SceneControllerOptions) {
-    this.basemap = options.basemap ?? osmKeyless;
+    this.basemap = options.basemap ?? resolveBasemap();
     const clock = new Clock({ currentTime: JulianDate.now(), clockRange: ClockRange.UNBOUNDED, clockStep: ClockStep.SYSTEM_CLOCK, shouldAnimate: false });
     // Attribution is always rendered: the credit display lives in its own strip above the disclaimer.
     const credits = document.createElement('div');
@@ -103,7 +105,7 @@ export class SceneController {
     for (const layer of [
       new WeatherFieldLayer({ id: 'snow_cover', displayName: 'Snow water equivalent (SNODAS, daily)', truthClass: 'authoritative_model', pixel: snowPixel }),
       new WeatherFieldLayer({ id: 'precip_observed', displayName: 'Observed precipitation (MRMS QPE, 1 h)', truthClass: 'observation', pixel: precipPixel }),
-      new BasinSusceptibilityLayer(), new RiverNetworkLayer(), new BasinsLayer(), new RiversLayer(),
+      new BasinSusceptibilityLayer(), new RiverNetworkLayer(), new LabelsLayer(), new BasinsLayer(), new RiversLayer(),
     ] as SceneLayer[]) {
       this.layers.set(layer.id, layer);
       this.intents.set(layer.id, true);

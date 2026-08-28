@@ -11,7 +11,7 @@ import { ForecastEvolution } from '../event/ForecastEvolution';
 import { BasinPanel } from '../panels/BasinPanel';
 import { RiverPanel } from '../panels/RiverPanel';
 import { resolveMotion } from '../design-system/motion';
-import { OSM_ATTRIBUTION } from '../layers/basemap/BasemapProvider';
+import { resolveBasemap } from '../layers/basemap/BasemapProvider';
 import { useSceneStore } from '../state/store';
 import { FieldLegend } from './FieldLegend';
 import { TimelineBar } from '../timeline/TimelineBar';
@@ -38,7 +38,7 @@ export function App() {
       <ErrorBoundary name="Timeline"><TimelineBar controller={timelineController} /></ErrorBoundary>
       <footer className="disclaimer" data-testid="disclaimer">
         <span>{DISCLAIMER}.</span>
-        <span className="muted"> Basemap {OSM_ATTRIBUTION}.</span>
+        <span className="muted"> Imagery: {resolveBasemap().attribution}. Terrain: USGS 3DEP.</span>
       </footer>
       <UrlSync />
     </div>

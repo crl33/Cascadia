@@ -3,7 +3,7 @@
  * (geography, basin outlines per LOD, hazard categories, forecast points). Renders nothing.
  */
 import { useEffect, useMemo } from 'react';
-import { useBasinGeometries, useBasinGeometry, useBasins, useRiverNetwork, useVizBasins, useVizField, useVizRivers } from '../api/hooks';
+import { useBasinGeometries, useBasinGeometry, useBasins, useLabels, useRiverNetwork, useVizBasins, useVizField, useVizRivers } from '../api/hooks';
 import type { FloodCategory, GeoFeature } from '../contracts/schemas';
 import type { BasinSusceptibility } from '../layers/susceptibility/BasinSusceptibilityLayer';
 import { riverIntensities } from '../layers/network/match';
@@ -86,6 +86,11 @@ export function SceneDataBridge({ controller }: Props) {
     if (snowField.data) controller.setData('snow_cover', snowField.data);
     else if (snowField.isError) controller.setData('snow_cover', null);
   }, [controller, snowField.data, snowField.isError]);
+
+  const labelSet = useLabels();
+  useEffect(() => {
+    if (labelSet.data) controller.setData('labels', { labels: labelSet.data.labels });
+  }, [controller, labelSet.data]);
 
   const network = useRiverNetwork();
   // The rivers-respond join: the selected basin's per-station flow_visual_intensity (already

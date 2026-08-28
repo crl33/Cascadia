@@ -427,6 +427,20 @@ export const FieldRasterStateSchema = z.object({
 }).refine((d) => d.prov in d.provenance_refs, { message: 'unresolved provenance ref' });
 export type FieldRasterState = z.infer<typeof FieldRasterStateSchema>;
 
+/** The app-owned label set (GET /geo/labels): GNIS names + editorial tiers, cartographic. */
+export const LabelSetSchema = z.object({
+  _provenance: z.record(z.string(), z.unknown()),
+  labels: z.array(z.object({
+    name: z.string(),
+    kind: z.enum(['city', 'town', 'river', 'basin', 'peak', 'water']),
+    tier: z.number().int().min(1).max(4),
+    lon: z.number(),
+    lat: z.number(),
+    basin_id: z.string().optional(),
+  })),
+});
+export type LabelSet = z.infer<typeof LabelSetSchema>;
+
 export const HefsLatestSchema = z.object({
   fp_id: z.string(),
   lid: z.string(),

@@ -1,0 +1,495 @@
+{
+ "_provenance": {
+  "method_id": "method:labels-gnis@1.0.0",
+  "derived_at": "2026-08-28T22:57:03.092374+00:00",
+  "sources": {
+   "names_coordinates": "USGS GNIS Domestic Names (public domain), https://prd-tnm.s3.amazonaws.com/StagedProducts/GeographicNames/DomesticNames/DomesticNames_WA_Text.zip",
+   "river_anchors": "tests/fixtures/geo/river_network.json.gz mainstem midpoints (method:river-network-osm@1.0.0)",
+   "basin_anchors": "representative interior points of the seeded HUC8-union geometry"
+  },
+  "editorial_note": "Which names label at which band is cartographic judgment recorded in scripts/build_labels.py, not derived data; every curated entry resolved against GNIS by (name, class, county) at build time."
+ },
+ "labels": [
+  {
+   "name": "Seattle",
+   "kind": "city",
+   "tier": 1,
+   "lon": -122.33207,
+   "lat": 47.60621
+  },
+  {
+   "name": "Tacoma",
+   "kind": "city",
+   "tier": 1,
+   "lon": -122.44429,
+   "lat": 47.25288
+  },
+  {
+   "name": "Everett",
+   "kind": "city",
+   "tier": 1,
+   "lon": -122.20208,
+   "lat": 47.97898
+  },
+  {
+   "name": "Olympia",
+   "kind": "city",
+   "tier": 1,
+   "lon": -122.9007,
+   "lat": 47.03787
+  },
+  {
+   "name": "Bellingham",
+   "kind": "city",
+   "tier": 1,
+   "lon": -122.48822,
+   "lat": 48.75955
+  },
+  {
+   "name": "Ferndale",
+   "kind": "town",
+   "tier": 2,
+   "lon": -122.59101,
+   "lat": 48.8465
+  },
+  {
+   "name": "Lynden",
+   "kind": "town",
+   "tier": 2,
+   "lon": -122.45211,
+   "lat": 48.9465
+  },
+  {
+   "name": "Deming",
+   "kind": "town",
+   "tier": 3,
+   "lon": -122.21599,
+   "lat": 48.82567
+  },
+  {
+   "name": "Everson",
+   "kind": "town",
+   "tier": 3,
+   "lon": -122.34266,
+   "lat": 48.92012
+  },
+  {
+   "name": "Mount Vernon",
+   "kind": "town",
+   "tier": 2,
+   "lon": -122.33405,
+   "lat": 48.42122
+  },
+  {
+   "name": "Burlington",
+   "kind": "town",
+   "tier": 3,
+   "lon": -122.32544,
+   "lat": 48.47566
+  },
+  {
+   "name": "Sedro-Woolley",
+   "kind": "town",
+   "tier": 2,
+   "lon": -122.23611,
+   "lat": 48.50389
+  },
+  {
+   "name": "Concrete",
+   "kind": "town",
+   "tier": 3,
+   "lon": -121.74625,
+   "lat": 48.53928
+  },
+  {
+   "name": "Marblemount",
+   "kind": "town",
+   "tier": 3,
+   "lon": -121.44957,
+   "lat": 48.52762
+  },
+  {
+   "name": "Monroe",
+   "kind": "town",
+   "tier": 2,
+   "lon": -121.97096,
+   "lat": 47.85538
+  },
+  {
+   "name": "Snohomish",
+   "kind": "town",
+   "tier": 2,
+   "lon": -122.09818,
+   "lat": 47.91288
+  },
+  {
+   "name": "Sultan",
+   "kind": "town",
+   "tier": 3,
+   "lon": -121.81651,
+   "lat": 47.8626
+  },
+  {
+   "name": "Gold Bar",
+   "kind": "town",
+   "tier": 3,
+   "lon": -121.69706,
+   "lat": 47.85677
+  },
+  {
+   "name": "Index",
+   "kind": "town",
+   "tier": 4,
+   "lon": -121.55511,
+   "lat": 47.82066
+  },
+  {
+   "name": "Duvall",
+   "kind": "town",
+   "tier": 3,
+   "lon": -121.98568,
+   "lat": 47.74232
+  },
+  {
+   "name": "Carnation",
+   "kind": "town",
+   "tier": 2,
+   "lon": -121.91401,
+   "lat": 47.64788
+  },
+  {
+   "name": "Fall City",
+   "kind": "town",
+   "tier": 3,
+   "lon": -121.88873,
+   "lat": 47.56732
+  },
+  {
+   "name": "Snoqualmie",
+   "kind": "town",
+   "tier": 2,
+   "lon": -121.82539,
+   "lat": 47.52871
+  },
+  {
+   "name": "North Bend",
+   "kind": "town",
+   "tier": 3,
+   "lon": -121.78678,
+   "lat": 47.49566
+  },
+  {
+   "name": "Renton",
+   "kind": "town",
+   "tier": 2,
+   "lon": -122.21707,
+   "lat": 47.48288
+  },
+  {
+   "name": "Maple Valley",
+   "kind": "town",
+   "tier": 3,
+   "lon": -122.04641,
+   "lat": 47.39272
+  },
+  {
+   "name": "Auburn",
+   "kind": "town",
+   "tier": 2,
+   "lon": -122.22845,
+   "lat": 47.30732
+  },
+  {
+   "name": "Kent",
+   "kind": "town",
+   "tier": 2,
+   "lon": -122.23484,
+   "lat": 47.38093
+  },
+  {
+   "name": "Tukwila",
+   "kind": "town",
+   "tier": 3,
+   "lon": -122.26096,
+   "lat": 47.47399
+  },
+  {
+   "name": "Puyallup",
+   "kind": "town",
+   "tier": 2,
+   "lon": -122.2929,
+   "lat": 47.18538
+  },
+  {
+   "name": "Sumner",
+   "kind": "town",
+   "tier": 3,
+   "lon": -122.2404,
+   "lat": 47.20316
+  },
+  {
+   "name": "Orting",
+   "kind": "town",
+   "tier": 2,
+   "lon": -122.20428,
+   "lat": 47.09788
+  },
+  {
+   "name": "Pacific",
+   "kind": "town",
+   "tier": 3,
+   "lon": -122.25012,
+   "lat": 47.26455
+  },
+  {
+   "name": "Buckley",
+   "kind": "town",
+   "tier": 3,
+   "lon": -122.02678,
+   "lat": 47.16316
+  },
+  {
+   "name": "Enumclaw",
+   "kind": "town",
+   "tier": 3,
+   "lon": -121.9915,
+   "lat": 47.20427
+  },
+  {
+   "name": "Mount Baker",
+   "kind": "peak",
+   "tier": 2,
+   "lon": -121.81447,
+   "lat": 48.77663
+  },
+  {
+   "name": "Glacier Peak",
+   "kind": "peak",
+   "tier": 2,
+   "lon": -121.11295,
+   "lat": 48.11174
+  },
+  {
+   "name": "Mount Rainier",
+   "kind": "peak",
+   "tier": 1,
+   "lon": -121.76044,
+   "lat": 46.85283
+  },
+  {
+   "name": "Ross Lake",
+   "kind": "water",
+   "tier": 3,
+   "lon": -121.04475,
+   "lat": 48.73699
+  },
+  {
+   "name": "Baker Lake",
+   "kind": "water",
+   "tier": 3,
+   "lon": -121.62964,
+   "lat": 48.72707
+  },
+  {
+   "name": "Lake Shannon",
+   "kind": "water",
+   "tier": 3,
+   "lon": -121.72433,
+   "lat": 48.58467
+  },
+  {
+   "name": "Chester Morse Lake",
+   "kind": "water",
+   "tier": 3,
+   "lon": -121.69304,
+   "lat": 47.38818
+  },
+  {
+   "name": "Howard A Hanson Reservoir",
+   "kind": "water",
+   "tier": 3,
+   "lon": -121.74439,
+   "lat": 47.25757
+  },
+  {
+   "name": "Mud Mountain Lake",
+   "kind": "water",
+   "tier": 3,
+   "lon": -121.93289,
+   "lat": 47.14094
+  },
+  {
+   "name": "Lake Tapps",
+   "kind": "water",
+   "tier": 3,
+   "lon": -122.16654,
+   "lat": 47.22221
+  },
+  {
+   "name": "Spada Lake",
+   "kind": "water",
+   "tier": 3,
+   "lon": -121.63953,
+   "lat": 47.97416
+  },
+  {
+   "name": "Lake Washington",
+   "kind": "water",
+   "tier": 2,
+   "lon": -122.24544,
+   "lat": 47.61956
+  },
+  {
+   "name": "Skagit River",
+   "kind": "river",
+   "tier": 2,
+   "lon": -121.07593,
+   "lat": 48.94269,
+   "basin_id": "basin:skagit"
+  },
+  {
+   "name": "North Fork Skagit River",
+   "kind": "river",
+   "tier": 3,
+   "lon": -122.4049,
+   "lat": 48.36842,
+   "basin_id": "basin:skagit"
+  },
+  {
+   "name": "North Fork Nooksack River",
+   "kind": "river",
+   "tier": 2,
+   "lon": -121.8553,
+   "lat": 48.90195,
+   "basin_id": "basin:nooksack"
+  },
+  {
+   "name": "South Fork Nooksack River",
+   "kind": "river",
+   "tier": 3,
+   "lon": -122.048,
+   "lat": 48.59731,
+   "basin_id": "basin:nooksack"
+  },
+  {
+   "name": "Nooksack River",
+   "kind": "river",
+   "tier": 3,
+   "lon": -122.44782,
+   "lat": 48.93574,
+   "basin_id": "basin:nooksack"
+  },
+  {
+   "name": "Middle Fork Nooksack River",
+   "kind": "river",
+   "tier": 3,
+   "lon": -122.03701,
+   "lat": 48.767,
+   "basin_id": "basin:nooksack"
+  },
+  {
+   "name": "Snoqualmie River",
+   "kind": "river",
+   "tier": 2,
+   "lon": -121.94251,
+   "lat": 47.67958,
+   "basin_id": "basin:snohomish-snoqualmie"
+  },
+  {
+   "name": "Snohomish River",
+   "kind": "river",
+   "tier": 3,
+   "lon": -122.17925,
+   "lat": 47.94772,
+   "basin_id": "basin:snohomish-snoqualmie"
+  },
+  {
+   "name": "Cedar River",
+   "kind": "river",
+   "tier": 2,
+   "lon": -121.92533,
+   "lat": 47.39315,
+   "basin_id": "basin:cedar"
+  },
+  {
+   "name": "Green River",
+   "kind": "river",
+   "tier": 2,
+   "lon": -122.09057,
+   "lat": 47.27926,
+   "basin_id": "basin:green-duwamish"
+  },
+  {
+   "name": "White River",
+   "kind": "river",
+   "tier": 2,
+   "lon": -122.10372,
+   "lat": 47.20513,
+   "basin_id": "basin:puyallup-white"
+  },
+  {
+   "name": "Puyallup River",
+   "kind": "river",
+   "tier": 3,
+   "lon": -122.20785,
+   "lat": 47.02255,
+   "basin_id": "basin:puyallup-white"
+  },
+  {
+   "name": "South Puyallup River",
+   "kind": "river",
+   "tier": 3,
+   "lon": -121.91843,
+   "lat": 46.8244,
+   "basin_id": "basin:puyallup-white"
+  },
+  {
+   "name": "Skagit",
+   "kind": "basin",
+   "tier": 1,
+   "lon": -121.29146,
+   "lat": 48.63547,
+   "basin_id": "basin:skagit"
+  },
+  {
+   "name": "Nooksack",
+   "kind": "basin",
+   "tier": 1,
+   "lon": -122.21184,
+   "lat": 48.82565,
+   "basin_id": "basin:nooksack"
+  },
+  {
+   "name": "Snohomish / Snoqualmie",
+   "kind": "basin",
+   "tier": 1,
+   "lon": -121.57391,
+   "lat": 47.76053,
+   "basin_id": "basin:snohomish-snoqualmie"
+  },
+  {
+   "name": "Cedar / Lake Washington",
+   "kind": "basin",
+   "tier": 1,
+   "lon": -122.15068,
+   "lat": 47.59436,
+   "basin_id": "basin:cedar"
+  },
+  {
+   "name": "Green-Duwamish",
+   "kind": "basin",
+   "tier": 1,
+   "lon": -122.13337,
+   "lat": 47.34518,
+   "basin_id": "basin:green-duwamish"
+  },
+  {
+   "name": "Puyallup / White",
+   "kind": "basin",
+   "tier": 1,
+   "lon": -121.81547,
+   "lat": 47.03964,
+   "basin_id": "basin:puyallup-white"
+  }
+ ]
+}

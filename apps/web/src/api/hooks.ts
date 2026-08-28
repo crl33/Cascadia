@@ -65,6 +65,14 @@ export const useRiverNetwork = () =>
     retry: false, // a 404 means no network was derived in this deployment — an answer
   });
 
+export const useLabels = () =>
+  useQuery({
+    queryKey: keys.labels(),
+    queryFn: ({ signal }) => api.labels(signal),
+    staleTime: Infinity, // cartographic and static: names do not move between deploys
+    retry: false, // a 404 means no label set was derived — an answer, not a flake
+  });
+
 export const useBasinReservoirs = (basinId: string | null) => {
   const asOf = useAsOf();
   return useQuery({

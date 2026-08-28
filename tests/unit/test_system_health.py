@@ -558,3 +558,44 @@ async def test_the_river_network_serves_whole_and_absent_is_a_404_not_an_empty_e
         bare = create_app(Settings(db_url="sqlite+aiosqlite://", geo_dir=P(td)), engine=engine)
         async with AsyncClient(transport=ASGITransport(app=bare), base_url="http://test") as client:
             assert (await client.get("/geo/rivers")).status_code == 404
+
+
+async def test_the_label_set_serves_whole_and_absent_is_a_404_not_a_nameless_earth(tmp_path) -> None:
+    """/geo/labels mirrors /geo/rivers: the whole document when derived, a reasoned 404 when
+    not — an empty label list would read as 'the world has no names', which is never true."""
+    import httpx
+
+    from cascade_api.main import create_app
+    from cascade_core.db import create_schema, make_engine
+    from cascade_core.settings import Settings
+    from tests.conftest import GEO
+
+    settings = Settings(db_url=f"sqlite+aiosqlite:///{tmp_path}/labels.db", raw_dir=tmp_path, geo_dir=GEO)
+    engine = make_engine(settings.db_url)
+    await create_schema(engine)
+    app = create_app(settings, engine=engine)
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test") as c:
+        r = await c.get("/geo/labels")
+        assert r.status_code == 200
+        doc = r.json()
+        kinds = {l["kind"] for l in doc["labels"]}
+        assert {"city", "town", "river", "basin", "peak", "water"} <= kinds
+        assert doc["_provenance"]["method_id"] == "method:labels-gnis@1.0.0"
+        # the editorial hierarchy's anchors: a name that moved basins would be a build bug
+        seattle = next(l for l in doc["labels"] if l["name"] == "Seattle")
+        assert abs(seattle["lat"] - 47.606) < 0.01 and seattle["tier"] == 1
+
+    bare = Settings(db_url=f"sqlite+aiosqlite:///{tmp_path}/labels2.db", raw_dir=tmp_path, geo_dir=tmp_path)
+    # a geo dir with no fixtures at all cannot even seed basins; only the labels absence matters,
+    # so copy the basin fixtures and omit labels.json
+    import shutil
+    for name in ("basins_seed_state_lod.geojson", "basins_seed_basin_lod.geojson"):
+        shutil.copy(GEO / name, tmp_path / name)
+    engine2 = make_engine(bare.db_url)
+    await create_schema(engine2)
+    app2 = create_app(bare, engine=engine2)
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app2), base_url="http://test") as c:
+        r = await c.get("/geo/labels")
+        assert r.status_code == 404 and "no label set" in r.json()["detail"]
+    await engine.dispose()
+    await engine2.dispose()

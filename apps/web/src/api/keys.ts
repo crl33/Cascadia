@@ -35,5 +35,6 @@ export const keys = {
   seriesWindow: (stationId: string, variable: 'stage' | 'flow', start: string, end: string) => ['series-window', stationId, variable, { start, end }] as const,
   runs: (forecastPointId: string, start: string, end: string) => ['runs', forecastPointId, { start, end }] as const,
   riverNetwork: () => ['geo', 'rivers'] as const,
+  labels: () => ['geo', 'labels'] as const,
   health: () => ['system', 'health'] as const,
 };

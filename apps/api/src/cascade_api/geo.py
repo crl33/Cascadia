@@ -15,19 +15,27 @@ class Geography:
     #: where the rivers ARE; every state stays on truth-classed elements. None when the
     #: fixture is absent: the map then simply draws no rivers, loudly logged at startup.
     river_network: dict | None = None
+    #: App-owned place/river/basin labels (scripts/build_labels.py; GNIS names + editorial
+    #: tiers), CARTOGRAPHIC. None when absent: the world goes unlabeled, loudly logged.
+    labels: dict | None = None
 
     @classmethod
     def load(cls, geo_dir: Path) -> Geography:
+        import gzip
+        import json
+
         rivers = None
         path = geo_dir / "river_network.json.gz"
         if path.exists():
-            import gzip
-            import json
-
             rivers = json.loads(gzip.decompress(path.read_bytes()))
+        labels = None
+        labels_path = geo_dir / "labels.json"
+        if labels_path.exists():
+            labels = json.loads(labels_path.read_text())
         return cls(
             by_lod={lod: load_basin_features(geo_dir, lod) for lod in ("state", "basin")},
             river_network=rivers,
+            labels=labels,
         )
 
     def provenance(self) -> dict:
