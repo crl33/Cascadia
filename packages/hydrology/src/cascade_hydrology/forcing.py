@@ -651,7 +651,7 @@ def assess_from_rows(
                     quality=(POINTWISE_FLAG,),
                     label=(
                         f"Forecaster vs blend, {nbm_cycle:%Y-%m-%d %H}Z cycle. "
-                        + " ".join(sentences)
+                        + " ".join(x if x.endswith(".") else x + "." for x in sentences)
                         + " Disagreement is information; the two are never averaged."
                     ),
                 )
