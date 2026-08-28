@@ -58,6 +58,7 @@ from cascade_providers_nwps.parser import parse_gauge, parse_stageflow
 from cascade_providers_nwps.reaches_jobs import (
     FEATURE_MEMBER_SERIES,
     METHOD_MEMBER_SERIES,
+    CycleNotObtainedError,
     EmptyCycleError,
     run_fetch_medium_range,
 )
@@ -1181,3 +1182,85 @@ async def test_a_stored_cycle_this_version_cannot_read_is_unknown_not_a_partial_
         a = await agreement.assess(k, fp, thresholds=_official_thresholds("MVEW1"))
         assert a.state.state is AgreementLevel.UNKNOWN
         assert "nwm-member-series@9" in a.state.reason and "does not read" in a.state.reason
+
+
+# --------------------------------------------------------------------------------------
+# Reliability: a slow reach must not discard the reaches that answered
+# --------------------------------------------------------------------------------------
+
+
+@respx.mock
+async def test_one_reach_timing_out_does_not_discard_the_reaches_that_answered(sessions, tmp_path) -> None:
+    """The failure this job actually had in production, and the rule it already claimed to follow.
+
+    Measured 2026-08-24..27: 15 of 16 `nwm.fetch_reach_medium_range` failures were an
+    `httpx.ReadTimeout` on ONE reach. `fetch_medium_range` sat unguarded in the loop, so the
+    `FetchError` escaped, `run_job` discarded the session, and every reach already parsed in that
+    pass was rolled back — a 157 KB ensemble thrown away to punish a different reach for being
+    slow. The module docstring has said "a partial run is not an error" since it was written; this
+    makes the transport path obey it too.
+    """
+    _mock_reaches()
+    slow = REACHES["CRNW1"]
+    respx.get(f"https://api.water.noaa.gov/nwps/v1/reaches/{slow}/streamflow").mock(
+        side_effect=httpx.ReadTimeout("")
+    )
+    async with sessions() as s:
+        written = await _ingest_nwm(s, tmp_path)
+        assert written > 0, "the five reaches that answered must still be stored"
+        stored = {
+            r for (r,) in await s.execute(
+                select(ForecastRun.fp_id).where(ForecastRun.product_id == PRODUCT_NWM_MR)
+            )
+        }
+        points = set(await _points_with_reach(s))
+        assert stored == points - {"fp:nwps:CRNW1"}, "exactly the timed-out point is missing"
+        assert "fp:nwps:CRNW1" not in stored
+
+
+@respx.mock
+async def test_a_cycle_where_no_reach_answers_is_retryable_not_a_silent_success(sessions, tmp_path) -> None:
+    """All transport failures — nothing was obtained, so the run must fail and be retried."""
+    for reach in REACHES.values():
+        respx.get(f"https://api.water.noaa.gov/nwps/v1/reaches/{reach}/streamflow").mock(
+            side_effect=httpx.ReadTimeout("")
+        )
+    async with sessions() as s:
+        with pytest.raises(CycleNotObtainedError, match="did not answer"):
+            await _ingest_nwm(s, tmp_path)
+        await s.rollback()
+
+
+@respx.mock
+async def test_a_mix_of_empty_and_unreachable_covering_every_reach_still_fails(sessions, tmp_path) -> None:
+    """Neither cause alone covers the cycle, so neither single-cause guard would catch it.
+
+    `EmptyCycleError` fires only when EVERY reach answered empty. Without the combined check a run
+    where three reaches timed out and three came back empty would store nothing and report success
+    — exactly the silent-provider-outage the empty-cycle guard exists to prevent.
+    """
+    empty = (NWM / "medium_range_MVEW1_no_series.json").read_bytes()
+    for i, reach in enumerate(REACHES.values()):
+        route = respx.get(f"https://api.water.noaa.gov/nwps/v1/reaches/{reach}/streamflow")
+        if i % 2:
+            route.mock(return_value=httpx.Response(200, content=empty, headers={"content-type": "application/json"}))
+        else:
+            route.mock(side_effect=httpx.ReadTimeout(""))
+    async with sessions() as s:
+        with pytest.raises(CycleNotObtainedError, match="empty series"):
+            await _ingest_nwm(s, tmp_path)
+        await s.rollback()
+
+
+def test_the_ensemble_request_carries_a_timeout_matched_to_its_payload() -> None:
+    """A 157-161 KB ensemble from a slow API does not fit the fetcher's default 30 s.
+
+    Pinned because raising it is the other half of the fix: fault isolation stops one slow reach
+    from discarding the others, and this stops the reach being counted slow in the first place.
+    The value is an override on the call, the pattern DATA_SOURCES already uses for NOMADS.
+    """
+    from cascade_providers_nwps import reaches_client
+
+    assert reaches_client.MEDIUM_RANGE_TIMEOUT_S >= 60.0
+    source = Path(reaches_client.__file__).read_text()
+    assert "timeout_s=MEDIUM_RANGE_TIMEOUT_S" in source

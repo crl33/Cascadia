@@ -37,6 +37,14 @@ def reach_number(reach_id: str) -> str:
     return bare
 
 
+#: This endpoint answers with the whole 6-member ensemble — 157-161 KB measured 2026-08-24 — from
+#: an API that is not fast, and the default 30 s was not enough: 15 of the 16
+#: `nwm.fetch_reach_medium_range` failures in production between 2026-08-24 and 2026-08-27 were
+#: `httpx.ReadTimeout`, against zero HTTP-error failures. Raised rather than retried blindly,
+#: because a timeout here is latency, not an outage — the same reach answers seconds later.
+MEDIUM_RANGE_TIMEOUT_S = 90.0
+
+
 async def fetch_medium_range(fetcher: ArchivingFetcher, session: AsyncSession, reach_id: str) -> FetchResult:
     """The medium-range ensemble (provider mean + members) for one reach, archived before parse."""
     return await fetcher.fetch(
@@ -45,4 +53,5 @@ async def fetch_medium_range(fetcher: ArchivingFetcher, session: AsyncSession, r
         params={"series": SERIES_NAME},
         allowed_hosts=ALLOWED_HOSTS,
         product_id=PRODUCT_NWM_MR,
+        timeout_s=MEDIUM_RANGE_TIMEOUT_S,
     )

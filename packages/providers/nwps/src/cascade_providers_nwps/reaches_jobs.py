@@ -57,7 +57,7 @@ import logging
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from cascade_core.fetch import ArchivingFetcher
+from cascade_core.fetch import ArchivingFetcher, FetchError
 from cascade_core.models import (
     DerivedFeature,
     ForecastPoint,
@@ -78,7 +78,11 @@ from cascade_providers_nwps.reaches_parser import parse_medium_range
 log = logging.getLogger("cascade.providers.nwps.reaches")
 
 
-class EmptyCycleError(RuntimeError):
+class CycleNotObtainedError(RuntimeError):
+    """Not one reach yielded a cycle this run — retryable, whatever the mix of causes."""
+
+
+class EmptyCycleError(CycleNotObtainedError):
     """Every reach answered 200 with an empty series — a retryable provider condition."""
 
 JOB_NAME = "nwm.fetch_reach_medium_range"
@@ -128,9 +132,21 @@ async def run_fetch_medium_range(session: AsyncSession, fetcher: ArchivingFetche
     written = 0
     points = await _points(session)
     empty: list[str] = []
+    unreachable: list[str] = []
     for fp in points:
         assert fp.reach_id is not None
-        result = await fetch_medium_range(fetcher, session, fp.reach_id)
+        try:
+            result = await fetch_medium_range(fetcher, session, fp.reach_id)
+        except FetchError as e:
+            # One slow reach must not discard the reaches that DID answer. Measured in production
+            # 2026-08-24..27: 15 of 16 failures of this job were a `ReadTimeout` on a single
+            # reach, and because this call sat unguarded in the loop, `run_job` rolled the whole
+            # session back — so a 157 KB ensemble that had already parsed was thrown away to
+            # punish a different reach for being slow. That contradicts this module's own rule
+            # that a partial run is not an error, so the failure is now per reach.
+            log.warning("%s: reach %s did not answer (%s)", fp.id, fp.reach_id, e)
+            unreachable.append(fp.id)
+            continue
         ensemble = parse_medium_range(result.content)
         rec = model_run_from_ensemble(ensemble, retrieved_at=result.fetched_at)
         if rec is None:
@@ -211,5 +227,18 @@ async def run_fetch_medium_range(session: AsyncSession, fetcher: ArchivingFetche
             f"every reach ({len(points)}) returned HTTP 200 with an empty medium_range series; "
             "the raw responses are archived. This is a transient NWPS condition — retry rather "
             "than recording a successful run that stored nothing."
+        )
+    if points and len(empty) + len(unreachable) == len(points):
+        raise CycleNotObtainedError(
+            f"no reach yielded a medium_range cycle: {len(unreachable)} of {len(points)} did not "
+            f"answer and {len(empty)} answered with an empty series. Retry rather than recording "
+            "a successful run that stored nothing."
+        )
+    if unreachable:
+        # Reported, not raised: the cycle IS partially stored, and the surface says UNKNOWN with a
+        # reason at the points that are missing. Failing here would throw away what was obtained.
+        log.warning(
+            "nwm medium_range: stored %d point(s), %d did not answer (%s)",
+            len(points) - len(empty) - len(unreachable), len(unreachable), ", ".join(unreachable),
         )
     return written
