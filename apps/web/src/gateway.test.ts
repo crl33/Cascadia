@@ -86,6 +86,7 @@ describe('gateway terrain proxy', () => {
       env: { ...ENV, TERRAIN_ORIGIN: 'https://terrain.example' },
     })) as Response;
     expect(layerJson.headers.get('Content-Encoding')).toBeNull(); // only tiles are gzip
+    expect(layerJson.headers.get('Cache-Control')).toBe('public, max-age=300'); // republishable in place
 
     const off = (await onRequest({
       request: new Request('https://gateway.example/terrain/v1/layer.json'),

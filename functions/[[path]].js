@@ -68,7 +68,11 @@ export async function onRequest(context) {
       });
       const headers = new Headers(resp.headers);
       headers.set('X-Content-Type-Options', 'nosniff');
-      headers.set('Cache-Control', 'public, max-age=31536000, immutable');
+      // Tiles are immutable (a DEM pyramid does not change; v-bumps change the prefix).
+      // layer.json is the one file a republish rewrites in place — five minutes, not a year.
+      headers.set('Cache-Control', url.pathname.endsWith('.terrain')
+        ? 'public, max-age=31536000, immutable'
+        : 'public, max-age=300');
       // ctb -C gzipped every tile at build time, and R2 kept the Content-Type but dropped the
       // Content-Encoding on upload — so the gateway states it. Without this header Cesium
       // parses gzip bytes as mesh and every tile fails to decode.
