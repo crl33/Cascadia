@@ -11,6 +11,16 @@
 -- ingest_writer gets INSERT+SELECT everywhere, UPDATE only on reference/operational
 -- tables, and DELETE nowhere. api_reader is read-only ("one database, two roles",
 -- docs/ARCHITECTURE.md §1).
+--
+-- APPLIED STATE (2026-08-28): `api_reader` exists in production Neon as a LOGIN role
+-- (created directly — Neon accepts SQL CREATE ROLE ... LOGIN from neondb_owner, so the
+-- NOLOGIN-plus-attach indirection above is unnecessary for it; the IF NOT EXISTS guard
+-- makes this file safe to re-run over that). Grants + ALTER DEFAULT PRIVILEGES (for
+-- neondb_owner) are live and PROVEN: SELECT answers, INSERT is refused
+-- (InsufficientPrivilege). The API prefers CASCADE_API_DB_URL (Settings.effective_api_db_url).
+-- `ingest_writer` remains grants-on-paper: the monthly partition-maintenance job issues DDL
+-- (CREATE TABLE ... PARTITION OF), which no non-owner can run against the parent — adopting
+-- it needs a migrator-run partition path or a SECURITY DEFINER helper (ADR to write).
 
 DO $$
 BEGIN

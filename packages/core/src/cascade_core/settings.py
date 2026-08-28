@@ -36,6 +36,10 @@ class Settings:
     # falls back to db_url (see ``effective_queue_db_url``), which is correct for
     # local dev where db_url is already direct. Excluded from repr() like db_url.
     queue_db_url: str | None = field(default=None, repr=False)
+    #: The API's OWN connection, when role separation is configured (CASCADE_API_DB_URL, a
+    #: SELECT-only role): the read path then cannot write no matter what a bug asks. None means
+    #: no separation — the API shares ``db_url`` — which stays correct for dev and sqlite.
+    api_db_url: str | None = field(default=None, repr=False)
     # Raw payload archive backend: "local" (filesystem) or "s3" (any S3-compatible
     # store, e.g. Cloudflare R2).
     object_store: str = "local"
@@ -67,6 +71,7 @@ class Settings:
             geo_dir=Path(e.get("CASCADE_GEO_DIR", str(cls.geo_dir))),
             seed_file=Path(e.get("CASCADE_SEED_FILE", str(SEED_FILE))),
             queue_db_url=e.get("CASCADE_QUEUE_DB_URL") or None,
+            api_db_url=e.get("CASCADE_API_DB_URL") or None,
             object_store=(e.get("CASCADE_OBJECT_STORE") or cls.object_store).strip(),
             s3_endpoint=e.get("CASCADE_S3_ENDPOINT") or None,
             s3_bucket=e.get("CASCADE_S3_BUCKET") or None,
@@ -80,6 +85,10 @@ class Settings:
             # workdir-upload deploys (`railway up`), which have no git identity of their own.
             git_revision=e.get("RAILWAY_GIT_COMMIT_SHA") or e.get("CASCADE_GIT_REVISION") or None,
         )
+
+    @property
+    def effective_api_db_url(self) -> str:
+        return self.api_db_url or self.db_url
 
     @property
     def effective_queue_db_url(self) -> str:

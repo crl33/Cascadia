@@ -306,7 +306,7 @@ they are recorded in §1 rather than repeated here.
    `0004` corrected 7 station rows and nothing else, the next in-container job wrote its rows at
    the local 07:00Z boundary with no `day_boundary_assumed_utc`, and the 24 h `growth` recovered
    immediately on all six basins because a correct row from 24 h earlier already existed.
-6. **Close the remaining M2 items** (~~/metrics~~ landed 2026-08-28 as `/system/metrics`, a Prometheus-text projection of the health model — derived from the same registry walk, never a second list): database roles with append-only grants,
+6. **Close the remaining M2 items** (~~/metrics~~ landed 2026-08-28 as `/system/metrics`, a Prometheus-text projection of the health model; ~~api_reader~~ landed 2026-08-28: a SELECT-only LOGIN role in production Neon, proven by a refused INSERT, wired via `CASCADE_API_DB_URL`/`Settings.effective_api_db_url` — the read path cannot write no matter what a bug asks): **ingest_writer stays open deliberately** — the monthly partition-maintenance job issues DDL (`CREATE TABLE ... PARTITION OF`) that no non-owner can run against the parent, so adopting it needs a migrator-run partition path or a SECURITY DEFINER helper (ADR to write; grants drafted in `scripts/sql/roles.sql`),
    mypy in CI.
 7. Re-run the pending research verifications (six categories) as a scheduled, low-concurrency job.
 8. Fix the client's ion credit and CORS preview origin; record the band decision in
