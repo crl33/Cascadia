@@ -24,6 +24,7 @@ from __future__ import annotations
 import json
 from collections.abc import Iterable
 from pathlib import Path
+from typing import Any
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from sqlalchemy import text
@@ -90,7 +91,7 @@ def load_basin_features(geo_dir: Path, lod: str) -> dict:
 
 def load_addenda(seed_file: Path) -> dict:
     """Merge the addendum files that sit beside ``seed_file``; missing files are not an error."""
-    merged: dict[str, dict] = {"forecast_point_reach_ids": {}, "basin_susceptibility_gauges": {}, "stations": []}
+    merged: dict[str, Any] = {"forecast_point_reach_ids": {}, "basin_susceptibility_gauges": {}, "stations": []}
     for name in ADDENDUM_FILES:
         path = Path(seed_file).parent / name
         if not path.exists():

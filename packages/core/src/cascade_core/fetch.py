@@ -28,6 +28,7 @@ from email.utils import parsedate_to_datetime
 from urllib.parse import urlsplit
 
 import httpx
+from httpx._client import USE_CLIENT_DEFAULT
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from cascade_core.models import RawArtifact
@@ -191,7 +192,7 @@ class ArchivingFetcher:
                         response = await client.get(
                             target,
                             headers={"Accept": accept},
-                            **({"timeout": timeout_s} if timeout_s is not None else {}),
+                            timeout=timeout_s if timeout_s is not None else USE_CLIENT_DEFAULT,
                         )
                     except httpx.TimeoutException as e:
                         raise FetchError("timeout", f"{target}: {e!r}") from e

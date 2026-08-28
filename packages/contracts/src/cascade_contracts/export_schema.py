@@ -10,6 +10,8 @@ import json
 import sys
 from pathlib import Path
 
+from pydantic import BaseModel
+
 from cascade_contracts import (
     BasinVisualizationState,
     ContractEnvelope,
@@ -18,7 +20,7 @@ from cascade_contracts import (
     SceneSummary,
 )
 
-CONTRACTS = {
+CONTRACTS: "dict[str, type[BaseModel]]" = {
     "ProvenanceRef": ProvenanceRef,
     "BasinVisualizationState": BasinVisualizationState,
     "RiverVisualizationState": RiverVisualizationState,

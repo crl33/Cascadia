@@ -168,7 +168,7 @@ def _clip_half_plane(pts: Sequence[tuple[float, float]], axis: int, value: float
     return out
 
 
-def _accumulate_ring(ring_xy: list[tuple[float, float]], grid: GridSpec, coverage: dict[int, float]) -> None:
+def _accumulate_ring(ring_xy: list[tuple[float, float]], grid: GridSpec | LatLonGridSpec, coverage: dict[int, float]) -> None:
     """Add one oriented ring's signed area, cell by cell, into ``coverage``.
 
     The caller guarantees the ring lies inside the grid domain (:func:`build_basin_mask`

@@ -406,7 +406,7 @@ class RiverVisualizationState(StrictModel):
     official_forecast: OfficialForecastSummary | None = None
     thresholds: Thresholds | None = None
     topology: Topology = Topology()
-    regulation: Regulation = Regulation(class_="unknown")
+    regulation: Regulation = Regulation(class_="unknown")  # type: ignore[call-arg]  # populate_by_name resolves the "class" alias
     location: tuple[float, float] | None = Field(default=None, description="[lon, lat] WGS84; cartographic")
     flow_visual_intensity: float | None = Field(default=None, ge=0, le=1, description="display hint from percentile; not depth")
 

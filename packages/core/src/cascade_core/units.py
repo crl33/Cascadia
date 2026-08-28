@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import pint
 
-ureg = pint.UnitRegistry()
+ureg: pint.UnitRegistry = pint.UnitRegistry()
 ureg.define("cfs = foot ** 3 / second")
 ureg.define("kcfs = 1000 * cfs")
 

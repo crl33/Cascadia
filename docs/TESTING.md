@@ -134,3 +134,11 @@ A feature is tested when: unit tests cover its logic and edge cases; any provide
 has fixtures for the eight cases in §3; its contract has a fixture; an integration test
 exercises the write path and the `as_of` read path; and, if user-visible, an E2E scenario
 covers the happy path and one degraded path. Agent-reported click-throughs do not count.
+
+## Typing (opportunistic, P0)
+
+`.venv/bin/mypy` (config in root `pyproject.toml`) keeps the three FOUNDATION packages clean —
+contracts, geo, core. Run it before extending them; CI does not gate on it yet. hydrology had
+67 findings at adoption (2026-08-28) and providers/apps are untyped-tolerated: tighten one
+package at a time by adding it to `[tool.mypy].files` once its findings are fixed, never by
+loosening the config to admit a dirty package.

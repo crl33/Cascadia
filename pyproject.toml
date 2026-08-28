@@ -16,7 +16,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=8", "pytest-asyncio>=0.24", "respx>=0.21", "shapely>=2.0", "import-linter>=2.3", "alembic>=1.19"]
+dev = ["pytest>=8", "pytest-asyncio>=0.24", "respx>=0.21", "shapely>=2.0", "import-linter>=2.3", "alembic>=1.19", "mypy>=1.14"]
 
 [build-system]
 requires = ["setuptools>=69"]
@@ -84,3 +84,12 @@ name = "cascade_core is the foundation: never imports the apps"
 type = "forbidden"
 source_modules = ["cascade_core"]
 forbidden_modules = ["cascade_api", "cascade_worker"]
+
+[tool.mypy]
+# Opportunistic typing (NEXT_STEPS P0): the three foundation packages are kept CLEAN — run
+#   .venv/bin/mypy packages/contracts/src packages/geo/src packages/core/src
+# before extending them. hydrology/providers/apps are not yet enforced (67 findings in
+# hydrology at adoption, 2026-08-28); tighten package by package, never all at once.
+ignore_missing_imports = true
+no_error_summary = false
+files = ["packages/contracts/src", "packages/geo/src", "packages/core/src"]
