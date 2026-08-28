@@ -809,8 +809,19 @@ READ_SPECS: tuple[tuple[str, str, None], ...] = (
 MAIN_LOOKBACK = max(MAX_DAILY_MEAN_AGE, CONTEXT_LOOKBACK, STATE_CHANGE_LOOKBACK)
 
 
-async def prefetch(k: Knowledge, basins: Sequence[Basin], *, version: str = SHIPPED_VERSION) -> None:
+async def prefetch(
+    k: Knowledge,
+    basins: Sequence[Basin],
+    *,
+    version: str = SHIPPED_VERSION,
+    extra_station_ids: Sequence[str] = (),
+) -> None:
     """Read every basin's susceptibility rows in ONE statement instead of three per basin.
+
+    ``extra_station_ids`` rides the same first statement at zero statement cost: the stations
+    :func:`flow_visual_intensity` will be asked about that are NOT susceptibility gauges — the
+    Skagit's outlet is Mount Vernon while its gauge is deliberately the Sauk. Scopes are a set
+    union already, so widening it changes which rows come back, never how many statements ask.
 
     Pure warm-up, in the sense :mod:`cascade_hydrology.forcing` documents: the same features
     and methods :func:`assess` reads, asked once across all the scopes, landing in the
@@ -844,7 +855,7 @@ async def prefetch(k: Knowledge, basins: Sequence[Basin], *, version: str = SHIP
     would have been needed to close the same gap.
     """
     gauges = gauge_ids(basins)
-    scopes = gauges + [b.id for b in basins]
+    scopes = gauges + [b.id for b in basins] + [s for s in extra_station_ids if s not in gauges]
     if not scopes:
         return
     await k.latest_derived_features(READ_SPECS, scopes, lookback=MAIN_LOOKBACK)
@@ -871,6 +882,46 @@ async def prefetch(k: Knowledge, basins: Sequence[Basin], *, version: str = SHIP
 async def _percentile_row(k: Knowledge, gauge_id: str) -> DerivedFeature | None:
     return await k.latest_derived_feature(
         PERCENTILE_FEATURE, gauge_id, method_id=PERCENTILE_ROW_METHOD_ID, lookback=MAX_DAILY_MEAN_AGE
+    )
+
+
+async def flow_visual_intensity(k: Knowledge, station_id: str | None) -> float | None:
+    """`RiverVisualizationState.flow_visual_intensity` — the contract has promised "a normalized
+    display hint from percentile, documented" since 1.0.0, and until 2026-08-28 every envelope
+    hardcoded it to None. This is the documented derivation: the station's day-of-year flow
+    percentile (the same stored row the susceptibility surface banded), divided by 100.
+
+    Not a depth and not a flow: a rank inside the station's own seasonal record, which is the
+    only basis on which two rivers' visual presence can be compared without lying about their
+    absolute size. Rounded exactly as the surface rounds it for display, so a river drawn at
+    intensity 0.53 sits beside a panel that says p53 and never p52.96.
+
+    None whenever the number cannot be defended — no station, no stored percentile, or a row
+    older than :data:`MAX_DAILY_MEAN_AGE` (the surface's own staleness rule, re-applied here
+    verbatim). The renderer's fallback for None is the cartographic base: a river nothing is
+    known about looks like a map, never like a calm river.
+    """
+    if not station_id:
+        return None
+    row = await _percentile_row(k, station_id)
+    if row is None or row.percentile is None or (k.as_of - row.valid_time) > MAX_DAILY_MEAN_AGE:
+        return None
+    return round(float(row.percentile), 1) / 100.0
+
+
+async def prefetch_flow_visual_intensity(k: Knowledge, station_ids: Sequence[str | None]) -> None:
+    """Warm :func:`flow_visual_intensity` for many stations in ONE set-based statement.
+
+    For the river envelope, whose points' stations get no other percentile read — the basin
+    envelope instead rides the same rows on :func:`prefetch`'s first statement via
+    ``extra_station_ids``. Same feature, method and lookback as :func:`_percentile_row`, so the
+    per-station reads are answered from the memo instead of becoming per-scope statements.
+    """
+    stations = [s for s in station_ids if s]
+    if not stations:
+        return
+    await k.latest_derived_features(
+        [(PERCENTILE_FEATURE, PERCENTILE_ROW_METHOD_ID, None)], stations, lookback=MAX_DAILY_MEAN_AGE
     )
 
 

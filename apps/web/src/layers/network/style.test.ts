@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { riverLine } from './style';
 
-const base = { mainstem: false, band: 'state' as const, inSelectedBasin: false };
+const base = { mainstem: false, band: 'state' as const, inSelectedBasin: false, intensity: null };
 
 describe('riverLine', () => {
   it('draws mainstems from orbit and the full network from the state band down', () => {
@@ -21,5 +21,24 @@ describe('riverLine', () => {
     const out = riverLine({ ...base, mainstem: true, inSelectedBasin: true });
     expect(out.alpha).toBeGreaterThan(riverLine({ ...base, mainstem: true }).alpha);
     expect(out.alpha).toBeLessThanOrEqual(0.95);
+  });
+  it('flow intensity swells presence — width and alpha, never hue', () => {
+    const calm = riverLine({ ...base, mainstem: true, intensity: 0.1 });
+    const swollen = riverLine({ ...base, mainstem: true, intensity: 0.95 });
+    expect(swollen.widthPx).toBeGreaterThan(calm.widthPx);
+    expect(swollen.alpha).toBeGreaterThan(calm.alpha);
+    expect(swollen.color).toEqual(calm.color); // the non-colour carrier rule (§7.2)
+    expect(swollen.alpha).toBeLessThanOrEqual(0.95);
+  });
+  it('null intensity IS the cartographic base — unknown never renders as calm or as anything', () => {
+    expect(riverLine(base)).toEqual(riverLine({ ...base, intensity: null }));
+    // and a zero-intensity river (a defensible p0) sits exactly on the base too: the base
+    // width is the "nothing to add" appearance, so p0 must not shrink below the map
+    expect(riverLine({ ...base, intensity: 0 }).widthPx).toBe(riverLine(base).widthPx);
+  });
+  it('intensity outside 0-1 is clamped, not amplified', () => {
+    const over = riverLine({ ...base, mainstem: true, intensity: 4 });
+    expect(over.widthPx).toBe(riverLine({ ...base, mainstem: true, intensity: 1 }).widthPx);
+    expect(riverLine({ ...base, intensity: -1 }).widthPx).toBe(riverLine(base).widthPx);
   });
 });

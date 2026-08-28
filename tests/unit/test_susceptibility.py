@@ -1324,3 +1324,27 @@ async def test_snodas_context_rides_beside_the_pillows_with_its_caveats(sessions
     # basins with no SNODAS rows carry no SNODAS driver — absence is absence, not a zero
     cedar = next(i for i in env.items if i.id == "basin:cedar")
     assert not any(d.feature == susceptibility.SNODAS_SWE_FEATURE for d in cedar.headline_drivers)
+
+
+@respx.mock
+async def test_flow_visual_intensity_is_the_percentile_normalized_or_honestly_absent(sessions, tmp_path) -> None:
+    """The contract's display hint, derived at last: percentile/100 off the SAME stored row the
+    surface banded — and None on every branch where that number cannot be defended, because the
+    renderer's fallback (the cartographic base) must mean "nothing known", never "calm river"."""
+    gauge, at = await _crest(sessions, tmp_path)
+    async with sessions() as session:
+        k = as_known_at(session, at)
+        row = await susceptibility._percentile_row(k, gauge)
+        got = await susceptibility.flow_visual_intensity(k, gauge)
+        assert got == round(float(row.percentile), 1) / 100.0 == 0.95
+        # rounded exactly as the surface displays it: intensity 0.95 beside p95, never p94.96
+        assert 0.0 <= got <= 1.0
+
+        # no station on the point, and a station with nothing stored: both None
+        assert await susceptibility.flow_visual_intensity(k, None) is None
+        assert await susceptibility.flow_visual_intensity(k, "station:usgs:00000000") is None
+
+        # the surface's own staleness rule, re-applied verbatim: past MAX_DAILY_MEAN_AGE the
+        # newest row no longer defends a number
+        stale = as_known_at(session, at + susceptibility.MAX_DAILY_MEAN_AGE + timedelta(hours=6))
+        assert await susceptibility.flow_visual_intensity(stale, gauge) is None

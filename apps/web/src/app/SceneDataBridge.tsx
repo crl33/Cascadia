@@ -6,6 +6,7 @@ import { useEffect, useMemo } from 'react';
 import { useBasinGeometries, useBasinGeometry, useBasins, useRiverNetwork, useVizBasins, useVizRivers } from '../api/hooks';
 import type { FloodCategory, GeoFeature } from '../contracts/schemas';
 import type { BasinSusceptibility } from '../layers/susceptibility/BasinSusceptibilityLayer';
+import { riverIntensities } from '../layers/network/match';
 import type { SceneController } from '../scene/SceneController';
 import { useSceneStore } from '../state/store';
 
@@ -73,7 +74,16 @@ export function SceneDataBridge({ controller }: Props) {
   useEffect(() => { if (rivers.data) controller.setData('rivers', rivers.data); }, [controller, rivers.data]);
   // The cartographic river network: fetched once, drawn for the app's lifetime.
   const network = useRiverNetwork();
-  useEffect(() => { if (network.data) controller.setData('river_network', network.data); }, [controller, network.data]);
+  // The rivers-respond join: the selected basin's per-station flow_visual_intensity (already
+  // fetched for the panel) matched onto the network's river names. Pure derivation (match.ts);
+  // unmatched or unknown rivers simply keep their cartographic base.
+  const riverFlow = useMemo(
+    () => (network.data && rivers.data ? riverIntensities(network.data, rivers.data.items) : {}),
+    [network.data, rivers.data],
+  );
+  useEffect(() => {
+    if (network.data) controller.setData('river_network', { network: network.data, intensities: riverFlow });
+  }, [controller, network.data, riverFlow]);
 
   return null;
 }

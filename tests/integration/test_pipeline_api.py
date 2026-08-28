@@ -120,6 +120,9 @@ async def test_pipeline_then_api(runtime: Runtime) -> None:
         assert item.trend is not None and item.trend.direction in ("steady", "rising", "falling")
         assert item.headroom.to_category == FloodCategory.ACTION and item.headroom.value.unit == "ft"
         assert item.topology.upstream == ("fp:nwps:CONW1",) and item.regulation.class_ == "regulated" and "reservoir:ross-lake" in item.regulation.regulated_by
+        # no day-of-year percentile is ingested in this harness, so the display hint is None —
+        # the renderer's cartographic fallback — never a fabricated calm
+        assert item.flow_visual_intensity is None
 
         # Green River: official categories are FLOW in cfs; category computed from observed flow
         r = await c.get("/forecast-points/AUBW1/state", params={"as_of": "2026-08-22T13:30:00Z"})

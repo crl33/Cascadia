@@ -389,7 +389,7 @@ async def assess_point(k: Knowledge, fp: ForecastPoint, basin: Basin | None, pro
         topology=Topology(upstream=tuple(f"fp:nwps:{u}" for u in fp.upstream_lids), downstream=tuple(f"fp:nwps:{d}" for d in fp.downstream_lids)),
         regulation=Regulation(class_=reg_class, regulated_by=tuple(basin.regulated_by) if basin else ()),
         location=(fp.lon, fp.lat) if fp.lon is not None and fp.lat is not None else None,
-        flow_visual_intensity=None,
+        flow_visual_intensity=await susceptibility.flow_visual_intensity(k, fp.station_id),
     )
     return PointAssessment(item=item, refs=refs, hazard=hazard, hazard_ref=fkey, thresholds=tset)
 
@@ -402,6 +402,7 @@ def _envelope(contract: str, items: list, refs: dict[str, ProvenanceRef], *, as_
 async def river_envelope(k: Knowledge, fps: list[ForecastPoint], *, generated_at: datetime) -> ContractEnvelope:
     products = await k.products()
     await prefetch_points(k, fps)
+    await susceptibility.prefetch_flow_visual_intensity(k, [fp.station_id for fp in fps])
     items, refs = [], {}
     for fp in fps:
         basin = await k.basin(fp.basin_id) if fp.basin_id else None
@@ -463,7 +464,10 @@ async def _prefetch_basins(k: Knowledge, basins: Sequence[Basin]) -> None:
     await k.stations_by_id([fp.station_id for fp in points if fp.station_id] + susceptibility.gauge_ids(basins))
     await prefetch_points(k, points)
     await agreement.prefetch(k, points)
-    await susceptibility.prefetch(k, basins)
+    # The outlet stations ride susceptibility's own first statement: the flow_visual_intensity
+    # each outlet point renders with is a percentile row at a station that is deliberately NOT
+    # always the susceptibility gauge (Skagit: outlet Mount Vernon, gauge the Sauk).
+    await susceptibility.prefetch(k, basins, extra_station_ids=[fp.station_id for fp in points if fp.station_id])
     await forcing.prefetch(k, basins)
 
 

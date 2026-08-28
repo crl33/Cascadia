@@ -7,7 +7,6 @@
  * These tests run the real onRequest with a stubbed global fetch standing in for Railway.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest';
-// eslint-disable-next-line import/no-relative-packages -- the gateway deploys from repo root, outside the app tree
 import { onRequest } from '../../../functions/[[path]].js';
 
 const ENV = { BACKEND_ORIGIN: 'https://origin.example' };
