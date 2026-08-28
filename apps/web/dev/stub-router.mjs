@@ -37,6 +37,9 @@ export function route(fx, pathname, params) {
     return buildGeometry(fx, m[1], lod) ?? { status: 404, body: { detail: `unknown basin ${m[1]}` } };
   }
   if ((m = pathname.match(/^\/basins\/([^/]+)\/state$/))) return buildBasinState(fx, m[1], asOf) ?? { status: 404, body: { detail: `unknown basin ${m[1]}` } };
+  // The stub archives no reservoir observations: an empty list is the honest answer for
+  // every basin here, exactly the shape the unregulated Nooksack gets from the real API.
+  if ((m = pathname.match(/^\/basins\/([^/]+)\/reservoirs$/))) return { basin_id: m[1], as_of: asOf ?? new Date().toISOString(), reservoirs: [], provenance_refs: {} };
   if (pathname === '/viz/basins') return buildVizBasins(fx, asOf);
   if (pathname === '/viz/rivers') {
     const basin = params.get('basin');

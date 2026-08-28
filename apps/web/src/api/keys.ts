@@ -21,6 +21,7 @@ export const keys = {
   basins: () => ['basins'] as const,
   geometry: (basinId: string, lod: 'state' | 'basin') => ['geo', 'basin', basinId, lod] as const,
   basinState: (basinId: string, asOf: string | null) => ['basin-state', basinId, asOfSegment(asOf)] as const,
+  basinReservoirs: (basinId: string, asOf: string | null) => ['basin-reservoirs', basinId, asOfSegment(asOf)] as const,
   vizBasins: (asOf: string | null) => ['viz', 'basins', asOfSegment(asOf)] as const,
   vizRivers: (basinId: string, asOf: string | null) => ['viz', 'rivers', basinId, asOfSegment(asOf)] as const,
   riverState: (forecastPointId: string, asOf: string | null) => ['river-state', forecastPointId, asOfSegment(asOf)] as const,

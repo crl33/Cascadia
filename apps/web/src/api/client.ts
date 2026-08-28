@@ -8,9 +8,9 @@
  */
 import type { ZodType } from 'zod';
 import {
-  BasinEnvelopeSchema, BasinListSchema, ForecastRunSchema, GeoFeatureSchema, HealthSchema, RiverEnvelopeSchema,
+  BasinEnvelopeSchema, BasinListSchema, BasinReservoirsSchema, ForecastRunSchema, GeoFeatureSchema, HealthSchema, RiverEnvelopeSchema,
   RunsListSchema, SearchResultsSchema, StationSeriesSchema,
-  type BasinEnvelope, type BasinList, type ForecastRun, type GeoFeature, type Health, type RiverEnvelope,
+  type BasinEnvelope, type BasinList, type BasinReservoirs, type ForecastRun, type GeoFeature, type Health, type RiverEnvelope,
   type RunsList, type SearchResults, type SeriesVariable, type StationSeries,
 } from '../contracts/schemas';
 import { lidOf } from '../app/deep-link';
@@ -64,6 +64,9 @@ export const api = {
   /** Every forecast run issued inside the window, ascending; superseded runs included. */
   runs: (forecastPointId: string, start: string, end: string, signal?: AbortSignal): Promise<RunsList> =>
     getJson(`/forecast-points/${enc(lidOf(forecastPointId))}/runs?start=${enc(start)}&end=${enc(end)}`, RunsListSchema, signal),
+  /** Latest reservoir state per dam in the basin; empty for an unregulated basin (the truth). */
+  basinReservoirs: (basinId: string, asOf: string | null, signal?: AbortSignal): Promise<BasinReservoirs> =>
+    getJson(withAsOf(`/basins/${enc(basinId)}/reservoirs`, asOf), BasinReservoirsSchema, signal),
   search: (q: string, signal?: AbortSignal): Promise<SearchResults> => getJson(`/search?q=${enc(q)}`, SearchResultsSchema, signal),
   health: (signal?: AbortSignal): Promise<Health> => getJson('/system/health', HealthSchema, signal),
 };

@@ -46,6 +46,16 @@ export const useBasinGeometries = (basinIds: readonly string[], lod: 'state' | '
     combine: combineFeatures,
   });
 
+export const useBasinReservoirs = (basinId: string | null) => {
+  const asOf = useAsOf();
+  return useQuery({
+    queryKey: keys.basinReservoirs(basinId ?? '', asOf),
+    queryFn: ({ signal }) => api.basinReservoirs(basinId!, asOf, signal),
+    enabled: basinId !== null,
+    staleTime: timeDependentStale(asOf),
+  });
+};
+
 export const useBasinState = (basinId: string | null) => {
   const asOf = useAsOf();
   return useQuery({

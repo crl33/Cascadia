@@ -347,6 +347,33 @@ export const ForecastRunPointSchema = z.object({ t: iso, stage: z.number().nulla
  * gauge-zero vertical datum of the STAGE column only — null when the run has no stage column,
  * and never the datum of a flow value (ADR-0009, ADR-0014).
  */
+/**
+ * Reservoir state: GET /basins/{id}/reservoirs — the latest observation per (dam, variable)
+ * known at as_of. Units are VERBATIM long-form ("k-acre-feet", "cubic feet per second");
+ * forebay elevations carry no vertical datum because the provider states none (the quality
+ * list says so). An empty `reservoirs` list is the truth for an unregulated basin.
+ */
+export const ReservoirVariableSchema = z.object({
+  value: z.number().nullable(),
+  unit: z.string(),
+  valid_time: iso,
+  quality: z.array(z.string()),
+  qualifier: z.string().nullable().optional(),
+});
+export const BasinReservoirsSchema = z.object({
+  basin_id: z.string(),
+  as_of: iso,
+  reservoirs: z.array(z.object({
+    station_id: z.string(),
+    lid: z.string(),
+    name: z.string(),
+    variables: z.record(z.string(), ReservoirVariableSchema),
+    prov: z.string().nullable(),
+  })),
+  provenance_refs: z.record(z.string(), ProvenanceRefSchema),
+});
+export type BasinReservoirs = z.infer<typeof BasinReservoirsSchema>;
+
 export const ForecastRunSchema = z.object({
   run_id: z.string(),
   issued_at: iso,

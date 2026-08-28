@@ -210,3 +210,58 @@ async def test_a_total_outage_fails_loudly_instead_of_recording_success(sessions
     async with sessions() as s:
         with pytest.raises(FetchError, match="provider_down"):
             await nwrfc_jobs.run_fetch_reservoirs(s, _fetcher(tmp_path), now=NOW)
+
+
+# --- the endpoint -------------------------------------------------------------------------
+
+
+def test_the_endpoint_product_name_is_pinned() -> None:
+    from cascade_api.routes import RESERVOIR_PRODUCT, RESERVOIR_VARIABLES
+    from cascade_core.registry import PRODUCT_NWRFC_RESERVOIR
+
+    assert RESERVOIR_PRODUCT == PRODUCT_NWRFC_RESERVOIR
+    assert set(RESERVOIR_VARIABLES) == set(nwrfc_jobs.VARIABLE_BY_PE.values())
+
+
+@respx.mock
+async def test_the_basin_endpoint_serves_verbatim_state_and_the_nooksack_truth(sessions, tmp_path) -> None:
+    from httpx import ASGITransport, AsyncClient
+
+    from cascade_api.main import create_app
+    from cascade_core.settings import Settings
+    from tests.conftest import GEO as GEO_DIR
+
+    _mock_all()
+    async with sessions() as s:
+        await nwrfc_jobs.run_fetch_reservoirs(s, _fetcher(tmp_path), now=NOW)
+        await s.commit()
+    engine = make_engine(f"sqlite+aiosqlite:///{tmp_path}/nwrfc.db")  # same file, async engine
+    app = create_app(Settings(db_url="sqlite+aiosqlite://", geo_dir=GEO_DIR), engine=engine)
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        r = await client.get("/basins/basin:green-duwamish/reservoirs",
+                             params={"as_of": NOW.isoformat().replace("+00:00", "Z")})
+        assert r.status_code == 200
+        doc = r.json()
+        (hhd,) = doc["reservoirs"]
+        assert hhd["lid"] == "HHDW1"
+        v = hhd["variables"]
+        assert set(v) == {"forebay_elevation", "storage", "inflow"}, "QR is not an HHDW1 series"
+        assert v["storage"]["unit"] == "k-acre-feet"
+        assert v["inflow"]["unit"] == "cubic feet per second"
+        assert nwrfc_jobs.DATUM_UNSTATED in v["forebay_elevation"]["quality"]
+        assert v["forebay_elevation"]["qualifier"].startswith("R")
+        ref = doc["provenance_refs"][hhd["prov"]]
+        assert ref["source_kind"] == "OBSERVED" and "no vertical datum" in ref["label"]
+        # the Skagit carries its three dams; empty variables mean a dam that served nothing
+        r = await client.get("/basins/basin:skagit/reservoirs",
+                             params={"as_of": NOW.isoformat().replace("+00:00", "Z")})
+        lids = [x["lid"] for x in r.json()["reservoirs"]]
+        assert lids == ["DIAW1", "RODW1", "UBDW1"]
+        # the Nooksack is unregulated: an empty list is the truth, not a gap
+        r = await client.get("/basins/basin:nooksack/reservoirs",
+                             params={"as_of": NOW.isoformat().replace("+00:00", "Z")})
+        assert r.status_code == 200 and r.json()["reservoirs"] == []
+        # replay honesty: before the poll, the dams' variables are absent
+        early = await client.get("/basins/basin:green-duwamish/reservoirs",
+                                 params={"as_of": "2026-08-27T00:00:00Z"})
+        assert early.json()["reservoirs"][0]["variables"] == {}

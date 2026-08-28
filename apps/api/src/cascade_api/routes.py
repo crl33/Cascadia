@@ -199,6 +199,79 @@ async def latest_run(session: Session, as_of: AsOf, lid: Annotated[str, Path(pat
     }
 
 
+#: Written by cascade_providers_nwrfc.jobs; shared DATA, pinned by test (the api may not
+#: import a provider adapter).
+RESERVOIR_PRODUCT = "product:nwrfc-reservoir-obs"
+RESERVOIR_VARIABLES = ("forebay_elevation", "storage", "inflow", "outflow")
+
+
+@router.get("/basins/{basin_id}/reservoirs")
+async def basin_reservoirs(session: Session, as_of: AsOf, basin_id: Annotated[str, Path(pattern=BASIN_ID)]) -> dict:
+    """The basin's reservoir state known at as_of: latest observation per (dam, variable).
+
+    Five of the six seed basins are regulated; this is the observable state of those decisions
+    (HYDROLOGY §10). Values are VERBATIM — long-form units as the provider serves them, no
+    vertical datum on forebay elevations because none is stated (ADR-0009), the SHEF
+    type-source code in `qualifier` — and a basin with no reservoir stations answers an empty
+    list, which for the Nooksack is the truth, not a gap.
+    """
+    k = as_known_at(session, as_of)
+    basin = await k.basin(basin_id)
+    if basin is None:
+        raise HTTPException(status_code=404, detail="unknown basin")
+    stations = [
+        st for st in await k.stations()
+        if st.agency == "nwrfc" and st.basin_id == basin_id
+    ]
+    latest = await k.latest_observations(
+        [st.id for st in stations], RESERVOIR_VARIABLES, lookback=timedelta(days=3)
+    )
+    products = await k.products()
+    product = products.get(RESERVOIR_PRODUCT)
+    reservoirs = []
+    refs: dict[str, dict] = {}
+    for st in sorted(stations, key=lambda s: s.id):
+        variables: dict[str, dict] = {}
+        newest = None
+        for variable in RESERVOIR_VARIABLES:
+            obs = latest.get((st.id, variable))
+            if obs is None or obs.product_id != RESERVOIR_PRODUCT:
+                continue  # a variable this dam does not (currently) report is simply absent
+            variables[variable] = {
+                "value": obs.value,
+                "unit": obs.unit,
+                "valid_time": obs.valid_time,
+                "quality": list(obs.quality or []),
+                "qualifier": obs.qualifier_raw,
+            }
+            if newest is None or obs.valid_time > newest.valid_time:
+                newest = obs
+        ref_key = f"nwrfc-reservoir-{st.external_id.lower()}"
+        if newest is not None:
+            refs[ref_key] = _dump(ProvenanceRef(
+                source_id=product.source_id if product else "src:nwrfc-web",
+                source_kind=resolved_source_kind(product),
+                product_id=RESERVOIR_PRODUCT,
+                valid_time=newest.valid_time,
+                retrieved_at=newest.retrieved_at,
+                freshness=_freshness_for(product, valid_time=newest.valid_time, retrieved_at=newest.retrieved_at, now=k.as_of),
+                quality=tuple(newest.quality or ()),
+                label=(
+                    f"{st.name} — NWRFC observed reservoir series, verbatim units. Forebay "
+                    "elevations carry no vertical datum because the provider states none."
+                ),
+                raw_artifact_id=str(newest.raw_artifact_id),
+            ))
+        reservoirs.append({
+            "station_id": st.id,
+            "lid": st.external_id,
+            "name": st.name,
+            "variables": variables,
+            "prov": ref_key if newest is not None else None,
+        })
+    return {"basin_id": basin_id, "as_of": k.as_of, "reservoirs": reservoirs, "provenance_refs": refs}
+
+
 #: Written by cascade_providers_nwps.hefs_jobs; the api may not import a provider adapter
 #: (import contract), so the names are shared DATA, pinned to the job's constants by test.
 HEFS_QUANTILES_FEATURE = "hefs_exceedance_quantiles"
