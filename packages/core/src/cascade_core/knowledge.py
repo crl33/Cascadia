@@ -93,11 +93,20 @@ def _covers(wide: tuple[datetime | None, datetime | None], narrow: tuple[datetim
 class FreshnessAnchor:
     """The timestamps `/system/health` computes a product's freshness from, plus which table they
     came from. `kind` is part of the answer, not decoration: "current because values landed" and
-    "current because bytes were fetched" are different claims about the same product."""
+    "current because bytes were fetched" are different claims about the same product.
+
+    `content_time` exists because ONE instant could not serve two consumers (found in
+    production, 2026-08-28): freshness judges valid-until-superseded products by "when did we
+    last CHECK" — so `valid_time` absorbs the poll clock there — while the SSE broker's change
+    detection needs the instant the CONTENT last changed, unpolluted. Keying the broker on the
+    merged instant made quiet weather invalidate every cache 5-minutely; keying freshness on
+    the pure instant flipped healthy production to degraded. Two questions, two fields."""
 
     kind: str
     valid_time: datetime | None
     retrieved_at: datetime | None
+    #: the pure value-side instant (None when the product has no value rows yet)
+    content_time: datetime | None = None
 
 
 @dataclass(frozen=True)
@@ -838,18 +847,20 @@ class Knowledge:
                     continue
                 have = anchors.get(pid)
                 if kind == "raw_artifact" and pid in VALID_UNTIL_SUPERSEDED_PRODUCTS:
-                    # Valid-until-superseded: the newest value row can be months old on a healthy
-                    # system, so merge the last successful fetch into RETRIEVED_AT — freshness
-                    # is "when did we last check" (registry) and compute_freshness reads that
-                    # column. VALID_TIME stays the VALUE side untouched: it is the instant the
-                    # CONTENT last changed, and merging the poll clock into it made the SSE
-                    # broker emit a cache-defeating "changed!" every five quiet minutes
-                    # (adversarial review 2026-08-28). `have` may be None — zero alert rows
-                    # through a quiet week — and then the poll is the only instant there is.
+                    # Valid-until-superseded: the newest value row can be months old on a
+                    # healthy system, so the last successful fetch merges into VALID_TIME —
+                    # compute_freshness anchors its age there, and freshness for these
+                    # products is "when did we last check" (registry). The CONTENT instant
+                    # lives separately in `content_time`, pure, for the SSE broker: the first
+                    # attempt to keep valid_time pure instead flipped healthy production to
+                    # degraded (thresholds 4 days "stale" mid-poll — caught live 2026-08-28).
+                    # `have` may be None — zero alert rows through a quiet week — and then
+                    # the poll is the only instant there is.
                     anchors[pid] = FreshnessAnchor(
                         kind=kind if have is None else f"{have.kind}+{kind}",
-                        valid_time=fix(v) if have is None else have.valid_time,
+                        valid_time=fix(v) if have is None else newer(have.valid_time, fix(v)),
                         retrieved_at=fix(r) if have is None else newer(have.retrieved_at, fix(r)),
+                        content_time=None if have is None else have.content_time,
                     )
                     continue
                 if kind == "raw_artifact" and (have is not None or pid not in METADATA_ONLY_PRODUCTS):
@@ -858,12 +869,13 @@ class Knowledge:
                     # parsed. Only the registry's metadata-only products anchor on bytes.
                     continue
                 if have is None:
-                    anchors[pid] = FreshnessAnchor(kind=kind, valid_time=fix(v), retrieved_at=fix(r))
+                    anchors[pid] = FreshnessAnchor(kind=kind, valid_time=fix(v), retrieved_at=fix(r), content_time=fix(v))
                 else:  # the same product writes into more than one table: latest of both
                     anchors[pid] = FreshnessAnchor(
                         kind=f"{have.kind}+{kind}",
                         valid_time=newer(have.valid_time, fix(v)),
                         retrieved_at=newer(have.retrieved_at, fix(r)),
+                        content_time=newer(have.content_time, fix(v)),
                     )
 
         await collect("observation", Observation.valid_time, Observation.retrieved_at, Observation, Observation.available_at)

@@ -89,13 +89,13 @@ class IngestEventBroker:
             anchors = await as_known_at(session, utcnow()).product_freshness_anchors()
         current: dict[str, datetime] = {}
         for pid, anchor in anchors.items():
-            # The VALUE instant, preferentially: for valid-until-superseded products the
-            # retrieved_at advances on EVERY successful poll (that is its freshness job), and
-            # keying change detection on it made quiet weather emit an invalidation every five
-            # minutes — a cache-defeating event about nothing (adversarial review 2026-08-28).
-            # New CONTENT moves valid_time; a bare re-check does not, and clients have nothing
-            # to refetch from a re-check.
-            instant = anchor.valid_time or anchor.retrieved_at
+            # The CONTENT instant, preferentially: for valid-until-superseded products both
+            # valid_time and retrieved_at advance on EVERY successful poll (that is their
+            # freshness job), and keying change detection there made quiet weather emit a
+            # cache-defeating invalidation every five minutes. `content_time` is the pure
+            # value-side instant the anchor carries for exactly this consumer; a product with
+            # no value rows yet falls back to the poll clock — the only instant it has.
+            instant = anchor.content_time or anchor.valid_time or anchor.retrieved_at
             if instant is not None:
                 current[pid] = instant
         if not self._primed:

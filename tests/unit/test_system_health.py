@@ -482,3 +482,45 @@ async def test_metrics_is_a_projection_of_health_never_a_second_computation(db) 
     for line in text.strip().splitlines():
         if not line.startswith("#"):
             assert line.startswith("cascade_") and line.rsplit(" ", 1)[1].replace(".", "").isdigit()
+
+
+async def test_valid_until_products_read_current_by_the_poll_at_the_computed_state(tmp_path) -> None:
+    """The regression the anchor-only assertions let through (caught in production
+    2026-08-28): keeping valid_time content-pure flipped healthy thresholds/alerts to STALE,
+    because compute_freshness anchors its age on valid_time. This pins the COMPUTED STATE —
+    old content + fresh poll must read `current` end to end — and pins the broker's separate
+    instant: content_time stays the pure value-side clock."""
+    from datetime import timedelta
+
+    from cascade_core.db import create_schema, make_engine, make_session_factory
+    from cascade_core.freshness import compute_freshness
+    from cascade_core.knowledge import as_known_at
+    from cascade_core.models import OfficialAlertRecord, RawArtifact
+    from cascade_core.registry import PRODUCT_NWS_ALERTS
+    from cascade_core.timeutils import utcnow
+
+    engine = make_engine(f"sqlite+aiosqlite:///{tmp_path}/h.db")
+    await create_schema(engine)
+    now = utcnow()
+    async with make_session_factory(engine)() as s:
+        old_content = now - timedelta(hours=16)
+        s.add(OfficialAlertRecord(id="urn:vu.1", event="Air Quality Alert", status="Actual",
+                                  message_type="Alert", sent=old_content, ugc=["WAC007"],
+                                  basin_ids=[], mapping_method_id="m", references=[],
+                                  retrieved_at=old_content, available_at=old_content))
+        s.add(RawArtifact(sha256="f" * 64, object_key="a/z", product_id=PRODUCT_NWS_ALERTS,
+                          fetched_at=now - timedelta(minutes=3), request_url="https://example.invalid/a",
+                          bytes=1, http_status=200, content_type="application/geo+json"))
+        await s.commit()
+        anchor = (await as_known_at(s, now).product_freshness_anchors())[PRODUCT_NWS_ALERTS]
+    await engine.dispose()
+
+    fresh = compute_freshness(expected_cadence_seconds=300, grace_seconds=600,
+                              valid_time=anchor.valid_time, retrieved_at=anchor.retrieved_at, now=now)
+    assert fresh.state.value == "current", (
+        "16-hour-old content behind a 3-minute-old poll is a HEALTHY valid-until product"
+    )
+    assert anchor.content_time is not None
+    assert (now - anchor.content_time) > timedelta(hours=15), (
+        "the broker's instant stays the pure content clock, not the poll"
+    )
