@@ -1,0 +1,37 @@
+provider: mrms
+design_ref: docs/DATA_SOURCES.md P1
+captured:
+- file: listing_qpe_day.xml
+  url: https://noaa-mrms-pds.s3.amazonaws.com/?list-type=2&prefix=CONUS/MultiSensor_QPE_01H_Pass2_00.00/20260828/&max-keys=100
+  captured_at: '2026-08-28T04:30:00+00:00'
+  http_status: 200
+  bytes: 1850
+  sha256: 39752e3ad4acc0d0c2c9a023672ec5d79863e03b229ac804942a518d23085349
+  notes: 'REAL capture: one day''s ListObjectsV2 answer. The element order inside
+    Contents (Key, LastModified, ETag, ChecksumAlgorithm, ChecksumType, Size) is what
+    the listing parser''s tempered regex is written against — the checksum tags appeared
+    without notice once already, which is why the regex skips unknown tags instead
+    of naming them. LastModified minus the key timestamp is the measured ~57 min publication
+    lag that available_at carries.'
+- file: qpe_pass2_conus.grib2.gz
+  url: https://noaa-mrms-pds.s3.amazonaws.com/CONUS/MultiSensor_QPE_01H_Pass2_00.00/20260828/MRMS_MultiSensor_QPE_01H_Pass2_00.00_20260828-030000.grib2.gz
+  captured_at: '2026-08-28T04:30:00+00:00'
+  http_status: 200
+  bytes: 679204
+  sha256: 99697a95e34a342ce46fa32755737f3866af493cf144bece18a1fc2e309336ef
+  notes: 'REAL capture: a full-CONUS hourly Pass2 QPE. 7000x3500 regular_ll at 0.01
+    deg, grid_png packing (no byte-range subsetting possible), sentinels -1 missing
+    / -3 no-coverage present over the oceans. Measured against this file: every seed
+    basin aggregates at 100.00% valid coverage — MRMS gauge/model fill covers the
+    BC headwaters — which is why the coverage policy treats anything less as a signal.'
+- file: gaugeinfl_pass2_conus.grib2.gz
+  url: https://noaa-mrms-pds.s3.amazonaws.com/CONUS/GaugeInflIndex_01H_Pass2_00.00/20260828/MRMS_GaugeInflIndex_01H_Pass2_00.00_20260828-030000.grib2.gz
+  captured_at: '2026-08-28T04:34:00+00:00'
+  http_status: 200
+  bytes: 4163554
+  sha256: 52e7b7a02f665b2e9b660ba4c910b79b04c2edf49dc2313e6277b9728820ee50
+  notes: 'REAL capture: the covariate that qualifies the QPE — how much of each cell''s
+    estimate came from gauges rather than radar. 4 MB and checked in anyway: western
+    Washington QPE is largely gauge/model fill (KATX beam-blocked, headwaters overshot),
+    so publishing a basin QPE without this context would present radar-weak numbers
+    unqualified, and the covariate is NOT in the IEM re-archive.'

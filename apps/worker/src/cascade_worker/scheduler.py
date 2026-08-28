@@ -24,6 +24,7 @@ import time
 from collections.abc import Sequence
 from dataclasses import dataclass
 
+from cascade_providers_mrms import jobs as mrms_jobs
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from cascade_core.fetch import ArchivingFetcher
@@ -52,6 +53,12 @@ class Job:
     cron: str | None = None
 
 
+async def _run_fetch_mrms_qpe(session: AsyncSession, fetcher: ArchivingFetcher) -> int:
+    """MRMS adapted to the JobFn contract: the geometry directory comes from the environment,
+    the same way the NBM mask build gets it, because the container sets an absolute path."""
+    return await mrms_jobs.run_fetch_qpe(session, fetcher, geo_dir=Settings.from_env().geo_dir)
+
+
 async def _run_build_grid_masks(session: AsyncSession, fetcher: ArchivingFetcher) -> int:
     """`nbm.build_grid_masks` adapted to the `JobFn` contract (it returns per-basin reports).
 
@@ -70,6 +77,7 @@ JOBS: tuple[Job, ...] = (
     Job(nwps_jobs.JOB_THRESHOLDS, nwps_jobs.CADENCE_THRESHOLDS_SECONDS, nwps_jobs.run_fetch_thresholds),
     Job(nwps_jobs.JOB_FORECAST, nwps_jobs.CADENCE_FORECAST_SECONDS, nwps_jobs.run_fetch_forecast),
     Job(hefs_jobs.JOB_NAME, hefs_jobs.CADENCE_SECONDS, hefs_jobs.run_fetch_hefs, cron=hefs_jobs.CRON),
+    Job(mrms_jobs.JOB_NAME, mrms_jobs.CADENCE_SECONDS, _run_fetch_mrms_qpe, cron=mrms_jobs.CRON),
     Job(usgs_jobs.JOB_NAME, usgs_jobs.CADENCE_SECONDS, usgs_jobs.run_fetch_instantaneous),
     # --- P3 forcing: masks first, then the two NBM subsets ------------------------------
     # 07:30 UTC: ten minutes ahead of the 07:40 qmd slot, so a grid change is picked up before

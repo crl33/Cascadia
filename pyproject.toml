@@ -47,6 +47,7 @@ root_packages = [
   "cascade_providers_nwps",
   "cascade_providers_awdb",
   "cascade_providers_nbm",
+  "cascade_providers_mrms",
   "cascade_api",
   "cascade_worker",
 ]
@@ -56,25 +57,25 @@ include_external_packages = true
 name = "cascade_api is read-only: no provider adapters, no job queue"
 type = "forbidden"
 source_modules = ["cascade_api"]
-forbidden_modules = ["cascade_providers_usgs", "cascade_providers_nwps", "cascade_providers_awdb", "cascade_providers_nbm", "procrastinate"]
+forbidden_modules = ["cascade_providers_usgs", "cascade_providers_nwps", "cascade_providers_awdb", "cascade_providers_nbm", "cascade_providers_mrms", "procrastinate"]
 
 [[tool.importlinter.contracts]]
 name = "cascade_contracts is pure shapes: nothing from core/providers/hydrology"
 type = "forbidden"
 source_modules = ["cascade_contracts"]
-forbidden_modules = ["cascade_core", "cascade_geo", "cascade_hydrology", "cascade_providers_usgs", "cascade_providers_nwps", "cascade_providers_awdb", "cascade_providers_nbm"]
+forbidden_modules = ["cascade_core", "cascade_geo", "cascade_hydrology", "cascade_providers_usgs", "cascade_providers_nwps", "cascade_providers_awdb", "cascade_providers_nbm", "cascade_providers_mrms"]
 
 [[tool.importlinter.contracts]]
 name = "cascade_hydrology is provider-agnostic: a method never imports an adapter"
 type = "forbidden"
 source_modules = ["cascade_hydrology"]
-forbidden_modules = ["cascade_providers_usgs", "cascade_providers_nwps", "cascade_providers_awdb", "cascade_providers_nbm", "cascade_api", "cascade_worker"]
+forbidden_modules = ["cascade_providers_usgs", "cascade_providers_nwps", "cascade_providers_awdb", "cascade_providers_nbm", "cascade_providers_mrms", "cascade_api", "cascade_worker"]
 
 [[tool.importlinter.contracts]]
 name = "cascade_geo is geometry only: no providers, no hydrology, no apps"
 type = "forbidden"
 source_modules = ["cascade_geo"]
-forbidden_modules = ["cascade_hydrology", "cascade_providers_usgs", "cascade_providers_nwps", "cascade_providers_nbm", "cascade_api", "cascade_worker"]
+forbidden_modules = ["cascade_hydrology", "cascade_providers_usgs", "cascade_providers_nwps", "cascade_providers_nbm", "cascade_providers_mrms", "cascade_api", "cascade_worker"]
 
 [[tool.importlinter.contracts]]
 name = "cascade_core is the foundation: never imports the apps"

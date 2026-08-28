@@ -52,6 +52,7 @@ PROVIDER_HOSTS: frozenset[str] = frozenset(
         "nomads.ncep.noaa.gov",              # W2 NBM live subsets via filter_blend.pl (primary)
         "noaa-nbm-grib2-pds.s3.amazonaws.com",  # W2 NBM S3 archive: .idx + ranged GET (backfill/fallback)
         "wcc.sc.egov.usda.gov",              # S1 NRCS AWDB (SNOTEL WTEQ/PREC)
+        "noaa-mrms-pds.s3.amazonaws.com",    # P1 MRMS QPE + gauge-influence (NODD mirror)
     }
 )
 

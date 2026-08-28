@@ -27,6 +27,7 @@ from collections.abc import Iterable, Iterator, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
+from cascade_geo.latlon import LatLonGridSpec, RegularLatLon
 from cascade_geo.lcc import GridSpec, LambertConformalConic
 
 #: Fractions below this are dropped: a cell touched along an edge to one part in a million
@@ -213,7 +214,7 @@ def build_basin_mask(
     *,
     basin_id: str,
     polygons: Iterable[Polygon],
-    grid: GridSpec,
+    grid: GridSpec | LatLonGridSpec,
     polygon_source: str,
 ) -> BasinMask:
     """Exact fractional cell weights for one basin on ``grid``.
@@ -222,8 +223,12 @@ def build_basin_mask(
     ``sum(w_i * v_i) / sum(w_i)`` and the masked area is ``sum(w_i * area(cell_i))`` with
     each cell's TRUE ground area (the projection's scale factor applied — see
     :meth:`LambertConformalConic.cell_area_km2`).
+
+    The clipping is identical for every grid family; only the (lon, lat) -> (i, j) map and the
+    cell-area formula differ, so the dispatch lives here and the sweep below never knows which
+    projection produced its coordinates.
     """
-    projection = LambertConformalConic(grid)
+    projection = RegularLatLon(grid) if isinstance(grid, LatLonGridSpec) else LambertConformalConic(grid)
     rings: list[list[tuple[float, float]]] = []
     parts = 0
     for polygon in polygons:

@@ -34,6 +34,7 @@ SRC_USGS_OGC = "src:usgs-wdfn-ogc"
 SRC_USGS_STATS = "src:usgs-wdfn-statistics"  # RETIRED 2026-08-27; historical rows only
 SRC_USGS_NORMALS = "src:usgs-wdfn-normals"
 SRC_AWDB = "src:nrcs-awdb"
+SRC_MRMS = "src:mrms"
 
 PRODUCT_USGS_IV = "product:usgs-iv"
 PRODUCT_NWPS_FORECAST = "product:nwps-forecast"
@@ -50,6 +51,8 @@ PRODUCT_USGS_DAILY_STATS = "product:usgs-daily-stats"  # RETIRED 2026-08-27; his
 PRODUCT_USGS_DOY_NORMALS = "product:usgs-doy-normals"
 PRODUCT_AWDB_DAILY = "product:awdb-snotel-daily"
 PRODUCT_AWDB_STATIONS = "product:awdb-stations"
+PRODUCT_MRMS_QPE = "product:mrms-qpe-01h-pass2"
+PRODUCT_MRMS_GAUGEINFL = "product:mrms-gaugeinfl-01h-pass2"
 
 SOURCES: tuple[dict[str, str], ...] = (
     {"id": SRC_USGS, "authority": "U.S. Geological Survey", "kind": "OBSERVED", "base_url": "https://api.waterdata.usgs.gov/ogcapi/v0/collections/continuous/items", "docs_url": "https://api.waterdata.usgs.gov/ogcapi/v0/openapi?f=html"},
@@ -83,6 +86,11 @@ SOURCES: tuple[dict[str, str], ...] = (
     # (docs/research/nwis-stat-successor-2026-08-27.md §4, §6).
     {"id": SRC_USGS_NORMALS, "authority": "U.S. Geological Survey Water Data for the Nation (published day-of-year normals; USGS states these may not match official USGS publications)", "kind": "OBSERVED", "base_url": "https://api.waterdata.usgs.gov/statistics/v0/", "docs_url": "https://api.waterdata.usgs.gov/docs/statistics/"},
     {"id": SRC_AWDB, "authority": "USDA NRCS National Water and Climate Center (AWDB: SNOTEL/SNOLITE/SCAN)", "kind": "OBSERVED", "base_url": "https://wcc.sc.egov.usda.gov/awdbRestApi/services/v1/", "docs_url": "https://wcc.sc.egov.usda.gov/awdbRestApi/v3/api-docs"},
+    # OBSERVED with method radar_qpe (DATA_DOCTRINE §2): computed by the measuring authority
+    # from radar+gauge+model blending, the same rule that classes the published day-of-year
+    # statistics. The gauge-influence covariate rides the same source: it is NSSL's own
+    # statement about its own estimate, not a Cascadia judgement.
+    {"id": SRC_MRMS, "authority": "NOAA NSSL/NCEP Multi-Radar Multi-Sensor (MRMS) via NODD", "kind": "OBSERVED", "base_url": "https://noaa-mrms-pds.s3.amazonaws.com/", "docs_url": "https://www.nssl.noaa.gov/projects/mrms/"},
 )
 
 PRODUCTS: tuple[dict[str, object], ...] = (
@@ -137,6 +145,9 @@ PRODUCTS: tuple[dict[str, object], ...] = (
     # CONTEXT drivers only: more SWE is not more risk (HYDROLOGY §7), so nothing here is scored.
     {"id": PRODUCT_AWDB_DAILY, "source_id": SRC_AWDB, "label": "SNOTEL daily values (WTEQ, PREC) with per-value median, point network", "variables": ["swe", "precip_accum"], "expected_cadence_seconds": 86400, "grace_seconds": 129600},
     {"id": PRODUCT_AWDB_STATIONS, "source_id": SRC_AWDB, "label": "AWDB station metadata (triplet, HUC, elevation, station elements)", "variables": ["metadata"], "expected_cadence_seconds": 604800, "grace_seconds": 604800},
+    # Hourly, ~57 min publication latency measured 2026-08-28. Grace PT2H per DATA_SOURCES P1.
+    {"id": PRODUCT_MRMS_QPE, "source_id": SRC_MRMS, "label": "MRMS MultiSensor QPE 1 h Pass2 (radar+gauge+model blend), basin-aggregated", "variables": ["precip"], "expected_cadence_seconds": 3600, "grace_seconds": 7200},
+    {"id": PRODUCT_MRMS_GAUGEINFL, "source_id": SRC_MRMS, "label": "MRMS gauge-influence index 1 h Pass2 — how much of the QPE came from gauges rather than radar", "variables": ["precip"], "expected_cadence_seconds": 3600, "grace_seconds": 7200},
 )
 
 
@@ -196,6 +207,9 @@ JOBS: tuple[JobSpec, ...] = (
     JobSpec("usgs.build_climatology", "usgs-stats", SRC_USGS_NORMALS, (PRODUCT_USGS_OGC_DAILY, PRODUCT_USGS_DOY_NORMALS), 31_536_000),
     JobSpec("usgs.fetch_daily_percentile", "usgs-ogc", SRC_USGS_OGC, (PRODUCT_USGS_OGC_DAILY,), 86400),
     JobSpec("awdb.fetch_snotel_context", "awdb", SRC_AWDB, (PRODUCT_AWDB_DAILY, PRODUCT_AWDB_STATIONS), 86400),
+    # Hourly at :20 — Pass2 for hour H publishes ~H+57 min (measured 2026-08-28). A backfill
+    # on a schedule: each run lists the day prefix and ingests every accumulation not stored.
+    JobSpec("mrms.fetch_qpe", "mrms", SRC_MRMS, (PRODUCT_MRMS_QPE, PRODUCT_MRMS_GAUGEINFL), 3600),
     # Registered on the QUEUE only, never in `scheduler.JOBS` (it needs PostgreSQL, and `run-once`
     # must keep working on sqlite) — but it runs through `run_job` like everything else, leaves
     # job_run rows, and keeps the observation partition horizon ahead of ingestion. It belongs
