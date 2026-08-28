@@ -17,7 +17,7 @@ The tests are grouped by what would go wrong:
 from __future__ import annotations
 
 import json
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import httpx
@@ -424,3 +424,49 @@ async def test_the_published_quantiles_are_stored_as_their_own_product(sessions,
         assert r.values_json["exceedance_levels"] == [0.05, 0.1, 0.25, 0.3, 0.4, 0.5, 0.6, 0.7, 0.75, 0.9, 0.95]
         assert len(r.values_json["rows"]) == 121
         assert "never Cascade-derived" in r.values_json["note"] or "official guidance" in r.values_json["note"]
+
+
+# --- 4. the endpoint: the provider's numbers, verbatim, on the knowledge clock -------------
+
+
+def test_the_endpoint_names_are_pinned_to_what_the_job_writes() -> None:
+    from cascade_api.routes import HEFS_QUANTILES_FEATURE, HEFS_QUANTILES_METHOD
+
+    assert HEFS_QUANTILES_FEATURE == hefs_jobs.FEATURE_QUANTILES
+    assert HEFS_QUANTILES_METHOD == hefs_jobs.METHOD_QUANTILES
+
+
+@respx.mock
+async def test_the_latest_quantiles_are_served_verbatim_with_provenance(sessions, tmp_path) -> None:
+    from httpx import ASGITransport, AsyncClient
+
+    from cascade_api.main import create_app
+    from cascade_core.settings import Settings
+    from tests.conftest import GEO
+
+    _mock()
+    async with sessions() as s:
+        await hefs_jobs.run_fetch_hefs(s, _fetcher(tmp_path))
+        await s.commit()
+        stored = (await s.execute(
+            select(DerivedFeature).where(DerivedFeature.feature == hefs_jobs.FEATURE_QUANTILES)
+        )).scalars().first()
+    app = create_app(Settings(db_url="sqlite+aiosqlite://", geo_dir=GEO), engine=sessions.kw["bind"])
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        r = await client.get("/forecast-points/MVEW1/hefs/latest")
+        assert r.status_code == 200
+        doc = r.json()
+        # the ladder is the stored provider document, byte-for-byte in substance
+        assert doc["exceedance_levels"] == stored.values_json["exceedance_levels"]
+        assert doc["rows"] == stored.values_json["rows"]
+        assert doc["unit"] == stored.unit and doc["parameter_id"] == stored.values_json["parameter_id"]
+        assert "verbatim" in doc["provenance"]["label"] and "EXPERIMENTAL" in doc["provenance"]["label"]
+        assert doc["provenance"]["source_kind"] == "MODELED"
+        # the knowledge clock governs: before the cycle was AVAILABLE, it does not exist here
+        early = (await client.get(
+            "/forecast-points/MVEW1/hefs/latest",
+            params={"as_of": (stored.available_at.replace(tzinfo=UTC) - timedelta(hours=1)).isoformat()},
+        ))
+        assert early.status_code == 404
+        # an unknown point is a 404, never an empty ladder
+        assert (await client.get("/forecast-points/XXXX1/hefs/latest")).status_code == 404

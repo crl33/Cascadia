@@ -13,14 +13,17 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from cascade_api.events import sse_stream
 from cascade_contracts import SceneSummary
 from cascade_contracts.common import CONTRACT_VERSION
+from cascade_contracts.visualization import ProvenanceRef
 from cascade_core.freshness import DEGRADED_MULTIPLIER, compute_freshness
 from cascade_core.knowledge import as_known_at
 from cascade_core.registry import (
     EXPECTED_PRODUCTS,
     JOBS,
+    PRODUCT_HEFS_QUANTILES,
     PRODUCT_USGS_IV,
     PRODUCT_WRITERS,
     PRODUCTS,
+    SRC_NWPS_HEFS,
 )
 from cascade_core.timeutils import parse_iso, utcnow
 from cascade_hydrology import agreement
@@ -28,6 +31,7 @@ from cascade_hydrology.assemble import (
     assess_point,
     basin_envelope,
     forecast_run_ref,
+    resolved_source_kind,
     river_envelope,
 )
 
@@ -192,6 +196,75 @@ async def latest_run(session: Session, as_of: AsOf, lid: Annotated[str, Path(pat
         "stage_datum": run.datum,  # the stage column's datum, never the flow column's (ADR-0014)
         "points": [{"t": v.valid_time, "stage": v.stage, "flow": v.flow} for v in values],
         "provenance": _dump(env.provenance_refs[f"nwps-forecast-{lid.lower()}"]),
+    }
+
+
+#: Written by cascade_providers_nwps.hefs_jobs; the api may not import a provider adapter
+#: (import contract), so the names are shared DATA, pinned to the job's constants by test.
+HEFS_QUANTILES_FEATURE = "hefs_exceedance_quantiles"
+HEFS_QUANTILES_METHOD = "method:nwps-hefs-quantiles@1.0.0"
+
+
+def _freshness_for(product, *, valid_time, retrieved_at, now):
+    return compute_freshness(
+        expected_cadence_seconds=product.expected_cadence_seconds if product else None,
+        grace_seconds=product.grace_seconds if product else None,
+        valid_time=valid_time,
+        retrieved_at=retrieved_at,
+        now=now,
+    )
+
+
+@router.get("/forecast-points/{lid}/hefs/latest")
+async def latest_hefs_quantiles(session: Session, as_of: AsOf, lid: Annotated[str, Path(pattern=LID)]) -> dict:
+    """The newest HEFS exceedance-quantile ladder known at as_of — the PROVIDER'S OWN numbers.
+
+    DATA_DOCTRINE §9(a): a probability may be displayed when an authority issued it. These are
+    NWRFC's published exceedance quantiles, stored verbatim at ingest and served verbatim here
+    — never interpolated, never re-derived from the members, and never converted. The provider
+    itself labels HEFS EXPERIMENTAL (not supported 24/7), so the provenance carries that
+    caution alongside the MODELED source kind; `exceedance_levels` are probabilities of
+    EXCEEDANCE per the provider's schema, and each row's `values` aligns with them by index.
+    """
+    k = as_known_at(session, as_of)
+    fp = await k.forecast_point_by_lid(lid)
+    if fp is None:
+        raise HTTPException(status_code=404, detail="unknown forecast point")
+    rows = await k.derived_features(HEFS_QUANTILES_FEATURE, fp.id, method_id=HEFS_QUANTILES_METHOD)
+    if not rows:
+        raise HTTPException(status_code=404, detail="no HEFS quantile cycle known at this knowledge time")
+    newest = max(rows, key=lambda r: (r.issued_at or r.valid_time, r.available_at))
+    doc = newest.values_json or {}
+    products = await k.products()
+    product = products.get(PRODUCT_HEFS_QUANTILES)
+    prov = ProvenanceRef(
+        source_id=product.source_id if product else SRC_NWPS_HEFS,
+        source_kind=resolved_source_kind(product),
+        product_id=PRODUCT_HEFS_QUANTILES,
+        method_id=newest.method_id,
+        issued_at=newest.issued_at,
+        valid_time=newest.valid_time,
+        retrieved_at=newest.computed_at,
+        freshness=_freshness_for(product, valid_time=newest.issued_at, retrieved_at=newest.available_at, now=k.as_of),
+        quality=tuple(newest.quality or ()),
+        label=(
+            "NWRFC HEFS published exceedance quantiles — the provider's own numbers, served "
+            "verbatim (DATA_DOCTRINE §9(a)). HEFS is EXPERIMENTAL by the provider's own "
+            "labelling: not supported 24/7 and may change without notice."
+        ),
+        raw_artifact_id=str(newest.raw_artifact_id) if newest.raw_artifact_id is not None else None,
+    )
+    return {
+        "fp_id": fp.id,
+        "lid": lid,
+        "issued_at": newest.issued_at,
+        "available_at": newest.available_at,
+        "parameter_id": doc.get("parameter_id"),
+        "unit": newest.unit,
+        "exceedance_levels": doc.get("exceedance_levels", []),
+        "rows": doc.get("rows", []),
+        "note": doc.get("note"),
+        "provenance": _dump(prov),
     }
 
 
