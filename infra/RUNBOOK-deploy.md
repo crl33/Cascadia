@@ -200,6 +200,20 @@ identity), not the rule. Consequences, in order of importance:
   social: push to main only what the full local gate has already passed.
 - **Every push costs a build.** Batch pushes; do not push doc typos individually.
 
+## Database URL variables must name the installed driver
+
+Measured 2026-08-28, two failed deploys in a row: `CASCADE_API_DB_URL` was set with a plain
+`postgresql://` scheme, SQLAlchemy resolved it to the psycopg2 dialect, the image ships
+psycopg (v3) only, the API process died at import, the supervised pair exited
+(`wait=1 api=1 worker=143`) and the deployment FAILED its healthcheck. Every database URL in
+the Railway environment must carry the explicit driver — `postgresql+psycopg://…?sslmode=require`
+— exactly like `CASCADE_DB_URL` and `CASCADE_QUEUE_DB_URL` already do.
+
+Two reassurances the incident measured: a deployment that fails its healthcheck never serves —
+the previous SUCCESS build kept answering throughout, so a broken env var costs a failed deploy,
+not an outage; and the `all` entrypoint exits the PAIR when either process dies, which is what
+lets the platform restart or refuse the build instead of running an api-less worker.
+
 ## Reconciling production with the repository
 
 `railway up` uploads the working directory, not a git revision, so a deployed build has no
