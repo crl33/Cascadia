@@ -182,6 +182,24 @@ Diagnosis pattern for "build green, deploy FAILED, no runtime logs": the contain
 never executed - check the start command against the entrypoint contract before suspecting
 the registry or the healthcheck.
 
+## Deployment model — CORRECTED 2026-08-28: pushes auto-deploy
+
+**The Railway service is GitHub-linked and builds every push to `main`.** Discovered when
+production served code from a commit the manual stamp postdated: the deployment list shows a
+build per push (`reason=deploy commit=<sha> branch=main repo=crl33/Cascadia`), which means the
+`railway up` model most of this runbook describes is the EXCEPTION (workdir upload, no git
+identity), not the rule. Consequences, in order of importance:
+
+- **Never trust a manually-set `CASCADE_GIT_REVISION`.** `/system/version` now prefers
+  `RAILWAY_GIT_COMMIT_SHA`, which the platform injects for the commit it actually built; the
+  manual var is a fallback for workdir uploads only, and the stale one was cleared 2026-08-28.
+- **A push reaches production BEFORE its CI finishes.** The trigger's `checkSuites` gate (wait
+  for GitHub checks) is off; enabling it via the API 500s under the project token — the GitHub
+  integration belongs to the owner's account, so this is an owner-console action:
+  Railway dashboard → service → Settings → "Wait for CI". Until it is on, the discipline is
+  social: push to main only what the full local gate has already passed.
+- **Every push costs a build.** Batch pushes; do not push doc typos individually.
+
 ## Reconciling production with the repository
 
 `railway up` uploads the working directory, not a git revision, so a deployed build has no

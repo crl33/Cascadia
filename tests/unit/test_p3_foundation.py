@@ -520,3 +520,21 @@ def test_the_time_zone_migration_touches_only_that_one_column() -> None:
         ast.unparse(n.func) for n in ast.walk(up) if isinstance(n, ast.Call) and not isinstance(n.func, ast.Name)
     }
     assert calls == {"op.get_bind", "op.get_bind().execute", "sa.text"}, f"upgrade should do one thing: {calls}"
+
+
+def test_the_platform_attested_revision_outranks_the_manual_stamp() -> None:
+    """A stamp someone typed can never outrank one the platform derived from the build.
+
+    Measured failure, 2026-08-28: Railway's GitHub integration had been auto-deploying every push
+    while the manually-set CASCADE_GIT_REVISION froze at an older SHA — so /system/version
+    reported 9c5e652 while production ran 7c469c8's code. The preference order is the fix; this
+    pins it.
+    """
+    from cascade_core.settings import Settings
+
+    both = Settings.from_env(env={"RAILWAY_GIT_COMMIT_SHA": "platform", "CASCADE_GIT_REVISION": "manual"})
+    assert both.git_revision == "platform"
+    manual_only = Settings.from_env(env={"CASCADE_GIT_REVISION": "manual"})
+    assert manual_only.git_revision == "manual"
+    neither = Settings.from_env(env={})
+    assert neither.git_revision is None

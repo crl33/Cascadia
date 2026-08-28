@@ -71,7 +71,14 @@ class Settings:
             s3_endpoint=e.get("CASCADE_S3_ENDPOINT") or None,
             s3_bucket=e.get("CASCADE_S3_BUCKET") or None,
             usgs_api_key=e.get("CASCADE_USGS_API_KEY") or None,
-            git_revision=e.get("CASCADE_GIT_REVISION") or None,
+            # Platform-attested first. Railway's GitHub integration deploys every push to main
+            # and injects RAILWAY_GIT_COMMIT_SHA for the commit it actually built — discovered
+            # 2026-08-28 when production served code from a commit the manual stamp postdated:
+            # CASCADE_GIT_REVISION froze at the last hand-set value while auto-deploys moved on,
+            # so /system/version LIED. A stamp someone typed can never outrank one the platform
+            # derived from the build itself. The manual var stays as the fallback for
+            # workdir-upload deploys (`railway up`), which have no git identity of their own.
+            git_revision=e.get("RAILWAY_GIT_COMMIT_SHA") or e.get("CASCADE_GIT_REVISION") or None,
         )
 
     @property

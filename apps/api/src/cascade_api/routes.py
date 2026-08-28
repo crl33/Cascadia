@@ -406,10 +406,12 @@ async def agreement_explanation(session: Session, as_of: AsOf, basin_id: Annotat
 async def version(request: Request) -> dict:
     """What this running build is, so a deployment can be checked against the repository.
 
-    `revision` is stamped from the deploying revision (env CASCADE_GIT_REVISION) and is UNKNOWN
-    when a build was deployed without one — which is itself the answer worth having: an
-    unidentifiable build is exactly the state this endpoint exists to make visible. No secrets,
-    no environment dump; identity only.
+    `revision` prefers the platform-attested commit (RAILWAY_GIT_COMMIT_SHA, injected by the
+    GitHub-linked auto-deploy for the commit it actually built) over the manual stamp
+    (CASCADE_GIT_REVISION, the only identity a workdir `railway up` has), and is UNKNOWN when a
+    build carries neither — which is itself the answer worth having: an unidentifiable build is
+    exactly the state this endpoint exists to make visible. No secrets, no environment dump;
+    identity only.
     """
     settings = request.app.state.settings
     return {
