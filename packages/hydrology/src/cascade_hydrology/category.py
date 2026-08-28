@@ -6,15 +6,19 @@ of basis (stage vs flow), unit (ft vs m, cfs vs kcfs) or vertical datum (NGVD29 
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Literal
 
 from cascade_contracts import FloodCategory
 
 ORDER: tuple[str, ...] = ("action", "minor", "moderate", "major")
 
 
+Basis = Literal["stage", "flow"]
+
+
 @dataclass(frozen=True)
 class ThresholdSet:
-    basis: str  # stage | flow
+    basis: Basis  # stage | flow — the Literal, so every consumer's basis-typed call checks
     unit: str
     datum: str | None
     action: float | None = None

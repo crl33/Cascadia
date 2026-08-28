@@ -1165,10 +1165,13 @@ def growth_rank_rules(fraction: float, *, window_h: int = 24) -> EscalationRule:
     SENSITIVITY SWEEP — several fractions side by side, with the false-warning count beside each
     — and never as the harness's answer.
     """
+    def _predicate(ev: Evaluation) -> bool:
+        return _growth_rank_within(ev, window_h, fraction)
+
     return EscalationRule(
         id=f"growth_rank_top_{fraction:g}_{window_h}h",
         label=f"the {window_h} h growth ranks in this gauge's own largest {fraction:.1%} of changes",
-        predicate=lambda ev, f=fraction, w=window_h: _growth_rank_within(ev, w, f),
+        predicate=_predicate,
         fixed_independently_of_outcome=False,
         constant_provenance=(
             f"{fraction:g} is CHOSEN HERE and validated nowhere. No band may be drawn on the "
@@ -1284,6 +1287,7 @@ def compare_arms(
         return ArmComparison(rule.id, basin_id, old, new, None, "not_applicable", False,
                              "neither arm publishes a statement this rule can read")
     if old.applicable and new.applicable:
+        caveat: str | None
         if old.first_time is None and new.first_time is None:
             verdict, legit, caveat = "no_difference", False, "neither arm escalated in the event window"
         elif new.first_time is None:

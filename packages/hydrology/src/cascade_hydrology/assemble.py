@@ -66,7 +66,13 @@ from cascade_core.registry import (
 )
 from cascade_geo.hypsometry import BasinHypsometry
 from cascade_hydrology import agreement, antecedent, forcing, surfaces, susceptibility
-from cascade_hydrology.category import CategoryResult, Measure, ThresholdSet, categorize
+from cascade_hydrology.category import (
+    Basis,
+    CategoryResult,
+    Measure,
+    ThresholdSet,
+    categorize,
+)
 from cascade_hydrology.headroom import headroom as compute_headroom
 from cascade_hydrology.surfaces import SurfaceReason, require_reason
 from cascade_hydrology.trend import METHOD_ID as TREND_METHOD_ID
@@ -155,7 +161,7 @@ TREND_WINDOW_H = 6
 TREND_WINDOW = timedelta(hours=TREND_WINDOW_H)
 
 
-def observed_basis(tset: ThresholdSet | None) -> str:
+def observed_basis(tset: ThresholdSet | None) -> Basis:
     """The variable an observed value is judged on: the official thresholds' basis, else stage.
 
     One function, because `prefetch_points` has to know which variable a point will be read on
@@ -308,7 +314,7 @@ async def assess_point(k: Knowledge, fp: ForecastPoint, basin: Basin | None, pro
             detail = (
                 f" (repeated median of {trend.n} observations spanning {trend.span_h:.2f} h; "
                 f"pair-slope IQR {trend.slope_q25:.4f}..{trend.slope_q75:.4f} {trend.slope_unit}, "
-                f"a dispersion and not a confidence interval; condition {trend.quality.value})"
+                f"a dispersion and not a confidence interval; condition {trend.quality.value if trend.quality else 'unstated'})"
             )
         refs[tkey] = ProvenanceRef(
             source_id=SRC_CASCADE,

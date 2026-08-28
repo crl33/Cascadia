@@ -47,7 +47,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from enum import Enum
-from typing import Literal
+from typing import Literal, TypedDict
 
 RISING = "rising"
 FALLING = "falling"
@@ -338,6 +338,27 @@ class TrendQuality(str, Enum):
     WIDE_SLOPE_SPREAD = "WIDE_SLOPE_SPREAD"
 
 
+class _EmptyKwargs(TypedDict):
+    """The keyword block every refusal/empty TrendEstimate shares. A TypedDict rather than a
+    plain dict for one reason: `**dict[str, object]` erases every field type at the call
+    sites, which is where mypy would otherwise catch a renamed or retyped field."""
+
+    method_id: str
+    estimator: str
+    basis: Basis
+    window_h: float
+    window_end: datetime
+    slope: None
+    slope_unit: None
+    direction: str
+    steady_eps: None
+    slope_q25: None
+    slope_q75: None
+    quality: None
+    tidal_class: TidalClass | None
+    station_id: str
+
+
 @dataclass(frozen=True)
 class TrendEstimate:
     """Everything a displayed rate must carry to answer the one rule (CLAUDE.md)."""
@@ -418,7 +439,7 @@ def estimate_trend(
     rather than the estimator. At n = 97 (a 24 h window) it is 2.4 ms per point: if a 24 h trend
     is ever wanted, measure it again before computing it at read time.
     """
-    empty = dict(
+    empty = _EmptyKwargs(
         method_id=METHOD_ID,
         estimator=estimator,
         basis=basis,
@@ -506,18 +527,15 @@ def estimate_trend(
     else:
         quality = TrendQuality.OK
 
+    # The identity fields come off `empty` explicitly rather than through a dict merge: a
+    # merged splat erases every field type and mypy stops checking the ONE call that matters.
     return TrendEstimate(
         n=len(pts), span_h=span_h, max_gap_h=worst,
         first_valid_time=pts[0][0], last_valid_time=pts[-1][0],
         refusal=None,
-        **{
-            **empty,
-            "slope": slope,
-            "slope_unit": f"{unit}/h",
-            "direction": direction,
-            "steady_eps": eps,
-            "slope_q25": q25,
-            "slope_q75": q75,
-            "quality": quality,
-        },
+        method_id=empty["method_id"], estimator=empty["estimator"], basis=empty["basis"],
+        window_h=empty["window_h"], window_end=empty["window_end"],
+        tidal_class=empty["tidal_class"], station_id=empty["station_id"],
+        slope=slope, slope_unit=f"{unit}/h", direction=direction, steady_eps=eps,
+        slope_q25=q25, slope_q75=q75, quality=quality,
     )

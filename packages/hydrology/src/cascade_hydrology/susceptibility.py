@@ -975,6 +975,7 @@ async def assess(
         )
         reason = STALE_REASON if climatology is not None else no_climatology_reason(gauge_id)
         return _unknown(reason, prov_key=prov_key, refs=refs, drivers=(soil_driver,), version=version)
+    assert row is not None and row.percentile is not None  # _needs_climatology just said so
 
     values = row.values_json or {}
     climatology_meta = values.get("climatology") or {}
