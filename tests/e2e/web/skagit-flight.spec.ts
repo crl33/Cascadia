@@ -43,10 +43,11 @@ test('search Skagit → basin selected → BasinPanel shows Skagit with an OFFIC
   await expect(page.getByTestId('surface-susceptibility-badge')).toContainText('EXPERIMENTAL');
   await expect(page.getByTestId('hazard-category')).toContainText('NONE');
   // 1.4.0: observed antecedent windows, with the underestimate caveat ON the partial one and
-  // the window's observed end printed (the capture holds 5 ingested hours).
+  // the window's observed end printed. Capture-pinned (2026-08-28 09:3xZ: 8 ingested hours —
+  // the 6 h window is FULL and carries no caveat; the 72 h window declares its 64 missing).
   await expect(page.getByTestId('antecedent-6h')).toContainText('mm');
-  await expect(page.getByTestId('antecedent-6h')).toContainText('(5/6 hours)');
-  await expect(page.getByTestId('antecedent-72h-reason')).toContainText('67 of 72 hours missing');
+  await expect(page.getByTestId('antecedent-6h')).toContainText('(6/6 hours)');
+  await expect(page.getByTestId('antecedent-72h-reason')).toContainText('64 of 72 hours missing');
   await expect(page.getByTestId('antecedent-window-end')).toContainText('UTC');
   await expect(page.getByTestId('antecedent-badge')).toContainText('OBSERVED');
   await expect(page).toHaveURL(/sel=basin%3Askagit/);
