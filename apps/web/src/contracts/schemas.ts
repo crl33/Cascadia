@@ -374,6 +374,30 @@ export const BasinReservoirsSchema = z.object({
 });
 export type BasinReservoirs = z.infer<typeof BasinReservoirsSchema>;
 
+/**
+ * HEFS exceedance-quantile ladder: GET /forecast-points/{lid}/hefs/latest — the provider's OWN
+ * published quantiles, served verbatim on the knowledge clock (DATA_DOCTRINE §9(a)). Levels
+ * are probabilities of EXCEEDANCE; each row's values align with `exceedance_levels` by index.
+ */
+export const HefsLatestSchema = z.object({
+  fp_id: z.string(),
+  lid: z.string(),
+  issued_at: iso,
+  available_at: iso,
+  parameter_id: z.string().nullable(),
+  unit: z.string(),
+  exceedance_levels: z.array(z.number()),
+  rows: z.array(z.object({
+    valid_time: iso,
+    values: z.array(z.number().nullable()),
+    max: z.number().nullable().optional(),
+    min: z.number().nullable().optional(),
+  })),
+  note: z.string().nullable().optional(),
+  provenance: ProvenanceRefSchema,
+});
+export type HefsLatest = z.infer<typeof HefsLatestSchema>;
+
 export const ForecastRunSchema = z.object({
   run_id: z.string(),
   issued_at: iso,

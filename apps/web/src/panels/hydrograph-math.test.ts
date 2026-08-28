@@ -195,3 +195,50 @@ describe('crestMarker honesty', () => {
     expect(crestMarker(null, 'stage', 'ft', 'NGVD29')).toEqual({ marker: null, reason: null });
   });
 });
+
+/* ---- HEFS exceedance band ---- */
+
+import { bandPath, hefsBand } from './hydrograph-math';
+
+const LADDER = {
+  unit: 'CFS',
+  parameter_id: 'QINE',
+  exceedance_levels: [0.05, 0.1, 0.25, 0.5, 0.75, 0.9, 0.95],
+  rows: [
+    { valid_time: '2026-08-28T12:00:00Z', values: [900, 800, 700, 600, 500, 420, 400] },
+    { valid_time: '2026-08-28T18:00:00Z', values: [950, 820, 710, 610, 505, 425, 405] },
+    { valid_time: '2026-09-20T12:00:00Z', values: [990, 830, 715, 615, 510, 430, 410] },
+  ],
+};
+const UNTIL = Date.parse('2026-08-31T00:00:00Z');
+
+describe('hefsBand', () => {
+  it('draws the 5/50/95 band on a matching flow axis, case-insensitively, clipping and counting', () => {
+    const b = hefsBand(LADDER, 'flow', 'cfs', UNTIL);
+    expect(b.reason).toBeNull();
+    expect(b.levels).toEqual([0.05, 0.5, 0.95]);
+    expect(b.band).toHaveLength(2);
+    expect(b.band![0]).toEqual({ t: Date.parse('2026-08-28T12:00:00Z'), lo: 400, hi: 900 });
+    expect(b.median![0]).toEqual({ t: Date.parse('2026-08-28T12:00:00Z'), v: 600 });
+    expect(b.clipped).toBe(1); // the 30-day tail must not stretch a 72-hour chart — and is counted
+  });
+
+  it('refuses a stage axis and a genuinely different unit, with the reason', () => {
+    expect(hefsBand(LADDER, 'stage', 'ft', UNTIL).reason).toContain('flow');
+    const kcfs = { ...LADDER, unit: 'KCFS' };
+    expect(hefsBand(kcfs, 'flow', 'cfs', UNTIL).reason).toContain('never converted');
+  });
+
+  it('refuses a ladder without the exact levels — never interpolated', () => {
+    const coarse = { ...LADDER, exceedance_levels: [0.1, 0.5, 0.9] };
+    expect(hefsBand(coarse, 'flow', 'cfs', UNTIL).reason).toContain('never interpolated');
+  });
+
+  it('bandPath closes the polygon along both bounds', () => {
+    const b = hefsBand(LADDER, 'flow', 'cfs', UNTIL);
+    const path = bandPath(b.band!, (t) => (t - b.band![0]!.t) / 3_600_000, (v) => 1000 - v);
+    expect(path.startsWith('M0 100')).toBe(true); // hi bound first
+    expect(path.endsWith('Z')).toBe(true);
+    expect(path).toContain('L0 600'); // back along the lo bound to the first instant
+  });
+});

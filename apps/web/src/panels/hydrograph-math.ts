@@ -271,3 +271,92 @@ export function crestMarker(
   if (!Number.isFinite(t)) return { marker: null, reason: 'The official crest valid time is not parseable.' };
   return { marker: { t, v: forecast.crest.value }, reason: null };
 }
+
+/* ---- HEFS exceedance band (P5: the provider's own probabilities, §9(a)) ---- */
+
+export interface HefsLadderLike {
+  unit: string;
+  parameter_id: string | null;
+  exceedance_levels: readonly number[];
+  rows: readonly { valid_time: string; values: readonly (number | null)[] }[];
+}
+
+export interface HefsBandPoint {
+  t: number;
+  lo: number;
+  hi: number;
+}
+
+export interface HefsBandChoice {
+  band: HefsBandPoint[] | null;
+  median: TimeValuePoint[] | null;
+  /** the exceedance levels actually drawn, for the legend: [hi-flow level, median, lo-flow level] */
+  levels: readonly [number, number, number] | null;
+  /** rows dropped because they lie beyond the charted window (said, not silent) */
+  clipped: number;
+  reason: string | null;
+}
+
+/**
+ * The HEFS exceedance band for the charted basis: the provider's own 0.05/0.50/0.95 quantile
+ * traces, drawn ONLY when they exist at exactly those levels — a ladder serving different
+ * levels is not interpolated into these (DATA_DOCTRINE §9: percentiles stay percentiles).
+ * HEFS quantiles are flow (QINE), so a stage axis refuses. Unit comparison is
+ * case-insensitive on purpose: the provider serves "CFS" where the series says "cfs", and
+ * case is orthography, not conversion. Rows beyond `untilMs` are clipped and COUNTED — a
+ * 30-day ladder must not stretch a 72-hour chart, and the legend says how much was cut.
+ */
+export function hefsBand(
+  ladder: HefsLadderLike | null | undefined,
+  basis: Basis,
+  axisUnit: string | null,
+  untilMs: number,
+): HefsBandChoice {
+  const none = { band: null, median: null, levels: null, clipped: 0 };
+  if (!ladder) return { ...none, reason: null };
+  if (basis !== 'flow') {
+    return { ...none, reason: `HEFS exceedance quantiles are flow (${ladder.parameter_id ?? 'QINE'}); this chart plots ${basis}. Not banded; values are never converted.` };
+  }
+  if (axisUnit != null && ladder.unit.toLowerCase() !== axisUnit.toLowerCase()) {
+    return { ...none, reason: `HEFS quantiles are in ${ladder.unit}; the series is in ${axisUnit}. Not banded; values are never converted.` };
+  }
+  const iHi = ladder.exceedance_levels.indexOf(0.05); // exceeded 5 % of the time = the HIGH bound
+  const iMid = ladder.exceedance_levels.indexOf(0.5);
+  const iLo = ladder.exceedance_levels.indexOf(0.95); // exceeded 95 % of the time = the LOW bound
+  if (iHi < 0 || iMid < 0 || iLo < 0) {
+    return { ...none, reason: `The served ladder (${ladder.exceedance_levels.join(', ')}) does not carry the 0.05/0.50/0.95 levels. Not banded; levels are never interpolated.` };
+  }
+  const band: HefsBandPoint[] = [];
+  const median: TimeValuePoint[] = [];
+  let clipped = 0;
+  for (const row of ladder.rows) {
+    const t = Date.parse(row.valid_time);
+    if (!Number.isFinite(t)) continue;
+    if (t > untilMs) {
+      clipped += 1;
+      continue;
+    }
+    const hi = row.values[iHi];
+    const lo = row.values[iLo];
+    const mid = row.values[iMid];
+    if (hi != null && lo != null && Number.isFinite(hi) && Number.isFinite(lo)) {
+      band.push({ t, lo, hi });
+    }
+    median.push({ t, v: mid ?? null });
+  }
+  if (band.length === 0 && clipped === 0) {
+    return { ...none, reason: 'The HEFS ladder carries no drawable rows.' };
+  }
+  if (band.length === 0) {
+    return { ...none, clipped, reason: 'Every HEFS row lies beyond the charted window.' };
+  }
+  return { band, median, levels: [0.05, 0.5, 0.95], clipped, reason: null };
+}
+
+/** Closed SVG polygon for a band: along the high bound, back along the low bound. */
+export function bandPath(points: readonly HefsBandPoint[], x: Scale, y: Scale): string {
+  if (points.length === 0) return '';
+  const forward = points.map((p, i) => `${i === 0 ? 'M' : 'L'}${round2(x(p.t))} ${round2(y(p.hi))}`);
+  const backward = [...points].reverse().map((p) => `L${round2(x(p.t))} ${round2(y(p.lo))}`);
+  return `${forward.join(' ')} ${backward.join(' ')} Z`;
+}

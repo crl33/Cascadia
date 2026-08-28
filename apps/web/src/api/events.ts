@@ -34,7 +34,7 @@ const KIND_PREFIXES: Record<string, string[][]> = {
   'product:wpc-qpf-5km-grib': [['viz'], ['basin-state']],
   'product:nws-api-alerts-active': [['viz'], ['basin-state']],
   'product:nwps-hefs-ensemble': [['viz'], ['basin-state']],
-  'product:nwps-hefs-quantiles': [['viz'], ['basin-state']],
+  'product:nwps-hefs-quantiles': [['viz'], ['basin-state'], ['hefs']],
   'product:usgs-ogc-daily': [['viz'], ['basin-state'], ['river-state']],
   'product:usgs-daily-stats': [['viz'], ['basin-state'], ['river-state']],
   'product:usgs-doy-normals': [['viz'], ['basin-state'], ['river-state']],

@@ -27,3 +27,6 @@
 .hg-swatch-observed { stroke: var(--cyan); stroke-width: 2; }
 .hg-swatch-forecast { stroke: var(--glacier); stroke-width: 2; stroke-dasharray: 4 3; }
 .hg-legend { margin-top: 4px; }
+.hg-hefs-band { fill: var(--glacier); fill-opacity: 0.14; stroke: none; }
+.hg-hefs-median { stroke: var(--glacier); stroke-width: 1; stroke-dasharray: 2 3; fill: none; opacity: 0.8; }
+.hg-swatch-hefs { fill: var(--glacier); fill-opacity: 0.25; }

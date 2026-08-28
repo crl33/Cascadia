@@ -46,6 +46,17 @@ export const useBasinGeometries = (basinIds: readonly string[], lod: 'state' | '
     combine: combineFeatures,
   });
 
+export const useHefsLatest = (forecastPointId: string | null) => {
+  const asOf = useAsOf();
+  return useQuery({
+    queryKey: keys.hefsLatest(forecastPointId ?? '', asOf),
+    queryFn: ({ signal }) => api.hefsLatest(forecastPointId!, asOf, signal),
+    enabled: forecastPointId !== null,
+    retry: false, // a 404 is an answer (no ladder known at this knowledge time), not a flake
+    staleTime: timeDependentStale(asOf),
+  });
+};
+
 export const useBasinReservoirs = (basinId: string | null) => {
   const asOf = useAsOf();
   return useQuery({

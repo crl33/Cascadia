@@ -8,9 +8,9 @@
  */
 import type { ZodType } from 'zod';
 import {
-  BasinEnvelopeSchema, BasinListSchema, BasinReservoirsSchema, ForecastRunSchema, GeoFeatureSchema, HealthSchema, RiverEnvelopeSchema,
+  BasinEnvelopeSchema, BasinListSchema, BasinReservoirsSchema, ForecastRunSchema, HefsLatestSchema, GeoFeatureSchema, HealthSchema, RiverEnvelopeSchema,
   RunsListSchema, SearchResultsSchema, StationSeriesSchema,
-  type BasinEnvelope, type BasinList, type BasinReservoirs, type ForecastRun, type GeoFeature, type Health, type RiverEnvelope,
+  type BasinEnvelope, type BasinList, type BasinReservoirs, type ForecastRun, type HefsLatest, type GeoFeature, type Health, type RiverEnvelope,
   type RunsList, type SearchResults, type SeriesVariable, type StationSeries,
 } from '../contracts/schemas';
 import { lidOf } from '../app/deep-link';
@@ -56,6 +56,9 @@ export const api = {
     getJson(withAsOf(`/forecast-points/${enc(lidOf(forecastPointId))}/state`, asOf), RiverEnvelopeSchema, signal),
   stationSeries: (stationId: string, variable: SeriesVariable, asOf: string | null, signal?: AbortSignal): Promise<StationSeries> =>
     getJson(withAsOf(`/stations/${enc(stationId)}/series?variable=${variable}`, asOf), StationSeriesSchema, signal),
+  /** The provider's own HEFS exceedance ladder, verbatim, known at as_of (404 = none known). */
+  hefsLatest: (forecastPointId: string, asOf: string | null, signal?: AbortSignal): Promise<HefsLatest> =>
+    getJson(withAsOf(`/forecast-points/${enc(lidOf(forecastPointId))}/hefs/latest`, asOf), HefsLatestSchema, signal),
   latestRun: (forecastPointId: string, asOf: string | null, signal?: AbortSignal): Promise<ForecastRun> =>
     getJson(withAsOf(`/forecast-points/${enc(lidOf(forecastPointId))}/runs/latest`, asOf), ForecastRunSchema, signal),
   /** Observed series over an absolute valid-time window (event replay; no as_of — see event/registry). */

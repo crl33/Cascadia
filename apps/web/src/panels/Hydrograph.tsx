@@ -8,7 +8,7 @@
  * or datums. A missing series renders an explicit empty state with its reason — never a flat
  * fake line. No entrance animation: the reduced-motion path is identical to the full one.
  */
-import { useLatestRun, useRunsList, useSeriesWindow, useStationSeries } from '../api/hooks';
+import { useHefsLatest, useLatestRun, useRunsList, useSeriesWindow, useStationSeries } from '../api/hooks';
 import type { ForecastRun, ProvenanceRef, RiverVisualizationState, RunListItem } from '../contracts/schemas';
 import { Badge } from '../design-system/Badge';
 import { BACKFILLED_BADGE } from '../design-system/badges';
@@ -21,6 +21,8 @@ import {
   crestMarker, forecastSeriesFor, formatTickUtc, linearScale, niceTicks, resolveBasis,
   seriesPath, thresholdOverlay, timeDomain, timeTicks, valueDomain,
   type TimeValuePoint,
+  bandPath,
+  hefsBand,
 } from './hydrograph-math';
 import './hydrograph.css';
 
@@ -61,6 +63,7 @@ export function Hydrograph({ item, refs }: HydrographProps) {
   // the unused pair is disabled via null arguments.
   const seriesQuery = useStationSeries(event === null ? item.station_id ?? null : null, basisChoice.basis);
   const runQuery = useLatestRun(event === null ? item.id : null);
+  const hefsQuery = useHefsLatest(event === null ? item.id : null);
   const windowSeriesQuery = useSeriesWindow(event !== null ? item.station_id ?? null : null, basisChoice.basis, event?.window ?? null);
   const runsQuery = useRunsList(event !== null ? item.id : null, event?.window ?? null);
   const basis = basisChoice.basis;
@@ -139,6 +142,13 @@ export function Hydrograph({ item, refs }: HydrographProps) {
     );
   }
 
+  // HEFS band AFTER the domains: untilMs is the chart's own window, so a 30-day ladder can
+  // never stretch a 72-hour axis — rows beyond it are clipped and counted in the legend.
+  const hefs = event === null ? hefsQuery.data ?? null : null;
+  const hefsChoice = hefsBand(hefs, basis, axisUnit, tDomain.max);
+  const hefsBandD = hefsChoice.band ? bandPath(hefsChoice.band, linearScale(tDomain, MARGIN.left, WIDTH - MARGIN.right), linearScale(vDomain, HEIGHT - MARGIN.bottom, MARGIN.top)) : '';
+  const hefsMedianD = hefsChoice.median ? seriesPath(hefsChoice.median, linearScale(tDomain, MARGIN.left, WIDTH - MARGIN.right), linearScale(vDomain, HEIGHT - MARGIN.bottom, MARGIN.top)) : '';
+
   const x = linearScale(tDomain, MARGIN.left, WIDTH - MARGIN.right);
   const y = linearScale(vDomain, HEIGHT - MARGIN.bottom, MARGIN.top);
   const yTicks = niceTicks(vDomain.min, vDomain.max, 5);
@@ -177,6 +187,8 @@ export function Hydrograph({ item, refs }: HydrographProps) {
             <text className="hg-axis-text" x={x(tick)} y={HEIGHT - 10} textAnchor="middle">{formatTickUtc(tick, stepMs)}</text>
           </g>
         ))}
+        {hefsBandD ? <path className="hg-hefs-band" d={hefsBandD} data-testid="hydrograph-hefs-band" /> : null}
+        {hefsMedianD ? <path className="hg-hefs-median" d={hefsMedianD} data-testid="hydrograph-hefs-median" /> : null}
         <text className="hg-axis-unit" x={MARGIN.left} y={MARGIN.top - 4} data-testid="hydrograph-axis-unit">{axisUnitLabel}</text>
         <text className="hg-axis-text" x={WIDTH - MARGIN.right} y={HEIGHT - 10} textAnchor="end">UTC</text>
         {overlay.lines.map((line) => (
@@ -246,6 +258,16 @@ export function Hydrograph({ item, refs }: HydrographProps) {
             <ProvenanceLine provKey={`run:${run.run_id}`} prov={run.provenance} truth="authoritative_model" testId="hydrograph-forecast-badge" />
           </p>
         ) : null}
+        {hefs && hefsChoice.band ? (
+          <p className="value-line" data-testid="hydrograph-hefs-legend">
+            <svg className="hg-swatch" viewBox="0 0 18 6" aria-hidden="true"><rect className="hg-swatch-hefs" x="0" y="0" width="18" height="6" /></svg>
+            <span>
+              HEFS exceedance {hefsChoice.levels![0]}–{hefsChoice.levels![2]} band, median dashed · cycle {formatUtc(hefs.issued_at)}
+              {hefsChoice.clipped > 0 ? ` · ${hefsChoice.clipped} rows beyond the charted window not drawn` : ''}
+            </span>
+            <ProvenanceLine provKey="hefs:latest" prov={hefs.provenance} truth="authoritative_model" testId="hydrograph-hefs-badge" />
+          </p>
+        ) : null}
         {overlay.lines.length > 0 && thresholds ? (
           <p className="value-line">
             <span>official thresholds · {thresholds.unit}{thresholds.datum ? ` (${thresholds.datum})` : ''}</span>
@@ -256,6 +278,7 @@ export function Hydrograph({ item, refs }: HydrographProps) {
       {seriesReason ? <p className="reason" data-testid="hydrograph-notes">{seriesReason}</p> : null}
       {runReason ? <p className="reason">{runReason}</p> : null}
       {overlay.refusal ? <p className="reason">{overlay.refusal}</p> : null}
+      {hefsChoice.reason ? <p className="reason" data-testid="hydrograph-hefs-reason">{hefsChoice.reason}</p> : null}
       {crest.reason ? <p className="reason">{crest.reason}</p> : null}
     </div>
   );
