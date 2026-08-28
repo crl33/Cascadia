@@ -32,7 +32,7 @@ export function SceneDataBridge({ controller }: Props) {
     return out;
   }, [vizBasins.data]);
 
-  // The Cascade index, read straight off the surface the envelope already carried. Nothing is
+  // The Cascade-derived susceptibility, read straight off the surface the envelope already carried. Nothing is
   // computed here: `state`, `confidence`, `experimental` and `reason` are the backend's own
   // fields, and a basin the backend refused arrives as `unknown` WITH its reason rather than
   // being dropped — the layer renders that as incomplete, never as calm.

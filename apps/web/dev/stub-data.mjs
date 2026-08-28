@@ -45,13 +45,16 @@ const UNKNOWN_SURFACE = (prov, reason, horizon) => ({
 /** A BasinVisualizationState item that is honestly UNKNOWN everywhere (no fixture for it). */
 export function unknownBasinItem(basinFeature) {
   const p = basinFeature.properties;
-  const hazardProv = `unknown-hazard-${p.id.split(':')[1]}`;
+  const short = p.id.split(':')[1];
+  const hazardProv = `unknown-hazard-${short}`;
+  const suscProv = `unknown-susceptibility-${short}`;
+  const forcingProv = `unknown-forcing-${short}`;
   return {
     item: {
       id: p.id, name: p.name, regulation_class: p.regulation_class,
       surfaces: {
-        susceptibility: UNKNOWN_SURFACE('cascade-susceptibility', 'Susceptibility index not implemented in the spike (ROADMAP Phase 3).'),
-        forcing: UNKNOWN_SURFACE('cascade-forcing', 'Meteorological forcing not ingested in the spike (ROADMAP Phase 2).', 72),
+        susceptibility: UNKNOWN_SURFACE(suscProv, 'This basin is missing from the captured envelope fixture; no susceptibility value is available in the dev stub.'),
+        forcing: UNKNOWN_SURFACE(forcingProv, 'This basin is missing from the captured envelope fixture; no forcing value is available in the dev stub.', 72),
         hazard: {
           horizon_h: 72, official_category: 'unknown', official_prov: null, prov: hazardProv, truth: 'authoritative_model',
           model_probability: null, cascade_index: null,
@@ -68,6 +71,17 @@ export function unknownBasinItem(basinFeature) {
       [hazardProv]: {
         source_id: 'src:nwps-v1', source_kind: 'UNKNOWN', product_id: 'product:nwps-stageflow-forecast',
         freshness: { state: 'missing' }, quality: ['missing'], label: 'NWPS official forecast not loaded in the dev stub',
+      },
+      // Self-contained: the fallback never borrows a ref key from the captured envelope, whose
+      // keys are per-basin and change with each capture. A prov id that resolves to nothing
+      // would fail schema validation, which is the point of validating the stub at all.
+      [suscProv]: {
+        source_id: 'src:cascade', source_kind: 'UNKNOWN', product_id: 'product:cascade-derived',
+        freshness: { state: 'missing' }, quality: ['missing'], label: 'No susceptibility in the dev stub for this basin',
+      },
+      [forcingProv]: {
+        source_id: 'src:nbm-v5', source_kind: 'UNKNOWN', product_id: 'product:nbm-v5-qmd',
+        freshness: { state: 'missing' }, quality: ['missing'], label: 'No forcing in the dev stub for this basin',
       },
     },
   };
@@ -108,10 +122,7 @@ export function buildVizBasins(fx, asOf = null) {
     } else {
       const u = unknownBasinItem(f);
       items.push(u.item);
-      Object.assign(provenance_refs, {
-        'cascade-susceptibility': env.provenance_refs['cascade-susceptibility'],
-        'cascade-forcing': env.provenance_refs['cascade-forcing'],
-      }, u.provenance_refs);
+      Object.assign(provenance_refs, u.provenance_refs);
     }
   }
   // Tier 0 rides ON TOP of the item for this knowledge time. A basin with no entry at this

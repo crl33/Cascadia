@@ -29,7 +29,7 @@ import type { Band } from '../../scene/bands';
 export interface SusceptibilitySemantic {
   /** The band the surface reports. `unknown` means the backend refused, and says why. */
   state: SurfaceLevel;
-  /** `true` for every Cascade index today. Kept as an input rather than assumed. */
+  /** `true` for every Cascade-derived susceptibility today. Kept as an input rather than assumed. */
   experimental: boolean;
   confidence: ConfidenceLabel;
   band: Band;

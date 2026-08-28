@@ -15,7 +15,7 @@ export function loadFixtures(root = REPO_ROOT) {
   return {
     basinLod: readJson(resolve(root, 'tests/fixtures/geo/basins_seed_basin_lod.geojson')),
     stateLod: readJson(resolve(root, 'tests/fixtures/geo/basins_seed_state_lod.geojson')),
-    basinEnvelope: readJson(resolve(root, 'packages/contracts/fixtures/basin_skagit_envelope.json')),
+    basinEnvelope: readJson(resolve(root, 'packages/contracts/fixtures/viz_basins_envelope.json')),
     riverEnvelope: readJson(resolve(root, 'packages/contracts/fixtures/river_mvew1_envelope.json')),
     samples: readJson(resolve(here, 'fixtures/mvew1-samples.json')),
     tier0: readJson(resolve(root, 'functions/fixtures/basin_tier0.json')),

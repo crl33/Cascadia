@@ -62,7 +62,11 @@ const MISSING: BasinSusceptibility = {
 
 export class BasinSusceptibilityLayer implements SceneLayer<BasinSusceptibilityLayerData> {
   readonly id = 'basin_susceptibility' as const;
-  readonly displayName = 'Basin susceptibility (Cascade index, EXPERIMENTAL)';
+  // 'Cascade-derived susceptibility', never 'the Cascade index': `cascade_index` is the
+  // contract's reserved name for CALIBRATED Phase 7 intelligence (it is null everywhere
+  // today), and borrowing it for an uncalibrated surface would promise a calibration
+  // nobody has done.
+  readonly displayName = 'Basin susceptibility (Cascade-derived, EXPERIMENTAL)';
   //` cascade_derived` is the truth class the contract already assigns this surface; the layer
   // repeats it rather than inventing one, so the inspector and the map agree.
   readonly truthClass = 'cascade_derived' as const;

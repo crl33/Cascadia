@@ -7,12 +7,12 @@ const fixtures = resolve(__dirname, '../../../../packages/contracts/fixtures');
 const load = (name: string) => JSON.parse(readFileSync(resolve(fixtures, name), 'utf8')) as unknown;
 
 describe('canonical fixture envelopes validate against the client schemas', () => {
-  it('basin_skagit_envelope.json', () => {
-    const env = BasinEnvelopeSchema.parse(load('basin_skagit_envelope.json'));
+  it('viz_basins_envelope.json', () => {
+    const env = BasinEnvelopeSchema.parse(load('viz_basins_envelope.json'));
     expect(env.contract).toBe('BasinVisualizationState');
     expect(env.items[0]?.surfaces.hazard.official_category).toBe('none');
     expect(env.provenance_refs['nwps-forecast-mvew1']?.source_kind).toBe('OFFICIAL_FORECAST');
-    expect(ContractEnvelopeSchema.safeParse(load('basin_skagit_envelope.json')).success).toBe(true);
+    expect(ContractEnvelopeSchema.safeParse(load('viz_basins_envelope.json')).success).toBe(true);
   });
   it('river_mvew1_envelope.json', () => {
     const env = RiverEnvelopeSchema.parse(load('river_mvew1_envelope.json'));

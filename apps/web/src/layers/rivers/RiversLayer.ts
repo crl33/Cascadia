@@ -121,6 +121,9 @@ export class RiversLayer implements SceneLayer<RiverEnvelope> {
         freshness,
         selected: item.id === this.selection.forecastPointId,
         hovered: item.id === this.selection.hovered,
+        trend: item.trend
+          ? { direction: item.trend.direction, rate: item.trend.rate ?? null }
+          : null,
       });
       if (entity.point) {
         entity.point.pixelSize = style.pixelSize as never;

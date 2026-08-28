@@ -11,7 +11,7 @@
 import { isErrorResult, route } from '../apps/web/dev/stub-router.mjs';
 import basinLod from './fixtures/basins_seed_basin_lod.json';
 import stateLod from './fixtures/basins_seed_state_lod.json';
-import basinEnvelope from './fixtures/basin_skagit_envelope.json';
+import basinEnvelope from './fixtures/viz_basins_envelope.json';
 import riverEnvelope from './fixtures/river_mvew1_envelope.json';
 import samples from './fixtures/mvew1-samples.json';
 import tier0 from './fixtures/basin_tier0.json';
