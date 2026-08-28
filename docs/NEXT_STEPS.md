@@ -46,7 +46,7 @@ when a milestone closes; delete lines that stop being true.
 4. ~~No continuous history yet~~ **closed 2026-08-24**: the Railway worker runs the registered
    crons continuously and `/system/health` reports freshness per product. The 30-day freshness
    SLO can now be measured; it has not been.
-5. **HEFS, NWS alerts, SSE** adapters are not written (all researched, none coded). ~~AWDB/SNOTEL~~ landed with P3 (WTEQ + PREC as *unscored context*, HYDROLOGY §7); SNOTEL soil moisture was evaluated and REJECTED — no climatology, inconsistent depths, `no profile` flags (p3-surfaces-design §2.1), so soil stays UNKNOWN.
+5. ~~HEFS~~ **landed 2026-08-28** and archiving in production: `nwps.fetch_hefs` walks the provider's ~10-day retention window daily and recovered all ten cycles at all six seed points on its first run (60 ensemble rows + 6 quantile rows, 23.8 MB archived under `hefs/`). Members are MODELED/EXPERIMENTAL; the published quantiles are fetched, never computed, so Phase 5 can promote them under DATA_DOCTRINE §9(a). **NWS alerts and SSE** are still not written (researched, none coded). ~~AWDB/SNOTEL~~ landed with P3 (WTEQ + PREC as *unscored context*, HYDROLOGY §7); SNOTEL soil moisture was evaluated and REJECTED — no climatology, inconsistent depths, `no profile` flags (p3-surfaces-design §2.1), so soil stays UNKNOWN.
 6. **Basin geometry is HUC8 unions**, not outlet-delineated (NLDI/StreamStats); no hypsometry; no
    reach topology in the store.
 7. **Six research categories lack a second-agent verification pass** (hydrology, precipitation,
