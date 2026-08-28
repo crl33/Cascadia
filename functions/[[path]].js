@@ -74,6 +74,13 @@ export async function onRequest(context) {
       });
       const headers = new Headers(resp.headers);
       for (const [k, v] of Object.entries(HEADERS)) headers.set(k, v);
+      // The backend's Content-Type survives the security-header stamp. Stamping it too served
+      // the SSE stream as application/json and EventSource aborted the connection — live
+      // invalidation was silently dead in production while every test passed against the
+      // stub, whose own SSE path sets text/event-stream correctly (found 2026-08-28 by
+      // reading the browser console on the deployed site).
+      const upstreamType = resp.headers.get('Content-Type');
+      if (upstreamType) headers.set('Content-Type', upstreamType);
       headers.delete('Access-Control-Allow-Origin'); // same-origin via the gateway; CORS not needed
       return new Response(resp.body, { status: resp.status, headers });
     } catch (err) {
