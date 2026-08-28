@@ -75,11 +75,14 @@ from tests.perf.instrument import QueryRecorder, attributed
 #:
 #: LOWER THIS as amplification is removed. Never raise it without saying, in the commit, which
 #: query was added and why it could not be batched into one already being issued.
-VIZ_BASINS_QUERY_BUDGET = 16
+# 17 as of 2026-08-28 (remediation): active_alerts is deliberately TWO statements — the
+# time-sliced candidate read plus the thin all-history references scan (supersession must
+# outlive the superseder). One more statement, unbounded per-envelope growth less.
+VIZ_BASINS_QUERY_BUDGET = 17
 
 #: The single-basin envelope, same assembler, one sixth of the basins — and now the same count,
 #: because every read on this path is set-based over whatever set it was handed. 22 before.
-BASIN_STATE_QUERY_BUDGET = 16
+BASIN_STATE_QUERY_BUDGET = 17  # same alerts split; see above
 
 #: Zero, and it should stay zero: `Knowledge` memoises its readers for the life of one request,
 #: so a repeat means a caller reached the database around it. 17 before.
