@@ -15,8 +15,9 @@ import basinEnvelope from './fixtures/viz_basins_envelope.json';
 import riverEnvelope from './fixtures/river_mvew1_envelope.json';
 import samples from './fixtures/mvew1-samples.json';
 import tier0 from './fixtures/basin_tier0.json';
+import riverNetwork from './fixtures/river_network.json';
 
-const fx = { basinLod, stateLod, basinEnvelope, riverEnvelope, samples, tier0 };
+const fx = { basinLod, stateLod, basinEnvelope, riverEnvelope, samples, tier0, riverNetwork };
 
 const HEADERS = {
   'Content-Type': 'application/json; charset=utf-8',

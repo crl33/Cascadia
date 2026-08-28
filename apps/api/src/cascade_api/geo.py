@@ -11,10 +11,24 @@ from cascade_core.seed import load_basin_features
 @dataclass(frozen=True)
 class Geography:
     by_lod: dict[str, dict]
+    #: The derived river network (scripts/build_river_network.py), CARTOGRAPHIC register —
+    #: where the rivers ARE; every state stays on truth-classed elements. None when the
+    #: fixture is absent: the map then simply draws no rivers, loudly logged at startup.
+    river_network: dict | None = None
 
     @classmethod
     def load(cls, geo_dir: Path) -> Geography:
-        return cls(by_lod={lod: load_basin_features(geo_dir, lod) for lod in ("state", "basin")})
+        rivers = None
+        path = geo_dir / "river_network.json.gz"
+        if path.exists():
+            import gzip
+            import json
+
+            rivers = json.loads(gzip.decompress(path.read_bytes()))
+        return cls(
+            by_lod={lod: load_basin_features(geo_dir, lod) for lod in ("state", "basin")},
+            river_network=rivers,
+        )
 
     def provenance(self) -> dict:
         return dict(self.by_lod["state"].get("provenance", {}))

@@ -524,3 +524,37 @@ async def test_valid_until_products_read_current_by_the_poll_at_the_computed_sta
     assert (now - anchor.content_time) > timedelta(hours=15), (
         "the broker's instant stays the pure content clock, not the poll"
     )
+
+
+async def test_the_river_network_serves_whole_and_absent_is_a_404_not_an_empty_earth(db) -> None:
+    """GET /geo/rivers: the cartographic skeleton, with its OSM attribution and HUC8-union
+    caveat riding in provenance; a deployment without the derivation answers 404 — an empty
+    network would read as a riverless Cascadia."""
+    from httpx import ASGITransport, AsyncClient
+
+    from cascade_api.main import create_app
+    from cascade_core.settings import Settings
+
+    engine, _factory = db
+    app = create_app(Settings(db_url="sqlite+aiosqlite://", geo_dir=GEO), engine=engine)
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        r = await client.get("/geo/rivers")
+        assert r.status_code == 200
+        doc = r.json()
+        assert "OpenStreetMap" in doc["_provenance"]["attribution"]
+        assert "HUC8-union" in doc["_provenance"]["polygon_source"]["caveat"]
+        assert set(doc["basins"]) >= {"basin:skagit", "basin:nooksack", "basin:cedar"}
+        skagit = doc["basins"]["basin:skagit"]["rivers"]
+        assert any(riv["name"] == "Skagit River" and riv["mainstem"] for riv in skagit)
+        for riv in skagit:
+            assert all(len(pt) == 2 for path in riv["paths"] for pt in path)
+
+    import tempfile
+    from pathlib import Path as P
+
+    with tempfile.TemporaryDirectory() as td:
+        for name in ("basins_seed_state_lod.geojson", "basins_seed_basin_lod.geojson"):
+            (P(td) / name).write_bytes((GEO / name).read_bytes())
+        bare = create_app(Settings(db_url="sqlite+aiosqlite://", geo_dir=P(td)), engine=engine)
+        async with AsyncClient(transport=ASGITransport(app=bare), base_url="http://test") as client:
+            assert (await client.get("/geo/rivers")).status_code == 404

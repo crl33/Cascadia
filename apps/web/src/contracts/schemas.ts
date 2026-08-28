@@ -379,6 +379,24 @@ export type BasinReservoirs = z.infer<typeof BasinReservoirsSchema>;
  * published quantiles, served verbatim on the knowledge clock (DATA_DOCTRINE §9(a)). Levels
  * are probabilities of EXCEEDANCE; each row's values align with `exceedance_levels` by index.
  */
+/**
+ * The derived river network (GET /geo/rivers): cartographic, static — where the rivers ARE.
+ * `paths` are [lon, lat] chains clipped to the seeded basins; the provenance block carries
+ * the OSM attribution and the HUC8-union caveat verbatim.
+ */
+export const RiverNetworkSchema = z.object({
+  _provenance: z.record(z.string(), z.unknown()),
+  basins: z.record(z.string(), z.object({
+    rivers: z.array(z.object({
+      name: z.string(),
+      length_deg: z.number(),
+      mainstem: z.boolean(),
+      paths: z.array(z.array(z.tuple([z.number(), z.number()]))),
+    })),
+  })),
+});
+export type RiverNetwork = z.infer<typeof RiverNetworkSchema>;
+
 export const HefsLatestSchema = z.object({
   fp_id: z.string(),
   lid: z.string(),

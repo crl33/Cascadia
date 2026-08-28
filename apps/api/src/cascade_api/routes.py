@@ -125,6 +125,20 @@ async def list_basins(request: Request) -> dict:
     return {"items": geo.basins(), "provenance": geo.provenance()}
 
 
+@router.get("/geo/rivers")
+async def river_network(request: Request) -> dict:
+    """The derived river network for every seed basin — cartographic, static, no as_of.
+
+    Where the rivers ARE (OSM waterways clipped to the seeded basins, offline derivation
+    `method:river-network-osm@1.0.0`); what they are DOING stays on truth-classed elements.
+    404 when the fixture is absent: an empty network would read as a riverless Cascadia.
+    """
+    geo = request.app.state.geo
+    if geo.river_network is None:
+        raise HTTPException(status_code=404, detail="no river network derived in this deployment")
+    return geo.river_network
+
+
 @router.get("/basins/{basin_id}/geometry")
 async def basin_geometry(request: Request, basin_id: Annotated[str, Path(pattern=BASIN_ID)], lod: Literal["state", "basin"] = "basin") -> dict:
     feature = request.app.state.geo.feature(basin_id, lod)

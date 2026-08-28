@@ -3,7 +3,7 @@
  * (geography, basin outlines per LOD, hazard categories, forecast points). Renders nothing.
  */
 import { useEffect, useMemo } from 'react';
-import { useBasinGeometries, useBasinGeometry, useBasins, useVizBasins, useVizRivers } from '../api/hooks';
+import { useBasinGeometries, useBasinGeometry, useBasins, useRiverNetwork, useVizBasins, useVizRivers } from '../api/hooks';
 import type { FloodCategory, GeoFeature } from '../contracts/schemas';
 import type { BasinSusceptibility } from '../layers/susceptibility/BasinSusceptibilityLayer';
 import type { SceneController } from '../scene/SceneController';
@@ -71,6 +71,9 @@ export function SceneDataBridge({ controller }: Props) {
   }, [controller, stateLod, susceptibility]);
 
   useEffect(() => { if (rivers.data) controller.setData('rivers', rivers.data); }, [controller, rivers.data]);
+  // The cartographic river network: fetched once, drawn for the app's lifetime.
+  const network = useRiverNetwork();
+  useEffect(() => { if (network.data) controller.setData('river_network', network.data); }, [controller, network.data]);
 
   return null;
 }

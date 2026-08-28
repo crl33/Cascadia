@@ -3,6 +3,7 @@
  * file (it uses node:fs); they assemble the same `fx` object from bundled JSON instead.
  */
 import { readFileSync } from 'node:fs';
+import { gunzipSync } from 'node:zlib';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -19,5 +20,6 @@ export function loadFixtures(root = REPO_ROOT) {
     riverEnvelope: readJson(resolve(root, 'packages/contracts/fixtures/river_mvew1_envelope.json')),
     samples: readJson(resolve(here, 'fixtures/mvew1-samples.json')),
     tier0: readJson(resolve(root, 'functions/fixtures/basin_tier0.json')),
+    riverNetwork: JSON.parse(gunzipSync(readFileSync(resolve(root, 'tests/fixtures/geo/river_network.json.gz'))).toString('utf8')),
   };
 }

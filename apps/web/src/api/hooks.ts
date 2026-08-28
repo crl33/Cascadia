@@ -57,6 +57,14 @@ export const useHefsLatest = (forecastPointId: string | null) => {
   });
 };
 
+export const useRiverNetwork = () =>
+  useQuery({
+    queryKey: keys.riverNetwork(),
+    queryFn: ({ signal }) => api.riverNetwork(signal),
+    staleTime: Infinity, // cartographic and static: rivers do not move between deploys
+    retry: false, // a 404 means no network was derived in this deployment — an answer
+  });
+
 export const useBasinReservoirs = (basinId: string | null) => {
   const asOf = useAsOf();
   return useQuery({

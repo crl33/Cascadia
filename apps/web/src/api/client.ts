@@ -8,9 +8,9 @@
  */
 import type { ZodType } from 'zod';
 import {
-  BasinEnvelopeSchema, BasinListSchema, BasinReservoirsSchema, ForecastRunSchema, HefsLatestSchema, GeoFeatureSchema, HealthSchema, RiverEnvelopeSchema,
+  BasinEnvelopeSchema, BasinListSchema, BasinReservoirsSchema, ForecastRunSchema, HefsLatestSchema, RiverNetworkSchema, GeoFeatureSchema, HealthSchema, RiverEnvelopeSchema,
   RunsListSchema, SearchResultsSchema, StationSeriesSchema,
-  type BasinEnvelope, type BasinList, type BasinReservoirs, type ForecastRun, type HefsLatest, type GeoFeature, type Health, type RiverEnvelope,
+  type BasinEnvelope, type BasinList, type BasinReservoirs, type ForecastRun, type HefsLatest, type RiverNetwork, type GeoFeature, type Health, type RiverEnvelope,
   type RunsList, type SearchResults, type SeriesVariable, type StationSeries,
 } from '../contracts/schemas';
 import { lidOf } from '../app/deep-link';
@@ -70,6 +70,9 @@ export const api = {
   /** Latest reservoir state per dam in the basin; empty for an unregulated basin (the truth). */
   basinReservoirs: (basinId: string, asOf: string | null, signal?: AbortSignal): Promise<BasinReservoirs> =>
     getJson(withAsOf(`/basins/${enc(basinId)}/reservoirs`, asOf), BasinReservoirsSchema, signal),
+  /** The derived river network — cartographic, static; cached for the app's lifetime. */
+  riverNetwork: (signal?: AbortSignal): Promise<RiverNetwork> =>
+    getJson('/geo/rivers', RiverNetworkSchema, signal),
   search: (q: string, signal?: AbortSignal): Promise<SearchResults> => getJson(`/search?q=${enc(q)}`, SearchResultsSchema, signal),
   health: (signal?: AbortSignal): Promise<Health> => getJson('/system/health', HealthSchema, signal),
 };

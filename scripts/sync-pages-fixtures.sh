@@ -10,4 +10,5 @@ cp "$root/tests/fixtures/geo/basins_seed_state_lod.geojson" "$dest/basins_seed_s
 cp "$root/packages/contracts/fixtures/viz_basins_envelope.json" "$dest/viz_basins_envelope.json"
 cp "$root/packages/contracts/fixtures/river_mvew1_envelope.json" "$dest/river_mvew1_envelope.json"
 cp "$root/apps/web/dev/fixtures/mvew1-samples.json" "$dest/mvew1-samples.json"
+gunzip -c "$root/tests/fixtures/geo/river_network.json.gz" > "$dest/river_network.json"
 echo "synced Pages Function fixtures → functions/fixtures"
