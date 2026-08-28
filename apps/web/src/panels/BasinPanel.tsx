@@ -109,6 +109,37 @@ function DriverRow({ driver, refs }: { driver: Driver; refs: Record<string, Prov
   );
 }
 
+type AntecedentEntry = NonNullable<BasinVisualizationState['antecedent_precip']>[number];
+
+/**
+ * Observed trailing-window precipitation. Three honesty rules travel from the contract to the
+ * screen intact: the window ends at the newest OBSERVED hour (printed, so nobody reads it as
+ * "the last N hours on the clock"); a partial sum keeps its `reason` beside the number, because
+ * the number alone is a known underestimate; and an absent total prints its reason, never 0 mm —
+ * zero rain and unknown rain are different facts.
+ */
+export function AntecedentSection({ entries, refs }: { entries: AntecedentEntry[]; refs: Record<string, ProvenanceRef | undefined> }) {
+  if (entries.length === 0) return null;
+  const anchor = entries.find((e) => e.window_end != null);
+  return (
+    <div className="row" data-testid="antecedent-precip">
+      <div className="row-head">
+        <span className="row-title">Antecedent precipitation</span>
+        {anchor ? <span className="muted mono" data-testid="antecedent-window-end">to {formatUtc(anchor.window_end)}</span> : null}
+      </div>
+      <ul>
+        {entries.map((e) => (
+          <li key={e.window_h} className="mono" data-testid={`antecedent-${e.window_h}h`}>
+            {e.window_h} h · {e.total ? `${formatQuantity(e.total, 1)} (${e.hours_present}/${e.hours_expected} hours)` : 'UNKNOWN'}
+            {e.reason ? <span className="reason" data-testid={`antecedent-${e.window_h}h-reason`}> — {e.reason}</span> : null}
+          </li>
+        ))}
+      </ul>
+      <ProvenanceLine provKey={entries[0].prov} prov={refs[entries[0].prov]} truth={entries[0].truth} testId="antecedent-badge" />
+    </div>
+  );
+}
+
 export function BasinPanel() {
   const selectedBasinId = useSceneStore((s) => s.selectedBasinId);
   const query = useBasinState(selectedBasinId);
@@ -165,6 +196,7 @@ export function BasinPanel() {
         testId="surface-forcing"
         extra={<SurfaceValue surface={forcing} testId="surface-forcing-value" />}
       />
+      <AntecedentSection entries={item.antecedent_precip ?? []} refs={refs} />
       <SurfaceRow
         title={`Flood hazard · ${hazard.horizon_h} h`}
         state={hazard.official_category}
@@ -217,7 +249,7 @@ export function BasinPanel() {
             ))}
           </ul>
         ) : (
-          <p className="reason" data-testid="alerts-empty">No official alerts in this document. Watches and warnings are issued by the National Weather Service; none were ingested for this basin.</p>
+          <p className="reason" data-testid="alerts-empty">No official alerts for this basin at this knowledge time. Watches and warnings are issued by the National Weather Service and polled every five minutes; an empty list means none of the active ones cover this basin.</p>
         )}
       </div>
       <div className="row" data-testid="headline-drivers">
