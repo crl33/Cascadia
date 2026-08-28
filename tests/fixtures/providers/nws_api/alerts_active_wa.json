@@ -1,0 +1,158 @@
+{
+    "@context": [
+        "https://geojson.org/geojson-ld/geojson-context.jsonld",
+        {
+            "@version": "1.1",
+            "wx": "https://api.weather.gov/ontology#",
+            "@vocab": "https://api.weather.gov/ontology#"
+        }
+    ],
+    "type": "FeatureCollection",
+    "features": [
+        {
+            "id": "https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.206cfd80f8fc7165477595cc873617dcaa825693.002.1",
+            "type": "Feature",
+            "geometry": null,
+            "properties": {
+                "@id": "https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.206cfd80f8fc7165477595cc873617dcaa825693.002.1",
+                "@type": "wx:Alert",
+                "id": "urn:oid:2.49.0.1.840.0.206cfd80f8fc7165477595cc873617dcaa825693.002.1",
+                "areaDesc": "Kittitas, WA",
+                "geocode": {
+                    "SAME": [
+                        "053037"
+                    ],
+                    "UGC": [
+                        "WAC037"
+                    ]
+                },
+                "affectedZones": [
+                    "https://api.weather.gov/zones/county/WAC037"
+                ],
+                "references": [],
+                "sent": "2026-08-27T11:52:00-07:00",
+                "effective": "2026-08-27T11:52:00-07:00",
+                "onset": "2026-08-27T11:52:00-07:00",
+                "expires": "2026-08-28T12:00:00-07:00",
+                "ends": null,
+                "status": "Actual",
+                "messageType": "Alert",
+                "category": "Met",
+                "severity": "Unknown",
+                "certainty": "Unknown",
+                "urgency": "Unknown",
+                "event": "Air Quality Alert",
+                "sender": "w-nws.webmaster@noaa.gov",
+                "senderName": "NWS Pendleton OR",
+                "headline": "Air Quality Alert issued August 27 at 11:52AM PDT by NWS Pendleton OR",
+                "description": "The Washington State Department of Ecology has issued an Air Quality\nAlert until noon PDT Friday.\n\nAn Air Quality Alert has been issued for Kittitas County through\nFriday August 28 at noon due to current and expected wildfire smoke\nfrom regional fires. Particulate matter (PM2.5) may reach Unhealthy\nto Sensitive Groups to Unhealthy levels for areas directly downwind\nfrom active fires, especially overnight and during the early morning\nhours. Be sure to check air monitors in your area before outdoor\nactivities. When air quality is Unhealthy, everyone should reduce\nexposure. Limit time outside, avoid, strenuous outdoor activity, and\nfollow tips for cleaner indoor air.\n\nInformation from the Washington Department of Ecology web site is\navailable at http://www.ecy.wa.gov/air.html or call 360-407-6000.",
+                "instruction": null,
+                "response": "Monitor",
+                "note": "Non-Weather Emergency Message. Not sent to IPAWS.",
+                "parameters": {
+                    "AWIPSidentifier": [
+                        "AQAPDT"
+                    ],
+                    "WMOidentifier": [
+                        "AEUS76 KPDT 271852"
+                    ],
+                    "NWSheadline": [
+                        "AIR QUALITY ALERT IN EFFECT UNTIL NOON PDT FRIDAY"
+                    ],
+                    "BLOCKCHANNEL": [
+                        "EAS",
+                        "NWEM",
+                        "CMAS"
+                    ]
+                },
+                "scope": "Public",
+                "code": "IPAWSv1.0",
+                "language": "en-US",
+                "web": "http://www.weather.gov",
+                "eventCode": {
+                    "SAME": [
+                        "NWS"
+                    ],
+                    "NationalWeatherService": [
+                        "AQA"
+                    ]
+                }
+            }
+        },
+        {
+            "id": "https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.0ea775f2e9b778bbce1c4e468e7d5e7514696ae7.001.1",
+            "type": "Feature",
+            "geometry": null,
+            "properties": {
+                "@id": "https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.0ea775f2e9b778bbce1c4e468e7d5e7514696ae7.001.1",
+                "@type": "wx:Alert",
+                "id": "urn:oid:2.49.0.1.840.0.0ea775f2e9b778bbce1c4e468e7d5e7514696ae7.001.1",
+                "areaDesc": "Chelan, WA; Douglas, WA; Okanogan, WA",
+                "geocode": {
+                    "SAME": [
+                        "053007",
+                        "053017",
+                        "053047"
+                    ],
+                    "UGC": [
+                        "WAC007",
+                        "WAC017",
+                        "WAC047"
+                    ]
+                },
+                "affectedZones": [
+                    "https://api.weather.gov/zones/county/WAC007",
+                    "https://api.weather.gov/zones/county/WAC017",
+                    "https://api.weather.gov/zones/county/WAC047"
+                ],
+                "references": [],
+                "sent": "2026-08-27T10:02:00-07:00",
+                "effective": "2026-08-27T10:00:00-07:00",
+                "onset": "2026-08-27T10:00:00-07:00",
+                "expires": "2026-08-28T12:00:00-07:00",
+                "ends": null,
+                "status": "Actual",
+                "messageType": "Alert",
+                "category": "Met",
+                "severity": "Unknown",
+                "certainty": "Unknown",
+                "urgency": "Unknown",
+                "event": "Air Quality Alert",
+                "sender": "w-nws.webmaster@noaa.gov",
+                "senderName": "NWS Spokane WA",
+                "headline": "Air Quality Alert issued August 27 at 10:00AM PDT by NWS Spokane WA",
+                "description": "An Air Quality Alert has been issued by the following agencies:\n\nWashington Department of Ecology\n\nAn Air Quality Alert has been issued for Chelan, Douglas, and\nOkanogan Counties until further notice due to current and expected\nsmoke from regional fires. Particulate matter (PM2.5) may reach\nUnhealthy levels for areas downwind from active wildfires. Be sure to\ncheck air monitors in your area before outdoor activities.\n\nWhen air quality is Unhealthy, everyone should reduce exposure.\nLimit time outside, avoid strenuous outdoor activity, and follow tips\nfor cleaner indoor air.",
+                "instruction": null,
+                "response": "Monitor",
+                "note": "Non-Weather Emergency Message. Not sent to IPAWS.",
+                "parameters": {
+                    "AWIPSidentifier": [
+                        "AQAOTX"
+                    ],
+                    "WMOidentifier": [
+                        "AEUS76 KOTX 271702"
+                    ],
+                    "BLOCKCHANNEL": [
+                        "EAS",
+                        "NWEM",
+                        "CMAS"
+                    ]
+                },
+                "scope": "Public",
+                "code": "IPAWSv1.0",
+                "language": "en-US",
+                "web": "http://www.weather.gov",
+                "eventCode": {
+                    "SAME": [
+                        "NWS"
+                    ],
+                    "NationalWeatherService": [
+                        "AQA"
+                    ]
+                }
+            }
+        }
+    ],
+    "title": "Current watches, warnings, and advisories for Washington",
+    "updated": "2026-08-28T05:00:08+00:00"
+}

@@ -336,6 +336,40 @@ class DerivedFeature(Base):
     raw_artifact_id: Mapped[int | None] = mapped_column(ForeignKey("raw_artifact.id"))
 
 
+class OfficialAlertRecord(Base):
+    """One CAP alert as served by api.weather.gov — append-only, superseded by reference.
+
+    An Update or Cancel arrives as a NEW alert whose ``references`` name the ids it replaces
+    (the ForecastRun supersession shape); no row mutates, so the alert set known at T replays
+    exactly. ``basin_ids`` is resolved at WRITE time from the UGC codes via the derived zone
+    mapping, and ``mapping_method_id`` names which mapping did it — an alert routed by an old
+    mapping keeps saying so. May be empty: an east-side alert is stored (it is knowledge) and
+    routes to no seed basin.
+    """
+
+    __tablename__ = "official_alert"
+    id: Mapped[str] = mapped_column(String, primary_key=True)  # the CAP urn
+    event: Mapped[str] = mapped_column(String)  # "Flood Warning", verbatim
+    status: Mapped[str] = mapped_column(String)  # Actual | Exercise | Test | ...
+    message_type: Mapped[str] = mapped_column(String)  # Alert | Update | Cancel
+    severity: Mapped[str | None] = mapped_column(String)
+    certainty: Mapped[str | None] = mapped_column(String)
+    urgency: Mapped[str | None] = mapped_column(String)
+    headline: Mapped[str | None] = mapped_column(String)
+    sender_name: Mapped[str | None] = mapped_column(String)
+    sent: Mapped[datetime] = mapped_column(UTCDateTime)
+    onset: Mapped[datetime | None] = mapped_column(UTCDateTime)
+    expires: Mapped[datetime | None] = mapped_column(UTCDateTime)
+    ends: Mapped[datetime | None] = mapped_column(UTCDateTime)
+    ugc: Mapped[list[str]] = mapped_column(JSONVariant)
+    basin_ids: Mapped[list[str]] = mapped_column(JSONVariant)
+    mapping_method_id: Mapped[str] = mapped_column(String)
+    references: Mapped[list[str]] = mapped_column(JSONVariant)
+    retrieved_at: Mapped[datetime] = mapped_column(UTCDateTime)
+    available_at: Mapped[datetime] = mapped_column(UTCDateTime, index=True)
+    raw_artifact_id: Mapped[int | None] = mapped_column(ForeignKey("raw_artifact.id"))
+
+
 class GridMask(Base):
     """Basin x grid definition -> fractional cell weights (p3-surfaces-design §1.4).
 

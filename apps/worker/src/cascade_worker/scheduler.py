@@ -31,7 +31,7 @@ from cascade_core.fetch import ArchivingFetcher
 from cascade_core.settings import Settings
 from cascade_providers_awdb import jobs as awdb_jobs
 from cascade_providers_nbm import jobs as nbm_jobs
-from cascade_providers_nwps import hefs_jobs
+from cascade_providers_nwps import alerts_jobs, hefs_jobs
 from cascade_providers_nwps import jobs as nwps_jobs
 from cascade_providers_nwps import reaches_jobs as nwm_jobs
 from cascade_providers_usgs import jobs as usgs_jobs
@@ -51,6 +51,11 @@ class Job:
     #: build in the same minute as the NBM fetch that depends on it. `None` means "derive it
     #: from the cadence", which is the normal case.
     cron: str | None = None
+
+
+async def _run_fetch_alerts(session: AsyncSession, fetcher: ArchivingFetcher) -> int:
+    """Alerts adapted to the JobFn contract; the UGC mapping ships in the geo directory."""
+    return await alerts_jobs.run_fetch_alerts(session, fetcher, geo_dir=Settings.from_env().geo_dir)
 
 
 async def _run_fetch_mrms_qpe(session: AsyncSession, fetcher: ArchivingFetcher) -> int:
@@ -78,6 +83,7 @@ JOBS: tuple[Job, ...] = (
     Job(nwps_jobs.JOB_FORECAST, nwps_jobs.CADENCE_FORECAST_SECONDS, nwps_jobs.run_fetch_forecast),
     Job(hefs_jobs.JOB_NAME, hefs_jobs.CADENCE_SECONDS, hefs_jobs.run_fetch_hefs, cron=hefs_jobs.CRON),
     Job(mrms_jobs.JOB_NAME, mrms_jobs.CADENCE_SECONDS, _run_fetch_mrms_qpe, cron=mrms_jobs.CRON),
+    Job(alerts_jobs.JOB_NAME, alerts_jobs.CADENCE_SECONDS, _run_fetch_alerts),
     Job(usgs_jobs.JOB_NAME, usgs_jobs.CADENCE_SECONDS, usgs_jobs.run_fetch_instantaneous),
     # --- P3 forcing: masks first, then the two NBM subsets ------------------------------
     # 07:30 UTC: ten minutes ahead of the 07:40 qmd slot, so a grid change is picked up before

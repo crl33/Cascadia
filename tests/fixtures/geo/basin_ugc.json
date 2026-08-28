@@ -1,0 +1,352 @@
+{
+ "_provenance": {
+  "method_id": "method:basin-ugc-mapping@1.0.0",
+  "derived_at": "2026-08-28T05:01:52.488563+00:00",
+  "source": "https://api.weather.gov/zones/{county|forecast}/{id} geometries, area=WA",
+  "polygon_source": {
+   "path": "tests/fixtures/geo/basins_seed_full.geojson.gz",
+   "sha256": "c3d12296bcfbaa37e00d29f9818aa3f3b67db444d05ffadd2500702cdea4e2af",
+   "caveat": "Seeded HUC8-union basin geometry, not outlet-delineated."
+  },
+  "area_model": "sinusoidal equal-area on the authalic sphere R=6371.0088 km",
+  "min_overlap_km2": 2.0,
+  "note": "zone -> basins with overlap fractions. The mapping records geometry facts; which fraction merits display is the consumer's versioned policy."
+ },
+ "zones": {
+  "WAC033": {
+   "name": "King",
+   "type": "county",
+   "basins": {
+    "basin:snohomish-snoqualmie": {
+     "overlap_km2": 2425.21,
+     "fraction_of_zone": 0.4286,
+     "fraction_of_basin": 0.5159
+    },
+    "basin:cedar": {
+     "overlap_km2": 1363.32,
+     "fraction_of_zone": 0.241,
+     "fraction_of_basin": 0.8695
+    },
+    "basin:green-duwamish": {
+     "overlap_km2": 1253.68,
+     "fraction_of_zone": 0.2216,
+     "fraction_of_basin": 0.9994
+    },
+    "basin:puyallup-white": {
+     "overlap_km2": 302.9,
+     "fraction_of_zone": 0.0535,
+     "fraction_of_basin": 0.1199
+    }
+   }
+  },
+  "WAC053": {
+   "name": "Pierce",
+   "type": "county",
+   "basins": {
+    "basin:puyallup-white": {
+     "overlap_km2": 2223.9,
+     "fraction_of_zone": 0.5092,
+     "fraction_of_basin": 0.88
+    }
+   }
+  },
+  "WAC057": {
+   "name": "Skagit",
+   "type": "county",
+   "basins": {
+    "basin:skagit": {
+     "overlap_km2": 3284.14,
+     "fraction_of_zone": 0.7246,
+     "fraction_of_basin": 0.3981
+    },
+    "basin:nooksack": {
+     "overlap_km2": 164.18,
+     "fraction_of_zone": 0.0362,
+     "fraction_of_basin": 0.0624
+    }
+   }
+  },
+  "WAC061": {
+   "name": "Snohomish",
+   "type": "county",
+   "basins": {
+    "basin:skagit": {
+     "overlap_km2": 1460.57,
+     "fraction_of_zone": 0.2682,
+     "fraction_of_basin": 0.177
+    },
+    "basin:snohomish-snoqualmie": {
+     "overlap_km2": 2274.36,
+     "fraction_of_zone": 0.4177,
+     "fraction_of_basin": 0.4838
+    },
+    "basin:cedar": {
+     "overlap_km2": 204.32,
+     "fraction_of_zone": 0.0375,
+     "fraction_of_basin": 0.1303
+    }
+   }
+  },
+  "WAC073": {
+   "name": "Whatcom",
+   "type": "county",
+   "basins": {
+    "basin:skagit": {
+     "overlap_km2": 2452.87,
+     "fraction_of_zone": 0.4391,
+     "fraction_of_basin": 0.2973
+    },
+    "basin:nooksack": {
+     "overlap_km2": 2181.03,
+     "fraction_of_zone": 0.3904,
+     "fraction_of_basin": 0.829
+    }
+   }
+  },
+  "WAZ301": {
+   "name": "Cascades of Whatcom and Skagit Counties",
+   "type": "forecast",
+   "basins": {
+    "basin:skagit": {
+     "overlap_km2": 4456.29,
+     "fraction_of_zone": 0.6839,
+     "fraction_of_basin": 0.5402
+    },
+    "basin:nooksack": {
+     "overlap_km2": 1211.72,
+     "fraction_of_zone": 0.186,
+     "fraction_of_basin": 0.4606
+    }
+   }
+  },
+  "WAZ302": {
+   "name": "Cascades of Snohomish and Northern King Counties",
+   "type": "forecast",
+   "basins": {
+    "basin:skagit": {
+     "overlap_km2": 1324.03,
+     "fraction_of_zone": 0.347,
+     "fraction_of_basin": 0.1605
+    },
+    "basin:snohomish-snoqualmie": {
+     "overlap_km2": 1969.9,
+     "fraction_of_zone": 0.5162,
+     "fraction_of_basin": 0.4191
+    }
+   }
+  },
+  "WAZ303": {
+   "name": "Cascades of Southern King County",
+   "type": "forecast",
+   "basins": {
+    "basin:snohomish-snoqualmie": {
+     "overlap_km2": 636.17,
+     "fraction_of_zone": 0.3652,
+     "fraction_of_basin": 0.1353
+    },
+    "basin:cedar": {
+     "overlap_km2": 311.5,
+     "fraction_of_zone": 0.1788,
+     "fraction_of_basin": 0.1987
+    },
+    "basin:green-duwamish": {
+     "overlap_km2": 612.08,
+     "fraction_of_zone": 0.3513,
+     "fraction_of_basin": 0.4879
+    },
+    "basin:puyallup-white": {
+     "overlap_km2": 180.86,
+     "fraction_of_zone": 0.1038,
+     "fraction_of_basin": 0.0716
+    }
+   }
+  },
+  "WAZ304": {
+   "name": "Cascades of Pierce and Lewis Counties",
+   "type": "forecast",
+   "basins": {
+    "basin:puyallup-white": {
+     "overlap_km2": 1623.26,
+     "fraction_of_zone": 0.3079,
+     "fraction_of_basin": 0.6423
+    }
+   }
+  },
+  "WAZ305": {
+   "name": "Foothills and Valleys of the North Cascades",
+   "type": "forecast",
+   "basins": {
+    "basin:skagit": {
+     "overlap_km2": 1003.09,
+     "fraction_of_zone": 0.4116,
+     "fraction_of_basin": 0.1216
+    },
+    "basin:nooksack": {
+     "overlap_km2": 523.26,
+     "fraction_of_zone": 0.2147,
+     "fraction_of_basin": 0.1989
+    },
+    "basin:snohomish-snoqualmie": {
+     "overlap_km2": 56.51,
+     "fraction_of_zone": 0.0232,
+     "fraction_of_basin": 0.012
+    }
+   }
+  },
+  "WAZ306": {
+   "name": "Foothills and Valleys of Snohomish and Northern King Counties",
+   "type": "forecast",
+   "basins": {
+    "basin:snohomish-snoqualmie": {
+     "overlap_km2": 1157.58,
+     "fraction_of_zone": 0.9898,
+     "fraction_of_basin": 0.2463
+    },
+    "basin:cedar": {
+     "overlap_km2": 11.32,
+     "fraction_of_zone": 0.0097,
+     "fraction_of_basin": 0.0072
+    }
+   }
+  },
+  "WAZ307": {
+   "name": "Foothills and Valleys of Central King County",
+   "type": "forecast",
+   "basins": {
+    "basin:snohomish-snoqualmie": {
+     "overlap_km2": 455.83,
+     "fraction_of_zone": 0.6784,
+     "fraction_of_basin": 0.097
+    },
+    "basin:cedar": {
+     "overlap_km2": 216.06,
+     "fraction_of_zone": 0.3216,
+     "fraction_of_basin": 0.1378
+    }
+   }
+  },
+  "WAZ308": {
+   "name": "Foothills and Valleys of Pierce and Southern King Counties",
+   "type": "forecast",
+   "basins": {
+    "basin:cedar": {
+     "overlap_km2": 200.21,
+     "fraction_of_zone": 0.1103,
+     "fraction_of_basin": 0.1277
+    },
+    "basin:green-duwamish": {
+     "overlap_km2": 433.7,
+     "fraction_of_zone": 0.239,
+     "fraction_of_basin": 0.3457
+    },
+    "basin:puyallup-white": {
+     "overlap_km2": 557.47,
+     "fraction_of_zone": 0.3072,
+     "fraction_of_basin": 0.2206
+    }
+   }
+  },
+  "WAZ310": {
+   "name": "Lowlands of Western Whatcom County",
+   "type": "forecast",
+   "basins": {
+    "basin:nooksack": {
+     "overlap_km2": 610.18,
+     "fraction_of_zone": 0.6162,
+     "fraction_of_basin": 0.2319
+    }
+   }
+  },
+  "WAZ311": {
+   "name": "Lowlands of Western Skagit and Northwestern Snohomish Counties",
+   "type": "forecast",
+   "basins": {
+    "basin:skagit": {
+     "overlap_km2": 413.95,
+     "fraction_of_zone": 0.3669,
+     "fraction_of_basin": 0.0502
+    },
+    "basin:snohomish-snoqualmie": {
+     "overlap_km2": 12.81,
+     "fraction_of_zone": 0.0114,
+     "fraction_of_basin": 0.0027
+    }
+   }
+  },
+  "WAZ312": {
+   "name": "Downtown Everett / Marysville Area",
+   "type": "forecast",
+   "basins": {
+    "basin:snohomish-snoqualmie": {
+     "overlap_km2": 363.58,
+     "fraction_of_zone": 0.7064,
+     "fraction_of_basin": 0.0773
+    }
+   }
+  },
+  "WAZ313": {
+   "name": "Shoreline / Lynnwood / South Everett Area",
+   "type": "forecast",
+   "basins": {
+    "basin:snohomish-snoqualmie": {
+     "overlap_km2": 47.12,
+     "fraction_of_zone": 0.1163,
+     "fraction_of_basin": 0.01
+    },
+    "basin:cedar": {
+     "overlap_km2": 259.63,
+     "fraction_of_zone": 0.641,
+     "fraction_of_basin": 0.1656
+    }
+   }
+  },
+  "WAZ314": {
+   "name": "Eastside",
+   "type": "forecast",
+   "basins": {
+    "basin:cedar": {
+     "overlap_km2": 369.36,
+     "fraction_of_zone": 1.0,
+     "fraction_of_basin": 0.2356
+    }
+   }
+  },
+  "WAZ315": {
+   "name": "City of Seattle",
+   "type": "forecast",
+   "basins": {
+    "basin:cedar": {
+     "overlap_km2": 162.6,
+     "fraction_of_zone": 0.6313,
+     "fraction_of_basin": 0.1037
+    },
+    "basin:green-duwamish": {
+     "overlap_km2": 24.9,
+     "fraction_of_zone": 0.0967,
+     "fraction_of_basin": 0.0199
+    }
+   }
+  },
+  "WAZ316": {
+   "name": "Lowlands of Pierce and Southern King Counties",
+   "type": "forecast",
+   "basins": {
+    "basin:cedar": {
+     "overlap_km2": 36.97,
+     "fraction_of_zone": 0.0239,
+     "fraction_of_basin": 0.0236
+    },
+    "basin:green-duwamish": {
+     "overlap_km2": 182.95,
+     "fraction_of_zone": 0.1182,
+     "fraction_of_basin": 0.1458
+    },
+    "basin:puyallup-white": {
+     "overlap_km2": 165.17,
+     "fraction_of_zone": 0.1067,
+     "fraction_of_basin": 0.0654
+    }
+   }
+  }
+ }
+}

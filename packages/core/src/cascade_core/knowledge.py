@@ -36,6 +36,7 @@ from cascade_core.models import (
     ForecastValue,
     JobRun,
     Observation,
+    OfficialAlertRecord,
     RawArtifact,
     SourceProduct,
     Station,
@@ -138,6 +139,38 @@ class Knowledge:
             rows = (await self.session.execute(select(SourceProduct))).scalars().all()
             self._memo[("products",)] = {p.id: p for p in rows}
         return dict(self._memo[("products",)])
+
+    async def active_alerts(self) -> list["OfficialAlertRecord"]:
+        """Every alert KNOWN at ``as_of`` and not yet ended then, minus superseded ones.
+
+        Loaded whole and filtered in Python on purpose: the active set is a handful of rows,
+        and portable JSON-list membership queries are not worth their complexity. Supersession
+        is resolved here — an alert referenced by a LATER-known alert stops being active —
+        which is the ForecastRun chain shape, resolved at read time so no row ever mutates.
+        """
+        key = ("active_alerts",)
+        if key not in self._memo:
+            rows = list(
+                (
+                    await self.session.execute(
+                        select(OfficialAlertRecord).where(OfficialAlertRecord.available_at <= self.as_of)
+                    )
+                ).scalars()
+            )
+            superseded: set[str] = set()
+            for row in rows:
+                superseded.update(row.references or [])
+            active = [
+                row
+                for row in rows
+                if row.id not in superseded
+                and row.status == "Actual"
+                and row.message_type != "Cancel"
+                and (row.ends is None or row.ends >= self.as_of)
+                and (row.expires is None or row.expires >= self.as_of)
+            ]
+            self._memo[key] = active
+        return list(self._memo[key])
 
     async def basins(self) -> list[Basin]:
         if ("basins",) not in self._memo:

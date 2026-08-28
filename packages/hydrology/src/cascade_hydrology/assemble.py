@@ -36,6 +36,7 @@ from cascade_contracts.visualization import (
     GeometryRef,
     HazardState,
     ObservedRiverState,
+    OfficialAlert,
     Regulation,
     SurfaceLevel,
     SurfaceState,
@@ -53,10 +54,12 @@ from cascade_core.models import (
 from cascade_core.registry import (
     PRODUCT_NWPS_FORECAST,
     PRODUCT_NWPS_THRESHOLDS,
+    PRODUCT_NWS_ALERTS,
     PRODUCT_USGS_IV,
     SOURCES,
     SRC_CASCADE,
     SRC_NWPS,
+    SRC_NWS_API,
     SRC_USGS,
 )
 from cascade_geo.hypsometry import BasinHypsometry
@@ -483,6 +486,45 @@ async def basin_envelope(
     await _prefetch_basins(k, basins)
     items: list[BasinVisualizationState] = []
     refs: dict[str, ProvenanceRef] = {}
+    # Alerts once per envelope: the active set is a handful of rows, and every basin filters
+    # from the same list. An alert names its OWN basins (routed at write time by the UGC
+    # mapping); this loop only groups.
+    all_alerts = await k.active_alerts()
+    alert_refs: dict[str, ProvenanceRef] = {}
+    alerts_by_basin: dict[str, list[OfficialAlert]] = {}
+    for row in all_alerts:
+        ref_key = f"nws-alert-{row.id.rsplit('.', 2)[-2] if '.' in row.id else row.id[-8:]}"
+        alert_product = products.get(PRODUCT_NWS_ALERTS)
+        alert_refs[ref_key] = ProvenanceRef(
+            source_id=alert_product.source_id if alert_product else SRC_NWS_API,
+            source_kind=resolved_source_kind(alert_product),
+            product_id=PRODUCT_NWS_ALERTS,
+            issued_at=row.sent,
+            valid_time=row.onset or row.sent,
+            retrieved_at=row.retrieved_at,
+            freshness=_fresh(products, PRODUCT_NWS_ALERTS, valid_time=row.sent, retrieved_at=row.retrieved_at, now=k.as_of),
+            quality=(),
+            label=(
+                f"{row.event} — {row.sender_name or 'NWS'}, sent {row.sent:%Y-%m-%d %H:%M}Z"
+                + (f", in effect until {row.ends or row.expires:%Y-%m-%d %H:%M}Z" if (row.ends or row.expires) else "")
+                + f". Routed to basins by UGC codes {', '.join(row.ugc)} ({row.mapping_method_id})."
+            ),
+            raw_artifact_id=str(row.raw_artifact_id) if row.raw_artifact_id is not None else None,
+        )
+        for basin_id in row.basin_ids or []:
+            alerts_by_basin.setdefault(basin_id, []).append(
+                OfficialAlert(
+                    id=row.id,
+                    event=row.event,
+                    severity=row.severity,
+                    onset=row.onset,
+                    expires=row.ends or row.expires,
+                    issuer=row.sender_name or "NWS",
+                    prov=ref_key,
+                )
+            )
+    refs.update(alert_refs)
+
     for basin in basins:
         outlet = await k.forecast_point_by_lid(basin.outlet_fp_id.split(":")[-1]) if basin.outlet_fp_id else None
         agreement_drivers: tuple[Driver, ...] = ()
@@ -557,7 +599,7 @@ async def basin_envelope(
                 hydrologic_state=sus.hydrologic_state,
                 state_change=sus.state_changes,
                 headline_drivers=_renumbered(sus.drivers, frc.drivers, agreement_drivers),
-                official_alerts=(),
+                official_alerts=tuple(alerts_by_basin.get(basin.id, ())),
                 outlet_forecast_point_id=basin.outlet_fp_id,
                 geometry_ref=GeometryRef(lod="basin", feature_id=basin.id, url=f"/basins/{basin.id}/geometry?lod=basin"),
                 label_priority=2,

@@ -35,6 +35,7 @@ SRC_USGS_STATS = "src:usgs-wdfn-statistics"  # RETIRED 2026-08-27; historical ro
 SRC_USGS_NORMALS = "src:usgs-wdfn-normals"
 SRC_AWDB = "src:nrcs-awdb"
 SRC_MRMS = "src:mrms"
+SRC_NWS_API = "src:nws-api"
 
 PRODUCT_USGS_IV = "product:usgs-iv"
 PRODUCT_NWPS_FORECAST = "product:nwps-forecast"
@@ -53,6 +54,7 @@ PRODUCT_AWDB_DAILY = "product:awdb-snotel-daily"
 PRODUCT_AWDB_STATIONS = "product:awdb-stations"
 PRODUCT_MRMS_QPE = "product:mrms-qpe-01h-pass2"
 PRODUCT_MRMS_GAUGEINFL = "product:mrms-gaugeinfl-01h-pass2"
+PRODUCT_NWS_ALERTS = "product:nws-api-alerts-active"
 
 SOURCES: tuple[dict[str, str], ...] = (
     {"id": SRC_USGS, "authority": "U.S. Geological Survey", "kind": "OBSERVED", "base_url": "https://api.waterdata.usgs.gov/ogcapi/v0/collections/continuous/items", "docs_url": "https://api.waterdata.usgs.gov/ogcapi/v0/openapi?f=html"},
@@ -91,6 +93,7 @@ SOURCES: tuple[dict[str, str], ...] = (
     # statistics. The gauge-influence covariate rides the same source: it is NSSL's own
     # statement about its own estimate, not a Cascadia judgement.
     {"id": SRC_MRMS, "authority": "NOAA NSSL/NCEP Multi-Radar Multi-Sensor (MRMS) via NODD", "kind": "OBSERVED", "base_url": "https://noaa-mrms-pds.s3.amazonaws.com/", "docs_url": "https://www.nssl.noaa.gov/projects/mrms/"},
+    {"id": SRC_NWS_API, "authority": "NOAA National Weather Service API (CAP alerts, WFO products)", "kind": "OFFICIAL_FORECAST", "base_url": "https://api.weather.gov/", "docs_url": "https://www.weather.gov/documentation/services-web-api"},
 )
 
 PRODUCTS: tuple[dict[str, object], ...] = (
@@ -148,6 +151,9 @@ PRODUCTS: tuple[dict[str, object], ...] = (
     # Hourly, ~57 min publication latency measured 2026-08-28. Grace PT2H per DATA_SOURCES P1.
     {"id": PRODUCT_MRMS_QPE, "source_id": SRC_MRMS, "label": "MRMS MultiSensor QPE 1 h Pass2 (radar+gauge+model blend), basin-aggregated", "variables": ["precip"], "expected_cadence_seconds": 3600, "grace_seconds": 7200},
     {"id": PRODUCT_MRMS_GAUGEINFL, "source_id": SRC_MRMS, "label": "MRMS gauge-influence index 1 h Pass2 — how much of the QPE came from gauges rather than radar", "variables": ["precip"], "expected_cadence_seconds": 3600, "grace_seconds": 7200},
+    # Active CAP alerts, polled every 5 min (the provider allows once or twice a minute; the
+    # payload is one ~5-50 KB request). Grace 10 min: two missed polls is a real gap.
+    {"id": PRODUCT_NWS_ALERTS, "source_id": SRC_NWS_API, "label": "NWS active CAP alerts for Washington (api.weather.gov), routed to basins by the derived UGC mapping", "variables": ["alert"], "expected_cadence_seconds": 300, "grace_seconds": 600},
 )
 
 
@@ -210,6 +216,7 @@ JOBS: tuple[JobSpec, ...] = (
     # Hourly at :20 — Pass2 for hour H publishes ~H+57 min (measured 2026-08-28). A backfill
     # on a schedule: each run lists the day prefix and ingests every accumulation not stored.
     JobSpec("mrms.fetch_qpe", "mrms", SRC_MRMS, (PRODUCT_MRMS_QPE, PRODUCT_MRMS_GAUGEINFL), 3600),
+    JobSpec("nws.fetch_alerts", "nws-api", SRC_NWS_API, (PRODUCT_NWS_ALERTS,), 300),
     # Registered on the QUEUE only, never in `scheduler.JOBS` (it needs PostgreSQL, and `run-once`
     # must keep working on sqlite) — but it runs through `run_job` like everything else, leaves
     # job_run rows, and keeps the observation partition horizon ahead of ingestion. It belongs

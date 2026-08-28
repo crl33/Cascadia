@@ -53,6 +53,7 @@ PROVIDER_HOSTS: frozenset[str] = frozenset(
         "noaa-nbm-grib2-pds.s3.amazonaws.com",  # W2 NBM S3 archive: .idx + ranged GET (backfill/fallback)
         "wcc.sc.egov.usda.gov",              # S1 NRCS AWDB (SNOTEL WTEQ/PREC)
         "noaa-mrms-pds.s3.amazonaws.com",    # P1 MRMS QPE + gauge-influence (NODD mirror)
+        "api.weather.gov",                   # W1 NWS API: CAP alerts (Phase 1), grids later
     }
 )
 

@@ -23,6 +23,12 @@ any of them is expensive — and whatever is done about that, the body it return
 > `direction: context_not_scored`, so no band, score or susceptibility state moved — all six basins
 > are byte-identical on those. The number changing is the point: it was wrong before.
 >
+> **Regenerated again 2026-08-28 (later)** for NWS alerts: the envelope now issues ONE more
+> statement — the whole-envelope `active_alerts` read (a handful of rows, filtered in Python;
+> supersession resolved at read time) — so the count is **15**, and the bodies are byte-identical
+> because the harness database holds no alerts. If the count moves again, it is a regression
+> until explained.
+>
 > **Regenerated 2026-08-28** for the rain-exposed fraction (hypsometry x forecast snow level).
 > The diff is ONE new driver per basin — `basin_rain_exposed_fraction`, `context_not_scored` — plus
 > its provenance ref; every pre-existing value is unchanged and only shifted by the insertion. The
