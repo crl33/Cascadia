@@ -24,6 +24,7 @@ from dataclasses import dataclass
 
 SRC_USGS = "src:usgs-nwis-iv"
 SRC_NWPS = "src:nwps-v1"
+SRC_NWPS_HEFS = "src:nwps-hefs-v1"
 SRC_CASCADE = "src:cascade"
 SRC_NWS_AFOS = "src:nws-afos"
 # P3 additions (p3-surfaces-design-2026-08-24 §1.6, §2.1, §3.4).
@@ -36,6 +37,8 @@ SRC_AWDB = "src:nrcs-awdb"
 
 PRODUCT_USGS_IV = "product:usgs-iv"
 PRODUCT_NWPS_FORECAST = "product:nwps-forecast"
+PRODUCT_HEFS_ENSEMBLE = "product:nwps-hefs-ensemble"
+PRODUCT_HEFS_QUANTILES = "product:nwps-hefs-quantiles"
 PRODUCT_NWPS_THRESHOLDS = "product:nwps-thresholds"
 PRODUCT_NWS_FLS_CREST = "product:nws-fls-crest"
 # P3 additions.
@@ -51,6 +54,12 @@ PRODUCT_AWDB_STATIONS = "product:awdb-stations"
 SOURCES: tuple[dict[str, str], ...] = (
     {"id": SRC_USGS, "authority": "U.S. Geological Survey", "kind": "OBSERVED", "base_url": "https://api.waterdata.usgs.gov/ogcapi/v0/collections/continuous/items", "docs_url": "https://api.waterdata.usgs.gov/ogcapi/v0/openapi?f=html"},
     {"id": SRC_NWPS, "authority": "NOAA National Weather Service (NWPS)", "kind": "OFFICIAL_FORECAST", "base_url": "https://api.water.noaa.gov/nwps/v1/", "docs_url": "https://api.water.noaa.gov/nwps/v1/docs/"},
+    # A SEPARATE source on the same host, deliberately. HEFS is an NWRFC ensemble service with
+    # its own API, its own ~10-day retention and its own experimental status; folding it into
+    # `src:nwps-v1` would let an experimental ensemble inherit the official forecast's
+    # source_kind, which is the exact confusion DATA_SOURCES H4 warns about. Its members stay
+    # MODELED until ROADMAP Phase 5 rules on official probabilities (DATA_DOCTRINE §9(a)).
+    {"id": SRC_NWPS_HEFS, "authority": "NOAA NWS Office of Water Prediction / NWRFC (HEFS, EXPERIMENTAL — not supported 24/7 and may be modified without advance notice)", "kind": "MODELED", "base_url": "https://api.water.noaa.gov/hefs/v1/", "docs_url": "https://api.water.noaa.gov/hefs/v1/docs/"},
     {"id": SRC_CASCADE, "authority": "Cascadia Papsukkal", "kind": "DERIVED", "base_url": "", "docs_url": ""},
     {"id": SRC_NWS_AFOS, "authority": "NOAA NWS (AFOS text via IEM archive)", "kind": "OFFICIAL_FORECAST", "base_url": "https://mesonet.agron.iastate.edu/api/1/", "docs_url": "https://mesonet.agron.iastate.edu/api/1/docs"},
     # NBM is calibrated blended guidance, never the official forecast (DATA_SOURCES W2).
@@ -86,6 +95,11 @@ PRODUCTS: tuple[dict[str, object], ...] = (
     # historical, and the label below names the transport actually in use.
     {"id": PRODUCT_USGS_IV, "source_id": SRC_USGS, "label": "USGS instantaneous values (stage 00065, discharge 00060) via the Water Data OGC API `continuous` collection; NWIS IV until 2026-08-27", "variables": ["stage", "flow"], "expected_cadence_seconds": 900, "grace_seconds": 4500},
     {"id": PRODUCT_NWPS_FORECAST, "source_id": SRC_NWPS, "label": "NWRFC official river forecast via NOAA NWPS", "variables": ["stage", "flow"], "expected_cadence_seconds": 86400, "grace_seconds": 64800},
+    # Daily at 12Z, published ~15:06-15:49Z, and the provider keeps only ~10 days (FACT,
+    # DATA_SOURCES H4). The grace is PT18H as documented; the retention is the reason the job
+    # exists at all, so a stale reading here means history is being lost, not merely delayed.
+    {"id": PRODUCT_HEFS_ENSEMBLE, "source_id": SRC_NWPS_HEFS, "label": "NWRFC HEFS ensemble streamflow members (MEFP, 45 traces, QINE in CFS) via the NWPS HEFS API", "variables": ["flow"], "expected_cadence_seconds": 86400, "grace_seconds": 64800},
+    {"id": PRODUCT_HEFS_QUANTILES, "source_id": SRC_NWPS_HEFS, "label": "NWRFC HEFS published exceedance quantiles (the provider's own, never Cascade-derived)", "variables": ["flow"], "expected_cadence_seconds": 86400, "grace_seconds": 64800},
     {"id": PRODUCT_NWPS_THRESHOLDS, "source_id": SRC_NWPS, "label": "Official NWS flood categories (NWPS)", "variables": ["threshold"], "expected_cadence_seconds": 21600, "grace_seconds": 21600},
     {"id": PRODUCT_NWS_FLS_CREST, "source_id": SRC_NWS_AFOS, "label": "NWRFC crest via WFO FLW/FLS text (reconstructed; 6-hourly hydrograph lost)", "variables": ["stage", "flow"], "expected_cadence_seconds": 21600, "grace_seconds": 43200},
     # PT6H / PT8H: qmd runs only for the 00/06/12/18Z cycles and lands ~7 h 20 m after the
@@ -160,6 +174,10 @@ class JobSpec:
 JOBS: tuple[JobSpec, ...] = (
     JobSpec("nwps.fetch_thresholds", "nwps", SRC_NWPS, (PRODUCT_NWPS_THRESHOLDS,), 6 * 3600),
     JobSpec("nwps.fetch_forecast", "nwps", SRC_NWPS, (PRODUCT_NWPS_FORECAST,), 30 * 60),
+    # Daily at 16:30Z — after the observed ~15:06-15:49Z publication of the 12Z cycle. This job is
+    # a backfill that runs on a schedule: it walks the ~10 retained cycles and collects whatever is
+    # not stored, so one missed run costs nothing and a fresh database recovers ten days at once.
+    JobSpec("nwps.fetch_hefs", "nwps-hefs", SRC_NWPS_HEFS, (PRODUCT_HEFS_ENSEMBLE, PRODUCT_HEFS_QUANTILES), 86400),
     # Renamed from "usgs.fetch_iv" on 2026-08-27 when the transport moved to the OGC API. The
     # name is transport-NEUTRAL on purpose: the previous one named a service that is being
     # decommissioned, and this job's identity is "fetch the instantaneous observations", not

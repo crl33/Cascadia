@@ -88,9 +88,13 @@ async def test_health_reports_every_registered_job(db) -> None:
     await add_runs(factory, succeeded(ALL_JOB_NAMES, NOW - timedelta(minutes=1)))
     h = await get_health(engine)
     assert set(h["jobs"]) == set(ALL_JOB_NAMES)
-    assert len(h["jobs"]) == 11  # ten scheduler jobs + the queue-only partition maintenance job
+    # eleven scheduler jobs + the queue-only partition maintenance job. The literal is the
+    # guard: a job that health cannot see is exactly the blindness this file exists to prevent.
+    assert len(h["jobs"]) == 12
     assert "maintenance.ensure_observation_partitions" in h["jobs"]
-    assert set(h["providers"]) == {"usgs", "nwps", "nbm", "nwm", "usgs-stats", "usgs-ogc", "awdb", "cascade"}
+    # `nwps-hefs` is its own provider key, not folded into `nwps`: one upstream service can be
+    # healthy while the other is down, and HEFS is the one whose outage costs irrecoverable history.
+    assert set(h["providers"]) == {"usgs", "nwps", "nwps-hefs", "nbm", "nwm", "usgs-stats", "usgs-ogc", "awdb", "cascade"}
 
 
 async def test_health_reports_every_expected_product(db) -> None:

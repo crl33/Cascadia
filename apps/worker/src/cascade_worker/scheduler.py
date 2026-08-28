@@ -30,6 +30,7 @@ from cascade_core.fetch import ArchivingFetcher
 from cascade_core.settings import Settings
 from cascade_providers_awdb import jobs as awdb_jobs
 from cascade_providers_nbm import jobs as nbm_jobs
+from cascade_providers_nwps import hefs_jobs
 from cascade_providers_nwps import jobs as nwps_jobs
 from cascade_providers_nwps import reaches_jobs as nwm_jobs
 from cascade_providers_usgs import jobs as usgs_jobs
@@ -68,6 +69,7 @@ JOBS: tuple[Job, ...] = (
     # --- observational truth and the official forecast (spike scope) ---------------------
     Job(nwps_jobs.JOB_THRESHOLDS, nwps_jobs.CADENCE_THRESHOLDS_SECONDS, nwps_jobs.run_fetch_thresholds),
     Job(nwps_jobs.JOB_FORECAST, nwps_jobs.CADENCE_FORECAST_SECONDS, nwps_jobs.run_fetch_forecast),
+    Job(hefs_jobs.JOB_NAME, hefs_jobs.CADENCE_SECONDS, hefs_jobs.run_fetch_hefs, cron=hefs_jobs.CRON),
     Job(usgs_jobs.JOB_NAME, usgs_jobs.CADENCE_SECONDS, usgs_jobs.run_fetch_instantaneous),
     # --- P3 forcing: masks first, then the two NBM subsets ------------------------------
     # 07:30 UTC: ten minutes ahead of the 07:40 qmd slot, so a grid change is picked up before

@@ -62,7 +62,9 @@ def missing_from_catalogue(registered_names) -> set[str]:
 def test_every_registered_job_is_in_the_registry_catalogue() -> None:
     assert missing_from_catalogue(REGISTERED_JOB_NAMES) == set()
     assert set(JOBS_BY_NAME) == set(REGISTERED_JOB_NAMES)
-    assert len(JOBS) == len(REGISTERED_JOB_NAMES) == 11
+    # 12 since 2026-08-27, when `nwps.fetch_hefs` landed. The literal is the point: adding a job
+    # should be a deliberate edit here, not something that slides in with a passing suite.
+    assert len(JOBS) == len(REGISTERED_JOB_NAMES) == 12
 
 
 def test_a_job_registered_only_in_the_worker_fails_the_check() -> None:

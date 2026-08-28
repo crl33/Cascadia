@@ -1,0 +1,58 @@
+provider: nwps-hefs
+design_ref: docs/research/hydrology-observations-and-official-forecasts.json providers[3]
+captured:
+- file: headers_MVEW1.json
+  url: https://api.water.noaa.gov/hefs/v1/headers/?location_id=MVEW1
+  captured_at: '2026-08-28T00:49:23.240749+00:00'
+  http_status: 200
+  content_type: application/json
+  bytes: 4541
+  sha256: a5e6808100760d9a75ca55831bac32b767ffcb3aec1be28fae0adb7edeeff8ab
+  notes: 'REAL capture: the retained forecast cycles at the Skagit outlet. A bare
+    JSON LIST, not a paginated envelope. EXACTLY 10 cycles, one per day at 12Z — this
+    is the ~10-day retention that makes daily archival the whole point of this provider.
+    `creation_datetime` is the publication instant (available_at); `forecast_datetime`
+    is the cycle (issued_at).'
+- file: ensembles_MVEW1_2026-08-27T12.json
+  url: https://api.water.noaa.gov/hefs/v1/ensembles/?location_id=MVEW1&parameter_id=QINE&forecast_datetime=2026-08-27T12%3A00%3A00Z
+  captured_at: '2026-08-28T00:49:25.085964+00:00'
+  http_status: 200
+  content_type: application/json
+  bytes: 397645
+  sha256: 624e8a01e462822de564ca135adb14f553b1180f90af420572be90e21b0b45e5
+  notes: 'REAL capture: one full MEFP ensemble — a list containing ONE list of 45
+    members, each with `ensemble_member_index` 1981..2025 (historical weather-year
+    labels, NOT member numbers) and an `events` list of {flag, value, valid_datetime}
+    at a 21600 s step. Units CFS, type instantaneous. This is the irreplaceable payload.'
+- file: hydrograph_quantiles_MVEW1.json
+  url: https://api.water.noaa.gov/hefs/v1/hydrograph-quantiles/?location_id=MVEW1&parameter_id=QINE
+  captured_at: '2026-08-28T00:49:26.742931+00:00'
+  http_status: 200
+  content_type: application/json
+  bytes: 24325
+  sha256: 4825e4b5567592dc99b5820a29b6c6423c4b02673938492fdceb65f295320579
+  notes: 'REAL capture: the OFFICIAL exceedance quantiles, {metadata, value_set}.
+    These are NWS''s own quantiles — DATA_DOCTRINE §9(a) lets them be shown as official
+    probability precisely because Cascadia did not compute them. Computing quantiles
+    from the members ourselves would be a Cascade-derived number wearing an official
+    badge.'
+- file: headers_unknown_location.json
+  url: https://api.water.noaa.gov/hefs/v1/headers/?location_id=XXXW1
+  captured_at: '2026-08-28T00:49:28.444968+00:00'
+  http_status: 200
+  content_type: application/json
+  bytes: 2
+  sha256: 4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945
+  notes: 'NEGATIVE RESULT: an unknown location answers 200 with an empty list, not
+    404. A parser that treats ''empty'' as ''error'' would fail on a legitimately
+    quiet location, and one that treats it as success would hide a bad lid.'
+derived:
+- file: ensembles_MVEW1_trimmed_3_members.json
+  derived_from: ensembles_MVEW1_2026-08-27T12.json
+  sha256: 258d802acdda1b80eae54af706ac37af04d42acbc685f77d620f147b0e21fe11
+  bytes: 28824
+  notes: REAL bytes, first 3 of the 45 members. Used only by the JOB tests, which
+    exercise the walk across the retention window and across locations — 10 cycles
+    x 6 points = 60 parses of the full 397 KB payload took 147 s and bought no extra
+    coverage, because the member count, the weather-year indices and the 6 h grid
+    are asserted against the FULL fixture in the parser tests.
