@@ -8,7 +8,10 @@
     "/stations/*",
     "/scene/*",
     "/search",
-    "/system/*"
+    "/system/*",
+    "/geo/*"
   ],
-  "exclude": ["/_routes.json"]
+  "exclude": [
+    "/_routes.json"
+  ]
 }

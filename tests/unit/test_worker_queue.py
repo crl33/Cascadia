@@ -78,7 +78,7 @@ def test_tasks_registered_with_locks_retry_and_cron() -> None:
         # Pass2 for hour H publishes ~H+57 min (measured 2026-08-28); :20 collects H-1.
         "mrms.fetch_qpe": "20 * * * *",
         "wpc.fetch_qpf": "10 11,23 * * *",
-        "snodas.fetch_swe": "40 13 * * *",
+        "snodas.fetch_swe": "40 13,17 * * *",
         "nwrfc.fetch_reservoirs": "50 * * * *",
         "nws.fetch_alerts": "*/5 * * * *",
         # P3 (design §6 stage 2). The mask build owns an explicit slot 20 min ahead of the qmd

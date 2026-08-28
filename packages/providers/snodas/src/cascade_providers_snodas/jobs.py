@@ -43,8 +43,11 @@ log = logging.getLogger("cascade.providers.snodas")
 
 JOB_NAME = "snodas.fetch_swe"
 CADENCE_SECONDS = 86400
-#: Files land 13:15 UTC with clockwork regularity (measured across a month of listings).
-CRON = "40 13 * * *"
+#: Files land ~13:15 UTC — USUALLY. On 2026-08-28 NSIDC (self-described "Basic service
+#: level") had not served the day's tar by 13:40Z and a single daily attempt turned one late
+#: publish into 24 h of staleness. The 17:40Z second pass is the same-day retry: on a normal
+#: day it finds every day stored and touches nothing but a few index rows.
+CRON = "40 13,17 * * *"
 
 METHOD_SWE = "method:basin-snodas-swe@1.0.0"
 FEATURE_SWE = "basin_swe_mm"
