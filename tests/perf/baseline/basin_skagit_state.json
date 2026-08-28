@@ -1,7 +1,7 @@
 {
   "as_of": "2026-08-24T23:00:00Z",
   "contract": "BasinVisualizationState",
-  "generated_at": "2026-08-27T19:49:49.062451Z",
+  "generated_at": "2026-08-28T01:44:22.937803Z",
   "items": [
     {
       "geometry_ref": {
@@ -40,7 +40,7 @@
           "prov": "awdb-prec-skagit",
           "rank": 4,
           "unit": "pct",
-          "value": 61.4
+          "value": 48.3
         },
         {
           "direction": "unavailable",
@@ -273,7 +273,7 @@
         "state": "current"
       },
       "issued_at": null,
-      "label": "SNOTEL PREC percent of median, unweighted mean of 6 point site(s) at 1680–6490 ft (NRCS AWDB). A point-network statistic, not a basin mean; shown as context and never scored as risk.",
+      "label": "SNOTEL PREC percent of median, unweighted mean of 4 point site(s) at 1680–4310 ft (NRCS AWDB). A point-network statistic, not a basin mean; shown as context and never scored as risk.",
       "method_id": "method:snotel-precip-14d-context@1.0.0",
       "product_id": "product:awdb-snotel-daily",
       "quality": [],
@@ -290,7 +290,7 @@
         "state": "current"
       },
       "issued_at": null,
-      "label": "SNOTEL WTEQ: no usable value (No mapped SNOTEL site has a non-zero median snow-water equivalent for 2026-08-23 (7 site(s) report a median of 0.0, 1 report none), so percent of median is undefined) — No mapped SNOTEL site has a non-zero median snow-water equivalent for 2026-08-23 (7 site(s) report a median of 0.0, 1 report none), so percent of median is undefined",
+      "label": "SNOTEL WTEQ: no usable value (No mapped SNOTEL site has a non-zero median snow-water equivalent for 2026-08-23 (5 site(s) report a median of 0.0, 1 report none), so percent of median is undefined) — No mapped SNOTEL site has a non-zero median snow-water equivalent for 2026-08-23 (5 site(s) report a median of 0.0, 1 report none), so percent of median is undefined",
       "method_id": "method:snotel-basin-swe-context@1.0.0",
       "product_id": "product:awdb-snotel-daily",
       "quality": [

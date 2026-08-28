@@ -16,6 +16,13 @@ any of them is expensive — and whatever is done about that, the body it return
 > confidence moved; the `climatology_p50_disagreement` driver kept its exact value because the
 > two published sources agree to the cent at the fixture's day-of-year.
 >
+> **Regenerated again, 2026-08-28**, for the SNOTEL basin-attribution correction. The diff is three
+> lines, all Skagit and all traceable to two pillows NRCS itself places outside every seeded basin:
+> the SWE site count 7 → 5, the PREC label `6 point site(s) at 1680–6490 ft` → `4 ... at 1680–4310
+> ft`, and the `snotel_precip_14d_percent_of_median` driver **61.4 → 48.3**. That driver ships
+> `direction: context_not_scored`, so no band, score or susceptibility state moved — all six basins
+> are byte-identical on those. The number changing is the point: it was wrong before.
+>
 > The same regeneration refreshed two things that had gone stale earlier and that no test guards:
 > `total_queries` 13 → **14**, which is the growth-rank split (`595fc92`) reading the growth
 > reference as its own prefetch, and the per-station observation timestamps in

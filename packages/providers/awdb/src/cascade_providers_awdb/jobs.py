@@ -73,6 +73,7 @@ async def _append(
     quality: tuple[str, ...],
     retrieved_at: datetime,
     artifact_id: int | None,
+    excluded: tuple[tuple[str, str], ...] = (),
 ) -> int:
     if await _already_written(session, method_id=result.method_id, feature=result.feature, scope_id=basin_id, valid_time=valid_time):
         return 0
@@ -92,7 +93,15 @@ async def _append(
             method_id=result.method_id,
             product_id=PRODUCT_AWDB_DAILY,
             value=result.value,
-            values_json={**result.to_values_json(), "label": result.label(element=element), "reason": result.reason},
+            values_json={
+                **result.to_values_json(),
+                "label": result.label(element=element),
+                "reason": result.reason,
+                # Who the basin's HUC8 list claimed and this job refused, with the reason. A
+                # composite over fewer sites than the seed implies is otherwise just a smaller
+                # number with no account of itself.
+                "excluded_sites": [{"triplet": t, "reason": r} for t, r in excluded],
+            },
             unit=result.unit,
             percentile=None,
             climatology_ref=None,
@@ -123,7 +132,7 @@ async def run_fetch_snotel_context(
 
     stations_result = await fetch_stations(fetcher, session)
     stations = parse_stations(stations_result.content)
-    mapping = map_stations_to_basins(stations, basin_huc8)
+    mapping, excluded = map_stations_to_basins(stations, basin_huc8)
     triplets = sorted({s.triplet for sites in mapping.values() for s in sites})
     if not triplets:
         return 0
@@ -146,6 +155,7 @@ async def run_fetch_snotel_context(
             written += await _append(
                 session, result=result, basin_id=basin_id, element=element, valid_time=valid_time,
                 quality=flags, retrieved_at=data_result.fetched_at, artifact_id=data_result.artifact_id,
+                excluded=excluded.get(basin_id, ()),
             )
     await session.flush()
     return written

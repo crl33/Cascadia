@@ -291,8 +291,20 @@ X13, X14, X16, X17).
   return the unstratified number under a different name — a tautology that emits a number where
   UNKNOWN is correct, which is the dangerous failure mode. The band must be **data-driven and
   basin-aware**; what would justify a specific band is basin hypsometry from 3DEP (to know what
-  area fraction a band stands for) plus a forecast snow level per basin per cycle, and neither
-  exists yet. Until they do, the defensible statement is per basin and explicitly bounded: *"SWE
+  area fraction a band stands for) plus a forecast snow level per basin per cycle.
+
+  **Corrected 2026-08-28: the snow level now exists and is live.** `nbm.fetch_core_snowlvl` writes
+  `basin_snow_level_pointwise_p{10,50,90}` under `method:basin-snow-level@1.0.0`, area-weighted
+  over the basin mask, every 6 h — 120 rows per percentile in production, 1,876-3,765 m. Only
+  hypsometry is still missing, which halves the stated distance to a rain-exposed fraction and
+  moves it onto the critical path.
+
+  It also settles what resolution that hypsometry needs, which is less than it looks. Measured
+  over 96 basin-hours of live rows, the snow level's OWN p10-p90 spread has a **median of 241 m**
+  and reaches 908 m. An elevation model finer than that cannot improve a rain-exposed fraction,
+  because the surface it is being intersected with is not known to better than that. A coarse DEM
+  is therefore the scientifically honest choice as well as the cheap one; buying 30 m vertical
+  fidelity to intersect against a 241 m uncertainty would be precision theatre. Until they do, the defensible statement is per basin and explicitly bounded: *"SWE
   at the N sites between X and Y ft is Z % of median (method, day, n, exclusions); no observation
   exists above Y ft."*
 - **Elevation is not the only axis (FACT).** On 2025-12-11 Swamp Creek at 3,930 ft read **130.6 %**

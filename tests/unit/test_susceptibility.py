@@ -268,12 +268,93 @@ def test_snotel_sites_map_to_basins_by_their_own_huc() -> None:
     stations = parse_stations((AWDB / "stations_wa_sntl.json").read_bytes())
     geo = json.loads(gzip.open(GEO / "basins_seed_full.geojson.gz").read())
     huc8 = {f["properties"]["id"]: f["properties"]["huc8"] for f in geo["features"]}
-    mapping = awdb_normalize.map_stations_to_basins(stations, huc8)
+    mapping, _excluded = awdb_normalize.map_stations_to_basins(stations, huc8)
     assert set(mapping) == set(huc8)
     assert all(sites for sites in mapping.values())  # every seed basin has at least one pillow
-    assert sum(len(s) for s in mapping.values()) == 29
+    assert sum(len(s) for s in mapping.values()) == 27  # 29 minus the two east-of-crest sites
+
+
+def test_a_pillow_nrcs_associates_only_with_other_basins_is_not_counted_here() -> None:
+    """Harts Pass and Rainy Pass were being counted into the Skagit. They are not in it.
+
+    NRCS files each site under one primary `huc` and separately lists the HUCs it is associated
+    with. For these two the two fields disagree COMPLETELY — 0 of 6 and 0 of 5 associated HUCs lie
+    in any seeded Puget basin — so the primary field is simply wrong, and this is the provider's
+    own data saying so rather than a judgement about topography.
+
+    It mattered because they are high and snowy: they are the 6,490 ft and 4,880 ft sites, and
+    counting them west of the crest moved the 2025-12-11 pooled Skagit composite from 28.9 % to
+    45.6 % of median (HYDROLOGY §7). The SWE driver ships `context_not_scored`, so no band moved —
+    but a wrong number was rendered beside a correct one every day.
+    """
+    stations = parse_stations((AWDB / "stations_wa_sntl.json").read_bytes())
+    geo = json.loads(gzip.open(GEO / "basins_seed_full.geojson.gz").read())
+    huc8 = {f["properties"]["id"]: f["properties"]["huc8"] for f in geo["features"]}
+    mapping, excluded = awdb_normalize.map_stations_to_basins(stations, huc8)
+
     skagit = {s.triplet for s in mapping["basin:skagit"]}
-    assert "515:WA:SNTL" in skagit  # Harts Pass: filed under Upper Skagit, caveat kept visible
+    assert "515:WA:SNTL" not in skagit, "Harts Pass, 0 of 6 associated HUCs in any Puget basin"
+    assert "711:WA:SNTL" not in skagit, "Rainy Pass, 0 of 5"
+    dropped = dict(excluded["basin:skagit"])
+    assert dropped == {
+        "515:WA:SNTL": awdb_normalize.OUTSIDE_DOMAIN,
+        "711:WA:SNTL": awdb_normalize.OUTSIDE_DOMAIN,
+    }
+
+    # A site that straddles the divide is KEPT. Swamp Creek has 2 of 6 associated HUCs in the
+    # basin: a crest pillow really does drain both ways, and dropping it would be a claim the
+    # evidence does not support either. The per-site list is what makes it inspectable.
+    assert "975:WA:SNTL" in skagit
+    inside, total = awdb_normalize.basin_association(
+        next(s for s in stations if s.triplet == "975:WA:SNTL"), huc8["basin:skagit"]
+    )
+    assert 0 < inside < total
+
+
+def test_the_excluded_sites_travel_with_the_number(sessions, tmp_path) -> None:
+    """A composite over fewer sites than the seed implies must say who was dropped and why.
+
+    Otherwise it is just a smaller number with no account of itself — and the next person to read
+    it re-derives the same defect from the same HUC8 list.
+    """
+    stations = parse_stations((AWDB / "stations_wa_sntl.json").read_bytes())
+    geo = json.loads(gzip.open(GEO / "basins_seed_full.geojson.gz").read())
+    huc8 = {f["properties"]["id"]: f["properties"]["huc8"] for f in geo["features"]}
+    mapping, excluded = awdb_normalize.map_stations_to_basins(stations, huc8)
+    assert any(excluded.values()), "anti-vacuity: some basin must actually exclude something"
+    reasons = {r for rows in excluded.values() for _t, r in rows}
+    assert reasons == {awdb_normalize.OUTSIDE_DOMAIN, awdb_normalize.FILED_UNDER_NEIGHBOUR}
+
+
+def test_a_site_filed_under_a_neighbour_is_kept_not_dropped() -> None:
+    """The correction to this fix, kept as a test because the blunt version was nearly shipped.
+
+    Meadows Pass and Tinkham Creek are filed under Cedar (17110012) while every one of their Puget
+    associations is Green-Duwamish or Puyallup-White. A per-BASIN association test drops them —
+    and they are plainly west-side sites, so that would discard real snow to fix a different
+    basin's problem. The test is association with the seeded DOMAIN.
+
+    They are also not re-attributed to the neighbour: NRCS never stated that attribution, and
+    inventing one would be the same class of error in the other direction. Kept where the primary
+    HUC8 puts them, flagged so the disagreement is visible.
+    """
+    stations = parse_stations((AWDB / "stations_wa_sntl.json").read_bytes())
+    geo = json.loads(gzip.open(GEO / "basins_seed_full.geojson.gz").read())
+    huc8 = {f["properties"]["id"]: f["properties"]["huc8"] for f in geo["features"]}
+    mapping, excluded = awdb_normalize.map_stations_to_basins(stations, huc8)
+
+    cedar = {s.triplet for s in mapping["basin:cedar"]}
+    assert {"897:WA:SNTL", "899:WA:SNTL"} <= cedar, "west-side sites must not be dropped"
+    flagged = dict(excluded["basin:cedar"])
+    assert flagged == {
+        "897:WA:SNTL": awdb_normalize.FILED_UNDER_NEIGHBOUR,
+        "899:WA:SNTL": awdb_normalize.FILED_UNDER_NEIGHBOUR,
+    }
+    # and they really do associate with the domain, just not with Cedar
+    site = next(s for s in stations if s.triplet == "897:WA:SNTL")
+    domain = [h for hucs in huc8.values() for h in hucs]
+    assert awdb_normalize.basin_association(site, domain)[0] > 0
+    assert awdb_normalize.basin_association(site, huc8["basin:cedar"])[0] == 0
 
 
 def test_swe_percent_of_median_is_unknown_when_every_median_is_zero() -> None:
@@ -282,7 +363,7 @@ def test_swe_percent_of_median_is_unknown_when_every_median_is_zero() -> None:
     series = parse_data((AWDB / "data_wteq_prec_puget.json").read_bytes())
     geo = json.loads(gzip.open(GEO / "basins_seed_full.geojson.gz").read())
     huc8 = {f["properties"]["id"]: f["properties"]["huc8"] for f in geo["features"]}
-    sites = awdb_normalize.map_stations_to_basins(stations, huc8)["basin:skagit"]
+    sites = awdb_normalize.map_stations_to_basins(stations, huc8)[0]["basin:skagit"]
     mine = tuple(s for s in series if s.triplet in {x.triplet for x in sites})
     swe = awdb_normalize.swe_percent_of_median(mine, sites, day=awdb_normalize.latest_common_day(mine, element="WTEQ"))
     assert swe.value is None

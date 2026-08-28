@@ -3,7 +3,7 @@
   "distinct_queries": 14,
   "exact_repeats": 0,
   "distinct_statement_texts": 13,
-  "sql_wall_ms": 15.83,
+  "sql_wall_ms": 18.21,
   "by_table": {
     "derived_feature": 4,
     "(SELECT": 3,
@@ -266,7 +266,7 @@
       "table": "basin",
       "statement_ref": 0,
       "parameters": "()",
-      "duration_ms": 1.276
+      "duration_ms": 1.278
     },
     {
       "n": 2,
@@ -275,7 +275,7 @@
       "table": "source_product",
       "statement_ref": 1,
       "parameters": "()",
-      "duration_ms": 0.628
+      "duration_ms": 0.768
     },
     {
       "n": 3,
@@ -284,7 +284,7 @@
       "table": "forecast_point",
       "statement_ref": 2,
       "parameters": "('AUBW1', 'CRNW1', 'MVEW1', 'NKSW1', 'RNTW1', 'WRAW1')",
-      "duration_ms": 0.704
+      "duration_ms": 1.029
     },
     {
       "n": 4,
@@ -293,7 +293,7 @@
       "table": "station",
       "statement_ref": 3,
       "parameters": "('station:usgs:12100490', 'station:usgs:12113000', 'station:usgs:12119000', 'station:usgs:12149000', 'station:usgs:12189500', 'station:usgs:12200500', 'station:usgs:12213100')",
-      "duration_ms": 0.696
+      "duration_ms": 0.959
     },
     {
       "n": 5,
@@ -302,7 +302,7 @@
       "table": "threshold",
       "statement_ref": 4,
       "parameters": "('fp:nwps:AUBW1', 'fp:nwps:CRNW1', 'fp:nwps:MVEW1', 'fp:nwps:NKSW1', 'fp:nwps:RNTW1', 'fp:nwps:WRAW1', '2026-08-24 23:00:00.000000')",
-      "duration_ms": 1.1
+      "duration_ms": 1.056
     },
     {
       "n": 6,
@@ -311,7 +311,7 @@
       "table": "(SELECT",
       "statement_ref": 5,
       "parameters": "('fp:nwps:AUBW1', 'fp:nwps:CRNW1', 'fp:nwps:MVEW1', 'fp:nwps:NKSW1', 'fp:nwps:RNTW1', 'fp:nwps:WRAW1', '2026-08-24 23:00:00.000000', 'product:nwps-forecast', 'product:nwps-thresholds', 'product:nws-fls-crest', 1)",
-      "duration_ms": 1.007
+      "duration_ms": 1.118
     },
     {
       "n": 7,
@@ -320,7 +320,7 @@
       "table": "forecast_value",
       "statement_ref": 6,
       "parameters": "(1, 2, 3, 4, 5, 6)",
-      "duration_ms": 1.184
+      "duration_ms": 1.426
     },
     {
       "n": 8,
@@ -329,7 +329,7 @@
       "table": "(SELECT",
       "statement_ref": 7,
       "parameters": "('station:usgs:12100490', 'station:usgs:12113000', 'station:usgs:12119000', 'station:usgs:12149000', 'station:usgs:12200500', 'station:usgs:12213100', 'flow', 'stage', '2026-08-24 23:00:00.000000', '2026-08-10 23:00:00.000000', '2026-08-24 23:00:00.000000', 1)",
-      "duration_ms": 2.275
+      "duration_ms": 2.372
     },
     {
       "n": 9,
@@ -338,7 +338,7 @@
       "table": "observation",
       "statement_ref": 8,
       "parameters": "('2026-08-24 23:00:00.000000', '2026-08-22 13:30:00.000000', '2026-08-24 23:00:00.000000', 'station:usgs:12100490', 'flow', '2026-08-24 17:00:00.000000', '2026-08-24 23:00:00.000000', 'station:usgs:12100490', 'stage', '2026-08-22 13:30:00.000000', '2026-08-22 13:30:00.000000', 'station:usgs:12113000', 'flow', '2026-08-24 17:00:00.000000', '2026-08-24 23:00:00.000000', 'station:usgs:12113000', 'stage', '2026-08-22 13:30:00.000000', '2026-08-22 13:30:00.000000', 'station:usgs:12119000', 'flow', '2026-08-22 13:30:00.000000', '2026-08-22 13:30:00.000000', 'station:usgs:12119000', 'stage', '2026-08-24 17:00:00.000000', '2026-08-24 23:00:00.000000', 'station:usgs:12149000', 'flow', '2026-08-22 13:30:00.000000', '2026-08-22 13:30:00.000000', 'station:usgs:12149000', 'stage', '2026-08-24 17:00:00.000000', '2026-08-24 23:00:00.000000', 'station:usgs:12200500', 'flow', '2026-08-22 13:30:00.000000', '2026-08-22 13:30:00.000000', 'station:usgs:12200500', 'stage', '2026-08-24 17:00:00.000000', '2026-08-24 23:00:00.000000', 'station:usgs:12213100', 'flow', '2026-08-22 13:30:00.000000', '2026-08-22 13:30:00.000000', 'station:usgs:12213100', 'stage', '2026-08-24 17:00:00.000000', '2026-08-24 23:00:00.000000')",
-      "duration_ms": 1.269
+      "duration_ms": 1.356
     },
     {
       "n": 10,
@@ -347,7 +347,7 @@
       "table": "(SELECT",
       "statement_ref": 9,
       "parameters": "('fp:nwps:AUBW1', 'fp:nwps:CRNW1', 'fp:nwps:MVEW1', 'fp:nwps:NKSW1', 'fp:nwps:RNTW1', 'fp:nwps:WRAW1', '2026-08-24 23:00:00.000000', 'product:nwm-mr-via-nwps', 1)",
-      "duration_ms": 1.023
+      "duration_ms": 1.429
     },
     {
       "n": 11,
@@ -356,7 +356,7 @@
       "table": "derived_feature",
       "statement_ref": 10,
       "parameters": "('fp:nwps:AUBW1', 'fp:nwps:CRNW1', 'fp:nwps:MVEW1', 'fp:nwps:NKSW1', 'fp:nwps:RNTW1', 'fp:nwps:WRAW1', '2026-08-24 23:00:00.000000', 'nwm_mr_member_flow_series', 'method:nwm-member-series@2.0.0', '2026-08-24 12:00:00.000000', '2026-08-24 12:00:00.000000')",
-      "duration_ms": 1.19
+      "duration_ms": 1.231
     },
     {
       "n": 12,
@@ -365,7 +365,7 @@
       "table": "derived_feature",
       "statement_ref": 11,
       "parameters": "('basin:cedar', 'basin:green-duwamish', 'basin:nooksack', 'basin:puyallup-white', 'basin:skagit', 'basin:snohomish-snoqualmie', 'station:usgs:12100490', 'station:usgs:12113000', 'station:usgs:12119000', 'station:usgs:12149000', 'station:usgs:12189500', 'station:usgs:12213100', '2026-08-24 23:00:00.000000', 'basin_swe_percent_of_median', 'method:snotel-basin-swe-context@1.0.0', 'snotel_precip_14d_percent_of_median', 'method:snotel-precip-14d-context@1.0.0', 'streamflow_doy_percentile', 'method:susceptibility-index@0.1.0', '2026-08-17 23:00:00.000000', '2026-08-24 23:00:00.000000')",
-      "duration_ms": 1.232
+      "duration_ms": 1.705
     },
     {
       "n": 13,
@@ -374,7 +374,7 @@
       "table": "derived_feature",
       "statement_ref": 10,
       "parameters": "('station:usgs:12100490', 'station:usgs:12113000', 'station:usgs:12119000', 'station:usgs:12149000', 'station:usgs:12189500', 'station:usgs:12213100', '2026-08-24 23:00:00.000000', 'streamflow_growth_reference', 'method:streamflow-growth-reference@1.0.0', '2016-08-26 23:00:00.000000', '2026-08-24 23:00:00.000000')",
-      "duration_ms": 0.865
+      "duration_ms": 0.875
     },
     {
       "n": 14,
@@ -383,7 +383,7 @@
       "table": "derived_feature",
       "statement_ref": 12,
       "parameters": "('basin:cedar', 'basin:green-duwamish', 'basin:nooksack', 'basin:puyallup-white', 'basin:skagit', 'basin:snohomish-snoqualmie', '2026-08-24 23:00:00.000000', 'basin_qpf_72h_pointwise_p10', 'method:basin-qpf@1.0.0', '72h', 'basin_qpf_72h_pointwise_p50', 'method:basin-qpf@1.0.0', '72h', 'basin_qpf_72h_pointwise_p90', 'method:basin-qpf@1.0.0', '72h', 'basin_snow_level_pointwise_p50', 'method:basin-snow-level@1.0.0', '2026-08-22 23:00:00.000000')",
-      "duration_ms": 1.378
+      "duration_ms": 1.607
     }
   ]
 }

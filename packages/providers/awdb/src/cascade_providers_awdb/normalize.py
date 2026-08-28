@@ -105,30 +105,84 @@ def daily_value_valid_time(day: date, *, utc_offset_hours: float | None) -> tupl
     return midnight - timedelta(hours=utc_offset_hours), ()
 
 
+#: Why a pillow that a basin's HUC8 list claims is nonetheless not counted into it. The test is
+#: association with the seeded DOMAIN, not with the one basin: a site whose associations point at a
+#: neighbouring seeded basin is still a west-side site, and dropping it would lose real data.
+OUTSIDE_DOMAIN = "no_associated_huc_in_any_seeded_basin"
+#: Kept, but its primary HUC8 and its associations disagree about WHICH seeded basin it is in.
+#: Recorded rather than acted on: re-attributing it would be a claim the evidence does not make.
+FILED_UNDER_NEIGHBOUR = "associated_only_with_other_seeded_basins"
+
+
+def basin_association(station: AwdbStation, hucs: Sequence[str]) -> tuple[int, int]:
+    """How many of NRCS's OWN ``associatedHucs`` for this pillow fall inside the basin, of how many.
+
+    A snow pillow on the Cascade crest is not "in" one basin the way a stream gauge is. NRCS files
+    each site under one primary `huc`, and separately lists the HUCs the site is associated with.
+    Where those two disagree completely, the primary field is the one that is wrong.
+    """
+    wanted = {str(h)[:8] for h in hucs}
+    assoc = [a[:8] for a in station.associated_hucs]
+    return sum(1 for a in assoc if a in wanted), len(assoc)
+
+
 def map_stations_to_basins(
     stations: Iterable[AwdbStation],
     basin_huc8: Mapping[str, Sequence[str]],
-) -> dict[str, tuple[AwdbStation, ...]]:
-    """Assign each station to a basin by its OWN HUC8 prefix against the seeded basin HUC8 list.
+) -> tuple[dict[str, tuple[AwdbStation, ...]], dict[str, tuple[tuple[str, str], ...]]]:
+    """Assign each station to a basin by HUC8, then refuse the ones NRCS itself places elsewhere.
 
     No hardcoded site list: NRCS says which HUC a pillow sits in and the seed says which HUC8s a
     basin is made of. A station whose HUC matches no seeded basin is simply unmapped.
 
-    Known caveat kept visible rather than patched: site 515 (Harts Pass) is filed under Upper
-    Skagit 17110005 but its ``associatedHucs`` are all Methow/Pasayten and it sits on the crest
-    (DATA_SOURCES S1). It therefore maps to the Skagit here; the per-site list in
-    ``values_json`` is what makes that inspectable.
+    **The primary `huc` alone was not enough, and the error was measurable.** Eight WA pillows
+    whose primary HUC8 is a Puget basin have a MAJORITY of their `associatedHucs` east of the
+    crest, and they are disproportionately the high, snowy ones: Harts Pass (6,490 ft) and Rainy
+    Pass (4,880 ft) have **zero** of six and zero of five associated HUCs in any Puget basin.
+    Counting them west of the crest moved the 2025-12-11 pooled Skagit composite from 28.9 % to
+    45.6 % of median (HYDROLOGY §7) — a wrong number rendered every day beside a correct one.
+
+    So the rule is the provider's own data, not a judgement about topography: a site is excluded
+    when it has associated HUCs and **none of them is in ANY seeded basin**. Sites that straddle
+    the divide (3 of 6, 2 of 5) are KEPT, because a crest site genuinely does drain both ways and
+    dropping it would be a claim the evidence does not support either.
+
+    The domain test, rather than the per-basin one, is deliberate and was a correction. Meadows
+    Pass and Tinkham Creek are filed under Cedar (17110012) while every one of their Puget
+    associations is Green-Duwamish or Puyallup-White. A per-basin test drops them, but they are
+    plainly west-side sites — the provider's data says they are in the domain and merely files them
+    under a neighbour. They are kept where their primary HUC8 puts them and flagged
+    ``FILED_UNDER_NEIGHBOUR``, because moving them would be inventing an attribution NRCS did not
+    state, and dropping them would discard real snow.
+
+    Returns `(mapping, excluded)`, where `excluded` is `basin_id -> ((triplet, reason), ...)`. The
+    exclusions are returned rather than logged so the surface can say who was dropped and why,
+    which is the difference between a smaller number and an unexplained one.
     """
     lookup: dict[str, str] = {}
     for basin_id, hucs in basin_huc8.items():
         for huc in hucs:
             lookup[str(huc)[:8]] = basin_id
+    domain = [h for hucs in basin_huc8.values() for h in hucs]
     out: dict[str, list[AwdbStation]] = {basin_id: [] for basin_id in basin_huc8}
+    dropped: dict[str, list[tuple[str, str]]] = {basin_id: [] for basin_id in basin_huc8}
     for station in stations:
         basin_id = lookup.get(station.huc8 or "")
-        if basin_id is not None:
-            out[basin_id].append(station)
-    return {basin_id: tuple(sorted(sites, key=lambda s: s.triplet)) for basin_id, sites in out.items()}
+        if basin_id is None:
+            continue
+        in_domain, total = basin_association(station, domain)
+        if total and not in_domain:
+            dropped[basin_id].append((station.triplet, OUTSIDE_DOMAIN))
+            continue
+        in_basin, _ = basin_association(station, basin_huc8[basin_id])
+        if total and not in_basin:
+            # In the domain, filed under a neighbour. Kept and flagged — see the docstring.
+            dropped[basin_id].append((station.triplet, FILED_UNDER_NEIGHBOUR))
+        out[basin_id].append(station)
+    return (
+        {basin_id: tuple(sorted(sites, key=lambda s: s.triplet)) for basin_id, sites in out.items()},
+        {basin_id: tuple(sorted(x)) for basin_id, x in dropped.items()},
+    )
 
 
 def _series_for(series: Iterable[AwdbSeries], *, triplet: str, element: str) -> AwdbSeries | None:
