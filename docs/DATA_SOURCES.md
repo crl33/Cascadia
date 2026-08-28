@@ -456,7 +456,7 @@ Verification: AWDB verified live 2026-08-22 (V1_AUDIT §8); other facts from fet
 - **SourceProduct.** `product:awdb-snotel-hourly` (WTEQ, SNWD, TOBS, SMS, STO) · PT1H · PT3H; `product:awdb-snotel-daily` · P1D · PT36H (doctrine defaults) **(implemented as `product:awdb-snotel-daily`, WTEQ + PREC only, context drivers)**; `product:awdb-stations` · P7D · P7D **(implemented; the HUC8 basin mapping and site elevations come from here)**.
 - **Evidence.** FACT https://wcc.sc.egov.usda.gov/awdbRestApi/v3/api-docs · FACT https://wcc.sc.egov.usda.gov/awdbRestApi/services/v1/stations?stationTriplets=515:WA:SNTL&returnStationElements=true · FACT https://wcc.sc.egov.usda.gov/awdbRestApi/services/v1/data?stationTriplets=515:WA:SNTL&elements=SMS:-8,TOBS,PREC&duration=DAILY&beginDate=2026-08-19&endDate=2026-08-22&periodRef=START · INFERENCE https://www.nrcs.usda.gov/sites/default/files/2024-02/Report%20Generator%20Help%20Guide.pdf
 
-#### S2 · SNODAS daily grids (NSIDC G02158) — `src:snodas` · researched · Phase 3
+#### S2 · SNODAS daily grids (NSIDC G02158) — `src:snodas` · **ingesting (SWE daily)** · Phase 3
 - **What / authority / kind.** NOHRSC snow model with assimilation of ground/airborne/satellite snow data; NOAA NWS NOHRSC (producer), NOAA@NSIDC (archive); MODELED ("model output and should not be confused with actual observations").
 - **Access.** `https://noaadata.apps.nsidc.org/NOAA/G02158/{masked|unmasked}/YYYY/MM_Mon/SNODAS_YYYYMMDD.tar` (16 gzipped flat-binary `.dat` + `.txt` headers), ancillary `SNODAS_Zero_Repair_Mask.tif`, `G02158_missing_files.txt`; no Earthdata login; GDAL reads with an ENVI-style header (FACT).
 - **Cadence / latency.** Daily; SWE/depth snapshots at 06:00 UTC; melt/sublimation/precipitation 06–06 UTC totals; `SNODAS_20260821.tar` listed 21-Aug-2026 13:00, 2026-08-22 file absent at 08:40Z (FACT).
@@ -464,6 +464,22 @@ Verification: AWDB verified live 2026-08-22 (V1_AUDIT §8); other facts from fet
 - **Missing / units / failure modes.** No-data −9999; 126,950 unmasked cells carried erroneous 0.0 SWE/depth 2014-10-09…2019-10-10 (apply the zero-repair mask) (FACT). Integers ÷ scale: SWE (1034) m×1000, depth (1036) m×1000, melt (1044) m×100000, sublimation (1050, 1039) m×100000, precip (1025, IL00 liquid / IL01 solid) kg m⁻²×10, pack temperature (1038) K; int16 saturates at 32.767 m SWE (FACT). **Documented failure mode:** in high-elevation cells with no observations and no melt, snow-removal mechanisms are insufficient and SWE "grow[s] without limit" (user guide 1.9.1) — Mt. Baker, Glacier Peak, Mt. Rainier and North Cascades cells (FACT).
 - **Limitations.** – Assimilates SNOTEL → not independent validation. – Poor alpine skill (Colorado: 16–30 % variance) and high-elevation underestimation in large-relief terrain (INFERENCE from literature). – NSIDC service level "downgraded to Basic due to funding constraints" (FACT). – "Not recommended for quantitative water budget analysis" (FACT).
 - **License.** No restrictions; cite DOI 10.7265/N5TB14TC (FACT). **Feeds.** Basin SWE by elevation band, snow-covered extent, melt volume; fused with S1 (HYDROLOGY §7).
+- **Ingest (landed 2026-08-28).** `snodas.fetch_swe` (cron 40 13 * * *) pulls the UNMASKED
+  daily tar (~5-7 MB in August; BC headwaters covered), decodes only the 1034 SWE member (the
+  header is the authority: grid, units m/1000 == mm, no-data, snapshot instant), and writes
+  `basin_swe_mm` + `basin_snow_covered_fraction` per basin (`method:basin-snodas-swe@1.0.0`,
+  confidence LOW — it assimilates the pillows we already carry). Measured and pinned: the −9999
+  pattern is a STATIC water/domain mask (bit-identical across days; in-basin cells are lakes,
+  so the mean is the LAND mean, flagged); Rainier's and Baker's glacier cells SATURATE at 32767
+  (the user-guide unbounded-growth artifact) — excluded and flagged, a naive average inflates
+  the Puyallup-White land mean 78 -> 125 mm; publication ~13:15Z for the 06Z snapshot (7.25 h
+  lag; `available_at` = Last-Modified); NSIDC intermittently answers HTTP 500 — the day is
+  skipped, re-found by a 3-day lookback. Snow-covered fraction is now stored per basin per day,
+  which is one of the two inputs the rain-on-snow gate names (the other is a snow-covered-AREA
+  observation, still VIIRS's job). Object lifecycle `snodas/` 30 d (archive back to 2003 makes
+  raw re-fetchable; derived rows are the record). Fixture:
+  `tests/fixtures/providers/snodas/` (real 2026-08-27, SWE member only); tests
+  `tests/unit/test_snodas.py`.
 - **SourceProduct.** `product:snodas-masked-daily` · P1D · PT30H (doctrine default); `product:snodas-unmasked-daily` · P1D · PT30H.
 - **Evidence.** FACT https://nsidc.org/data/g02158/versions/1 · FACT https://nsidc.org/sites/default/files/g02158-v001-userguide_2_1.pdf · FACT https://noaadata.apps.nsidc.org/NOAA/G02158/masked/2026/08_Aug/ · INFERENCE https://pubs.usgs.gov/publication/70009700
 

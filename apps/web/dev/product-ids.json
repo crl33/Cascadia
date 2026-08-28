@@ -14,6 +14,7 @@
   "product:nwps-thresholds",
   "product:nws-api-alerts-active",
   "product:nws-fls-crest",
+  "product:snodas-swe-daily",
   "product:usgs-daily-stats",
   "product:usgs-doy-normals",
   "product:usgs-iv",

@@ -56,6 +56,7 @@ PROVIDER_HOSTS: frozenset[str] = frozenset(
         "noaa-mrms-pds.s3.amazonaws.com",    # P1 MRMS QPE + gauge-influence (NODD mirror)
         "api.weather.gov",                   # W1 NWS API: CAP alerts (Phase 1), grids later
         "ftp-wpc.ncep.noaa.gov",             # W6 WPC 5-km QPF files (official human QPF)
+        "noaadata.apps.nsidc.org",           # S2 SNODAS daily tars (NOAA@NSIDC G02158)
     }
 )
 

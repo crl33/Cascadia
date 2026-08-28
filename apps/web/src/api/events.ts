@@ -39,6 +39,7 @@ const KIND_PREFIXES: Record<string, string[][]> = {
   'product:usgs-daily-stats': [['viz'], ['basin-state'], ['river-state']],
   'product:usgs-doy-normals': [['viz'], ['basin-state'], ['river-state']],
   'product:awdb-snotel-daily': [['viz'], ['basin-state']],
+  'product:snodas-swe-daily': [['viz'], ['basin-state']],
   'product:nws-fls-crest': [['river-state'], ['runs']],
   // metadata-only: nothing a live view renders changes when station metadata refreshes
   'product:awdb-stations': [],

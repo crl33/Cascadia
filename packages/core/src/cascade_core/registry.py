@@ -37,6 +37,7 @@ SRC_AWDB = "src:nrcs-awdb"
 SRC_MRMS = "src:mrms"
 SRC_NWS_API = "src:nws-api"
 SRC_WPC = "src:wpc"
+SRC_SNODAS = "src:snodas"
 
 PRODUCT_USGS_IV = "product:usgs-iv"
 PRODUCT_NWPS_FORECAST = "product:nwps-forecast"
@@ -55,6 +56,7 @@ PRODUCT_AWDB_DAILY = "product:awdb-snotel-daily"
 PRODUCT_AWDB_STATIONS = "product:awdb-stations"
 PRODUCT_MRMS_QPE = "product:mrms-qpe-01h-pass2"
 PRODUCT_WPC_QPF = "product:wpc-qpf-5km-grib"
+PRODUCT_SNODAS_SWE = "product:snodas-swe-daily"
 PRODUCT_MRMS_GAUGEINFL = "product:mrms-gaugeinfl-01h-pass2"
 PRODUCT_NWS_ALERTS = "product:nws-api-alerts-active"
 
@@ -97,6 +99,7 @@ SOURCES: tuple[dict[str, str], ...] = (
     {"id": SRC_MRMS, "authority": "NOAA NSSL/NCEP Multi-Radar Multi-Sensor (MRMS) via NODD", "kind": "OBSERVED", "base_url": "https://noaa-mrms-pds.s3.amazonaws.com/", "docs_url": "https://www.nssl.noaa.gov/projects/mrms/"},
     {"id": SRC_NWS_API, "authority": "NOAA National Weather Service API (CAP alerts, WFO products)", "kind": "OFFICIAL_FORECAST", "base_url": "https://api.weather.gov/", "docs_url": "https://www.weather.gov/documentation/services-web-api"},
     {"id": SRC_WPC, "authority": "NOAA/NWS Weather Prediction Center (human-forecaster national QPF)", "kind": "OFFICIAL_FORECAST", "base_url": "https://ftp-wpc.ncep.noaa.gov/5km_qpf/", "docs_url": "https://www.wpc.ncep.noaa.gov/qpf/qpf2.shtml"},
+    {"id": SRC_SNODAS, "authority": "NOAA NWS NOHRSC SNODAS via NOAA@NSIDC (G02158)", "kind": "MODELED", "base_url": "https://noaadata.apps.nsidc.org/NOAA/G02158/", "docs_url": "https://nsidc.org/data/g02158/versions/1"},
 )
 
 PRODUCTS: tuple[dict[str, object], ...] = (
@@ -160,6 +163,8 @@ PRODUCTS: tuple[dict[str, object], ...] = (
     # Two cycles daily (00/12Z), each published ~48 min BEFORE its nominal hour (measured
     # 2026-08-28: 12Z at 10:48Z, 00Z at 22:48Z the prior evening). Grace 4 h on a 12 h cadence.
     {"id": PRODUCT_WPC_QPF, "source_id": SRC_WPC, "label": "WPC 5-km official QPF, 24-h windows Day 1-3, basin-aggregated", "variables": ["precip"], "expected_cadence_seconds": 43200, "grace_seconds": 14400},
+    # Daily 06Z snapshot, published ~13:15Z (measured; a ~7.25 h lag). Grace 12 h.
+    {"id": PRODUCT_SNODAS_SWE, "source_id": SRC_SNODAS, "label": "SNODAS unmasked daily SWE (modeled, assimilates SNOTEL), basin land mean + snow-covered fraction", "variables": ["swe"], "expected_cadence_seconds": 86400, "grace_seconds": 43200},
 )
 
 
@@ -225,6 +230,7 @@ JOBS: tuple[JobSpec, ...] = (
     JobSpec("nws.fetch_alerts", "nws-api", SRC_NWS_API, (PRODUCT_NWS_ALERTS,), 300),
     # Twice daily at 11:10Z/23:10Z — ~20 min after each cycle's measured publication.
     JobSpec("wpc.fetch_qpf", "wpc", SRC_WPC, (PRODUCT_WPC_QPF,), 43200),
+    JobSpec("snodas.fetch_swe", "snodas", SRC_SNODAS, (PRODUCT_SNODAS_SWE,), 86400),
     # Registered on the QUEUE only, never in `scheduler.JOBS` (it needs PostgreSQL, and `run-once`
     # must keep working on sqlite) — but it runs through `run_job` like everything else, leaves
     # job_run rows, and keeps the observation partition horizon ahead of ingestion. It belongs

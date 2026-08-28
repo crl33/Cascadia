@@ -30,6 +30,7 @@ COPY packages/providers/nwps/pyproject.toml packages/providers/nwps/pyproject.to
 COPY packages/providers/nbm/pyproject.toml packages/providers/nbm/pyproject.toml
 COPY packages/providers/mrms/pyproject.toml packages/providers/mrms/pyproject.toml
 COPY packages/providers/wpc/pyproject.toml packages/providers/wpc/pyproject.toml
+COPY packages/providers/snodas/pyproject.toml packages/providers/snodas/pyproject.toml
 COPY packages/providers/awdb/pyproject.toml packages/providers/awdb/pyproject.toml
 COPY apps/api/pyproject.toml apps/api/pyproject.toml
 COPY apps/worker/pyproject.toml apps/worker/pyproject.toml
@@ -51,6 +52,7 @@ paths = [
     "packages/providers/nbm/pyproject.toml",
     "packages/providers/mrms/pyproject.toml",
     "packages/providers/wpc/pyproject.toml",
+    "packages/providers/snodas/pyproject.toml",
     "packages/providers/awdb/pyproject.toml",
     "apps/api/pyproject.toml",
     "apps/worker/pyproject.toml",
@@ -92,6 +94,7 @@ RUN pip install \
     ./packages/providers/nbm \
     ./packages/providers/mrms \
     ./packages/providers/wpc \
+    ./packages/providers/snodas \
     ./packages/providers/awdb \
     ./apps/api \
     "./apps/worker${WORKER_EXTRAS:+[$WORKER_EXTRAS]}"
