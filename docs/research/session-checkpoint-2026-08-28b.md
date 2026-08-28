@@ -151,6 +151,19 @@ writer-created partition owned by the migrator; role census: api_reader + ingest
 serving, owner idle). VIIRS S9 recorded as externally blocked (Earthdata credentials are an
 owner action).
 
+## The remediation's own regression (fixed same session)
+
+The review remediation itself shipped one: keeping the freshness anchor's `valid_time`
+content-pure (to silence the SSE broker's quiet-poll chatter) flipped live health to
+`degraded` — `compute_freshness` anchors on `valid_time`, so healthy valid-until products
+(thresholds 4 d, alerts 16 h of quiet) read STALE while all seventeen jobs ran green. The
+offline suite could not see it because its test pinned the anchor's FIELDS, not the computed
+STATE. Fixed in `55e412b`: `FreshnessAnchor.content_time` carries the pure content clock for
+the broker while `valid_time` re-absorbs the poll for freshness — two questions, two fields —
+plus an end-to-end state pin (old content + fresh poll must compute `current`). The lesson is
+in the production-verification memory: re-check live health after every deploy touching the
+health path.
+
 ## Dependency-ordered continuation
 
 (The stub fixture was refreshed as part of this checkpoint: the committed capture is 1.4.0
