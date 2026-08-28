@@ -83,6 +83,19 @@ const DriverSchema = z.object({
   direction: z.string(), rank: z.number(), prov: z.string(),
 });
 
+/** Observed trailing-window precipitation (1.4.0). A partial window is a KNOWN UNDERESTIMATE
+ * whose `reason` says how many hours are missing — render the caveat, never scale the number. */
+const AntecedentPrecipSchema = z.object({
+  window_h: z.number(),
+  window_end: nullableIso,
+  total: QuantitySchema.nullable().optional(),
+  hours_present: z.number(),
+  hours_expected: z.number(),
+  truth: TruthClassSchema,
+  prov: z.string(),
+  reason: z.string().nullable().optional(),
+});
+
 const OfficialAlertSchema = z.object({
   id: z.string(), event: z.string(), severity: z.string().nullable().optional(), onset: nullableIso, expires: nullableIso,
   issuer: z.string(), prov: z.string(),
@@ -168,6 +181,7 @@ export const BasinVisualizationStateSchema = z.object({
   tension: z.number().nullable().optional(),
   headline_drivers: z.array(DriverSchema).optional(),
   official_alerts: z.array(OfficialAlertSchema).optional(),
+  antecedent_precip: z.array(AntecedentPrecipSchema).optional(),
   outlet_forecast_point_id: z.string().nullable().optional(),
   geometry_ref: z.object({ lod: z.string(), feature_id: z.string(), url: z.string().nullable().optional() }),
   label_priority: z.number().optional(),

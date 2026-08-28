@@ -286,8 +286,12 @@ async def test_accept_still_defaults_to_json(tmp_path) -> None:
 # --- contracts 1.3.0 --------------------------------------------------------------------
 
 
-def test_contract_version_is_1_3_0_and_the_additions_are_optional() -> None:
-    assert CONTRACT_VERSION == "1.3.0"
+def test_contract_version_is_1_4_0_and_the_additions_are_optional() -> None:
+    assert CONTRACT_VERSION == "1.4.0"
+    # 1.4.0 is additive too: a 1.3.0 basin item (no antecedent_precip) keeps validating.
+    from cascade_contracts.visualization import BasinVisualizationState
+
+    assert BasinVisualizationState.model_fields["antecedent_precip"].default == ()
     # A 1.1.0-shaped payload (no value, no spread) must keep validating: the bump is additive.
     old = SurfaceState(prov="p", truth=TruthClass.CASCADE_DERIVED, state=SurfaceLevel.UNKNOWN, reason="no cycle")
     assert old.value is None and old.spread is None

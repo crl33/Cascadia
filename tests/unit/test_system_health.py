@@ -409,3 +409,49 @@ async def test_a_seeded_product_row_that_drifts_from_the_registry_is_reported(db
     assert drifted["status"] == "degraded"
     # and it does not smear: every other product still reads clean
     assert [pid for pid, f in drifted["freshness"].items() if f["config_drift"] is not None] == [target]
+
+
+async def test_a_quiet_alert_week_is_current_and_alert_rows_anchor_their_product(tmp_path) -> None:
+    """The alerts product is judged by its POLL, and its own table is in the anchor union.
+
+    Two lessons in one test. First: an empty active-alert list is a legitimate, common answer —
+    zero rows through a quiet week must read `current` while polls keep landing, so the product
+    is valid-until-superseded and the raw_artifact fetch anchors it even with NO value rows
+    (`have is None`). Second: finding C repeated itself on 2026-08-28 — `official_alert` was
+    missing from the per-table anchor union, so production health said "never ingested" over two
+    correctly stored rows. The union must cover every table a product's values land in.
+    """
+    from datetime import timedelta
+
+    from cascade_core.db import create_schema, make_engine, make_session_factory
+    from cascade_core.knowledge import as_known_at
+    from cascade_core.models import OfficialAlertRecord, RawArtifact
+    from cascade_core.registry import PRODUCT_NWS_ALERTS, VALID_UNTIL_SUPERSEDED_PRODUCTS
+    from cascade_core.timeutils import utcnow
+
+    assert PRODUCT_NWS_ALERTS in VALID_UNTIL_SUPERSEDED_PRODUCTS
+    engine = make_engine(f"sqlite+aiosqlite:///{tmp_path}/h.db")
+    await create_schema(engine)
+    now = utcnow()
+    async with make_session_factory(engine)() as s:
+        # Quiet weather: a poll five minutes ago found nothing active; no alert row exists.
+        s.add(RawArtifact(sha256="e" * 64, object_key="a/x", product_id=PRODUCT_NWS_ALERTS,
+                          fetched_at=now - timedelta(minutes=5), request_url="https://example.invalid/a",
+                          bytes=1, http_status=200, content_type="application/geo+json"))
+        await s.commit()
+        quiet = (await as_known_at(s, now).product_freshness_anchors())[PRODUCT_NWS_ALERTS]
+        assert quiet.kind == "raw_artifact"
+        assert quiet.retrieved_at is not None and (now - quiet.retrieved_at) < timedelta(minutes=6)
+
+        # An alert lands: its own table joins the anchor, merged with the poll.
+        s.add(OfficialAlertRecord(id="urn:test.anchor.1", event="Flood Warning", status="Actual",
+                                  message_type="Alert", sent=now - timedelta(hours=2),
+                                  ugc=["WAC057"], basin_ids=["basin:skagit"],
+                                  mapping_method_id="method:basin-ugc-mapping@1.0.0", references=[],
+                                  retrieved_at=now - timedelta(minutes=4),
+                                  available_at=now - timedelta(minutes=4)))
+        await s.commit()
+    async with make_session_factory(engine)() as s:
+        merged = (await as_known_at(s, now).product_freshness_anchors())[PRODUCT_NWS_ALERTS]
+    await engine.dispose()
+    assert "official_alert" in merged.kind and "raw_artifact" in merged.kind

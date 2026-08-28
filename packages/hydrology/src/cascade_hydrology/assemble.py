@@ -52,18 +52,20 @@ from cascade_core.models import (
     Threshold,
 )
 from cascade_core.registry import (
+    PRODUCT_MRMS_QPE,
     PRODUCT_NWPS_FORECAST,
     PRODUCT_NWPS_THRESHOLDS,
     PRODUCT_NWS_ALERTS,
     PRODUCT_USGS_IV,
     SOURCES,
     SRC_CASCADE,
+    SRC_MRMS,
     SRC_NWPS,
     SRC_NWS_API,
     SRC_USGS,
 )
 from cascade_geo.hypsometry import BasinHypsometry
-from cascade_hydrology import agreement, forcing, surfaces, susceptibility
+from cascade_hydrology import agreement, antecedent, forcing, surfaces, susceptibility
 from cascade_hydrology.category import CategoryResult, Measure, ThresholdSet, categorize
 from cascade_hydrology.headroom import headroom as compute_headroom
 from cascade_hydrology.surfaces import SurfaceReason, require_reason
@@ -524,6 +526,15 @@ async def basin_envelope(
                 )
             )
     refs.update(alert_refs)
+    # Antecedent QPE once per envelope: ONE statement warms the per-basin memo cells the loop
+    # below reads back (`derived_features_for` docstring — the surfaces keep calling their own
+    # readers and simply stop reaching the database).
+    await k.derived_features_for(
+        [(antecedent.FEATURE_QPE_01H, antecedent.METHOD_QPE, "1h")],
+        [b.id for b in basins],
+        valid_from=k.as_of - antecedent.LOOKBACK,
+        valid_until=k.as_of,
+    )
 
     for basin in basins:
         outlet = await k.forecast_point_by_lid(basin.outlet_fp_id.split(":")[-1]) if basin.outlet_fp_id else None
@@ -571,6 +582,45 @@ async def basin_envelope(
         frc = await forcing.assess(k, basin, products, hypsometry=(hypsometry or {}).get(basin.id))
         refs.update(frc.refs)
 
+        # ANTECEDENT QPE: observed trailing-window sums, ending at the newest known hour.
+        qpe_key = antecedent.antecedent_ref_key(basin.id)
+        ante = antecedent.assess_antecedent(
+            await k.derived_features(
+                antecedent.FEATURE_QPE_01H,
+                basin.id,
+                method_id=antecedent.METHOD_QPE,
+                window="1h",
+                valid_from=k.as_of - antecedent.LOOKBACK,
+                valid_until=k.as_of,
+                latest_per_valid_time=True,
+            ),
+            ref_key=qpe_key,
+        )
+        if ante.newest is not None:
+            qpe_product = products.get(PRODUCT_MRMS_QPE)
+            refs[qpe_key] = ProvenanceRef(
+                source_id=qpe_product.source_id if qpe_product else SRC_MRMS,
+                source_kind=resolved_source_kind(qpe_product),
+                product_id=PRODUCT_MRMS_QPE,
+                valid_time=ante.newest.valid_time,
+                retrieved_at=ante.newest.computed_at,
+                freshness=_fresh(products, PRODUCT_MRMS_QPE, valid_time=ante.newest.valid_time, retrieved_at=ante.newest.computed_at, now=k.as_of),
+                quality=tuple(ante.newest.quality or ()),
+                label=(
+                    f"MRMS multi-sensor QPE, hourly basin mean summed over trailing windows; "
+                    f"newest hour ends {ante.newest.valid_time:%Y-%m-%d %H:%M}Z ({ante.newest.method_id})"
+                ),
+                raw_artifact_id=str(ante.newest.raw_artifact_id) if ante.newest.raw_artifact_id is not None else None,
+            )
+        else:
+            refs[qpe_key] = ProvenanceRef(
+                source_id=SRC_MRMS,
+                source_kind=SourceKind.UNKNOWN,
+                product_id=PRODUCT_MRMS_QPE,
+                freshness=Freshness(state=FreshnessState.MISSING),
+                label="No observed QPE hour known at this knowledge time",
+            )
+
         hazard_reason = " ".join(x for x in (hazard.reason, model_probability_note) if x) or None
         items.append(
             BasinVisualizationState(
@@ -600,6 +650,7 @@ async def basin_envelope(
                 state_change=sus.state_changes,
                 headline_drivers=_renumbered(sus.drivers, frc.drivers, agreement_drivers),
                 official_alerts=tuple(alerts_by_basin.get(basin.id, ())),
+                antecedent_precip=ante.entries,
                 outlet_forecast_point_id=basin.outlet_fp_id,
                 geometry_ref=GeometryRef(lod="basin", feature_id=basin.id, url=f"/basins/{basin.id}/geometry?lod=basin"),
                 label_priority=2,

@@ -187,6 +187,13 @@ object for the whole world.
    fuse a level with a velocity into one symbol. `HydrologicState.boundary` is a *condition*
    with three values, one of which is `unquantified` — the fail-closed state, which never means
    "separated". None of these fields is ever a probability, a return period or an AEP.
+   **1.4.0** (2026-08-28) added the optional `BasinVisualizationState.antecedent_precip`
+   (`AntecedentPrecip`): observed MRMS basin-mean precipitation summed over trailing 6/24/72 h
+   windows, each entry carrying `window_end` (the newest observed hour, which anchors the
+   window — never the wall clock), `hours_present`/`hours_expected`, and a `reason` whenever
+   the sum covers fewer hours than the window. A partial total is a KNOWN UNDERESTIMATE and is
+   never scaled up; truth class `observation`; a driver beside the surfaces, fused with
+   nothing. Additive, so 1.3.0 consumers keep validating.
 5. Contract tests: each schema has fixture documents; the web client's generated types are
    checked against them in CI; the API's responses are validated against the schema in
    integration tests.

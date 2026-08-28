@@ -338,7 +338,16 @@ Verification: facts from fetched URLs in
 [research/precipitation-observations.json](research/precipitation-observations.json) — independent
 verification pending. Frequency context (P11): Washington is **not** in NOAA Atlas 14.
 
-#### P1 · MRMS QPE on AWS (`noaa-mrms-pds`) + archives (Iowa State MTArchive, Planetary Computer, NCEI) — `src:mrms` · researched · Phase 2 (live), Phase 6 (backfill)
+#### P1 · MRMS QPE on AWS (`noaa-mrms-pds`) + archives (Iowa State MTArchive, Planetary Computer, NCEI) — `src:mrms` · **ingesting (hourly)** · Phase 2 (live), Phase 6 (backfill)
+- **Ingest (landed 2026-08-28).** `mrms.fetch_qpe` (cron 20 * * * *) pulls
+  `MultiSensor_QPE_01H_Pass2` (+ the `GaugeInfl` covariate) from NODD S3, aggregates to per-basin
+  means over the stored grid masks (sentinels −1/−3 honoured; MIN_VALID_FRACTION 0.995 — measured
+  100.00% valid on all six basins), and writes `basin_qpe_01h` / `basin_gauge_influence_01h`
+  DerivedFeature rows with `available_at` = the S3 LastModified (~57 min after the hour,
+  measured). Envelopes additionally sum the stored hours into trailing 6/24/72 h
+  `antecedent_precip` windows at read time (contract 1.4.0, `cascade_hydrology.antecedent`):
+  window anchored at the newest observed hour, partial sums declared as underestimates, never
+  scaled. Object lifecycle `mrms/` 30 d.
 - **What / authority / kind.** Multi-Radar Multi-Sensor radar/gauge/model-blended precipitation estimates; NOAA NSSL (algorithm) and NWS/NCEP (operations) via NODD; OBSERVED with `method=radar_qpe` (DATA_DOCTRINE §2).
 - **Access.** S3 keys `CONUS/<Product>_<level>/<YYYYMMDD>/MRMS_<Product>_<level>_<YYYYMMDD>-<HHMMSS>.grib2.gz` (e.g. `CONUS/MultiSensor_QPE_01H_Pass2_00.00/20260822/…-070000.grib2.gz`); SNS `arn:aws:sns:us-east-1:123901341784:NewMRMSObject`; tile service `https://mapservices.weather.noaa.gov/raster/rest/services/obs/mrms_qpe/ImageServer` (rft_1hr…rft_72hr) (FACT). Archives: IEM `https://mtarchive.geol.iastate.edu/YYYY/MM/DD/mrms/ncep/<Product>/` from 2014-11-01 (no usage restrictions; subset only: no Pass1, no 3/6/12/48-h MultiSensor, no GaugeInflIndex); Planetary Computer STAC `noaa-mrms-qpe-1h-pass2` from 2022-07-21 (license field "proprietary"); NCEI NEXRAD QPE CDR 2002–2011 restricted (INFERENCE) (FACT).
 - **Cadence / latency.** RadarOnly_QPE_01H, PrecipRate, PrecipFlag, RadarQualityIndex every 2 min (~2–3 min latency); MultiSensor_QPE_*_Pass1 hourly (~16 min observed; NSSL "20-minute latency"); Pass2 hourly (~57 min; "1-hour latency"); older docs quoting 60/120 min are stale (FACT).

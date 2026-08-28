@@ -7,7 +7,9 @@ from enum import StrEnum
 
 from pydantic import BaseModel, ConfigDict, Field
 
-CONTRACT_VERSION = "1.3.0"  # 1.3.0 (2026-08-26): +BasinVisualizationState.hydrologic_state and
+CONTRACT_VERSION = "1.4.0"  # 1.4.0 (2026-08-28): +BasinVisualizationState.antecedent_precip
+# (observed MRMS basin-mean windows; additive, so 1.3.0 readers keep validating).
+# 1.3.0 (2026-08-26): +BasinVisualizationState.hydrologic_state and
 # .state_change — the Tier 0 high-tail representation and its velocity (ReferenceWindow,
 # SeasonalMultiple, RecordRank, BandBoundary, HydrologicState, StateChange). Additive only: both
 # new fields default to absent, so 1.2.0 consumers keep validating.

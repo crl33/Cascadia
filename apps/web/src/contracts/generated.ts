@@ -12,6 +12,24 @@ export type Band = string;
 export type AsOf1 = string;
 export type Contract = string;
 export type GeneratedAt = string;
+export type HoursExpected = number;
+export type HoursPresent = number;
+export type Prov = string;
+export type Reason = string | null;
+export type Datum = string | null;
+export type Unit = string;
+export type Value = number;
+/**
+ * docs/VISUAL_TRUTH_DOCTRINE.md — what kind of thing a rendered element is.
+ */
+export type TruthClass =
+  'observation' | 'authoritative_model' | 'cascade_derived' | 'cartographic' | 'cinematic';
+/**
+ * end of the newest hour included; None when nothing is known
+ */
+export type WindowEnd = string | null;
+export type WindowH = number;
+export type AntecedentPrecip = AntecedentPrecip1[];
 export type FeatureId = string;
 export type Lod = string;
 /**
@@ -20,10 +38,10 @@ export type Lod = string;
 export type Url = string | null;
 export type Direction = string;
 export type Feature = string;
-export type Prov = string;
+export type Prov1 = string;
 export type Rank = number;
-export type Unit = string | null;
-export type Value = number | null;
+export type Unit1 = string | null;
+export type Value1 = number | null;
 export type HeadlineDrivers = Driver[];
 export type SurfaceLevel = 'low' | 'moderate' | 'high' | 'very_high' | 'unknown';
 /**
@@ -50,30 +68,27 @@ export type BandBoundary = 'separated' | 'near_band_edge' | 'unquantified';
  */
 export type Day = string;
 export type Multiple = number;
-export type Prov1 = string;
-export type Datum = string | null;
-export type Unit1 = string;
-export type Value1 = number;
+export type Prov2 = string;
 export type ReferencePercentile = number;
 export type Percentile = number | null;
 /**
  * the value fell outside the stored ladder, so the percentile is a bound, not an estimate
  */
 export type PercentileClamped = boolean;
-export type Prov2 = string;
+export type Prov3 = string;
 export type ExceedsRecord = boolean;
 /**
  * sample size including the value being ranked
  */
 export type Of = number;
 export type PreviousMaxDay = string | null;
-export type Prov3 = string;
+export type Prov4 = string;
 /**
  * 1 = largest; None when only a bound is known
  */
 export type Rank1 = number | null;
-export type Reason = string | null;
 export type Reason1 = string | null;
+export type Reason2 = string | null;
 /**
  * day-of-year key, "MM-DD"
  */
@@ -99,11 +114,6 @@ export type PeriodStart = number | null;
  * half-width of the smoothing window in days
  */
 export type WindowDays = number;
-/**
- * docs/VISUAL_TRUTH_DOCTRINE.md — what kind of thing a rendered element is.
- */
-export type TruthClass =
-  'observation' | 'authoritative_model' | 'cascade_derived' | 'cartographic' | 'cinematic';
 export type Id = string;
 export type LabelPriority = number;
 export type Name = string;
@@ -112,7 +122,7 @@ export type Expires = string | null;
 export type Id1 = string;
 export type Issuer = string;
 export type Onset = string | null;
-export type Prov4 = string;
+export type Prov5 = string;
 export type Severity = string | null;
 export type OfficialAlerts = OfficialAlert[];
 export type OutletForecastPointId = string | null;
@@ -122,7 +132,7 @@ export type Direction1 = string;
  * Q(t) / Q(t − window_h); dimensionless
  */
 export type Growth = number | null;
-export type Prov5 = string;
+export type Prov6 = string;
 /**
  * 1 = largest change in this gauge's record
  */
@@ -135,19 +145,19 @@ export type RankReason = string | null;
 /**
  * why growth is absent, when it is
  */
-export type Reason2 = string | null;
+export type Reason3 = string | null;
 /**
  * the span actually covered, which is what growth is over
  */
 export type SpanH = number | null;
-export type WindowH = number;
+export type WindowH1 = number;
 export type StateChange = StateChange1[];
 export type ExplanationRef = string | null;
-export type Prov6 = string[];
+export type Prov7 = string[];
 /**
  * why UNKNOWN/LOW, when it is
  */
-export type Reason3 = string | null;
+export type Reason4 = string | null;
 export type AgreementLevel = 'high' | 'moderate' | 'low' | 'unknown';
 /**
  * Categorical by doctrine; numeric confidence is reserved for calibrated quantities.
@@ -158,11 +168,11 @@ export type HorizonH = number | null;
 /**
  * key into ContractEnvelope.provenance_refs
  */
-export type Prov7 = string;
+export type Prov8 = string;
 /**
  * why UNKNOWN, when it is
  */
-export type Reason4 = string | null;
+export type Reason5 = string | null;
 /**
  * EXPERIMENTAL index in [0,1] from the surface's own band table; never a probability
  */
@@ -189,8 +199,8 @@ export type OfficialProv = string | null;
 /**
  * key into ContractEnvelope.provenance_refs
  */
-export type Prov8 = string;
-export type Reason5 = string | null;
+export type Prov9 = string;
+export type Reason6 = string | null;
 /**
  * wake-up intensity hint; documented method; not a probability
  */
@@ -201,8 +211,8 @@ export type BasinId = string;
  */
 export type FlowVisualIntensity = number | null;
 export type Basis = string;
-export type Prov9 = string;
-export type Reason6 = string | null;
+export type Prov10 = string;
+export type Reason7 = string | null;
 export type TimeToThresholdH = number | null;
 export type Id2 = string;
 /**
@@ -213,7 +223,7 @@ export type Name1 = string;
 /**
  * key into ContractEnvelope.provenance_refs
  */
-export type Prov10 = string;
+export type Prov11 = string;
 export type ValidTime = string;
 export type FloodCategory1 = 'none' | 'action' | 'minor' | 'moderate' | 'major' | 'unknown';
 export type ObservedCategoryReason = string | null;
@@ -224,7 +234,7 @@ export type Points = number;
 /**
  * key into ContractEnvelope.provenance_refs
  */
-export type Prov11 = string;
+export type Prov12 = string;
 export type ReachId = string | null;
 export type Class = string;
 export type RegulatedBy = string[];
@@ -235,7 +245,7 @@ export type Datum1 = string | null;
 export type Major = number | null;
 export type Minor = number | null;
 export type Moderate = number | null;
-export type Prov12 = string;
+export type Prov13 = string;
 export type Unit2 = string;
 export type Downstream = string[];
 export type Upstream = string[];
@@ -243,8 +253,8 @@ export type Direction2 = string;
 /**
  * key into ContractEnvelope.provenance_refs
  */
-export type Prov13 = string;
-export type WindowH1 = number;
+export type Prov14 = string;
+export type WindowH2 = number;
 export type Items = (BasinVisualizationState | RiverVisualizationState)[];
 export type AgeSeconds = number | null;
 export type ExpectedCadenceSeconds = number | null;
@@ -298,6 +308,7 @@ export interface ContractEnvelope {
   version?: Version;
 }
 export interface BasinVisualizationState {
+  antecedent_precip?: AntecedentPrecip;
   geometry_ref: GeometryRef;
   headline_drivers?: HeadlineDrivers;
   hydrologic_state?: HydrologicState | null;
@@ -311,6 +322,38 @@ export interface BasinVisualizationState {
   surfaces: BasinSurfaces;
   tension?: Tension;
 }
+/**
+ * Basin-mean precipitation that has ALREADY fallen over a trailing window (observed QPE).
+ *
+ * A wetness driver beside the forecast surface, never fused with it. The window ENDS at the
+ * newest observed hour known at this knowledge time (`window_end`), not at the request
+ * instant: the radar-gauge product reaches the archive about an hour after the fact, and a
+ * wall-clock window would report every recent hour as missing on a healthy feed.
+ *
+ * `total` is the sum of exactly the hours that exist. When hours are missing inside the
+ * window, the total is a KNOWN UNDERESTIMATE and `reason` says so — it is never scaled up to
+ * "estimate" the gap, because a scaled gap is a fabricated number wearing an observed truth
+ * class. `hours_present` / `hours_expected` carry the coverage arithmetic so a client can
+ * qualify the display without re-deriving it.
+ */
+export interface AntecedentPrecip1 {
+  hours_expected: HoursExpected;
+  hours_present: HoursPresent;
+  prov: Prov;
+  reason?: Reason;
+  total?: Quantity | null;
+  truth: TruthClass;
+  window_end?: WindowEnd;
+  window_h: WindowH;
+}
+/**
+ * A number with its unit; `datum` is required for stage-like quantities.
+ */
+export interface Quantity {
+  datum?: Datum;
+  unit: Unit;
+  value: Value;
+}
 export interface GeometryRef {
   feature_id: FeatureId;
   lod: Lod;
@@ -319,10 +362,10 @@ export interface GeometryRef {
 export interface Driver {
   direction: Direction;
   feature: Feature;
-  prov: Prov;
+  prov: Prov1;
   rank: Rank;
-  unit?: Unit;
-  value?: Value;
+  unit?: Unit1;
+  value?: Value1;
 }
 /**
  * Where the river is: one observation said three ways that are never combined.
@@ -338,12 +381,12 @@ export interface HydrologicState {
   boundary?: BandBoundary;
   day: Day;
   multiple?: SeasonalMultiple | null;
-  observed: Quantity1;
+  observed: Quantity2;
   percentile?: Percentile;
   percentile_clamped?: PercentileClamped;
-  prov: Prov2;
+  prov: Prov3;
   rank?: RecordRank | null;
-  reason?: Reason1;
+  reason?: Reason2;
   reference?: ReferenceWindow | null;
   truth: TruthClass;
 }
@@ -358,25 +401,25 @@ export interface HydrologicState {
  */
 export interface SeasonalMultiple {
   multiple: Multiple;
-  prov: Prov1;
-  reference: Quantity;
+  prov: Prov2;
+  reference: Quantity1;
   reference_percentile: ReferencePercentile;
-}
-/**
- * A number with its unit; `datum` is required for stage-like quantities.
- */
-export interface Quantity {
-  datum?: Datum;
-  unit: Unit1;
-  value: Value1;
 }
 /**
  * A number with its unit; `datum` is required for stage-like quantities.
  */
 export interface Quantity1 {
   datum?: Datum;
-  unit: Unit1;
-  value: Value1;
+  unit: Unit;
+  value: Value;
+}
+/**
+ * A number with its unit; `datum` is required for stage-like quantities.
+ */
+export interface Quantity2 {
+  datum?: Datum;
+  unit: Unit;
+  value: Value;
 }
 /**
  * Where the value sits among the reference window sample, as a count and nothing more.
@@ -390,19 +433,11 @@ export interface Quantity1 {
 export interface RecordRank {
   exceeds_record?: ExceedsRecord;
   of: Of;
-  previous_max?: Quantity2 | null;
+  previous_max?: Quantity | null;
   previous_max_day?: PreviousMaxDay;
-  prov: Prov3;
+  prov: Prov4;
   rank?: Rank1;
-  reason?: Reason;
-}
-/**
- * A number with its unit; `datum` is required for stage-like quantities.
- */
-export interface Quantity2 {
-  datum?: Datum;
-  unit: Unit1;
-  value: Value1;
+  reason?: Reason1;
 }
 /**
  * The empirical day-of-year sample a level statement is ranked against.
@@ -427,7 +462,7 @@ export interface OfficialAlert {
   id: Id1;
   issuer: Issuer;
   onset?: Onset;
-  prov: Prov4;
+  prov: Prov5;
   severity?: Severity;
 }
 /**
@@ -445,16 +480,16 @@ export interface OfficialAlert {
  */
 export interface StateChange1 {
   direction: Direction1;
-  from_value?: Quantity2 | null;
+  from_value?: Quantity | null;
   growth?: Growth;
-  prov: Prov5;
+  prov: Prov6;
   rank?: Rank2;
   rank_of?: RankOf;
   rank_reason?: RankReason;
-  reason?: Reason2;
+  reason?: Reason3;
   span_h?: SpanH;
-  to_value?: Quantity2 | null;
-  window_h: WindowH;
+  to_value?: Quantity | null;
+  window_h: WindowH1;
 }
 export interface BasinSurfaces {
   agreement: AgreementState;
@@ -464,8 +499,8 @@ export interface BasinSurfaces {
 }
 export interface AgreementState {
   explanation_ref?: ExplanationRef;
-  prov?: Prov6;
-  reason?: Reason3;
+  prov?: Prov7;
+  reason?: Reason4;
   state: AgreementLevel;
 }
 /**
@@ -485,8 +520,8 @@ export interface SurfaceState {
   confidence?: ConfidenceLabel;
   experimental?: Experimental;
   horizon_h?: HorizonH;
-  prov: Prov7;
-  reason?: Reason4;
+  prov: Prov8;
+  reason?: Reason5;
   score?: Score;
   spread?: Spread;
   state: SurfaceLevel;
@@ -494,7 +529,7 @@ export interface SurfaceState {
   /**
    * the headline quantity `state` was banded from, in its own unit (e.g. 72-h basin-mean QPF in mm, or a day-of-year flow percentile in pct). EXPERIMENTAL whenever `experimental` is true; never a probability
    */
-  value?: Quantity2 | null;
+  value?: Quantity | null;
 }
 export interface HazardState {
   cascade_index?: CascadeIndex;
@@ -502,8 +537,8 @@ export interface HazardState {
   model_probability?: ModelProbability;
   official_category: FloodCategory;
   official_prov?: OfficialProv;
-  prov: Prov8;
-  reason?: Reason5;
+  prov: Prov9;
+  reason?: Reason6;
   truth: TruthClass;
 }
 export interface RiverVisualizationState {
@@ -526,27 +561,27 @@ export interface RiverVisualizationState {
 }
 export interface Headroom {
   basis: Basis;
-  prov: Prov9;
-  reason?: Reason6;
+  prov: Prov10;
+  reason?: Reason7;
   time_to_threshold_h?: TimeToThresholdH;
   to_category: FloodCategory;
-  value?: Quantity2 | null;
+  value?: Quantity | null;
 }
 export interface ObservedRiverState {
-  flow?: Quantity2 | null;
-  prov: Prov10;
-  stage?: Quantity2 | null;
+  flow?: Quantity | null;
+  prov: Prov11;
+  stage?: Quantity | null;
   truth: TruthClass;
   valid_time: ValidTime;
 }
 export interface OfficialForecastSummary {
   category: FloodCategory;
-  crest?: Quantity2 | null;
+  crest?: Quantity | null;
   crest_valid_time?: CrestValidTime;
   issued_at: IssuedAt;
   issuer: Issuer1;
   points: Points;
-  prov: Prov11;
+  prov: Prov12;
   truth: TruthClass;
 }
 export interface Regulation {
@@ -560,7 +595,7 @@ export interface Thresholds {
   major?: Major;
   minor?: Minor;
   moderate?: Moderate;
-  prov: Prov12;
+  prov: Prov13;
   unit: Unit2;
 }
 export interface Topology {
@@ -569,10 +604,10 @@ export interface Topology {
 }
 export interface Trend {
   direction: Direction2;
-  prov: Prov13;
-  rate?: Quantity2 | null;
+  prov: Prov14;
+  rate?: Quantity | null;
   truth: TruthClass;
-  window_h: WindowH1;
+  window_h: WindowH2;
 }
 export interface ProvenanceRefs {
   [k: string]: ProvenanceRef | undefined;

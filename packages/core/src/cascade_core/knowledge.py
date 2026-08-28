@@ -25,6 +25,7 @@ from datetime import datetime, timedelta
 from typing import Any
 
 from sqlalchemy import and_, func, or_, select
+from sqlalchemy import literal as sa_literal
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased
 
@@ -44,6 +45,7 @@ from cascade_core.models import (
 )
 from cascade_core.registry import (
     METADATA_ONLY_PRODUCTS,
+    PRODUCT_NWS_ALERTS,
     PRODUCTS,
     SOURCES,
     VALID_UNTIL_SUPERSEDED_PRODUCTS,
@@ -789,20 +791,25 @@ class Knowledge:
         def newer(a: datetime | None, b: datetime | None) -> datetime | None:
             return b if a is None else (a if b is None else max(a, b))
 
-        async def collect(kind: str, value_col, retrieved_col, table, knowledge_col) -> None:
-            q = select(table.product_id, func.max(value_col), func.max(retrieved_col)).where(knowledge_col <= self.as_of).group_by(table.product_id)
+        async def collect(kind: str, value_col, retrieved_col, table, knowledge_col, pid_col=None) -> None:
+            # `pid_col` overrides for tables with no product_id column, where every row belongs
+            # to one known product (official_alert).
+            pid_col = table.product_id if pid_col is None else pid_col
+            q = select(pid_col, func.max(value_col), func.max(retrieved_col)).where(knowledge_col <= self.as_of).group_by(pid_col)
             for pid, v, r in (await self.session.execute(q)).all():
                 if pid is None:
                     continue
                 have = anchors.get(pid)
-                if kind == "raw_artifact" and pid in VALID_UNTIL_SUPERSEDED_PRODUCTS and have is not None:
+                if kind == "raw_artifact" and pid in VALID_UNTIL_SUPERSEDED_PRODUCTS:
                     # Valid-until-superseded: the newest value row can be months old on a healthy
                     # system, so merge in the last successful fetch — freshness here is "when did
-                    # we last check", not "how old is the value" (registry).
+                    # we last check", not "how old is the value" (registry). `have` may be None:
+                    # active CAP alerts legitimately hold ZERO rows through a quiet week, and the
+                    # poll itself is then the whole signal.
                     anchors[pid] = FreshnessAnchor(
-                        kind=f"{have.kind}+{kind}",
-                        valid_time=newer(have.valid_time, fix(v)),
-                        retrieved_at=newer(have.retrieved_at, fix(r)),
+                        kind=kind if have is None else f"{have.kind}+{kind}",
+                        valid_time=fix(v) if have is None else newer(have.valid_time, fix(v)),
+                        retrieved_at=fix(r) if have is None else newer(have.retrieved_at, fix(r)),
                     )
                     continue
                 if kind == "raw_artifact" and (have is not None or pid not in METADATA_ONLY_PRODUCTS):
@@ -823,6 +830,12 @@ class Knowledge:
         await collect("forecast_run", ForecastRun.issued_at, ForecastRun.retrieved_at, ForecastRun, ForecastRun.available_at)
         await collect("threshold", Threshold.retrieved_at, Threshold.retrieved_at, Threshold, Threshold.effective_from)
         await collect("derived_feature", func.coalesce(DerivedFeature.issued_at, DerivedFeature.valid_time), DerivedFeature.computed_at, DerivedFeature, DerivedFeature.available_at)
+        # Alerts anchor on `sent` (the issue time), merged with the poll fetch below: the union
+        # must cover EVERY table a product's values land in, or the product reads `missing`
+        # forever while ingesting perfectly (finding C repeated itself here on 2026-08-28: this
+        # line was missing on the alerts arc's first deploy and /system/health said "never
+        # ingested" over 2 correctly stored rows).
+        await collect("official_alert", OfficialAlertRecord.sent, OfficialAlertRecord.retrieved_at, OfficialAlertRecord, OfficialAlertRecord.available_at, pid_col=sa_literal(PRODUCT_NWS_ALERTS))
         await collect("raw_artifact", RawArtifact.fetched_at, RawArtifact.fetched_at, RawArtifact, RawArtifact.fetched_at)
         return anchors
 

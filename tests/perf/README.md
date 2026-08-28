@@ -23,6 +23,13 @@ any of them is expensive — and whatever is done about that, the body it return
 > `direction: context_not_scored`, so no band, score or susceptibility state moved — all six basins
 > are byte-identical on those. The number changing is the point: it was wrong before.
 >
+> **Regenerated a third time 2026-08-28** for antecedent QPE (contract 1.4.0): ONE more
+> statement — the batched trailing-73 h `basin_qpe_01h` read for all six basins
+> (`derived_features_for`, one `IN` list) — so the count is **16**. The bodies change too:
+> `version` is 1.4.0 and every item now carries `antecedent_precip` (UNKNOWN entries in this
+> harness, which stores no QPE rows). If the count moves again, it is a regression until
+> explained.
+>
 > **Regenerated again 2026-08-28 (later)** for NWS alerts: the envelope now issues ONE more
 > statement — the whole-envelope `active_alerts` read (a handful of rows, filtered in Python;
 > supersession resolved at read time) — so the count is **15**, and the bodies are byte-identical

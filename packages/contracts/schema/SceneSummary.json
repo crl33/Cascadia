@@ -56,6 +56,80 @@
       "title": "AgreementState",
       "type": "object"
     },
+    "AntecedentPrecip": {
+      "additionalProperties": false,
+      "description": "Basin-mean precipitation that has ALREADY fallen over a trailing window (observed QPE).\n\nA wetness driver beside the forecast surface, never fused with it. The window ENDS at the\nnewest observed hour known at this knowledge time (`window_end`), not at the request\ninstant: the radar-gauge product reaches the archive about an hour after the fact, and a\nwall-clock window would report every recent hour as missing on a healthy feed.\n\n`total` is the sum of exactly the hours that exist. When hours are missing inside the\nwindow, the total is a KNOWN UNDERESTIMATE and `reason` says so \u2014 it is never scaled up to\n\"estimate\" the gap, because a scaled gap is a fabricated number wearing an observed truth\nclass. `hours_present` / `hours_expected` carry the coverage arithmetic so a client can\nqualify the display without re-deriving it.",
+      "properties": {
+        "hours_expected": {
+          "minimum": 1,
+          "title": "Hours Expected",
+          "type": "integer"
+        },
+        "hours_present": {
+          "minimum": 0,
+          "title": "Hours Present",
+          "type": "integer"
+        },
+        "prov": {
+          "title": "Prov",
+          "type": "string"
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reason"
+        },
+        "total": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Quantity"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "truth": {
+          "$ref": "#/$defs/TruthClass"
+        },
+        "window_end": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "end of the newest hour included; None when nothing is known",
+          "title": "Window End"
+        },
+        "window_h": {
+          "minimum": 1,
+          "title": "Window H",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "window_h",
+        "hours_present",
+        "hours_expected",
+        "truth",
+        "prov"
+      ],
+      "title": "AntecedentPrecip",
+      "type": "object"
+    },
     "BandBoundary": {
       "description": "Whether the reference distribution can separate this value from a band edge.\n\nA **condition**, not a confidence: there is no number here and no coverage claim. The\nday-of-year ladder's breakpoints are sample quantiles estimated from a finite number of\nindependent years, so a value sitting a point or two from a band edge is not distinguishable\nfrom the other side of it by the record that drew the edge.\n\n- ``separated`` \u2014 no band edge lies inside the reported sampling error of the percentile.\n- ``near_band_edge`` \u2014 one does; :attr:`HydrologicState.bands_within_sampling_error` names\n  the bands the record cannot tell apart here.\n- ``unquantified`` \u2014 the sample size behind the ladder is not known, so the question cannot\n  be answered at all. This is the **fail-closed** state: it never means \"separated\".",
       "enum": [
@@ -94,6 +168,14 @@
     "BasinVisualizationState": {
       "additionalProperties": false,
       "properties": {
+        "antecedent_precip": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/AntecedentPrecip"
+          },
+          "title": "Antecedent Precip",
+          "type": "array"
+        },
         "geometry_ref": {
           "$ref": "#/$defs/GeometryRef"
         },
@@ -247,7 +329,7 @@
           "$ref": "#/$defs/TimeContext"
         },
         "version": {
-          "default": "1.3.0",
+          "default": "1.4.0",
           "title": "Version",
           "type": "string"
         }

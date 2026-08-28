@@ -263,6 +263,33 @@ class StateChange(StrictModel):
     prov: str
 
 
+class AntecedentPrecip(StrictModel):
+    """Basin-mean precipitation that has ALREADY fallen over a trailing window (observed QPE).
+
+    A wetness driver beside the forecast surface, never fused with it. The window ENDS at the
+    newest observed hour known at this knowledge time (`window_end`), not at the request
+    instant: the radar-gauge product reaches the archive about an hour after the fact, and a
+    wall-clock window would report every recent hour as missing on a healthy feed.
+
+    `total` is the sum of exactly the hours that exist. When hours are missing inside the
+    window, the total is a KNOWN UNDERESTIMATE and `reason` says so — it is never scaled up to
+    "estimate" the gap, because a scaled gap is a fabricated number wearing an observed truth
+    class. `hours_present` / `hours_expected` carry the coverage arithmetic so a client can
+    qualify the display without re-deriving it.
+    """
+
+    window_h: int = Field(ge=1)
+    window_end: datetime | None = Field(
+        default=None, description="end of the newest hour included; None when nothing is known"
+    )
+    total: Quantity | None = None
+    hours_present: int = Field(ge=0)
+    hours_expected: int = Field(ge=1)
+    truth: TruthClass
+    prov: str
+    reason: str | None = None
+
+
 class OfficialAlert(StrictModel):
     id: str
     event: str
@@ -299,6 +326,8 @@ class BasinVisualizationState(StrictModel):
     state_change: tuple[StateChange, ...] = ()
     headline_drivers: tuple[Driver, ...] = ()
     official_alerts: tuple[OfficialAlert, ...] = ()
+    #: Observed trailing-window precipitation (6/24/72 h), a driver beside the surfaces.
+    antecedent_precip: tuple[AntecedentPrecip, ...] = ()
     outlet_forecast_point_id: str | None = None
     geometry_ref: GeometryRef
     label_priority: int = Field(default=3, ge=1, le=5)

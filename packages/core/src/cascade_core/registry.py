@@ -275,4 +275,11 @@ METADATA_ONLY_PRODUCTS: frozenset[str] = frozenset({PRODUCT_AWDB_STATIONS})
 #: failure fails the JOB, and every registered job is now accounted for. Without this, thresholds
 #: read `stale` forever and `/system/health` answers `degraded` on a perfectly healthy system,
 #: which is the same disease as answering `ok` on a broken one: a signal nobody can act on.
-VALID_UNTIL_SUPERSEDED_PRODUCTS: frozenset[str] = frozenset({PRODUCT_NWPS_THRESHOLDS})
+VALID_UNTIL_SUPERSEDED_PRODUCTS: frozenset[str] = frozenset({
+    PRODUCT_NWPS_THRESHOLDS,
+    # Active CAP alerts: an EMPTY active list is a legitimate, common answer (quiet
+    # weather), so the newest alert row can be days old — or absent entirely — on a
+    # perfectly healthy system. Freshness here is "when did we last poll", carried by
+    # the raw_artifact fetch, not "how old is the newest alert".
+    PRODUCT_NWS_ALERTS,
+})
