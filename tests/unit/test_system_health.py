@@ -455,3 +455,30 @@ async def test_a_quiet_alert_week_is_current_and_alert_rows_anchor_their_product
         merged = (await as_known_at(s, now).product_freshness_anchors())[PRODUCT_NWS_ALERTS]
     await engine.dispose()
     assert "official_alert" in merged.kind and "raw_artifact" in merged.kind
+
+
+async def test_metrics_is_a_projection_of_health_never_a_second_computation(db) -> None:
+    """Every job and every product in /system/health appears in /system/metrics, with the same
+    states — so the two can never know different registries (the M2 /metrics item, closed the
+    same way the health endpoint itself was fixed: derive, don't list)."""
+    from httpx import ASGITransport, AsyncClient
+
+    from cascade_api.main import create_app
+    from cascade_core.settings import Settings
+
+    engine, _factory = db
+    app = create_app(Settings(db_url="sqlite+aiosqlite://", geo_dir=GEO), engine=engine)
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        h = (await client.get("/system/health")).json()
+        m = (await client.get("/system/metrics"))
+    assert m.status_code == 200 and "text/plain" in m.headers["content-type"]
+    text = m.text
+    assert f'cascade_up{{status="{h["status"]}"}} 1' in text
+    for name, j in h["jobs"].items():
+        assert f'cascade_job_state{{job="{name}",state="{j["state"]}"}} 1' in text
+    for pid, f in h["freshness"].items():
+        assert f'cascade_product_freshness_state{{product="{pid}",state="{f["state"]}"}} 1' in text
+    # Prometheus text discipline: every non-comment line is `name{labels} value`
+    for line in text.strip().splitlines():
+        if not line.startswith("#"):
+            assert line.startswith("cascade_") and line.rsplit(" ", 1)[1].replace(".", "").isdigit()

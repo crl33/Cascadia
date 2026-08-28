@@ -343,12 +343,26 @@ def rain_exposed_ref_key(basin_id: str) -> str:
 METHOD_RAIN_EXPOSED = "method:basin-rain-exposed-fraction@1.0.0"
 RAIN_EXPOSED_FEATURE = "basin_rain_exposed_fraction"
 
+#: The WPC forecaster's 24-h windows (written by cascade_providers_wpc.jobs; names pinned by
+#: tests). OFFICIAL_FORECAST beside the calibrated blend — carried as context, NEVER averaged
+#: with the NBM percentiles or banded: the two ends the agreement surface will compare.
+METHOD_QPF_WPC = "method:basin-qpf-wpc@1.0.0"
+WPC_QPF_FEATURE = "basin_qpf_24h_official"
+#: The display-time sum of one cycle's three windows (Day 1+2+3 == the 72-h horizon).
+WPC_QPF_TOTAL_FEATURE = "basin_qpf_72h_official_total"
+WPC_WINDOW_COUNT = 3
+
+
+def official_qpf_ref_key(basin_id: str) -> str:
+    return f"wpc-qpf-{basin_id.split(':', 1)[-1]}"
+
 
 def assess_from_rows(
     basin_id: str,
     *,
     qpf_rows: Sequence[DerivedFeature],
     snow_rows: Sequence[DerivedFeature] = (),
+    official_qpf_rows: Sequence[DerivedFeature] = (),
     products: dict[str, SourceProduct],
     now: datetime,
     hypsometry: BasinHypsometry | None = None,
@@ -498,6 +512,48 @@ def assess_from_rows(
                 )
             )
 
+    # The OFFICIAL 72-h total: the WPC forecaster's three 24-h windows of ONE cycle, summed.
+    # All three or nothing — a partial total would read as a small forecast, which is a
+    # different claim than "a window is missing". Context, unscored, never averaged with the
+    # NBM percentiles above (they remain the banded surface).
+    official = [r for r in official_qpf_rows if r.value is not None and r.issued_at is not None]
+    if official:
+        wpc_cycle = max(r.issued_at for r in official)
+        cycle_rows = {r.valid_time: r for r in official if r.issued_at == wpc_cycle}
+        if len(cycle_rows) == WPC_WINDOW_COUNT:
+            windows = sorted(cycle_rows.values(), key=lambda r: r.valid_time)
+            total = sum(r.value for r in windows)
+            wpc_key = official_qpf_ref_key(basin_id)
+            wpc_product = windows[0].product_id or "product:wpc-qpf-5km-grib"
+            wpc_source = _product_source(wpc_product, products)
+            refs[wpc_key] = ProvenanceRef(
+                source_id=wpc_source,
+                source_kind=source_kind_of(wpc_source),
+                product_id=wpc_product,
+                method_id=windows[0].method_id,
+                issued_at=wpc_cycle,
+                valid_time=windows[-1].valid_time,
+                retrieved_at=windows[0].computed_at,
+                freshness=_fresh(products, wpc_product, cycle=wpc_cycle, retrieved_at=windows[0].available_at, now=now),
+                quality=(),
+                label=(
+                    f"WPC official QPF, Day 1+2+3 of the {wpc_cycle:%Y-%m-%d %H}Z cycle summed to "
+                    "the 72-h horizon — the forecaster's judgment beside the calibrated blend. "
+                    "Never averaged with the NBM percentiles; context, not scored."
+                ),
+                raw_artifact_id=str(windows[0].raw_artifact_id) if windows[0].raw_artifact_id is not None else None,
+            )
+            drivers.append(
+                Driver(
+                    feature=WPC_QPF_TOTAL_FEATURE,
+                    value=round(total, 2),
+                    unit=windows[0].unit,
+                    direction=DIRECTION_CONTEXT,
+                    rank=len(drivers) + 1,
+                    prov=wpc_key,
+                )
+            )
+
     level = FORCING_BANDS.level(headline.value)
     return ForcingAssessment(
         surface=SurfaceState(
@@ -543,6 +599,7 @@ def read_specs() -> list[tuple[str, str, str | None]]:
         # All three snow-level percentiles: p50 for the context driver, p10/p90 so the
         # rain-exposed fraction can carry the snow level's own spread rather than a bare number.
         *[(snow_level_feature(p), METHOD_BASIN_SNOW_LEVEL, None) for p in SNOW_LEVEL_PERCENTILES],
+        (WPC_QPF_FEATURE, METHOD_QPF_WPC, "24h"),
     ]
 
 
@@ -617,6 +674,15 @@ async def assess(
         )
         if r.issued_at is not None and r.issued_at >= when - MAX_CYCLE_AGE
     ]
+    official_qpf_rows = [
+        r
+        for r in await k.derived_features(
+            WPC_QPF_FEATURE, basin.id, method_id=METHOD_QPF_WPC, window="24h",
+            valid_from=when - MAX_CYCLE_AGE,
+        )
+        if r.issued_at is not None and r.issued_at >= when - MAX_CYCLE_AGE
+    ]
     return assess_from_rows(
-        basin.id, qpf_rows=qpf_rows, snow_rows=snow_rows, products=products, now=when, hypsometry=hypsometry
+        basin.id, qpf_rows=qpf_rows, snow_rows=snow_rows, official_qpf_rows=official_qpf_rows,
+        products=products, now=when, hypsometry=hypsometry,
     )

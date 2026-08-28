@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, Request
-from fastapi.responses import StreamingResponse
+from fastapi.responses import PlainTextResponse, StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from cascade_api.events import sse_stream
@@ -418,6 +418,54 @@ async def system_events(request: Request) -> StreamingResponse:
         media_type="text/event-stream",
         headers={"Cache-Control": "no-store", "X-Accel-Buffering": "no"},
     )
+
+
+@router.get("/system/metrics", response_class=PlainTextResponse)
+async def metrics(session: Session, as_of: AsOf) -> str:
+    """Prometheus text exposition of the health model — the SAME numbers /system/health serves.
+
+    Deliberately a projection of `health()`, never a second computation: the M2 lesson was a
+    hand-kept list knowing three jobs of ten, and a metrics endpoint with its own registry walk
+    would reopen that gap the day one of them learns a job first. Gauges only; counters would
+    need in-process state that a single-replica deploy loses on every push anyway.
+    """
+    h = await health(session, as_of)
+    lines: list[str] = [
+        "# HELP cascade_up 1 when the API answers; the label carries the overall status word.",
+        "# TYPE cascade_up gauge",
+        f'cascade_up{{status="{h["status"]}"}} 1',
+        "# HELP cascade_job_age_seconds Seconds since the job last succeeded (absent before its first run).",
+        "# TYPE cascade_job_age_seconds gauge",
+    ]
+    for name, j in sorted(h["jobs"].items()):
+        if j["age_seconds"] is not None:
+            lines.append(f'cascade_job_age_seconds{{job="{name}",provider="{j["provider"]}"}} {j["age_seconds"]}')
+    lines += [
+        "# HELP cascade_job_state 1 for the state each job is in (ok|late|failing|down|pending).",
+        "# TYPE cascade_job_state gauge",
+    ]
+    for name, j in sorted(h["jobs"].items()):
+        lines.append(f'cascade_job_state{{job="{name}",state="{j["state"]}"}} 1')
+    lines += [
+        "# HELP cascade_product_freshness_age_seconds Age of the product freshness anchor (absent while missing).",
+        "# TYPE cascade_product_freshness_age_seconds gauge",
+    ]
+    for pid, f in sorted(h["freshness"].items()):
+        if f["age_seconds"] is not None:
+            lines.append(f'cascade_product_freshness_age_seconds{{product="{pid}"}} {f["age_seconds"]}')
+    lines += [
+        "# HELP cascade_product_freshness_state 1 for the state each product is in (current|partial|stale|degraded|missing|unknown).",
+        "# TYPE cascade_product_freshness_state gauge",
+    ]
+    for pid, f in sorted(h["freshness"].items()):
+        lines.append(f'cascade_product_freshness_state{{product="{pid}",state="{f["state"]}"}} 1')
+    lines += [
+        "# HELP cascade_config_drift 1 when a seeded product row disagrees with the registry (re-seed).",
+        "# TYPE cascade_config_drift gauge",
+    ]
+    for pid, f in sorted(h["freshness"].items()):
+        lines.append(f'cascade_config_drift{{product="{pid}"}} {1 if f["config_drift"] else 0}')
+    return "\n".join(lines) + "\n"
 
 
 @router.get("/system/version")

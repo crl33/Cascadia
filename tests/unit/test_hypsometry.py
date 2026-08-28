@@ -14,7 +14,7 @@ one story:
 from __future__ import annotations
 
 import json
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pytest
@@ -206,3 +206,57 @@ def test_the_existing_snow_driver_still_uses_only_p50_rows() -> None:
     )
     snow_driver = next(d for d in result.drivers if d.feature == forcing.snow_level_feature(50))
     assert snow_driver.value == 1000.0
+
+
+# --- the official WPC QPF beside the blend ------------------------------------------------
+
+
+def _wpc_row(day: int, value: float | None, *, cycle: datetime = CYCLE) -> DerivedFeature:
+    return DerivedFeature(
+        feature=forcing.WPC_QPF_FEATURE, scope_kind="basin", scope_id="basin:test", window="24h",
+        valid_time=cycle + timedelta(hours=24 * day), issued_at=cycle, computed_at=NOW,
+        available_at=cycle - timedelta(minutes=72),  # WPC publishes ahead; carried verbatim
+        method_id=forcing.METHOD_QPF_WPC, product_id="product:wpc-qpf-5km-grib",
+        value=value, values_json={}, unit="mm",
+    )
+
+
+def test_the_names_are_pinned_to_what_the_wpc_job_writes() -> None:
+    from cascade_providers_wpc import jobs as wpc_jobs
+
+    assert forcing.WPC_QPF_FEATURE == wpc_jobs.FEATURE_QPF
+    assert forcing.METHOD_QPF_WPC == wpc_jobs.METHOD_QPF
+
+
+def test_a_complete_wpc_cycle_becomes_one_official_context_driver() -> None:
+    result = assess_from_rows(
+        "basin:test", qpf_rows=_qpf_rows(), products=_products(), now=NOW,
+        official_qpf_rows=[_wpc_row(1, 1.2), _wpc_row(2, 4.2), _wpc_row(3, 0.4)],
+    )
+    driver = next(d for d in result.drivers if d.feature == forcing.WPC_QPF_TOTAL_FEATURE)
+    assert driver.value == pytest.approx(5.8) and driver.unit == "mm"
+    assert driver.direction == forcing.DIRECTION_CONTEXT, "context, never scored"
+    ref = result.refs[driver.prov]
+    assert "Never averaged" in ref.label and "Day 1+2+3" in ref.label
+    # the NBM banding is untouched by the official number standing beside it
+    bare = assess_from_rows("basin:test", qpf_rows=_qpf_rows(), products=_products(), now=NOW)
+    assert result.surface.state == bare.surface.state
+    assert result.surface.score == bare.surface.score
+    assert result.surface.value == bare.surface.value
+
+
+def test_a_partial_cycle_yields_no_total_and_no_silent_fallback_to_an_older_one() -> None:
+    older = CYCLE - timedelta(hours=12)
+    rows = [
+        # the OLDER cycle is complete...
+        _wpc_row(1, 9.0, cycle=older), _wpc_row(2, 9.0, cycle=older), _wpc_row(3, 9.0, cycle=older),
+        # ...but the NEWEST is not (a half-published or coverage-refused window)
+        _wpc_row(1, 1.2), _wpc_row(2, None),
+    ]
+    result = assess_from_rows(
+        "basin:test", qpf_rows=_qpf_rows(), products=_products(), now=NOW, official_qpf_rows=rows
+    )
+    assert not any(d.feature == forcing.WPC_QPF_TOTAL_FEATURE for d in result.drivers), (
+        "a 72-h total from two windows would read as a small forecast; and quietly showing "
+        "yesterday's cycle instead would claim the newest official word is older than it is"
+    )
