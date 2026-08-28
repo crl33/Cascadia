@@ -24,5 +24,7 @@ export function loadFixtures(root = REPO_ROOT) {
     tier0: readJson(resolve(root, 'functions/fixtures/basin_tier0.json')),
     riverNetwork: JSON.parse(gunzipSync(readFileSync(resolve(root, 'tests/fixtures/geo/river_network.json.gz'))).toString('utf8')),
     labels: readJson(resolve(root, 'tests/fixtures/geo/labels.json')),
+    cameras: readJson(resolve(root, 'tests/fixtures/geo/cameras.json')),
+    flood: JSON.parse(gunzipSync(readFileSync(resolve(root, 'tests/fixtures/geo/flood_geography.json.gz'))).toString('utf8')),
   };
 }

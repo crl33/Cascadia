@@ -214,6 +214,18 @@ const ThresholdsSchema = z.object({
   moderate: z.number().nullable().optional(), major: z.number().nullable().optional(), prov: z.string(),
 }).refine((t) => t.basis !== 'stage' || (t.datum != null && t.datum !== ''), { message: 'stage thresholds must carry a datum (ADR-0009)' });
 
+const ForecastHorizonSchema = z.object({
+  lead_h: z.number().int().positive(),
+  valid_time: iso,
+  official: QuantitySchema.nullable().optional(),
+  official_valid_time: nullableIso.optional(),
+  category: FloodCategorySchema,
+  reason: z.string().nullable().optional(),
+  prov: z.string(),
+  truth: TruthClassSchema,
+});
+export type ForecastHorizon = z.infer<typeof ForecastHorizonSchema>;
+
 export const RiverVisualizationStateSchema = z.object({
   id: z.string(),
   name: z.string(),
@@ -231,6 +243,7 @@ export const RiverVisualizationStateSchema = z.object({
   regulation: z.object({ class: z.string(), regulated_by: z.array(z.string()).optional() }).optional(),
   location: z.tuple([z.number(), z.number()]).nullable().optional(),
   flow_visual_intensity: z.number().nullable().optional(),
+  horizons: z.array(ForecastHorizonSchema).optional(),
 });
 
 const envelopeBase = {
@@ -440,6 +453,49 @@ export const LabelSetSchema = z.object({
   })),
 });
 export type LabelSet = z.infer<typeof LabelSetSchema>;
+
+/** Curated flood-observation cameras (GET /geo/cameras): tiers carry reasons, never scores. */
+export const CameraSetSchema = z.object({
+  _provenance: z.record(z.string(), z.unknown()),
+  cameras: z.array(z.object({
+    id: z.string(),
+    provider: z.string(),
+    name: z.string(),
+    lon: z.number(),
+    lat: z.number(),
+    feed: z.enum(['still', 'video', 'embed']),
+    image: z.union([
+      z.object({ kind: z.literal('static-url'), url: z.string() }),
+      z.object({ kind: z.literal('usgs-s3'), cam_id: z.string() }),
+    ]),
+    refresh_seconds: z.number().int().positive(),
+    basin_id: z.string().nullable(),
+    nwis_id: z.string().nullable(),
+    tier: z.enum(['A', 'B', 'C']),
+    reasons: z.array(z.string()),
+    orientation: z.object({ cardinal: z.string() }).nullable(),
+    attribution: z.string(),
+  })),
+});
+export type CameraSet = z.infer<typeof CameraSetSchema>;
+export type CameraRecord = CameraSet['cameras'][number];
+
+/** Static flood-hazard geography (GET /geo/flood): FEMA zones + NLD levees, study-vintage. */
+export const FloodGeographySchema = z.object({
+  _provenance: z.record(z.string(), z.unknown()),
+  basins: z.record(z.string(), z.object({
+    availability: z.enum(['covered', 'partial_edges_only', 'no_digital_data']),
+    floodway: z.array(z.array(z.tuple([z.number(), z.number()]))),
+    sfha: z.array(z.array(z.tuple([z.number(), z.number()]))),
+    pct02: z.array(z.array(z.tuple([z.number(), z.number()]))),
+    levees: z.array(z.object({
+      name: z.string(),
+      system_id: z.string(),
+      paths: z.array(z.array(z.tuple([z.number(), z.number()]))),
+    })),
+  })),
+});
+export type FloodGeography = z.infer<typeof FloodGeographySchema>;
 
 export const HefsLatestSchema = z.object({
   fp_id: z.string(),

@@ -16,14 +16,16 @@
  *    `pointwise_p90` stays pointwise, because a basin mean of a per-cell percentile is not a
  *    basin-scale 90th percentile.
  */
-import { useBasinState } from '../api/hooks';
+import { useBasinState, useVizRivers } from '../api/hooks';
 import { useSceneStore } from '../state/store';
 import { ProvenancePopover } from '../design-system/ProvenancePopover';
 import type { BasinVisualizationState } from '../contracts/schemas';
 import { Badge } from '../design-system/Badge';
 import { CATEGORY_BADGE } from '../design-system/badges';
 import { AntecedentSection } from './AntecedentSection';
+import { FloodMappingNote } from './FloodMappingNote';
 import { BasinSummary } from './BasinSummary';
+import { HorizonStrip } from './HorizonStrip';
 import { Disclosure } from './Disclosure';
 import { DriverRow } from './DriverRow';
 import { ProvenanceLine } from './ProvenanceLine';
@@ -51,12 +53,15 @@ function modelProbabilityText(probability: ModelProbability): string {
 export function BasinPanel() {
   const selectedBasinId = useSceneStore((s) => s.selectedBasinId);
   const query = useBasinState(selectedBasinId);
+  // The outlet's river state rides the same query the map's responding-rivers already make.
+  const rivers = useVizRivers(selectedBasinId);
 
   if (!selectedBasinId) return null;
   if (query.isPending) return <section className="panel" data-testid="basin-panel"><p className="muted">Loading basin state…</p></section>;
   if (query.isError) return <section className="panel" data-testid="basin-panel"><p className="error">Basin state unavailable: {query.error.message}</p></section>;
 
   const item: BasinVisualizationState | undefined = query.data.items[0];
+  const outlet = rivers.data?.items.find((r) => r.id === item?.outlet_forecast_point_id) ?? null;
   const refs = query.data.provenance_refs;
   if (!item) return <section className="panel" data-testid="basin-panel"><p className="muted">No basin item in the document.</p></section>;
 
@@ -73,6 +78,7 @@ export function BasinPanel() {
       </header>
 
       <BasinSummary item={item} refs={refs} />
+      {outlet ? <HorizonStrip outlet={outlet} /> : null}
 
       <Disclosure id="why" label="Why?" hint={`${drivers.length} drivers`}>
       <SurfaceRow
@@ -180,6 +186,7 @@ export function BasinPanel() {
       <Disclosure id="context" label="Context">
         <AntecedentSection entries={item.antecedent_precip ?? []} refs={refs} />
         <ReservoirsSection basinId={item.id} />
+        <FloodMappingNote basinId={item.id} />
       </Disclosure>
 
       {item.outlet_forecast_point_id ? <p className="muted">outlet forecast point: <span className="mono">{item.outlet_forecast_point_id}</span></p> : null}

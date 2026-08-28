@@ -286,10 +286,14 @@ async def test_accept_still_defaults_to_json(tmp_path) -> None:
 # --- contracts 1.3.0 --------------------------------------------------------------------
 
 
-def test_contract_version_is_1_5_0_and_the_additions_are_optional() -> None:
-    assert CONTRACT_VERSION == "1.5.0"
-    # 1.5.0 adds a NEW standalone document (FieldRasterState, ADR-0020) and touches no
-    # envelope item: additive by construction, asserted by every older-shape check below.
+def test_contract_version_is_1_6_0_and_the_additions_are_optional() -> None:
+    assert CONTRACT_VERSION == "1.6.0"
+    # 1.6.0 adds RiverVisualizationState.horizons with default () — a 1.5.0 river item keeps
+    # validating; 1.5.0 added the standalone FieldRasterState; every check below pins the
+    # additive chain.
+    from cascade_contracts.visualization import RiverVisualizationState
+
+    assert RiverVisualizationState.model_fields["horizons"].default == ()
     # 1.4.0 is additive too: a 1.3.0 basin item (no antecedent_precip) keeps validating.
     from cascade_contracts.visualization import BasinVisualizationState
 

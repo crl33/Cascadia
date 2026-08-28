@@ -4,7 +4,8 @@
  * &cam=<v1>&motion=…&band=…`. `sel` is the primary selection (full namespaced EntityId);
  * `basin` carries the basin context when the primary is a forecast point (and is the legacy
  * primary key); `cam` is the compact camera target
- * `1~<anchor>~<rangeM>~<headingDeg>~<pitchDeg>[~<mode>]`. `event` (validated against
+ * `1~<anchor>~<rangeM>~<headingDeg>~<pitchDeg>[~<mode>]`; `pin=<cam:provider:id>` pins a
+ * flood-observation camera's preview open (a shareable ground-truth view). `event` (validated against
  * event/registry) enters event replay with EVENT-time cursor `at`; event and as_of are
  * mutually exclusive — event wins and as_of is dropped, because backfilled archive rows carry
  * available_at = retrieval time (ADR-0010) and a knowledge-time replay inside the event would
@@ -29,12 +30,15 @@ export interface DeepLink {
   /** EVENT-time cursor for event replay; only meaningful beside eventId. */
   at: string | null;
   cam: CameraPose | null;
+  /** Pinned flood-observation camera (cam:* id); its preview card opens on load. */
+  pinnedCameraId: string | null;
 }
 
 const BASIN_ID = /^basin:[a-z0-9-]+$/;
 const FP_PREFIX = /^fp:nwps:/i;
 const LID = /^[A-Z0-9]{3,8}$/;
 const ENTITY_ID = /^[a-z][a-z0-9-]*:[A-Za-z0-9:._-]+$/;
+const WEBCAM_ID = /^cam:[a-z-]+:[A-Za-z0-9_.-]{1,120}$/;
 const AS_OF = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d{1,3})?)?Z$/;
 const MOTIONS: readonly MotionSetting[] = ['system', 'reduced', 'full'];
 
@@ -123,6 +127,10 @@ export function parseDeepLink(search: string): DeepLink {
     eventId,
     at: eventId !== null ? parseAsOf(params.get('at')) : null,
     cam: camRaw ? parseCam(camRaw) : null,
+    pinnedCameraId: (() => {
+      const pin = params.get('pin');
+      return pin && WEBCAM_ID.test(pin) ? pin : null;
+    })(),
   };
 }
 
@@ -138,6 +146,7 @@ export function serializeDeepLink(link: DeepLink): string {
     params.set('as_of', link.asOf);
   }
   if (link.cam) params.set('cam', serializeCam(link.cam));
+  if (link.pinnedCameraId) params.set('pin', link.pinnedCameraId);
   if (link.motion && link.motion !== 'system') params.set('motion', link.motion);
   if (link.band) params.set('band', link.band);
   const qs = params.toString();

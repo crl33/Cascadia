@@ -12,6 +12,10 @@ import {
   type FieldRasterState,
   LabelSetSchema,
   type LabelSet,
+  CameraSetSchema,
+  type CameraSet,
+  FloodGeographySchema,
+  type FloodGeography,
   BasinEnvelopeSchema, BasinListSchema, BasinReservoirsSchema, ForecastRunSchema, HefsLatestSchema, RiverNetworkSchema, GeoFeatureSchema, HealthSchema, RiverEnvelopeSchema,
   RunsListSchema, SearchResultsSchema, StationSeriesSchema,
   type BasinEnvelope, type BasinList, type BasinReservoirs, type ForecastRun, type HefsLatest, type RiverNetwork, type GeoFeature, type Health, type RiverEnvelope,
@@ -82,6 +86,10 @@ export const api = {
     getJson('/geo/rivers', RiverNetworkSchema, signal),
   /** App-owned place names (404 = no label set derived — the world simply goes unlabeled). */
   labels: (signal?: AbortSignal): Promise<LabelSet> => getJson('/geo/labels', LabelSetSchema, signal),
+  /** Curated flood-observation cameras (404 = no camera set derived). */
+  cameras: (signal?: AbortSignal): Promise<CameraSet> => getJson('/geo/cameras', CameraSetSchema, signal),
+  /** Static flood geography (404 = none derived; absence is stated, never blank-implied). */
+  floodGeography: (signal?: AbortSignal): Promise<FloodGeography> => getJson('/geo/flood', FloodGeographySchema, signal),
   search: (q: string, signal?: AbortSignal): Promise<SearchResults> => getJson(`/search?q=${enc(q)}`, SearchResultsSchema, signal),
   health: (signal?: AbortSignal): Promise<Health> => getJson('/system/health', HealthSchema, signal),
 };

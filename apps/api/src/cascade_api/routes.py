@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, Request
-from fastapi.responses import PlainTextResponse, StreamingResponse
+from fastapi.responses import PlainTextResponse, Response, StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from cascade_api.events import sse_stream
@@ -152,6 +152,37 @@ async def geo_labels(request: Request) -> dict:
     if geo.labels is None:
         raise HTTPException(status_code=404, detail="no label set derived in this deployment")
     return geo.labels
+
+
+@router.get("/geo/cameras")
+async def geo_cameras(request: Request) -> dict:
+    """The curated flood-observation cameras — static metadata; frames come from providers.
+
+    Tiers carry their REASONS (spatial joins against the platform's own fixtures plus
+    provider-stated facts), never a numeric score. 404 when no camera set was derived."""
+    geo = request.app.state.geo
+    if geo.cameras is None:
+        raise HTTPException(status_code=404, detail="no camera set derived in this deployment")
+    return geo.cameras
+
+
+@router.get("/geo/flood")
+async def geo_flood(request: Request) -> Response:
+    """Static flood-hazard geography: FEMA regulatory zones + NLD levee centerlines.
+
+    STATIC HAZARD register — study-vintage map geometry, never a prediction. The provenance
+    block carries the honest captions, including the Skagit valley-floor data gap; a basin
+    with `availability != 'covered'` draws nothing and the client states the absence."""
+    geo = request.app.state.geo
+    if geo.flood_gz is None:
+        raise HTTPException(status_code=404, detail="no flood geography derived in this deployment")
+    # Pre-compressed: ~1.3 MB over the wire instead of 7.6 MB. Every browser accepts gzip;
+    # the Vary header keeps caches honest for any client that does not.
+    return Response(
+        content=geo.flood_gz,
+        media_type="application/json",
+        headers={"Content-Encoding": "gzip", "Vary": "Accept-Encoding", "Cache-Control": "public, max-age=3600"},
+    )
 
 
 @router.get("/basins/{basin_id}/geometry")

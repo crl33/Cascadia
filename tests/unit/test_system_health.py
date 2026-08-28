@@ -578,11 +578,11 @@ async def test_the_label_set_serves_whole_and_absent_is_a_404_not_a_nameless_ear
         r = await c.get("/geo/labels")
         assert r.status_code == 200
         doc = r.json()
-        kinds = {l["kind"] for l in doc["labels"]}
+        kinds = {row["kind"] for row in doc["labels"]}
         assert {"city", "town", "river", "basin", "peak", "water"} <= kinds
         assert doc["_provenance"]["method_id"] == "method:labels-gnis@1.0.0"
         # the editorial hierarchy's anchors: a name that moved basins would be a build bug
-        seattle = next(l for l in doc["labels"] if l["name"] == "Seattle")
+        seattle = next(row for row in doc["labels"] if row["name"] == "Seattle")
         assert abs(seattle["lat"] - 47.606) < 0.01 and seattle["tier"] == 1
 
     bare = Settings(db_url=f"sqlite+aiosqlite:///{tmp_path}/labels2.db", raw_dir=tmp_path, geo_dir=tmp_path)

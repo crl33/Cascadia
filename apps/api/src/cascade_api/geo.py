@@ -18,6 +18,16 @@ class Geography:
     #: App-owned place/river/basin labels (scripts/build_labels.py; GNIS names + editorial
     #: tiers), CARTOGRAPHIC. None when absent: the world goes unlabeled, loudly logged.
     labels: dict | None = None
+    #: The flood-observation camera set (scripts/build_cameras.py) — instruments with eyes;
+    #: tiers carry reasons, orientation only when provider-stated. None when absent.
+    cameras: dict | None = None
+    #: Static flood-hazard geography (scripts/build_flood_geography.py): FEMA zones + NLD
+    #: levees, STATIC HAZARD register with the Skagit valley-floor gap explicit. None = absent.
+    flood: dict | None = None
+    #: The same document as gzip bytes, exactly as derived — served pre-compressed because it
+    #: is ~7.6 MB of JSON (a GZip middleware would also buffer the SSE stream; ADR-free
+    #: decision: compress the one heavy static route at the route).
+    flood_gz: bytes | None = None
 
     @classmethod
     def load(cls, geo_dir: Path) -> Geography:
@@ -32,10 +42,23 @@ class Geography:
         labels_path = geo_dir / "labels.json"
         if labels_path.exists():
             labels = json.loads(labels_path.read_text())
+        cameras = None
+        cameras_path = geo_dir / "cameras.json"
+        if cameras_path.exists():
+            cameras = json.loads(cameras_path.read_text())
+        flood = None
+        flood_gz = None
+        flood_path = geo_dir / "flood_geography.json.gz"
+        if flood_path.exists():
+            flood_gz = flood_path.read_bytes()
+            flood = json.loads(gzip.decompress(flood_gz))
         return cls(
             by_lod={lod: load_basin_features(geo_dir, lod) for lod in ("state", "basin")},
             river_network=rivers,
             labels=labels,
+            cameras=cameras,
+            flood=flood,
+            flood_gz=flood_gz,
         )
 
     def provenance(self) -> dict:

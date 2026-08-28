@@ -3,7 +3,7 @@
   "distinct_queries": 17,
   "exact_repeats": 0,
   "distinct_statement_texts": 16,
-  "sql_wall_ms": 17.43,
+  "sql_wall_ms": 19.44,
   "by_table": {
     "derived_feature": 5,
     "(SELECT": 3,
@@ -18,21 +18,21 @@
   },
   "by_call_site": {
     "(outside Knowledge) <- (unattributed)": 2,
-    "basins <- apps/api/src/cascade_api/routes.py:164 in viz_basins": 1,
-    "products <- packages/hydrology/src/cascade_hydrology/assemble.py:491 in basin_envelope": 1,
-    "forecast_points_by_lid <- packages/hydrology/src/cascade_hydrology/assemble.py:462 in _prefetch_basins": 1,
-    "stations_by_id <- packages/hydrology/src/cascade_hydrology/assemble.py:464 in _prefetch_basins": 1,
-    "thresholds_for <- packages/hydrology/src/cascade_hydrology/assemble.py:190 in prefetch_points": 1,
-    "latest_forecast_runs <- packages/hydrology/src/cascade_hydrology/assemble.py:191 in prefetch_points": 1,
-    "forecast_values_for <- packages/hydrology/src/cascade_hydrology/assemble.py:192 in prefetch_points": 1,
-    "latest_observations <- packages/hydrology/src/cascade_hydrology/assemble.py:198 in prefetch_points": 1,
-    "observations_for <- packages/hydrology/src/cascade_hydrology/assemble.py:210 in prefetch_points": 1,
+    "basins <- apps/api/src/cascade_api/routes.py:202 in viz_basins": 1,
+    "products <- packages/hydrology/src/cascade_hydrology/assemble.py:559 in basin_envelope": 1,
+    "forecast_points_by_lid <- packages/hydrology/src/cascade_hydrology/assemble.py:530 in _prefetch_basins": 1,
+    "stations_by_id <- packages/hydrology/src/cascade_hydrology/assemble.py:532 in _prefetch_basins": 1,
+    "thresholds_for <- packages/hydrology/src/cascade_hydrology/assemble.py:245 in prefetch_points": 1,
+    "latest_forecast_runs <- packages/hydrology/src/cascade_hydrology/assemble.py:246 in prefetch_points": 1,
+    "forecast_values_for <- packages/hydrology/src/cascade_hydrology/assemble.py:247 in prefetch_points": 1,
+    "latest_observations <- packages/hydrology/src/cascade_hydrology/assemble.py:253 in prefetch_points": 1,
+    "observations_for <- packages/hydrology/src/cascade_hydrology/assemble.py:265 in prefetch_points": 1,
     "latest_forecast_runs <- packages/hydrology/src/cascade_hydrology/agreement.py:960 in prefetch": 1,
     "derived_features_for <- packages/hydrology/src/cascade_hydrology/agreement.py:963 in prefetch": 1,
     "latest_derived_features <- packages/hydrology/src/cascade_hydrology/susceptibility.py:861 in prefetch": 1,
     "latest_derived_features <- packages/hydrology/src/cascade_hydrology/susceptibility.py:872 in prefetch": 1,
     "derived_features_for <- packages/hydrology/src/cascade_hydrology/forcing.py:738 in prefetch": 1,
-    "derived_features_for <- packages/hydrology/src/cascade_hydrology/assemble.py:536 in basin_envelope": 1
+    "derived_features_for <- packages/hydrology/src/cascade_hydrology/assemble.py:604 in basin_envelope": 1
   },
   "statement_texts": [
     "SELECT basin.id, basin.name, basin.regulation_class, basin.outlet_fp_id, basin.huc8, basin.centroid, basin.bbox, basin.geometry_ref, basin.regulated_by, basin.susceptibility_gauge_id, basin.susceptibility_confidence_ceiling, basin.susceptibility_note FROM basin ORDER BY basin.id",
@@ -58,12 +58,12 @@
       "table": "basin",
       "reader": "basins",
       "call_sites": [
-        "basins <- apps/api/src/cascade_api/routes.py:164 in viz_basins"
+        "basins <- apps/api/src/cascade_api/routes.py:202 in viz_basins"
       ],
       "statement_ref": 0,
       "parameters": "()",
       "stack": [
-        "apps/api/src/cascade_api/routes.py:164 in viz_basins",
+        "apps/api/src/cascade_api/routes.py:202 in viz_basins",
         "tests/perf/capture_baseline.py:176 in main",
         "tests/perf/capture_baseline.py:180 in <module>"
       ]
@@ -73,13 +73,13 @@
       "table": "source_product",
       "reader": "products",
       "call_sites": [
-        "products <- packages/hydrology/src/cascade_hydrology/assemble.py:491 in basin_envelope"
+        "products <- packages/hydrology/src/cascade_hydrology/assemble.py:559 in basin_envelope"
       ],
       "statement_ref": 1,
       "parameters": "()",
       "stack": [
-        "packages/hydrology/src/cascade_hydrology/assemble.py:491 in basin_envelope",
-        "apps/api/src/cascade_api/routes.py:164 in viz_basins",
+        "packages/hydrology/src/cascade_hydrology/assemble.py:559 in basin_envelope",
+        "apps/api/src/cascade_api/routes.py:202 in viz_basins",
         "tests/perf/capture_baseline.py:176 in main"
       ]
     },
@@ -88,14 +88,14 @@
       "table": "forecast_point",
       "reader": "forecast_points_by_lid",
       "call_sites": [
-        "forecast_points_by_lid <- packages/hydrology/src/cascade_hydrology/assemble.py:462 in _prefetch_basins"
+        "forecast_points_by_lid <- packages/hydrology/src/cascade_hydrology/assemble.py:530 in _prefetch_basins"
       ],
       "statement_ref": 2,
       "parameters": "('AUBW1', 'CRNW1', 'MVEW1', 'NKSW1', 'RNTW1', 'WRAW1')",
       "stack": [
-        "packages/hydrology/src/cascade_hydrology/assemble.py:462 in _prefetch_basins",
-        "packages/hydrology/src/cascade_hydrology/assemble.py:492 in basin_envelope",
-        "apps/api/src/cascade_api/routes.py:164 in viz_basins"
+        "packages/hydrology/src/cascade_hydrology/assemble.py:530 in _prefetch_basins",
+        "packages/hydrology/src/cascade_hydrology/assemble.py:560 in basin_envelope",
+        "apps/api/src/cascade_api/routes.py:202 in viz_basins"
       ]
     },
     {
@@ -103,14 +103,14 @@
       "table": "station",
       "reader": "stations_by_id",
       "call_sites": [
-        "stations_by_id <- packages/hydrology/src/cascade_hydrology/assemble.py:464 in _prefetch_basins"
+        "stations_by_id <- packages/hydrology/src/cascade_hydrology/assemble.py:532 in _prefetch_basins"
       ],
       "statement_ref": 3,
       "parameters": "('station:usgs:12100490', 'station:usgs:12113000', 'station:usgs:12119000', 'station:usgs:12149000', 'station:usgs:12189500', 'station:usgs:12200500', 'station:usgs:12213100')",
       "stack": [
-        "packages/hydrology/src/cascade_hydrology/assemble.py:464 in _prefetch_basins",
-        "packages/hydrology/src/cascade_hydrology/assemble.py:492 in basin_envelope",
-        "apps/api/src/cascade_api/routes.py:164 in viz_basins"
+        "packages/hydrology/src/cascade_hydrology/assemble.py:532 in _prefetch_basins",
+        "packages/hydrology/src/cascade_hydrology/assemble.py:560 in basin_envelope",
+        "apps/api/src/cascade_api/routes.py:202 in viz_basins"
       ]
     },
     {
@@ -118,14 +118,14 @@
       "table": "threshold",
       "reader": "thresholds_for",
       "call_sites": [
-        "thresholds_for <- packages/hydrology/src/cascade_hydrology/assemble.py:190 in prefetch_points"
+        "thresholds_for <- packages/hydrology/src/cascade_hydrology/assemble.py:245 in prefetch_points"
       ],
       "statement_ref": 4,
       "parameters": "('fp:nwps:AUBW1', 'fp:nwps:CRNW1', 'fp:nwps:MVEW1', 'fp:nwps:NKSW1', 'fp:nwps:RNTW1', 'fp:nwps:WRAW1', '2026-08-24 23:00:00.000000')",
       "stack": [
-        "packages/hydrology/src/cascade_hydrology/assemble.py:190 in prefetch_points",
-        "packages/hydrology/src/cascade_hydrology/assemble.py:465 in _prefetch_basins",
-        "packages/hydrology/src/cascade_hydrology/assemble.py:492 in basin_envelope"
+        "packages/hydrology/src/cascade_hydrology/assemble.py:245 in prefetch_points",
+        "packages/hydrology/src/cascade_hydrology/assemble.py:533 in _prefetch_basins",
+        "packages/hydrology/src/cascade_hydrology/assemble.py:560 in basin_envelope"
       ]
     },
     {
@@ -133,14 +133,14 @@
       "table": "(SELECT",
       "reader": "latest_forecast_runs",
       "call_sites": [
-        "latest_forecast_runs <- packages/hydrology/src/cascade_hydrology/assemble.py:191 in prefetch_points"
+        "latest_forecast_runs <- packages/hydrology/src/cascade_hydrology/assemble.py:246 in prefetch_points"
       ],
       "statement_ref": 5,
       "parameters": "('fp:nwps:AUBW1', 'fp:nwps:CRNW1', 'fp:nwps:MVEW1', 'fp:nwps:NKSW1', 'fp:nwps:RNTW1', 'fp:nwps:WRAW1', '2026-08-24 23:00:00.000000', 'product:nwps-forecast', 'product:nwps-thresholds', 'product:nws-api-alerts-active', 'product:nws-fls-crest', 'product:wpc-qpf-5km-grib', 1)",
       "stack": [
-        "packages/hydrology/src/cascade_hydrology/assemble.py:191 in prefetch_points",
-        "packages/hydrology/src/cascade_hydrology/assemble.py:465 in _prefetch_basins",
-        "packages/hydrology/src/cascade_hydrology/assemble.py:492 in basin_envelope"
+        "packages/hydrology/src/cascade_hydrology/assemble.py:246 in prefetch_points",
+        "packages/hydrology/src/cascade_hydrology/assemble.py:533 in _prefetch_basins",
+        "packages/hydrology/src/cascade_hydrology/assemble.py:560 in basin_envelope"
       ]
     },
     {
@@ -148,14 +148,14 @@
       "table": "forecast_value",
       "reader": "forecast_values_for",
       "call_sites": [
-        "forecast_values_for <- packages/hydrology/src/cascade_hydrology/assemble.py:192 in prefetch_points"
+        "forecast_values_for <- packages/hydrology/src/cascade_hydrology/assemble.py:247 in prefetch_points"
       ],
       "statement_ref": 6,
       "parameters": "(1, 2, 3, 4, 5, 6)",
       "stack": [
-        "packages/hydrology/src/cascade_hydrology/assemble.py:192 in prefetch_points",
-        "packages/hydrology/src/cascade_hydrology/assemble.py:465 in _prefetch_basins",
-        "packages/hydrology/src/cascade_hydrology/assemble.py:492 in basin_envelope"
+        "packages/hydrology/src/cascade_hydrology/assemble.py:247 in prefetch_points",
+        "packages/hydrology/src/cascade_hydrology/assemble.py:533 in _prefetch_basins",
+        "packages/hydrology/src/cascade_hydrology/assemble.py:560 in basin_envelope"
       ]
     },
     {
@@ -163,14 +163,14 @@
       "table": "(SELECT",
       "reader": "latest_observations",
       "call_sites": [
-        "latest_observations <- packages/hydrology/src/cascade_hydrology/assemble.py:198 in prefetch_points"
+        "latest_observations <- packages/hydrology/src/cascade_hydrology/assemble.py:253 in prefetch_points"
       ],
       "statement_ref": 7,
       "parameters": "('station:usgs:12100490', 'station:usgs:12113000', 'station:usgs:12119000', 'station:usgs:12149000', 'station:usgs:12200500', 'station:usgs:12213100', 'flow', 'stage', '2026-08-24 23:00:00.000000', '2026-08-10 23:00:00.000000', '2026-08-24 23:00:00.000000', 1, 1)",
       "stack": [
-        "packages/hydrology/src/cascade_hydrology/assemble.py:198 in prefetch_points",
-        "packages/hydrology/src/cascade_hydrology/assemble.py:465 in _prefetch_basins",
-        "packages/hydrology/src/cascade_hydrology/assemble.py:492 in basin_envelope"
+        "packages/hydrology/src/cascade_hydrology/assemble.py:253 in prefetch_points",
+        "packages/hydrology/src/cascade_hydrology/assemble.py:533 in _prefetch_basins",
+        "packages/hydrology/src/cascade_hydrology/assemble.py:560 in basin_envelope"
       ]
     },
     {
@@ -178,14 +178,14 @@
       "table": "observation",
       "reader": "observations_for",
       "call_sites": [
-        "observations_for <- packages/hydrology/src/cascade_hydrology/assemble.py:210 in prefetch_points"
+        "observations_for <- packages/hydrology/src/cascade_hydrology/assemble.py:265 in prefetch_points"
       ],
       "statement_ref": 8,
       "parameters": "('2026-08-24 23:00:00.000000', '2026-08-22 13:30:00.000000', '2026-08-24 23:00:00.000000', 'station:usgs:12100490', 'flow', '2026-08-24 17:00:00.000000', '2026-08-24 23:00:00.000000', 'station:usgs:12100490', 'stage', '2026-08-22 13:30:00.000000', '2026-08-22 13:30:00.000000', 'station:usgs:12113000', 'flow', '2026-08-24 17:00:00.000000', '2026-08-24 23:00:00.000000', 'station:usgs:12113000', 'stage', '2026-08-22 13:30:00.000000', '2026-08-22 13:30:00.000000', 'station:usgs:12119000', 'flow', '2026-08-22 13:30:00.000000', '2026-08-22 13:30:00.000000', 'station:usgs:12119000', 'stage', '2026-08-24 17:00:00.000000', '2026-08-24 23:00:00.000000', 'station:usgs:12149000', 'flow', '2026-08-22 13:30:00.000000', '2026-08-22 13:30:00.000000', 'station:usgs:12149000', 'stage', '2026-08-24 17:00:00.000000', '2026-08-24 23:00:00.000000', 'station:usgs:12200500', 'flow', '2026-08-22 13:30:00.000000', '2026-08-22 13:30:00.000000', 'station:usgs:12200500', 'stage', '2026-08-24 17:00:00.000000', '2026-08-24 23:00:00.000000', 'station:usgs:12213100', 'flow', '2026-08-22 13:30:00.000000', '2026-08-22 13:30:00.000000', 'station:usgs:12213100', 'stage', '2026-08-24 17:00:00.000000', '2026-08-24 23:00:00.000000')",
       "stack": [
-        "packages/hydrology/src/cascade_hydrology/assemble.py:210 in prefetch_points",
-        "packages/hydrology/src/cascade_hydrology/assemble.py:465 in _prefetch_basins",
-        "packages/hydrology/src/cascade_hydrology/assemble.py:492 in basin_envelope"
+        "packages/hydrology/src/cascade_hydrology/assemble.py:265 in prefetch_points",
+        "packages/hydrology/src/cascade_hydrology/assemble.py:533 in _prefetch_basins",
+        "packages/hydrology/src/cascade_hydrology/assemble.py:560 in basin_envelope"
       ]
     },
     {
@@ -199,8 +199,8 @@
       "parameters": "('fp:nwps:AUBW1', 'fp:nwps:CRNW1', 'fp:nwps:MVEW1', 'fp:nwps:NKSW1', 'fp:nwps:RNTW1', 'fp:nwps:WRAW1', '2026-08-24 23:00:00.000000', 'product:nwm-mr-via-nwps', 1)",
       "stack": [
         "packages/hydrology/src/cascade_hydrology/agreement.py:960 in prefetch",
-        "packages/hydrology/src/cascade_hydrology/assemble.py:466 in _prefetch_basins",
-        "packages/hydrology/src/cascade_hydrology/assemble.py:492 in basin_envelope"
+        "packages/hydrology/src/cascade_hydrology/assemble.py:534 in _prefetch_basins",
+        "packages/hydrology/src/cascade_hydrology/assemble.py:560 in basin_envelope"
       ]
     },
     {
@@ -214,8 +214,8 @@
       "parameters": "('fp:nwps:AUBW1', 'fp:nwps:CRNW1', 'fp:nwps:MVEW1', 'fp:nwps:NKSW1', 'fp:nwps:RNTW1', 'fp:nwps:WRAW1', '2026-08-24 23:00:00.000000', 'nwm_mr_member_flow_series', 'method:nwm-member-series@2.0.0', '2026-08-24 12:00:00.000000', '2026-08-24 12:00:00.000000')",
       "stack": [
         "packages/hydrology/src/cascade_hydrology/agreement.py:963 in prefetch",
-        "packages/hydrology/src/cascade_hydrology/assemble.py:466 in _prefetch_basins",
-        "packages/hydrology/src/cascade_hydrology/assemble.py:492 in basin_envelope"
+        "packages/hydrology/src/cascade_hydrology/assemble.py:534 in _prefetch_basins",
+        "packages/hydrology/src/cascade_hydrology/assemble.py:560 in basin_envelope"
       ]
     },
     {
@@ -229,8 +229,8 @@
       "parameters": "('basin:cedar', 'basin:green-duwamish', 'basin:nooksack', 'basin:puyallup-white', 'basin:skagit', 'basin:snohomish-snoqualmie', 'station:usgs:12100490', 'station:usgs:12113000', 'station:usgs:12119000', 'station:usgs:12149000', 'station:usgs:12189500', 'station:usgs:12200500', 'station:usgs:12213100', '2026-08-24 23:00:00.000000', 'basin_snow_covered_fraction', 'method:basin-snodas-swe@1.0.0', 'basin_swe_mm', 'method:basin-snodas-swe@1.0.0', 'basin_swe_percent_of_median', 'method:snotel-basin-swe-context@1.0.0', 'snotel_precip_14d_percent_of_median', 'method:snotel-precip-14d-context@1.0.0', 'streamflow_doy_percentile', 'method:susceptibility-index@0.1.0', '2026-08-17 23:00:00.000000', '2026-08-24 23:00:00.000000')",
       "stack": [
         "packages/hydrology/src/cascade_hydrology/susceptibility.py:861 in prefetch",
-        "packages/hydrology/src/cascade_hydrology/assemble.py:470 in _prefetch_basins",
-        "packages/hydrology/src/cascade_hydrology/assemble.py:492 in basin_envelope"
+        "packages/hydrology/src/cascade_hydrology/assemble.py:538 in _prefetch_basins",
+        "packages/hydrology/src/cascade_hydrology/assemble.py:560 in basin_envelope"
       ]
     },
     {
@@ -244,8 +244,8 @@
       "parameters": "('station:usgs:12100490', 'station:usgs:12113000', 'station:usgs:12119000', 'station:usgs:12149000', 'station:usgs:12189500', 'station:usgs:12213100', '2026-08-24 23:00:00.000000', 'streamflow_growth_reference', 'method:streamflow-growth-reference@1.0.0', '2016-08-26 23:00:00.000000', '2026-08-24 23:00:00.000000')",
       "stack": [
         "packages/hydrology/src/cascade_hydrology/susceptibility.py:872 in prefetch",
-        "packages/hydrology/src/cascade_hydrology/assemble.py:470 in _prefetch_basins",
-        "packages/hydrology/src/cascade_hydrology/assemble.py:492 in basin_envelope"
+        "packages/hydrology/src/cascade_hydrology/assemble.py:538 in _prefetch_basins",
+        "packages/hydrology/src/cascade_hydrology/assemble.py:560 in basin_envelope"
       ]
     },
     {
@@ -259,8 +259,8 @@
       "parameters": "('basin:cedar', 'basin:green-duwamish', 'basin:nooksack', 'basin:puyallup-white', 'basin:skagit', 'basin:snohomish-snoqualmie', '2026-08-24 23:00:00.000000', 'basin_qpf_24h_deterministic', 'method:basin-qpf@1.0.0', '24h', 'basin_qpf_24h_official', 'method:basin-qpf-wpc@1.0.0', '24h', 'basin_qpf_24h_pointwise_p50', 'method:basin-qpf@1.0.0', '24h', 'basin_qpf_72h_deterministic', 'method:basin-qpf@1.0.0', '72h', 'basin_qpf_72h_pointwise_p10', 'method:basin-qpf@1.0.0', '72h', 'basin_qpf_72h_pointwise_p50', 'method:basin-qpf@1.0.0', '72h', 'basin_qpf_72h_pointwise_p90', 'method:basin-qpf@1.0.0', '72h', 'basin_snow_level_pointwise_p10', 'method:basin-snow-level@1.0.0', 'basin_snow_level_pointwise_p50', 'method:basin-snow-level@1.0.0', 'basin_snow_level_pointwise_p90', 'method:basin-snow-level@1.0.0', '2026-08-22 23:00:00.000000')",
       "stack": [
         "packages/hydrology/src/cascade_hydrology/forcing.py:738 in prefetch",
-        "packages/hydrology/src/cascade_hydrology/assemble.py:471 in _prefetch_basins",
-        "packages/hydrology/src/cascade_hydrology/assemble.py:492 in basin_envelope"
+        "packages/hydrology/src/cascade_hydrology/assemble.py:539 in _prefetch_basins",
+        "packages/hydrology/src/cascade_hydrology/assemble.py:560 in basin_envelope"
       ]
     },
     {
@@ -290,13 +290,13 @@
       "table": "derived_feature",
       "reader": "derived_features_for",
       "call_sites": [
-        "derived_features_for <- packages/hydrology/src/cascade_hydrology/assemble.py:536 in basin_envelope"
+        "derived_features_for <- packages/hydrology/src/cascade_hydrology/assemble.py:604 in basin_envelope"
       ],
       "statement_ref": 15,
       "parameters": "('basin:cedar', 'basin:green-duwamish', 'basin:nooksack', 'basin:puyallup-white', 'basin:skagit', 'basin:snohomish-snoqualmie', '2026-08-24 23:00:00.000000', 'basin_qpe_01h', 'method:basin-qpe@1.0.0', '1h', '2026-08-20 21:00:00.000000', '2026-08-24 23:00:00.000000')",
       "stack": [
-        "packages/hydrology/src/cascade_hydrology/assemble.py:536 in basin_envelope",
-        "apps/api/src/cascade_api/routes.py:164 in viz_basins",
+        "packages/hydrology/src/cascade_hydrology/assemble.py:604 in basin_envelope",
+        "apps/api/src/cascade_api/routes.py:202 in viz_basins",
         "tests/perf/capture_baseline.py:176 in main"
       ]
     }
@@ -305,83 +305,83 @@
     {
       "n": 1,
       "reader": "basins",
-      "call_site": "apps/api/src/cascade_api/routes.py:164 in viz_basins",
+      "call_site": "apps/api/src/cascade_api/routes.py:202 in viz_basins",
       "table": "basin",
       "statement_ref": 0,
       "parameters": "()",
-      "duration_ms": 1.121
+      "duration_ms": 1.23
     },
     {
       "n": 2,
       "reader": "products",
-      "call_site": "packages/hydrology/src/cascade_hydrology/assemble.py:491 in basin_envelope",
+      "call_site": "packages/hydrology/src/cascade_hydrology/assemble.py:559 in basin_envelope",
       "table": "source_product",
       "statement_ref": 1,
       "parameters": "()",
-      "duration_ms": 0.678
+      "duration_ms": 0.719
     },
     {
       "n": 3,
       "reader": "forecast_points_by_lid",
-      "call_site": "packages/hydrology/src/cascade_hydrology/assemble.py:462 in _prefetch_basins",
+      "call_site": "packages/hydrology/src/cascade_hydrology/assemble.py:530 in _prefetch_basins",
       "table": "forecast_point",
       "statement_ref": 2,
       "parameters": "('AUBW1', 'CRNW1', 'MVEW1', 'NKSW1', 'RNTW1', 'WRAW1')",
-      "duration_ms": 0.806
+      "duration_ms": 0.764
     },
     {
       "n": 4,
       "reader": "stations_by_id",
-      "call_site": "packages/hydrology/src/cascade_hydrology/assemble.py:464 in _prefetch_basins",
+      "call_site": "packages/hydrology/src/cascade_hydrology/assemble.py:532 in _prefetch_basins",
       "table": "station",
       "statement_ref": 3,
       "parameters": "('station:usgs:12100490', 'station:usgs:12113000', 'station:usgs:12119000', 'station:usgs:12149000', 'station:usgs:12189500', 'station:usgs:12200500', 'station:usgs:12213100')",
-      "duration_ms": 0.762
+      "duration_ms": 0.719
     },
     {
       "n": 5,
       "reader": "thresholds_for",
-      "call_site": "packages/hydrology/src/cascade_hydrology/assemble.py:190 in prefetch_points",
+      "call_site": "packages/hydrology/src/cascade_hydrology/assemble.py:245 in prefetch_points",
       "table": "threshold",
       "statement_ref": 4,
       "parameters": "('fp:nwps:AUBW1', 'fp:nwps:CRNW1', 'fp:nwps:MVEW1', 'fp:nwps:NKSW1', 'fp:nwps:RNTW1', 'fp:nwps:WRAW1', '2026-08-24 23:00:00.000000')",
-      "duration_ms": 0.916
+      "duration_ms": 0.901
     },
     {
       "n": 6,
       "reader": "latest_forecast_runs",
-      "call_site": "packages/hydrology/src/cascade_hydrology/assemble.py:191 in prefetch_points",
+      "call_site": "packages/hydrology/src/cascade_hydrology/assemble.py:246 in prefetch_points",
       "table": "(SELECT",
       "statement_ref": 5,
       "parameters": "('fp:nwps:AUBW1', 'fp:nwps:CRNW1', 'fp:nwps:MVEW1', 'fp:nwps:NKSW1', 'fp:nwps:RNTW1', 'fp:nwps:WRAW1', '2026-08-24 23:00:00.000000', 'product:nwps-forecast', 'product:nwps-thresholds', 'product:nws-api-alerts-active', 'product:nws-fls-crest', 'product:wpc-qpf-5km-grib', 1)",
-      "duration_ms": 1.202
+      "duration_ms": 1.144
     },
     {
       "n": 7,
       "reader": "forecast_values_for",
-      "call_site": "packages/hydrology/src/cascade_hydrology/assemble.py:192 in prefetch_points",
+      "call_site": "packages/hydrology/src/cascade_hydrology/assemble.py:247 in prefetch_points",
       "table": "forecast_value",
       "statement_ref": 6,
       "parameters": "(1, 2, 3, 4, 5, 6)",
-      "duration_ms": 1.123
+      "duration_ms": 1.259
     },
     {
       "n": 8,
       "reader": "latest_observations",
-      "call_site": "packages/hydrology/src/cascade_hydrology/assemble.py:198 in prefetch_points",
+      "call_site": "packages/hydrology/src/cascade_hydrology/assemble.py:253 in prefetch_points",
       "table": "(SELECT",
       "statement_ref": 7,
       "parameters": "('station:usgs:12100490', 'station:usgs:12113000', 'station:usgs:12119000', 'station:usgs:12149000', 'station:usgs:12200500', 'station:usgs:12213100', 'flow', 'stage', '2026-08-24 23:00:00.000000', '2026-08-10 23:00:00.000000', '2026-08-24 23:00:00.000000', 1, 1)",
-      "duration_ms": 2.04
+      "duration_ms": 2.168
     },
     {
       "n": 9,
       "reader": "observations_for",
-      "call_site": "packages/hydrology/src/cascade_hydrology/assemble.py:210 in prefetch_points",
+      "call_site": "packages/hydrology/src/cascade_hydrology/assemble.py:265 in prefetch_points",
       "table": "observation",
       "statement_ref": 8,
       "parameters": "('2026-08-24 23:00:00.000000', '2026-08-22 13:30:00.000000', '2026-08-24 23:00:00.000000', 'station:usgs:12100490', 'flow', '2026-08-24 17:00:00.000000', '2026-08-24 23:00:00.000000', 'station:usgs:12100490', 'stage', '2026-08-22 13:30:00.000000', '2026-08-22 13:30:00.000000', 'station:usgs:12113000', 'flow', '2026-08-24 17:00:00.000000', '2026-08-24 23:00:00.000000', 'station:usgs:12113000', 'stage', '2026-08-22 13:30:00.000000', '2026-08-22 13:30:00.000000', 'station:usgs:12119000', 'flow', '2026-08-22 13:30:00.000000', '2026-08-22 13:30:00.000000', 'station:usgs:12119000', 'stage', '2026-08-24 17:00:00.000000', '2026-08-24 23:00:00.000000', 'station:usgs:12149000', 'flow', '2026-08-22 13:30:00.000000', '2026-08-22 13:30:00.000000', 'station:usgs:12149000', 'stage', '2026-08-24 17:00:00.000000', '2026-08-24 23:00:00.000000', 'station:usgs:12200500', 'flow', '2026-08-22 13:30:00.000000', '2026-08-22 13:30:00.000000', 'station:usgs:12200500', 'stage', '2026-08-24 17:00:00.000000', '2026-08-24 23:00:00.000000', 'station:usgs:12213100', 'flow', '2026-08-22 13:30:00.000000', '2026-08-22 13:30:00.000000', 'station:usgs:12213100', 'stage', '2026-08-24 17:00:00.000000', '2026-08-24 23:00:00.000000')",
-      "duration_ms": 1.337
+      "duration_ms": 1.375
     },
     {
       "n": 10,
@@ -390,7 +390,7 @@
       "table": "(SELECT",
       "statement_ref": 9,
       "parameters": "('fp:nwps:AUBW1', 'fp:nwps:CRNW1', 'fp:nwps:MVEW1', 'fp:nwps:NKSW1', 'fp:nwps:RNTW1', 'fp:nwps:WRAW1', '2026-08-24 23:00:00.000000', 'product:nwm-mr-via-nwps', 1)",
-      "duration_ms": 0.932
+      "duration_ms": 1.121
     },
     {
       "n": 11,
@@ -399,7 +399,7 @@
       "table": "derived_feature",
       "statement_ref": 10,
       "parameters": "('fp:nwps:AUBW1', 'fp:nwps:CRNW1', 'fp:nwps:MVEW1', 'fp:nwps:NKSW1', 'fp:nwps:RNTW1', 'fp:nwps:WRAW1', '2026-08-24 23:00:00.000000', 'nwm_mr_member_flow_series', 'method:nwm-member-series@2.0.0', '2026-08-24 12:00:00.000000', '2026-08-24 12:00:00.000000')",
-      "duration_ms": 1.014
+      "duration_ms": 1.58
     },
     {
       "n": 12,
@@ -408,7 +408,7 @@
       "table": "derived_feature",
       "statement_ref": 11,
       "parameters": "('basin:cedar', 'basin:green-duwamish', 'basin:nooksack', 'basin:puyallup-white', 'basin:skagit', 'basin:snohomish-snoqualmie', 'station:usgs:12100490', 'station:usgs:12113000', 'station:usgs:12119000', 'station:usgs:12149000', 'station:usgs:12189500', 'station:usgs:12200500', 'station:usgs:12213100', '2026-08-24 23:00:00.000000', 'basin_snow_covered_fraction', 'method:basin-snodas-swe@1.0.0', 'basin_swe_mm', 'method:basin-snodas-swe@1.0.0', 'basin_swe_percent_of_median', 'method:snotel-basin-swe-context@1.0.0', 'snotel_precip_14d_percent_of_median', 'method:snotel-precip-14d-context@1.0.0', 'streamflow_doy_percentile', 'method:susceptibility-index@0.1.0', '2026-08-17 23:00:00.000000', '2026-08-24 23:00:00.000000')",
-      "duration_ms": 1.241
+      "duration_ms": 1.474
     },
     {
       "n": 13,
@@ -417,7 +417,7 @@
       "table": "derived_feature",
       "statement_ref": 10,
       "parameters": "('station:usgs:12100490', 'station:usgs:12113000', 'station:usgs:12119000', 'station:usgs:12149000', 'station:usgs:12189500', 'station:usgs:12213100', '2026-08-24 23:00:00.000000', 'streamflow_growth_reference', 'method:streamflow-growth-reference@1.0.0', '2016-08-26 23:00:00.000000', '2026-08-24 23:00:00.000000')",
-      "duration_ms": 0.835
+      "duration_ms": 0.879
     },
     {
       "n": 14,
@@ -426,7 +426,7 @@
       "table": "derived_feature",
       "statement_ref": 12,
       "parameters": "('basin:cedar', 'basin:green-duwamish', 'basin:nooksack', 'basin:puyallup-white', 'basin:skagit', 'basin:snohomish-snoqualmie', '2026-08-24 23:00:00.000000', 'basin_qpf_24h_deterministic', 'method:basin-qpf@1.0.0', '24h', 'basin_qpf_24h_official', 'method:basin-qpf-wpc@1.0.0', '24h', 'basin_qpf_24h_pointwise_p50', 'method:basin-qpf@1.0.0', '24h', 'basin_qpf_72h_deterministic', 'method:basin-qpf@1.0.0', '72h', 'basin_qpf_72h_pointwise_p10', 'method:basin-qpf@1.0.0', '72h', 'basin_qpf_72h_pointwise_p50', 'method:basin-qpf@1.0.0', '72h', 'basin_qpf_72h_pointwise_p90', 'method:basin-qpf@1.0.0', '72h', 'basin_snow_level_pointwise_p10', 'method:basin-snow-level@1.0.0', 'basin_snow_level_pointwise_p50', 'method:basin-snow-level@1.0.0', 'basin_snow_level_pointwise_p90', 'method:basin-snow-level@1.0.0', '2026-08-22 23:00:00.000000')",
-      "duration_ms": 1.409
+      "duration_ms": 1.541
     },
     {
       "n": 15,
@@ -435,7 +435,7 @@
       "table": "official_alert",
       "statement_ref": 13,
       "parameters": "('2026-08-24 23:00:00.000000', '2026-08-24 23:00:00.000000', '2026-08-24 23:00:00.000000', '2026-08-22 23:00:00.000000')",
-      "duration_ms": 0.733
+      "duration_ms": 0.739
     },
     {
       "n": 16,
@@ -444,16 +444,16 @@
       "table": "official_alert",
       "statement_ref": 14,
       "parameters": "('2026-08-24 23:00:00.000000',)",
-      "duration_ms": 0.566
+      "duration_ms": 0.941
     },
     {
       "n": 17,
       "reader": "derived_features_for",
-      "call_site": "packages/hydrology/src/cascade_hydrology/assemble.py:536 in basin_envelope",
+      "call_site": "packages/hydrology/src/cascade_hydrology/assemble.py:604 in basin_envelope",
       "table": "derived_feature",
       "statement_ref": 15,
       "parameters": "('basin:cedar', 'basin:green-duwamish', 'basin:nooksack', 'basin:puyallup-white', 'basin:skagit', 'basin:snohomish-snoqualmie', '2026-08-24 23:00:00.000000', 'basin_qpe_01h', 'method:basin-qpe@1.0.0', '1h', '2026-08-20 21:00:00.000000', '2026-08-24 23:00:00.000000')",
-      "duration_ms": 0.711
+      "duration_ms": 0.889
     }
   ]
 }

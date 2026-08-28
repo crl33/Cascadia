@@ -36,5 +36,7 @@ export const keys = {
   runs: (forecastPointId: string, start: string, end: string) => ['runs', forecastPointId, { start, end }] as const,
   riverNetwork: () => ['geo', 'rivers'] as const,
   labels: () => ['geo', 'labels'] as const,
+  cameras: () => ['geo', 'cameras'] as const,
+  floodGeography: () => ['geo', 'flood'] as const,
   health: () => ['system', 'health'] as const,
 };

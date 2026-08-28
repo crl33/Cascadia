@@ -3,7 +3,7 @@
  * (geography, basin outlines per LOD, hazard categories, forecast points). Renders nothing.
  */
 import { useEffect, useMemo } from 'react';
-import { useBasinGeometries, useBasinGeometry, useBasins, useLabels, useRiverNetwork, useVizBasins, useVizField, useVizRivers } from '../api/hooks';
+import { useBasinGeometries, useBasinGeometry, useBasins, useCameras, useFloodGeography, useLabels, useRiverNetwork, useVizBasins, useVizField, useVizRivers } from '../api/hooks';
 import type { FloodCategory, GeoFeature } from '../contracts/schemas';
 import type { BasinSusceptibility } from '../layers/susceptibility/BasinSusceptibilityLayer';
 import { riverIntensities } from '../layers/network/match';
@@ -91,6 +91,20 @@ export function SceneDataBridge({ controller }: Props) {
   useEffect(() => {
     if (labelSet.data) controller.setData('labels', { labels: labelSet.data.labels });
   }, [controller, labelSet.data]);
+
+  const cameraSet = useCameras();
+  const pinnedCameraId = useSceneStore((s) => s.pinnedCameraId);
+  useEffect(() => {
+    if (cameraSet.data) controller.setData('cameras', { cameras: cameraSet.data.cameras, pinnedCameraId });
+  }, [controller, cameraSet.data, pinnedCameraId]);
+
+  const flood = useFloodGeography();
+  useEffect(() => {
+    if (flood.data) {
+      controller.setData('floodplain', flood.data);
+      controller.setData('levees', flood.data);
+    }
+  }, [controller, flood.data]);
 
   const network = useRiverNetwork();
   // The rivers-respond join: the selected basin's per-station flow_visual_intensity (already

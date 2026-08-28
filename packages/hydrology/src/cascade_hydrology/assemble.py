@@ -14,6 +14,7 @@ from datetime import datetime, timedelta
 from cascade_contracts import (
     ContractEnvelope,
     FloodCategory,
+    ForecastHorizon,
     Freshness,
     FreshnessState,
     Headroom,
@@ -153,6 +154,54 @@ def forecast_run_ref(run: ForecastRun, products: dict[str, SourceProduct], *, no
         label=product.label if product else f"Unregistered forecast product {run.product_id!r} issued by {run.issuer}",
         raw_artifact_id=str(run.raw_artifact_id),
     )
+
+
+#: The forecast-horizon ladder (mission: "NOW / +12 / +24 / +48 / +72"): fixed lead times the
+#: official forecast is READ at. Selection tolerance: half the coarsest NWRFC point spacing —
+#: a horizon with no point within it answers None with the reason, never an interpolation.
+HORIZON_LEADS_H = (12, 24, 48, 72)
+HORIZON_TOLERANCE = timedelta(hours=3)
+
+
+def _forecast_horizons(
+    series: list[tuple[datetime, float | None]], *, basis: str, unit: str, datum: str | None,
+    tset: ThresholdSet | None, now: datetime, prov: str,
+) -> tuple[ForecastHorizon, ...]:
+    """Read the official series at each fixed lead. Pure selection + the SAME categorize
+    every observed value goes through; the one honesty rule is the tolerance: past the last
+    in-tolerance point the horizon says "forecast ends", never a made-up number."""
+    out: list[ForecastHorizon] = []
+    for lead in HORIZON_LEADS_H:
+        target = now + timedelta(hours=lead)
+        candidates = [
+            (abs((t - target).total_seconds()), t, v)
+            for t, v in series
+            if v is not None and abs(t - target) <= HORIZON_TOLERANCE
+        ]
+        if not candidates:
+            future = [t for t, _v in series if t > now]
+            reason = (
+                f"official forecast ends {max(future):%Y-%m-%d %H:%M}Z, before this horizon"
+                if future and max(future) < target - HORIZON_TOLERANCE
+                else "no official forecast point within 3 h of this horizon"
+            )
+            out.append(ForecastHorizon(
+                lead_h=lead, valid_time=target, official=None,
+                category=FloodCategory.UNKNOWN, reason=reason, prov=prov,
+                truth=TruthClass.AUTHORITATIVE_MODEL,
+            ))
+            continue
+        _dist, chosen_t, chosen_v = min(candidates)
+        cat = categorize(Measure(basis=basis, value=chosen_v, unit=unit, datum=datum), tset,
+                         label=f"Official forecast {basis}")
+        out.append(ForecastHorizon(
+            lead_h=lead, valid_time=target,
+            official=Quantity(value=round(chosen_v, 3), unit=unit, datum=datum),
+            official_valid_time=chosen_t,
+            category=cat.category, reason=cat.reason, prov=prov,
+            truth=TruthClass.AUTHORITATIVE_MODEL,
+        ))
+    return tuple(out)
 
 
 #: The window `assess_point` takes its rate of rise over, ending at the knowledge time. Named
@@ -377,6 +426,18 @@ async def assess_point(k: Knowledge, fp: ForecastPoint, basin: Basin | None, pro
             category=hazard.category,
             points=len(values),
         )
+        horizons = _forecast_horizons(series, basis=fbasis, unit=funit, datum=fdatum, tset=tset, now=now, prov=fkey)
+
+    if run is None:
+        horizons = tuple(
+            ForecastHorizon(
+                lead_h=lead, valid_time=now + timedelta(hours=lead), official=None,
+                category=FloodCategory.UNKNOWN,
+                reason="no official NWRFC forecast known at this knowledge time",
+                prov=fkey, truth=TruthClass.AUTHORITATIVE_MODEL,
+            )
+            for lead in HORIZON_LEADS_H
+        )
 
     reg_class = RIVER_REGULATION.get(basin.regulation_class if basin else "", "unknown")
     item = RiverVisualizationState(
@@ -396,6 +457,7 @@ async def assess_point(k: Knowledge, fp: ForecastPoint, basin: Basin | None, pro
         regulation=Regulation(class_=reg_class, regulated_by=tuple(basin.regulated_by) if basin else ()),
         location=(fp.lon, fp.lat) if fp.lon is not None and fp.lat is not None else None,
         flow_visual_intensity=await susceptibility.flow_visual_intensity(k, fp.station_id),
+        horizons=horizons,
     )
     return PointAssessment(item=item, refs=refs, hazard=hazard, hazard_ref=fkey, thresholds=tset)
 

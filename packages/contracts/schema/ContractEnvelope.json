@@ -353,6 +353,78 @@
       "title": "FloodCategory",
       "type": "string"
     },
+    "ForecastHorizon": {
+      "additionalProperties": false,
+      "description": "The OFFICIAL forecast's value at one lead time \u2014 selection from the stored series,\nnever interpolation, never a Cascade probability. `official` is None with a reason when\nthe run holds no point within tolerance of the horizon instant (a forecast that ends at\n+48 h says so instead of inventing +72 h). The category is the same threshold comparison\nevery observed value gets; UNKNOWN carries why.",
+      "properties": {
+        "category": {
+          "$ref": "#/$defs/FloodCategory"
+        },
+        "lead_h": {
+          "maximum": 240,
+          "minimum": 1,
+          "title": "Lead H",
+          "type": "integer"
+        },
+        "official": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Quantity"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "official_valid_time": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Official Valid Time"
+        },
+        "prov": {
+          "title": "Prov",
+          "type": "string"
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reason"
+        },
+        "truth": {
+          "$ref": "#/$defs/TruthClass"
+        },
+        "valid_time": {
+          "format": "date-time",
+          "title": "Valid Time",
+          "type": "string"
+        }
+      },
+      "required": [
+        "lead_h",
+        "valid_time",
+        "category",
+        "prov",
+        "truth"
+      ],
+      "title": "ForecastHorizon",
+      "type": "object"
+    },
     "Freshness": {
       "additionalProperties": false,
       "properties": {
@@ -1221,6 +1293,14 @@
           ],
           "default": null
         },
+        "horizons": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/ForecastHorizon"
+          },
+          "title": "Horizons",
+          "type": "array"
+        },
         "id": {
           "pattern": "^fp:nwps:[A-Z0-9]+$|^station:[a-z]+:[A-Za-z0-9:._-]+$",
           "title": "Id",
@@ -1875,7 +1955,7 @@
       "$ref": "#/$defs/TimeContext"
     },
     "version": {
-      "default": "1.4.0",
+      "default": "1.6.0",
       "title": "Version",
       "type": "string"
     }

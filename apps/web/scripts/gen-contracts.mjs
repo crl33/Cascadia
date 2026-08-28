@@ -21,10 +21,22 @@ const schemas = Object.fromEntries(files.map((f) => [f, JSON.parse(readFileSync(
 const root = schemas['SceneSummary.json'];
 if (!root) throw new Error('SceneSummary.json missing from schema dir');
 
+// STANDALONE documents (not envelope members — e.g. FieldRasterState) merge into the root's
+// $defs so one compile emits everything without duplicate type names; identical shared defs
+// (ProvenanceRef, Freshness…) keep the root's copy. Anything neither contained nor mergeable
+// still fails loudly.
 for (const [file, schema] of Object.entries(schemas)) {
   if (file === 'SceneSummary.json') continue;
+  const contained = schema.title in root.$defs;
+  if (!contained) {
+    const { $defs = {}, $id, $schema, title, ...body } = schema;
+    root.$defs[title] = body;
+    for (const [defName, def] of Object.entries($defs)) {
+      if (!(defName in root.$defs)) root.$defs[defName] = def;
+    }
+    continue;
+  }
   const missing = Object.keys(schema.$defs ?? {}).filter((d) => !(d in root.$defs));
-  if (!(schema.title in root.$defs) && schema.title !== 'SceneSummary') missing.push(schema.title);
   if (missing.length) throw new Error(`${file} has definitions not covered by SceneSummary.json: ${missing.join(', ')}`);
 }
 

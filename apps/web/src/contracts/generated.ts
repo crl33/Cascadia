@@ -1,6 +1,6 @@
 /* eslint-disable */
 /**
- * GENERATED — do not edit. Source: packages/contracts/schema/*.json (BasinVisualizationState.json, ContractEnvelope.json, ProvenanceRef.json, RiverVisualizationState.json, SceneSummary.json).
+ * GENERATED — do not edit. Source: packages/contracts/schema/*.json (BasinVisualizationState.json, ContractEnvelope.json, FieldRasterState.json, ProvenanceRef.json, RiverVisualizationState.json, SceneSummary.json).
  * Regenerate with `npm run contracts:gen`; `npm run contracts:check` fails on drift.
  */
 
@@ -214,6 +214,12 @@ export type Basis = string;
 export type Prov10 = string;
 export type Reason7 = string | null;
 export type TimeToThresholdH = number | null;
+export type LeadH = number;
+export type OfficialValidTime = string | null;
+export type Prov11 = string;
+export type Reason8 = string | null;
+export type ValidTime = string;
+export type Horizons = ForecastHorizon[];
 export type Id2 = string;
 /**
  * [lon, lat] WGS84; cartographic
@@ -223,8 +229,8 @@ export type Name1 = string;
 /**
  * key into ContractEnvelope.provenance_refs
  */
-export type Prov11 = string;
-export type ValidTime = string;
+export type Prov12 = string;
+export type ValidTime1 = string;
 export type FloodCategory1 = 'none' | 'action' | 'minor' | 'moderate' | 'major' | 'unknown';
 export type ObservedCategoryReason = string | null;
 export type CrestValidTime = string | null;
@@ -234,7 +240,7 @@ export type Points = number;
 /**
  * key into ContractEnvelope.provenance_refs
  */
-export type Prov12 = string;
+export type Prov13 = string;
 export type ReachId = string | null;
 export type Class = string;
 export type RegulatedBy = string[];
@@ -245,7 +251,7 @@ export type Datum1 = string | null;
 export type Major = number | null;
 export type Minor = number | null;
 export type Moderate = number | null;
-export type Prov13 = string;
+export type Prov14 = string;
 export type Unit2 = string;
 export type Downstream = string[];
 export type Upstream = string[];
@@ -253,7 +259,7 @@ export type Direction2 = string;
 /**
  * key into ContractEnvelope.provenance_refs
  */
-export type Prov14 = string;
+export type Prov15 = string;
 export type WindowH2 = number;
 export type Items = (BasinVisualizationState | RiverVisualizationState)[];
 export type AgeSeconds = number | null;
@@ -284,7 +290,7 @@ export type SourceId = string;
  */
 export type SourceKind =
   'OBSERVED' | 'OFFICIAL_FORECAST' | 'MODELED' | 'DERIVED' | 'EXPERIMENTAL' | 'CONFIGURED' | 'UNKNOWN';
-export type ValidTime1 = string | null;
+export type ValidTime2 = string | null;
 export type Mode = string;
 export type Valid = string;
 export type Version = string;
@@ -545,6 +551,7 @@ export interface RiverVisualizationState {
   basin_id: BasinId;
   flow_visual_intensity?: FlowVisualIntensity;
   headroom?: Headroom | null;
+  horizons?: Horizons;
   id: Id2;
   location?: Location;
   name: Name1;
@@ -567,12 +574,29 @@ export interface Headroom {
   to_category: FloodCategory;
   value?: Quantity | null;
 }
-export interface ObservedRiverState {
-  flow?: Quantity | null;
+/**
+ * The OFFICIAL forecast's value at one lead time — selection from the stored series,
+ * never interpolation, never a Cascade probability. `official` is None with a reason when
+ * the run holds no point within tolerance of the horizon instant (a forecast that ends at
+ * +48 h says so instead of inventing +72 h). The category is the same threshold comparison
+ * every observed value gets; UNKNOWN carries why.
+ */
+export interface ForecastHorizon {
+  category: FloodCategory;
+  lead_h: LeadH;
+  official?: Quantity | null;
+  official_valid_time?: OfficialValidTime;
   prov: Prov11;
-  stage?: Quantity | null;
+  reason?: Reason8;
   truth: TruthClass;
   valid_time: ValidTime;
+}
+export interface ObservedRiverState {
+  flow?: Quantity | null;
+  prov: Prov12;
+  stage?: Quantity | null;
+  truth: TruthClass;
+  valid_time: ValidTime1;
 }
 export interface OfficialForecastSummary {
   category: FloodCategory;
@@ -581,7 +605,7 @@ export interface OfficialForecastSummary {
   issued_at: IssuedAt;
   issuer: Issuer1;
   points: Points;
-  prov: Prov12;
+  prov: Prov13;
   truth: TruthClass;
 }
 export interface Regulation {
@@ -595,7 +619,7 @@ export interface Thresholds {
   major?: Major;
   minor?: Minor;
   moderate?: Moderate;
-  prov: Prov13;
+  prov: Prov14;
   unit: Unit2;
 }
 export interface Topology {
@@ -604,7 +628,7 @@ export interface Topology {
 }
 export interface Trend {
   direction: Direction2;
-  prov: Prov14;
+  prov: Prov15;
   rate?: Quantity | null;
   truth: TruthClass;
   window_h: WindowH2;
@@ -626,7 +650,7 @@ export interface ProvenanceRef {
   retrieved_at?: RetrievedAt;
   source_id: SourceId;
   source_kind: SourceKind;
-  valid_time?: ValidTime1;
+  valid_time?: ValidTime2;
 }
 export interface Freshness {
   age_seconds?: AgeSeconds;

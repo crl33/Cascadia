@@ -15,6 +15,7 @@ from pydantic import BaseModel
 from cascade_contracts import (
     BasinVisualizationState,
     ContractEnvelope,
+    FieldRasterState,
     ProvenanceRef,
     RiverVisualizationState,
     SceneSummary,
@@ -26,6 +27,7 @@ CONTRACTS: "dict[str, type[BaseModel]]" = {
     "RiverVisualizationState": RiverVisualizationState,
     "ContractEnvelope": ContractEnvelope,
     "SceneSummary": SceneSummary,
+    "FieldRasterState": FieldRasterState,
 }
 
 

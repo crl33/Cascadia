@@ -1,0 +1,346 @@
+{
+  "$defs": {
+    "FieldGridSpec": {
+      "additionalProperties": false,
+      "description": "The raster's own georeferencing (ADR-0020): NW cell center, degrees, lon in -180..180.\nRows scan EAST then SOUTH from (la1, lo1) \u2014 the provider's order, carried verbatim.",
+      "properties": {
+        "dlat": {
+          "exclusiveMinimum": 0,
+          "title": "Dlat",
+          "type": "number"
+        },
+        "dlon": {
+          "exclusiveMinimum": 0,
+          "title": "Dlon",
+          "type": "number"
+        },
+        "la1": {
+          "maximum": 90,
+          "minimum": -90,
+          "title": "La1",
+          "type": "number"
+        },
+        "lo1": {
+          "maximum": 180,
+          "minimum": -180,
+          "title": "Lo1",
+          "type": "number"
+        },
+        "nx": {
+          "exclusiveMinimum": 0,
+          "title": "Nx",
+          "type": "integer"
+        },
+        "ny": {
+          "exclusiveMinimum": 0,
+          "title": "Ny",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "lo1",
+        "la1",
+        "dlon",
+        "dlat",
+        "nx",
+        "ny"
+      ],
+      "title": "FieldGridSpec",
+      "type": "object"
+    },
+    "Freshness": {
+      "additionalProperties": false,
+      "properties": {
+        "age_seconds": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Age Seconds"
+        },
+        "expected_cadence_seconds": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Expected Cadence Seconds"
+        },
+        "state": {
+          "$ref": "#/$defs/FreshnessState"
+        }
+      },
+      "required": [
+        "state"
+      ],
+      "title": "Freshness",
+      "type": "object"
+    },
+    "FreshnessState": {
+      "enum": [
+        "current",
+        "stale",
+        "degraded",
+        "missing",
+        "partial",
+        "unknown"
+      ],
+      "title": "FreshnessState",
+      "type": "string"
+    },
+    "ProvenanceRef": {
+      "additionalProperties": false,
+      "description": "docs/VISUALIZATION_CONTRACTS.md \u00a71. Every scientific value points at one of these.",
+      "properties": {
+        "freshness": {
+          "$ref": "#/$defs/Freshness"
+        },
+        "issued_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Issued At"
+        },
+        "label": {
+          "description": "Human label supplied by the backend, e.g. 'NWRFC official forecast'",
+          "title": "Label",
+          "type": "string"
+        },
+        "method_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "method:<name>@<semver> for DERIVED/EXPERIMENTAL",
+          "title": "Method Id"
+        },
+        "product_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "SourceProduct id, e.g. product:nwps-stageflow",
+          "title": "Product Id"
+        },
+        "quality": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Quality",
+          "type": "array"
+        },
+        "raw_artifact_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Raw Artifact Id"
+        },
+        "retrieved_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Retrieved At"
+        },
+        "source_id": {
+          "description": "DataSource id, e.g. src:nwps-v1",
+          "title": "Source Id",
+          "type": "string"
+        },
+        "source_kind": {
+          "$ref": "#/$defs/SourceKind"
+        },
+        "valid_time": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Valid Time"
+        }
+      },
+      "required": [
+        "source_id",
+        "source_kind",
+        "freshness",
+        "label"
+      ],
+      "title": "ProvenanceRef",
+      "type": "object"
+    },
+    "SourceKind": {
+      "description": "docs/DATA_DOCTRINE.md \u00a72 \u2014 closed, ordered taxonomy.",
+      "enum": [
+        "OBSERVED",
+        "OFFICIAL_FORECAST",
+        "MODELED",
+        "DERIVED",
+        "EXPERIMENTAL",
+        "CONFIGURED",
+        "UNKNOWN"
+      ],
+      "title": "SourceKind",
+      "type": "string"
+    },
+    "TruthClass": {
+      "description": "docs/VISUAL_TRUTH_DOCTRINE.md \u2014 what kind of thing a rendered element is.",
+      "enum": [
+        "observation",
+        "authoritative_model",
+        "cascade_derived",
+        "cartographic",
+        "cinematic"
+      ],
+      "title": "TruthClass",
+      "type": "string"
+    }
+  },
+  "$id": "https://cascadia-papsukkal.dev/schema/FieldRasterState.json",
+  "additionalProperties": false,
+  "description": "One observed weather field over the seeded window, packed for display (C3b).\n\n`cells_b64` is base64 of gzip of little-endian uint16, row-major from the NW corner;\nvalue = raw * `scale` in `unit`; raw == `sentinel` means the provider could not say\n(missing or no radar coverage) and must render as absence, never as zero. `display_max`\nis the window's real maximum \u2014 the display_range top VISUALIZATION_CONTRACTS \u00a710 rule 2\nallows \u2014 and it may legitimately be 0.0 on a dry hour.",
+  "properties": {
+    "as_of": {
+      "format": "date-time",
+      "title": "As Of",
+      "type": "string"
+    },
+    "cells_b64": {
+      "title": "Cells B64",
+      "type": "string"
+    },
+    "contract": {
+      "default": "FieldRasterState",
+      "title": "Contract",
+      "type": "string"
+    },
+    "display_max": {
+      "minimum": 0,
+      "title": "Display Max",
+      "type": "number"
+    },
+    "field": {
+      "title": "Field",
+      "type": "string"
+    },
+    "generated_at": {
+      "format": "date-time",
+      "title": "Generated At",
+      "type": "string"
+    },
+    "kind": {
+      "description": "observed = measured; analysis = observation-constrained model (SNODAS); forecast arrives with C4",
+      "pattern": "^(observed|analysis)$",
+      "title": "Kind",
+      "type": "string"
+    },
+    "prov": {
+      "title": "Prov",
+      "type": "string"
+    },
+    "provenance_refs": {
+      "additionalProperties": {
+        "$ref": "#/$defs/ProvenanceRef"
+      },
+      "title": "Provenance Refs",
+      "type": "object"
+    },
+    "scale": {
+      "exclusiveMinimum": 0,
+      "title": "Scale",
+      "type": "number"
+    },
+    "sentinel": {
+      "default": 65535,
+      "title": "Sentinel",
+      "type": "integer"
+    },
+    "spec": {
+      "$ref": "#/$defs/FieldGridSpec"
+    },
+    "truth": {
+      "$ref": "#/$defs/TruthClass"
+    },
+    "unit": {
+      "title": "Unit",
+      "type": "string"
+    },
+    "valid_time": {
+      "format": "date-time",
+      "title": "Valid Time",
+      "type": "string"
+    },
+    "version": {
+      "default": "1.6.0",
+      "title": "Version",
+      "type": "string"
+    },
+    "window": {
+      "title": "Window",
+      "type": "string"
+    }
+  },
+  "required": [
+    "kind",
+    "field",
+    "window",
+    "valid_time",
+    "as_of",
+    "generated_at",
+    "truth",
+    "unit",
+    "spec",
+    "scale",
+    "display_max",
+    "cells_b64",
+    "prov",
+    "provenance_refs"
+  ],
+  "title": "FieldRasterState",
+  "type": "object"
+}

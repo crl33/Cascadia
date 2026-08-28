@@ -12,7 +12,7 @@ import type { Band } from '../scene/bands';
 import { windowEndingAt, type TimelineWindow } from '../timeline/window';
 
 export type EntityId = string;
-export type LayerId = 'basemap' | 'basins' | 'rivers' | 'basin_susceptibility' | 'river_network' | 'precip_observed' | 'snow_cover' | 'labels';
+export type LayerId = 'basemap' | 'basins' | 'rivers' | 'basin_susceptibility' | 'river_network' | 'precip_observed' | 'snow_cover' | 'labels' | 'cameras' | 'floodplain' | 'levees';
 export type QualityTier = 'ultra' | 'high' | 'balanced' | 'low';
 export type FlightState = 'idle' | 'flying' | 'settled';
 export type TimelineMode = 'now' | 'past' | 'event';
@@ -52,6 +52,8 @@ export interface CameraPose {
 
 export interface SceneState {
   selectedBasinId: EntityId | null;
+  /** The camera whose preview the user pinned open (cam:* id), if any. */
+  pinnedCameraId: string | null;
   selectedForecastPointId: EntityId | null;
   altitudeBand: Band;
   motionSetting: MotionSetting;
@@ -66,6 +68,7 @@ export interface SceneState {
 
 export interface SceneActions {
   selectBasin(id: EntityId | null): void;
+  pinCamera(id: string | null): void;
   selectForecastPoint(id: EntityId | null, basinId?: EntityId | null): void;
   setAltitudeBand(band: Band): void;
   setMotionSetting(setting: MotionSetting): void;
@@ -81,11 +84,12 @@ export type SceneStore = SceneState & SceneActions;
 
 export const DEFAULT_STATE: SceneState = {
   selectedBasinId: null,
+  pinnedCameraId: null,
   selectedForecastPointId: null,
   altitudeBand: 'orbital',
   motionSetting: 'system',
   systemReducedMotion: false,
-  activeLayers: ['basemap', 'snow_cover', 'precip_observed', 'basin_susceptibility', 'river_network', 'basins', 'rivers', 'labels'],
+  activeLayers: ['basemap', 'snow_cover', 'precip_observed', 'basin_susceptibility', 'river_network', 'basins', 'rivers', 'labels', 'cameras', 'floodplain', 'levees'],
   time: { valid: 'now' },
   timeline: { mode: 'now', asOf: null, window: windowEndingAt(new Date().toISOString()), eventId: null, at: null },
   cameraPose: null,
@@ -100,6 +104,7 @@ export function createSceneStore(initial: Partial<SceneState> = {}) {
       ...initial,
       // A new selection reframes the camera, so a previously captured pose no longer describes the view.
       selectBasin: (id) => set({ selectedBasinId: id, selectedForecastPointId: null, cameraPose: null }),
+      pinCamera: (id) => set({ pinnedCameraId: id }),
       selectForecastPoint: (id, basinId) =>
         set((s) => ({ selectedForecastPointId: id, selectedBasinId: basinId === undefined ? s.selectedBasinId : basinId, cameraPose: null })),
       setAltitudeBand: (band) => set({ altitudeBand: band }),

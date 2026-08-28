@@ -26,6 +26,7 @@ export function UrlSync() {
         eventId: s.timeline.eventId,
         at: s.timeline.at,
         cam: s.cameraPose,
+        pinnedCameraId: s.pinnedCameraId,
       });
       const next = `${window.location.pathname}${qs}`;
       if (next !== `${window.location.pathname}${window.location.search}`) window.history.replaceState(null, '', next);
@@ -36,7 +37,7 @@ export function UrlSync() {
     };
     write();
     const unsubscribe = useSceneStore.subscribe(
-      (s) => [s.selectedBasinId, s.selectedForecastPointId, s.motionSetting, s.timeline.asOf, s.timeline.eventId, s.timeline.at, s.cameraPose] as const,
+      (s) => [s.selectedBasinId, s.selectedForecastPointId, s.motionSetting, s.timeline.asOf, s.timeline.eventId, s.timeline.at, s.cameraPose, s.pinnedCameraId] as const,
       schedule,
       { equalityFn: shallow },
     );

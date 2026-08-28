@@ -719,7 +719,20 @@ wash is a rendered scientific value and scene-scoped provenance fits in no basin
 **scrub e2e pin**: moving the timeline re-asks the field at the scrubbed knowledge time —
 timeline-driven spatial change is now a tested behavior, limited only by retention depth.
 
-Still ahead on this trajectory: the freezing/snow-level visualization over hypsometry (C3c's
-second half), terrain (ADR-0021 drafted: 3DEP quantized-mesh in R2 — Proposed, build pending),
-atmosphere, and Event Mode's spatial weather (C4).
+Landed 2026-08-28 (the satellite-first session): **the EARTH became the interface** — USGS
+orthoimagery as the default basemap (public domain, keyless, terms-verified; OSM demoted to
+explicit fallback; per-provider grades); **app-owned labels** (GNIS + editorial tiers, band
+budgets/priority/spacing per SEMANTIC_ZOOM §6 subset); **static flood geography** (FEMA NFHL
+zones + NLD levees, selected-basin instantiation, the Skagit outlet's no-digital-data state
+explicit in the panel); **the flood-observation camera network v1** (9 curated cameras —
+USGS HIVIS at our own gauges + 4 image-verified WSDOT river cameras — tiered WITH REASONS,
+band-gated markers, spatially-anchored DOM preview cards, pin deep-links, per-cadence frame
+buckets, gateway S3-latest redirect); and the **forecast-horizon strip** (NOW/+12/+24/+48/+72
+read from the stored official series, never interpolated; contract 1.6.0).
+
+Still ahead: the crest-showcase oblique camera; snow-level over hypsometry (C3c second half);
+C4 forecast fields + weather cinema; hydrographic water polygons + cinematic water material at
+local band; dynamic flood-camera attention keyed to OFFICIAL evidence; Pierce County KiWIS
+ingestion (keyless, verified — terms check first); King County/Snohomish gauge feeds (owner
+keys); atmosphere; Event Mode spatial weather.
 

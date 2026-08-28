@@ -7,7 +7,7 @@ from enum import StrEnum
 
 from pydantic import BaseModel, ConfigDict, Field
 
-CONTRACT_VERSION = "1.5.0"  # 1.5.0 (2026-08-28): +FieldRasterState (ADR-0020); 1.4.0: +antecedent_precip
+CONTRACT_VERSION = "1.6.0"  # 1.6.0 (2026-08-28): +RiverVisualizationState.horizons; 1.5.0: +FieldRasterState
 # (observed MRMS basin-mean windows; additive, so 1.3.0 readers keep validating).
 # 1.3.0 (2026-08-26): +BasinVisualizationState.hydrologic_state and
 # .state_change — the Tier 0 high-tail representation and its velocity (ReferenceWindow,

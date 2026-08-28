@@ -1,0 +1,219 @@
+{
+ "_provenance": {
+  "method_id": "method:flood-cameras@1.0.0",
+  "derived_at": "2026-08-28T23:09:36.585082+00:00",
+  "sources": {
+   "usgs": "https://api.waterdata.usgs.gov/nims/cameras (public domain; imagery: usgs-nims-images S3, CORS-open)",
+   "wsdot": "https://data.wsdot.wa.gov/arcgis/rest/services/TravelInformation/TravelInfoCamerasWeather/FeatureServer/0/query ('low volume use only' + hold-harmless licenseInfo, fetched 2026-08-28)"
+  },
+  "relevance_note": "Tiers carry their reasons and never a numeric score. A: at a USGS gauge, or river-named title near the mainstem, or inside a mapped floodway. B: inside the 1% floodplain, near the mainstem, or river-named. C: in-basin, coverage unverified. Orientation only when the provider states it; unknown stays unknown.",
+  "privacy_note": "Environmental/infrastructure context only. No face, person, plate or biometric processing, ever.",
+  "excluded": "Kent Green River levee cameras (probed 2026-08-28: frozen at 2025-12-11 / 404 \u2014 HTTP 200 is not freshness)."
+ },
+ "cameras": [
+  {
+   "id": "cam:usgs:WA_Nooksack_River_Overflow_at_Emerson_Rd_at_Everson",
+   "provider": "usgs-nims",
+   "name": "Nooksack River Overflow at Emerson Rd at Everson",
+   "lon": -122.34044,
+   "lat": 48.91339,
+   "feed": "still",
+   "image": {
+    "kind": "usgs-s3",
+    "cam_id": "WA_Nooksack_River_Overflow_at_Emerson_Rd_at_Everson"
+   },
+   "refresh_seconds": 900,
+   "basin_id": "basin:skagit",
+   "nwis_id": "12211190",
+   "tier": "B",
+   "reasons": [
+    "river_named_in_camera_title"
+   ],
+   "orientation": null,
+   "attribution": "USGS Hydrologic Imagery Visualization and Information System (public domain)"
+  },
+  {
+   "id": "cam:usgs:WA_Nooksack_River_Overflow_at_Highway_544_at_Everson",
+   "provider": "usgs-nims",
+   "name": "Nooksack River Overflow at Highway 544 at Everson",
+   "lon": -122.33405,
+   "lat": 48.92012,
+   "feed": "still",
+   "image": {
+    "kind": "usgs-s3",
+    "cam_id": "WA_Nooksack_River_Overflow_at_Highway_544_at_Everson"
+   },
+   "refresh_seconds": 900,
+   "basin_id": "basin:skagit",
+   "nwis_id": "12211195",
+   "tier": "B",
+   "reasons": [
+    "river_named_in_camera_title"
+   ],
+   "orientation": null,
+   "attribution": "USGS Hydrologic Imagery Visualization and Information System (public domain)"
+  },
+  {
+   "id": "cam:usgs:WA_Skagit_River_near_Mount_Vernon",
+   "provider": "usgs-nims",
+   "name": "Skagit River near Mount Vernon Downstream",
+   "lon": -122.33622,
+   "lat": 48.44596,
+   "feed": "still",
+   "image": {
+    "kind": "usgs-s3",
+    "cam_id": "WA_Skagit_River_near_Mount_Vernon"
+   },
+   "refresh_seconds": 900,
+   "basin_id": "basin:skagit",
+   "nwis_id": "12200500",
+   "tier": "A",
+   "reasons": [
+    "at_usgs_gauge",
+    "river_named_in_camera_title",
+    "260_m_from_mainstem_river",
+    "170_m_from_gauge"
+   ],
+   "orientation": null,
+   "attribution": "USGS Hydrologic Imagery Visualization and Information System (public domain)"
+  },
+  {
+   "id": "cam:usgs:WA_Skagit_River_near_Mount_Vernon_WA_upstream",
+   "provider": "usgs-nims",
+   "name": "Skagit River near Mount Vernon Upstream",
+   "lon": -122.33622,
+   "lat": 48.44596,
+   "feed": "still",
+   "image": {
+    "kind": "usgs-s3",
+    "cam_id": "WA_Skagit_River_near_Mount_Vernon_WA_upstream"
+   },
+   "refresh_seconds": 900,
+   "basin_id": "basin:skagit",
+   "nwis_id": "12200500",
+   "tier": "A",
+   "reasons": [
+    "at_usgs_gauge",
+    "river_named_in_camera_title",
+    "260_m_from_mainstem_river",
+    "170_m_from_gauge"
+   ],
+   "orientation": null,
+   "attribution": "USGS Hydrologic Imagery Visualization and Information System (public domain)"
+  },
+  {
+   "id": "cam:wsdot:9187",
+   "provider": "wsdot",
+   "name": "SR 532 at MP 3.3: Stillaguamish River",
+   "lon": -122.38464,
+   "lat": 48.24008,
+   "feed": "still",
+   "image": {
+    "kind": "static-url",
+    "url": "https://images.wsdot.wa.gov/nw/532vc00337.jpg"
+   },
+   "refresh_seconds": 300,
+   "basin_id": "basin:skagit",
+   "nwis_id": null,
+   "tier": "B",
+   "reasons": [
+    "river_named_in_camera_title",
+    "orientation_provider_stated"
+   ],
+   "orientation": null,
+   "attribution": "WSDOT Traveler Information (low-volume use; hold-harmless terms)"
+  },
+  {
+   "id": "cam:wsdot:9240",
+   "provider": "wsdot",
+   "name": "I-5 at MP 209.3: Stillaguamish River",
+   "lon": -122.20964,
+   "lat": 48.19671,
+   "feed": "still",
+   "image": {
+    "kind": "static-url",
+    "url": "https://images.wsdot.wa.gov/nw/005vc20934.jpg"
+   },
+   "refresh_seconds": 300,
+   "basin_id": "basin:skagit",
+   "nwis_id": null,
+   "tier": "B",
+   "reasons": [
+    "river_named_in_camera_title",
+    "orientation_provider_stated"
+   ],
+   "orientation": null,
+   "attribution": "WSDOT Traveler Information (low-volume use; hold-harmless terms)"
+  },
+  {
+   "id": "cam:wsdot:9316",
+   "provider": "wsdot",
+   "name": "SR 529 at MP 4.1: Snohomish River South",
+   "lon": -122.18774,
+   "lat": 48.0169,
+   "feed": "still",
+   "image": {
+    "kind": "static-url",
+    "url": "https://images.wsdot.wa.gov/nw/529vc00416.jpg"
+   },
+   "refresh_seconds": 300,
+   "basin_id": "basin:skagit",
+   "nwis_id": null,
+   "tier": "B",
+   "reasons": [
+    "river_named_in_camera_title",
+    "orientation_provider_stated"
+   ],
+   "orientation": {
+    "cardinal": "S"
+   },
+   "attribution": "WSDOT Traveler Information (low-volume use; hold-harmless terms)"
+  },
+  {
+   "id": "cam:wsdot:9317",
+   "provider": "wsdot",
+   "name": "SR 529 at MP 4.1: Snohomish River North",
+   "lon": -122.18739,
+   "lat": 48.01725,
+   "feed": "still",
+   "image": {
+    "kind": "static-url",
+    "url": "https://images.wsdot.wa.gov/nw/529vc00419.jpg"
+   },
+   "refresh_seconds": 300,
+   "basin_id": "basin:skagit",
+   "nwis_id": null,
+   "tier": "B",
+   "reasons": [
+    "river_named_in_camera_title",
+    "orientation_provider_stated"
+   ],
+   "orientation": {
+    "cardinal": "N"
+   },
+   "attribution": "WSDOT Traveler Information (low-volume use; hold-harmless terms)"
+  },
+  {
+   "id": "cam:wsdot:9357",
+   "provider": "wsdot",
+   "name": "US 2 at MP 2: Ebey Slough",
+   "lon": -122.14575,
+   "lat": 47.97798,
+   "feed": "still",
+   "image": {
+    "kind": "static-url",
+    "url": "https://images.wsdot.wa.gov/nw/002vc00207.jpg"
+   },
+   "refresh_seconds": 300,
+   "basin_id": "basin:skagit",
+   "nwis_id": null,
+   "tier": "B",
+   "reasons": [
+    "river_named_in_camera_title",
+    "orientation_provider_stated"
+   ],
+   "orientation": null,
+   "attribution": "WSDOT Traveler Information (low-volume use; hold-harmless terms)"
+  }
+ ]
+}

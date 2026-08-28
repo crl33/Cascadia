@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { CameraPose } from '../state/store';
 import { parseCam, parseDeepLink, serializeCam, serializeDeepLink, type DeepLink } from './deep-link';
 
-const EMPTY: DeepLink = { basinId: null, forecastPointId: null, motion: null, band: null, asOf: null, eventId: null, at: null, cam: null };
+const EMPTY: DeepLink = { basinId: null, forecastPointId: null, motion: null, band: null, asOf: null, eventId: null, at: null, cam: null, pinnedCameraId: null };
 
 describe('deep link', () => {
   it('round-trips selection, basin context, motion and band', () => {
@@ -127,5 +127,16 @@ describe('cam grammar v1 (docs/CAMERA_SYSTEM.md §7)', () => {
     const link = parseDeepLink('?sel=basin%3Askagit&cam=2~e%3Abasin%3Askagit~1000~0~-45');
     expect(link.cam).toBeNull();
     expect(link.basinId).toBe('basin:skagit');                              // sel still frames
+  });
+});
+
+
+describe('pin param', () => {
+  it('round-trips a pinned flood-observation camera and rejects junk', () => {
+    const link = parseDeepLink('?pin=cam:usgs:WA_Skagit_River_near_Mount_Vernon');
+    expect(link.pinnedCameraId).toBe('cam:usgs:WA_Skagit_River_near_Mount_Vernon');
+    expect(serializeDeepLink({ ...EMPTY, pinnedCameraId: link.pinnedCameraId })).toBe('?pin=cam%3Ausgs%3AWA_Skagit_River_near_Mount_Vernon');
+    expect(parseDeepLink('?pin=javascript:alert(1)').pinnedCameraId).toBeNull();
+    expect(parseDeepLink('?pin=cam:usgs:').pinnedCameraId).toBeNull();
   });
 });

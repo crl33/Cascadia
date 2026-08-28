@@ -4,11 +4,11 @@
  * and hover, band → layer visibility, and disposal. Geography (basin bboxes, forecast-point
  * locations) arrives through setGeography/setData — the controller never fetches.
  */
-import { CesiumTerrainProvider, Clock, ClockRange, ClockStep, Credit, CreditDisplay, Entity, JulianDate, ScreenSpaceEventHandler, ScreenSpaceEventType, Viewer } from 'cesium';
+import { Cartesian2, Cartesian3, CesiumTerrainProvider, Clock, ClockRange, ClockStep, Credit, CreditDisplay, Entity, JulianDate, SceneTransforms, ScreenSpaceEventHandler, ScreenSpaceEventType, Viewer } from 'cesium';
 import 'cesium/Build/Cesium/Widgets/widgets.css';
 import { CameraController } from '../camera/CameraController';
 import type { FlightReason } from '../camera/types';
-import type { BasinListItem, FieldRasterState, RiverEnvelope } from '../contracts/schemas';
+import type { BasinListItem, FieldRasterState, FloodGeography, RiverEnvelope } from '../contracts/schemas';
 import type { MotionPreference } from '../design-system/motion';
 import { createSceneHandle } from '../layers/cesium-handle';
 import type { LayerHit, LayerId, SceneHandle, SceneLayer, SelectionState } from '../layers/contract';
@@ -17,6 +17,8 @@ import { BasinSusceptibilityLayer, type BasinSusceptibilityLayerData } from '../
 import { resolveBasemap, type BasemapProvider } from '../layers/basemap/BasemapProvider';
 import { RiverNetworkLayer, type RiverNetworkDisplay } from '../layers/network/RiverNetworkLayer';
 import { LabelsLayer, type LabelSet as LabelSetData } from '../layers/labels/LabelsLayer';
+import { CameraLayer, type CameraSetData } from '../layers/cameras/CameraLayer';
+import { FloodHazardLayer, LeveesLayer } from '../layers/flood/FloodHazardLayer';
 import { WeatherFieldLayer } from '../layers/fields/WeatherFieldLayer';
 import { precipPixel } from '../layers/precip/style';
 import { snowPixel } from '../layers/snow/style';
@@ -35,6 +37,9 @@ interface LayerDataMap {
   precip_observed: FieldRasterState | null;
   snow_cover: FieldRasterState | null;
   labels: LabelSetData;
+  cameras: CameraSetData;
+  floodplain: FloodGeography;
+  levees: FloodGeography;
   basins: BasinsLayerData;
   rivers: RiverEnvelope;
   basin_susceptibility: BasinSusceptibilityLayerData;
@@ -105,7 +110,7 @@ export class SceneController {
     for (const layer of [
       new WeatherFieldLayer({ id: 'snow_cover', displayName: 'Snow water equivalent (SNODAS, daily)', truthClass: 'authoritative_model', pixel: snowPixel }),
       new WeatherFieldLayer({ id: 'precip_observed', displayName: 'Observed precipitation (MRMS QPE, 1 h)', truthClass: 'observation', pixel: precipPixel }),
-      new BasinSusceptibilityLayer(), new RiverNetworkLayer(), new LabelsLayer(), new BasinsLayer(), new RiversLayer(),
+      new FloodHazardLayer(), new LeveesLayer(), new BasinSusceptibilityLayer(), new RiverNetworkLayer(), new LabelsLayer(), new CameraLayer(), new BasinsLayer(), new RiversLayer(),
     ] as SceneLayer[]) {
       this.layers.set(layer.id, layer);
       this.intents.set(layer.id, true);
@@ -252,12 +257,42 @@ export class SceneController {
     this.camera.frameForecastPoint(point.lon, point.lat, options);
   }
 
+  /**
+   * Imperative screen-space tracking for DOM overlays (camera preview cards): the callback
+   * fires from Cesium's postRender with the projected window position (or null when behind
+   * the globe), and the caller writes DOM transforms DIRECTLY — no React state is ever set
+   * per frame (renderer-boundary rule). Returns a disposer.
+   */
+  trackScreenPosition(lon: number, lat: number, onMove: (pos: { x: number; y: number } | null) => void): () => void {
+    const world = Cartesian3.fromDegrees(lon, lat);
+    const scratch = new Cartesian2();
+    let lastX = Number.NaN;
+    let lastY = Number.NaN;
+    const listener = () => {
+      const projected = SceneTransforms.worldToWindowCoordinates(this.viewer.scene, world, scratch);
+      if (!projected) {
+        if (!Number.isNaN(lastX)) { lastX = Number.NaN; onMove(null); }
+        return;
+      }
+      if (Math.abs(projected.x - lastX) < 0.5 && Math.abs(projected.y - lastY) < 0.5) return;
+      lastX = projected.x;
+      lastY = projected.y;
+      onMove({ x: projected.x, y: projected.y });
+    };
+    this.viewer.scene.postRender.addEventListener(listener);
+    this.viewer.scene.requestRender();
+    return () => this.viewer.scene.postRender.removeEventListener(listener);
+  }
+
   private hitAt(position: { x: number; y: number }): LayerHit | null {
     const picked: unknown = this.viewer.scene.pick(position as never);
-    const entity = (picked as { id?: unknown } | undefined)?.id;
-    if (!(entity instanceof Entity) || typeof entity.id !== 'string') return null;
+    const raw = (picked as { id?: unknown } | undefined)?.id;
+    // Entity picks carry an Entity whose id is the renderer tag; primitive picks (billboards,
+    // labels) carry the tag string directly.
+    const tag = raw instanceof Entity ? raw.id : typeof raw === 'string' ? raw : null;
+    if (typeof tag !== 'string') return null;
     for (const layer of this.layers.values()) {
-      const hit = layer.hitTest(entity.id);
+      const hit = layer.hitTest(tag);
       if (hit) return hit;
     }
     return null;

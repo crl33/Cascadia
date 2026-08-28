@@ -6,7 +6,7 @@
       "as_of": "2026-08-24T23:00:00Z"
     },
     "path": "/basins/basin:skagit/state",
-    "sql_wall_ms": 13.55,
+    "sql_wall_ms": 14.47,
     "total_queries": 17
   },
   "viz_basins": {
@@ -16,7 +16,7 @@
       "as_of": "2026-08-24T23:00:00Z"
     },
     "path": "/viz/basins",
-    "sql_wall_ms": 17.43,
+    "sql_wall_ms": 19.44,
     "total_queries": 17
   }
 }

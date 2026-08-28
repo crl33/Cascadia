@@ -73,6 +73,22 @@ export const useLabels = () =>
     retry: false, // a 404 means no label set was derived — an answer, not a flake
   });
 
+export const useCameras = () =>
+  useQuery({
+    queryKey: keys.cameras(),
+    queryFn: ({ signal }) => api.cameras(signal),
+    staleTime: Infinity, // curated static metadata; frames refresh, the catalogue does not
+    retry: false,
+  });
+
+export const useFloodGeography = () =>
+  useQuery({
+    queryKey: keys.floodGeography(),
+    queryFn: ({ signal }) => api.floodGeography(signal),
+    staleTime: Infinity, // regulatory map geometry of a specific vintage
+    retry: false,
+  });
+
 export const useBasinReservoirs = (basinId: string | null) => {
   const asOf = useAsOf();
   return useQuery({

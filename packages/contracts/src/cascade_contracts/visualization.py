@@ -409,6 +409,8 @@ class RiverVisualizationState(StrictModel):
     regulation: Regulation = Regulation(class_="unknown")  # type: ignore[call-arg]  # populate_by_name resolves the "class" alias
     location: tuple[float, float] | None = Field(default=None, description="[lon, lat] WGS84; cartographic")
     flow_visual_intensity: float | None = Field(default=None, ge=0, le=1, description="display hint from percentile; not depth")
+    #: 1.6.0: the official forecast read at fixed lead times (+12/+24/+48/+72 h). Additive.
+    horizons: tuple[ForecastHorizon, ...] = ()
 
 
 class FieldGridSpec(StrictModel):
@@ -456,6 +458,23 @@ class FieldRasterState(StrictModel):
         if self.prov not in self.provenance_refs:
             raise ValueError(f"unresolved provenance ref: {self.prov}")
         return self
+
+
+class ForecastHorizon(StrictModel):
+    """The OFFICIAL forecast's value at one lead time — selection from the stored series,
+    never interpolation, never a Cascade probability. `official` is None with a reason when
+    the run holds no point within tolerance of the horizon instant (a forecast that ends at
+    +48 h says so instead of inventing +72 h). The category is the same threshold comparison
+    every observed value gets; UNKNOWN carries why."""
+
+    lead_h: int = Field(ge=1, le=240)
+    valid_time: datetime  # as_of + lead_h, the instant the horizon asks about
+    official: Quantity | None = None
+    official_valid_time: datetime | None = None  # the chosen forecast point's own valid time
+    category: FloodCategory
+    reason: str | None = None
+    prov: str
+    truth: TruthClass
 
 
 class ContractEnvelope(StrictModel):

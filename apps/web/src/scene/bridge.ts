@@ -33,6 +33,7 @@ export function attachScene(controller: SceneController, store: SceneStoreApi): 
       const state = store.getState();
       if (hit.entityId.startsWith('basin:')) state.selectBasin(hit.entityId);
       else if (hit.entityId.startsWith('fp:nwps:')) state.selectForecastPoint(hit.entityId, hit.basinId);
+      else if (hit.entityId.startsWith('cam:')) state.pinCamera(state.pinnedCameraId === hit.entityId ? null : hit.entityId);
     }),
   );
   store.getState().setAltitudeBand(controller.zoom.band);

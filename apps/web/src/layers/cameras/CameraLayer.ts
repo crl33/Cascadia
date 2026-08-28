@@ -1,0 +1,158 @@
+/**
+ * CameraLayer: geospatial markers for the curated flood-observation cameras. The markers live
+ * HERE (Cesium billboards, picked through the standard hitTest pipeline); the preview WINDOWS
+ * live in the DOM (app/CameraPreviewHost) — Cesium never holds an <img>, React never holds a
+ * billboard, and the bridge between them is the store's `pinnedCameraId` plus a projected
+ * screen position the host reads imperatively.
+ *
+ * Markers are a generated glyph (a small camera badge drawn once on canvas per size/pinned
+ * combination) rather than an icon asset: no bundle bytes, crisp at device pixel ratio, and
+ * the pinned state is a different glyph, not a color-only change.
+ */
+import {
+  BillboardCollection,
+  Cartesian3,
+  HeightReference,
+  VerticalOrigin,
+  type Viewer,
+} from 'cesium';
+import type { CameraRecord } from '../../contracts/schemas';
+import type { MotionPreference } from '../../design-system/motion';
+import type { Band } from '../../scene/bands';
+import type { LayerHit, LayerStatus, SceneHandle, SceneLayer, SelectionState } from '../contract';
+import { viewerOf } from '../cesium-handle';
+import { cameraMarker, type CameraTier } from './style';
+
+export interface CameraSetData {
+  cameras: CameraRecord[];
+  pinnedCameraId: string | null;
+}
+
+const TAG_PREFIX = 'cameras|';
+const glyphCache = new Map<string, HTMLCanvasElement>();
+
+/** A small rounded camera badge: body + lens, dark slate on white ring for both-theme legibility. */
+function cameraGlyph(sizePx: number, pinned: boolean): HTMLCanvasElement {
+  const key = `${sizePx}|${pinned}`;
+  const cached = glyphCache.get(key);
+  if (cached) return cached;
+  const scale = 2; // crispness on HiDPI
+  const s = sizePx * scale;
+  const canvas = document.createElement('canvas');
+  canvas.width = s;
+  canvas.height = s;
+  const ctx = canvas.getContext('2d');
+  if (ctx) {
+    const r = s * 0.2;
+    ctx.fillStyle = pinned ? 'rgba(255,255,255,0.95)' : 'rgba(10,16,24,0.82)';
+    ctx.strokeStyle = pinned ? 'rgba(10,16,24,0.9)' : 'rgba(255,255,255,0.85)';
+    ctx.lineWidth = s * 0.06;
+    ctx.beginPath();
+    ctx.roundRect(s * 0.08, s * 0.2, s * 0.84, s * 0.6, r);
+    ctx.fill();
+    ctx.stroke();
+    // lens
+    ctx.beginPath();
+    ctx.arc(s * 0.5, s * 0.5, s * 0.17, 0, Math.PI * 2);
+    ctx.fillStyle = pinned ? 'rgba(10,16,24,0.9)' : 'rgba(255,255,255,0.9)';
+    ctx.fill();
+    // viewfinder nub
+    ctx.fillStyle = pinned ? 'rgba(10,16,24,0.9)' : 'rgba(255,255,255,0.85)';
+    ctx.fillRect(s * 0.3, s * 0.12, s * 0.2, s * 0.1);
+  }
+  glyphCache.set(key, canvas);
+  return canvas;
+}
+
+export class CameraLayer implements SceneLayer<CameraSetData> {
+  readonly id = 'cameras' as const;
+  readonly displayName = 'Flood-observation cameras';
+  readonly truthClass = 'cartographic' as const;
+  readonly bands: SceneLayer['bands'] = {
+    orbital: 'hidden', state: 'hidden', basin: 'reduced', river: 'full', local: 'full',
+  };
+
+  status: LayerStatus = 'created';
+  statusReason: string | null = 'no data yet';
+
+  private viewer: Viewer | null = null;
+  private collection: BillboardCollection | null = null;
+  private data: CameraSetData | null = null;
+  private band: Band = 'orbital';
+  private visible = true;
+  private disposed = false;
+
+  mount(scene: SceneHandle): void {
+    this.viewer = viewerOf(scene);
+    this.collection = new BillboardCollection({ scene: this.viewer.scene });
+    this.viewer.scene.primitives.add(this.collection);
+    this.rebuild();
+  }
+
+  unmount(): void {
+    if (this.viewer && this.collection) this.viewer.scene.primitives.remove(this.collection);
+    this.collection = null;
+    this.viewer = null;
+  }
+
+  dispose(): void {
+    this.unmount();
+    this.disposed = true;
+  }
+
+  setVisible(visible: boolean): void {
+    this.visible = visible;
+    if (this.collection) this.collection.show = visible;
+    this.viewer?.scene.requestRender();
+  }
+
+  setBand(band: Band): void {
+    if (band === this.band) return;
+    this.band = band;
+    this.rebuild();
+  }
+
+  setSelection(_selection: SelectionState): void {
+    // pinning arrives through setData (the bridge pushes pinnedCameraId with the catalogue)
+  }
+
+  setMotion(_motion: MotionPreference): void {}
+
+  setData(data: CameraSetData): void {
+    if (this.disposed) return;
+    this.data = data;
+    this.status = data.cameras.length === 0 ? 'unknown' : 'current';
+    this.statusReason = data.cameras.length === 0 ? 'no cameras in the curated set' : null;
+    this.rebuild();
+  }
+
+  hitTest(rendererTag: string): LayerHit | null {
+    if (!rendererTag.startsWith(TAG_PREFIX)) return null;
+    const camId = rendererTag.slice(TAG_PREFIX.length);
+    const record = this.data?.cameras.find((c) => c.id === camId);
+    return { layerId: this.id, entityId: camId, basinId: record?.basin_id ?? null };
+  }
+
+  private rebuild(): void {
+    if (!this.collection || !this.data) return;
+    this.collection.removeAll();
+    for (const cam of this.data.cameras) {
+      const pinned = cam.id === this.data.pinnedCameraId;
+      const style = cameraMarker({ tier: cam.tier as CameraTier, band: this.band, pinned });
+      if (!style.show) continue;
+      const billboard = this.collection.add({
+        position: Cartesian3.fromDegrees(cam.lon, cam.lat),
+        image: cameraGlyph(style.sizePx, pinned),
+        width: style.sizePx,
+        height: style.sizePx,
+        verticalOrigin: VerticalOrigin.BOTTOM,
+        heightReference: HeightReference.CLAMP_TO_GROUND,
+        disableDepthTestDistance: Number.POSITIVE_INFINITY,
+      });
+      (billboard as { id?: unknown }).id = `${TAG_PREFIX}${cam.id}`;
+      billboard.color = billboard.color.withAlpha(style.alpha);
+    }
+    this.collection.show = this.visible;
+    this.viewer?.scene.requestRender();
+  }
+}

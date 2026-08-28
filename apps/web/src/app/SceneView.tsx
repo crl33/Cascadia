@@ -9,6 +9,7 @@ import { resolveBasemap } from '../layers/basemap/BasemapProvider';
 import { attachScene } from '../scene/bridge';
 import { SceneController } from '../scene/SceneController';
 import { useSceneStore } from '../state/store';
+import { CameraPreviewHost } from './CameraPreviewHost';
 import { SceneDataBridge } from './SceneDataBridge';
 
 export function SceneView() {
@@ -56,6 +57,7 @@ export function SceneView() {
         </div>
       ) : null}
       {controller ? <SceneDataBridge controller={controller} /> : null}
+      {controller ? <CameraPreviewHost controller={controller} /> : null}
     </div>
   );
 }

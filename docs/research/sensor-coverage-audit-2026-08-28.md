@@ -12,7 +12,18 @@ County flood gauges, (3) Pierce County flood gauges, (4) WA Ecology flow network
 (5) WSDOT RWIS, (6) NOAA CO-OPS tide gauges for tidal reaches, (7) USACE CWMS/A2W beyond the
 NWRFC SHEF path, (8) CoCoRaHS community rainfall.
 
-Status: IN PROGRESS — sections are appended as probes complete.
+**Headline findings.** (1) Pierce County runs a live, keyless **KISTERS KiWIS API**
+(`waterquality.piercecountywa.gov`) with 15-minute discharge on the Puyallup mainstem at six
+river miles plus the flashy tributaries and the Lake Tapps signals — not in `DATA_SOURCES.md`
+at all; the audit's one adapter-grade discovery. (2) NOAA CO-OPS covers Seattle/Tacoma/Cherry
+Point at 6-min/8-min latency but has **no station at Everett or in Skagit Bay** — the two most
+tide-affected forecast reaches have no observed tide. (3) USACE CDA and A2W both re-verified
+live today (~1 h latency; Lake Shannon `SHA.*` = 31 series, its only machine route).
+(4) King County and Snohomish County remain closed (APIM key / OneRain login) — unchanged.
+(5) Ecology's flow network has no structured live route (an ArcGIS display-string at 2.5–5 h);
+its bulk export is 1–2 years stale. (6) WSDOT RWIS is key-gated (free email signup), untestable
+keylessly. (7) CoCoRaHS works keyless but is daily/manual — verification-grade, not
+operational.
 
 ---
 
@@ -266,8 +277,60 @@ Phase 2/3 ingest. Judgment: skip now; note for the verification harness.
 
 ## 9. Coverage matrix (JSON)
 
-(pending)
+Rows are (basin × gap signal) for the eight audited areas only — signals already in
+`DATA_SOURCES.md` are not re-listed (their ids appear in `notes` where a gap signal is
+redundant with them). `verified` = probed live today. `value` is for the 6–120 h flood
+problem per `docs/HYDROLOGY.md`; "verification" in a value string means Phase 6 QPE/forecast
+verification, not operational nowcasting.
+
+```json
+{
+  "audit_date": "2026-08-28",
+  "basins": ["skagit", "snohomish-snoqualmie", "cedar", "green-duwamish", "puyallup-white", "nooksack"],
+  "rows": [
+    {"basin": "cedar", "signal": "lowland_rain_15min", "provider": "King County WLRD HIC", "variable": "precip (15-min), stage", "cadence": "PT15M", "latency": "~PT10M (REPORTED)", "api_route": "none keyless: green2.kingcounty.gov ASP.NET postback only; api.kingcounty.gov/floodwarning/v1 = 401 without APIM key", "ingestion_status": "missing", "value": "high (rain; MRMS bias-check)", "terms": "Public Domain per KC Socrata record pzrb-xkes", "verified": true},
+    {"basin": "green-duwamish", "signal": "lowland_rain_15min", "provider": "King County WLRD HIC", "variable": "precip (15-min), stage", "cadence": "PT15M", "latency": "~PT10M (REPORTED)", "api_route": "same as cedar row", "ingestion_status": "missing", "value": "high (rain); stage redundant with H2/H3", "terms": "Public Domain per KC Socrata record", "verified": true},
+    {"basin": "snohomish-snoqualmie", "signal": "lowland_rain_15min", "provider": "King County WLRD HIC (WRIA 7 share)", "variable": "precip (15-min)", "cadence": "PT15M", "latency": "~PT10M (REPORTED)", "api_route": "same as cedar row", "ingestion_status": "missing", "value": "medium", "terms": "Public Domain per KC Socrata record", "verified": true},
+    {"basin": "cedar", "signal": "county_flood_phase", "provider": "King County floodwarning API", "variable": "derived phase 0-4", "cadence": "~PT10M", "latency": "~PT10M", "api_route": "https://api.kingcounty.gov/floodwarning/v1/river/gauge/ (Ocp-Apim-Subscription-Key required; 401 verified today)", "ingestion_status": "missing", "value": "redundant (derived from USGS/NWS already ingested; display context only per DATA_DOCTRINE §7)", "terms": "county terms, unpublished", "verified": true},
+    {"basin": "snohomish-snoqualmie", "signal": "county_gauges", "provider": "Snohomish County / OneRain Contrail", "variable": "county rain+stage sensors", "cadence": "unknown", "latency": "unknown", "api_route": "none public: snohomish.onerain.com 302->/login/ verified today; /export/file/ disabled (errno 412)", "ingestion_status": "missing", "value": "redundant for public display (rides NWPS LIDs already ingested); marginal sensors invisible behind login", "terms": "unknown", "verified": true},
+    {"basin": "puyallup-white", "signal": "county_discharge_15min", "provider": "Pierce County SWM (KISTERS KiWIS)", "variable": "discharge ft³/s (15-min), stage; Puyallup RM 6.56-41.18, White RM 7.62-32.86, Carbon, Greenwater, Clearwater, South Prairie Cr, Lake Tapps diversion+flume", "cadence": "PT15M", "latency": "~PT10M-PT30M (observed 22:45Z value at 22:55Z probe)", "api_route": "https://waterquality.piercecountywa.gov/KiWIS/KiWIS?datasource=0&service=kisters&type=queryServices&request=getTimeseriesValues&ts_id=<id>&period=PT6H&format=json (keyless)", "ingestion_status": "possible", "value": "high (mainstem spatial density between NWPS points; flashy tributaries; R13 Lake Tapps signals live)", "terms": "UNVERIFIED (no terms page found)", "verified": true},
+    {"basin": "puyallup-white", "signal": "county_rain_15min", "provider": "Pierce County SWM (KiWIS)", "variable": "precip 15-min + 1h/3h/6h/day rollups, 26 current stations", "cadence": "PT15M-PT1H", "latency": "<PT1H (observed)", "api_route": "KiWIS getTimeseriesList stationparameter_name=Precip* -> getTimeseriesValues", "ingestion_status": "possible", "value": "medium (lowland MRMS bias-check)", "terms": "UNVERIFIED", "verified": true},
+    {"basin": "nooksack", "signal": "state_flow_live", "provider": "WA Ecology flow network", "variable": "stage+discharge display string (Hutchinson Cr, Bertrand Cr, Dakota Cr)", "cadence": "PT15M timestamps", "latency": "PT2H30M-PT5H (observed)", "api_route": "https://gis.ecology.wa.gov/serverext/rest/services/EAP/FlowMonitoringStations/MapServer/0/query (StationMessage string; keyless)", "ingestion_status": "missing", "value": "low (small creeks, string-scrape, hours late)", "terms": "Ecology non-commercial clause OPEN QUESTION (see G10)", "verified": true},
+    {"basin": "skagit", "signal": "state_flow_live", "provider": "WA Ecology flow network", "variable": "stage+discharge display string (Friday Cr, EF Nookachamps Cr, Hansen Cr)", "cadence": "PT15M timestamps", "latency": "PT2H30M-PT5H (observed)", "api_route": "same MapServer query", "ingestion_status": "missing", "value": "low-medium (EF Nookachamps is lower-Skagit backwater context)", "terms": "as above", "verified": true},
+    {"basin": "snohomish-snoqualmie", "signal": "state_flow_live", "provider": "WA Ecology flow network", "variable": "stage display string (Snohomish R @ Snohomish PUD, Snoqualmie R nr Monroe)", "cadence": "PT15M timestamps", "latency": "PT2H30M-PT5H (observed)", "api_route": "same MapServer query", "ingestion_status": "missing", "value": "low (mainstem redundant with H2/H3)", "terms": "as above", "verified": true},
+    {"basin": "ALL", "signal": "state_flow_archive", "provider": "WA Ecology ContinuousFlowAndWQ export", "variable": "15-min discharge/stage TXT in zip, QC codes", "cadence": "static (published archive)", "latency": "1-2 YEARS (verified: 09B150 15-min ends 2024-10-10)", "api_route": "https://apps.ecology.wa.gov/continuousflowandwq/StationDetails/ExportData?stationCD=<id>&paramArray=_DSG&... (keyless GET, application/zip)", "ingestion_status": "missing", "value": "low operational; medium for hindcast once target water years publish", "terms": "as above", "verified": true},
+    {"basin": "ALL", "signal": "road_weather", "provider": "WSDOT RWIS via Traveler API", "variable": "air temp, precip, wind at road/pass stations", "cadence": "UNVERIFIED", "latency": "UNVERIFIED", "api_route": "https://wsdot.wa.gov/Traffic/api/ WeatherInformation + WeatherStations + api/Scanweb; free AccessCode by email form (401/403 keyless, verified)", "ingestion_status": "possible (first keyed weather provider if adopted)", "value": "low-medium (pass-elevation temp for snow-level verification)", "terms": "WSDOT general disclaimer (REPORTED)", "verified": true},
+    {"basin": "green-duwamish", "signal": "tide_water_level", "provider": "NOAA CO-OPS Seattle 9447130 (NWLON)", "variable": "water level (MLLW), sigma, quality; predictions for surge anomaly", "cadence": "PT6M", "latency": "~PT8M (verified: 22:54Z value at 23:02Z)", "api_route": "https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?station=9447130&product=water_level&datum=MLLW&format=json (keyless)", "ingestion_status": "possible", "value": "high (compound tide+flow flooding, lower Duwamish)", "terms": "US Gov public domain", "verified": true},
+    {"basin": "puyallup-white", "signal": "tide_water_level", "provider": "NOAA CO-OPS Tacoma 9446484 (PORTS)", "variable": "water level (MLLW)", "cadence": "PT6M", "latency": "~PT8M (verified)", "api_route": "same, station=9446484", "ingestion_status": "possible", "value": "high (lower Puyallup / Commencement Bay)", "terms": "US Gov public domain", "verified": true},
+    {"basin": "nooksack", "signal": "tide_water_level", "provider": "NOAA CO-OPS Cherry Point 9449424 (NWLORTS)", "variable": "water level (MLLW)", "cadence": "PT6M", "latency": "~PT8M (verified)", "api_route": "same, station=9449424", "ingestion_status": "possible", "value": "medium (~10 km transfer to Nooksack delta)", "terms": "US Gov public domain", "verified": true},
+    {"basin": "skagit", "signal": "tide_water_level", "provider": "NONE (no CO-OPS station in Skagit Bay)", "variable": "n/a — nearest are Port Townsend 9444900 / Friday Harbor 9449880", "cadence": "n/a", "latency": "n/a", "api_route": "n/a", "ingestion_status": "missing (no provider exists)", "value": "gap: Mount Vernon tidal reach needs modeled transfer (predictions/ESTOFS), labeled MODELED", "terms": "n/a", "verified": true},
+    {"basin": "snohomish-snoqualmie", "signal": "tide_water_level", "provider": "NONE (no CO-OPS station at Everett)", "variable": "n/a — nearest is Seattle 9447130 ~40 km S", "cadence": "n/a", "latency": "n/a", "api_route": "n/a", "ingestion_status": "missing (no provider exists)", "value": "gap: Snohomish estuary backwater needs modeled transfer, labeled MODELED", "terms": "n/a", "verified": true},
+    {"basin": "green-duwamish", "signal": "reservoir_subdaily", "provider": "USACE CDA office=NWDP (Howard Hanson)", "variable": "forebay elev, storage, computed inflow, outflow; 15-min/1-h REV; history 1991->", "cadence": "PT1H (PT15M some)", "latency": "~PT1H (verified: 22:00Z value, last-update 23:01Z)", "api_route": "https://cwms-data.usace.army.mil/cwms-data/timeseries?office=NWDP&name=HAH.*&unit=ft (Accept: application/json;version=2, keyless)", "ingestion_status": "possible", "value": "high (flood-buffer statement; backfills empty SHEF series)", "terms": "US Gov; terms page OPEN QUESTION", "verified": true},
+    {"basin": "puyallup-white", "signal": "reservoir_subdaily", "provider": "USACE CDA (Mud Mountain)", "variable": "MMD elev/storage series (8 Elev-Forebay series verified)", "cadence": "PT1H", "latency": "~PT1H", "api_route": "same, like=MMD.*", "ingestion_status": "possible", "value": "high", "terms": "as above", "verified": true},
+    {"basin": "skagit", "signal": "reservoir_subdaily", "provider": "USACE CDA (Ross/Diablo/Gorge; Upper Baker UBK 13 series; Lake Shannon SHA 31 series)", "variable": "forebay elev, flows; SHA has NO other machine route (R4: no NWRFC/NWPS station)", "cadence": "PT1H", "latency": "~PT1H", "api_route": "same, like=ROS.*|UBK.*|SHA.*", "ingestion_status": "possible", "value": "medium-high (regulated mainstem + Baker tributary; SHA exclusive)", "terms": "as above", "verified": true},
+    {"basin": "cedar", "signal": "reservoir_latest", "provider": "USACE A2W (Chester Morse via `mor`, per R11)", "variable": "latest values + operating levels", "cadence": "PT1H", "latency": "~PT1H (verified at hah today)", "api_route": "https://water.usace.army.mil/cda/reporting/providers/nws/locations/<slug> (keyless, undocumented)", "ingestion_status": "possible", "value": "medium (levels are CONFIGURED context; obs largely redundant with R5 USGS)", "terms": "as above; undocumented API, support OPEN QUESTION", "verified": true},
+    {"basin": "ALL", "signal": "community_rain_daily", "provider": "CoCoRaHS", "variable": "24-h precip at morning obs time; snow depth/SWE", "cadence": "P1D", "latency": "hours to >1 day (EntryDateTime lag verified in payload)", "api_route": "https://data.cocorahs.org/cocorahs/export/exportreports.aspx?ReportType=Daily&Format=CSV&State=WA&Date=<M/D/Y> (keyless)", "ingestion_status": "possible", "value": "low operational; medium for daily MRMS/QPE verification (KG 30, SN 23, PR 19, WC 18, SG 18 reports on 2026-08-27)", "terms": "UNVERIFIED (terms page not fetched)", "verified": true}
+  ]
+}
+```
 
 ## 10. What could NOT be verified today
 
-(pending)
+- King County: the APIM developer-portal signup path, per-river phase thresholds (cfs), HIC
+  history depth and QA semantics — all still OPEN (as in P9/R16); the `GetDischargeInfo` web
+  method's parameter contract.
+- Snohomish County: anything behind the OneRain login — sensor count, cadence, whether a
+  keyed export exists for account holders.
+- Pierce County KiWIS: quality-code vocabulary, rate limits, redistribution terms,
+  provisional/revision semantics, whether `getGroupList` exposes a curated flood-gauge group.
+- Ecology: any structured real-time API (none found — absence of evidence after probing the
+  app, its JS, and the ArcGIS layer; not proof none exists); applicability of the
+  non-commercial clause to these endpoints.
+- WSDOT: everything behind the AccessCode — station inventory, cadence, latency, formats of
+  the Scanweb payload.
+- CO-OPS: nothing material — the API behaved as documented; ESTOFS surge guidance for the
+  Skagit/Snohomish transfer was NOT probed today.
+- USACE: rate limits and terms for CDA/A2W (unchanged OPEN QUESTIONs); `RFC-FCST` forecast
+  series not re-pulled.
+- CoCoRaHS: terms-of-use page; XML and bulk-historic routes.
+

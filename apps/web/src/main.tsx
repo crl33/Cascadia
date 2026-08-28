@@ -31,6 +31,7 @@ const asOf = event !== null || link.asOf === null ? null : truncateToMinute(link
 const window72h = windowEndingAt(anchorForBoot(asOf, new Date().toISOString()));
 
 useSceneStore.setState({
+  pinnedCameraId: link.pinnedCameraId,
   selectedBasinId: event !== null ? basinId ?? event.defaultBasin : basinId,
   selectedForecastPointId: event !== null ? forecastPointId ?? event.defaultSel : forecastPointId,
   motionSetting: link.motion ?? 'system',

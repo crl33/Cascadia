@@ -19,8 +19,9 @@ import riverNetwork from './fixtures/river_network.json';
 import fieldPrecip from './fixtures/field_precip_observed.json';
 import fieldSnow from './fixtures/field_snow_cover.json';
 import labels from './fixtures/labels.json';
+import cameras from './fixtures/cameras.json';
 
-const fx = { basinLod, stateLod, basinEnvelope, riverEnvelope, samples, tier0, riverNetwork, fieldPrecip, fieldSnow, labels };
+const fx = { basinLod, stateLod, basinEnvelope, riverEnvelope, samples, tier0, riverNetwork, fieldPrecip, fieldSnow, labels, cameras };
 
 const HEADERS = {
   'Content-Type': 'application/json; charset=utf-8',
@@ -51,6 +52,40 @@ export async function onRequest(context) {
     return json(400, { detail: 'bad path' });
   }
   if (url.pathname.length > 256) return json(414, { detail: 'path too long' });
+
+  // USGS camera frames (public-domain HIVIS imagery on a CORS-open S3 bucket): redirect to
+  // the NEWEST frame for a camera. Keys embed capture time lexicographically
+  // (<camId>___YYYY-MM-DDTHH-MM-SSZ.jpg), so an S3 list with start-after = now-3h returns
+  // recent frames in order and the last key is the latest. The redirect costs the gateway no
+  // image bandwidth; 60 s caching keeps a busy viewer at ~1 list/min/camera. A camera with no
+  // frame in 48 h answers 404 — the card says "frame unavailable", never shows a stale frame
+  // as current (the Kent lesson: HTTP 200 is not freshness).
+  let camMatch;
+  if ((camMatch = url.pathname.match(/^\/cameras\/usgs\/([A-Za-z0-9_.-]{1,120})\/latest\.jpg$/))) {
+    const camId = camMatch[1];
+    const bucket = 'https://usgs-nims-images.s3.amazonaws.com';
+    const stamp = (msAgo) => new Date(Date.now() - msAgo).toISOString().slice(0, 19).replaceAll(':', '-') + 'Z';
+    try {
+      for (const windowMs of [3 * 3600e3, 48 * 3600e3]) {
+        const listUrl = `${bucket}/?list-type=2&prefix=${encodeURIComponent(`overlay/${camId}/`)}&start-after=${encodeURIComponent(`overlay/${camId}/${camId}___${stamp(windowMs)}`)}`;
+        const resp = await fetch(listUrl, { signal: AbortSignal.timeout(15000) });
+        if (!resp.ok) break;
+        const xml = await resp.text();
+        const keys = [...xml.matchAll(/<Key>([^<]+)<\/Key>/g)].map((m) => m[1]).filter((k) => k.endsWith('.jpg'));
+        if (keys.length > 0) {
+          const latest = keys[keys.length - 1];
+          return new Response(null, {
+            status: 302,
+            headers: { Location: `${bucket}/${latest}`, 'Cache-Control': 'public, max-age=60' },
+          });
+        }
+      }
+      return json(404, { detail: `no frame for ${camId} in the last 48 h — instrument likely offline` });
+    } catch (err) {
+      console.error('camera frame lookup failed', err && err.message);
+      return json(503, { detail: 'camera frame lookup unavailable', source: 'gateway' });
+    }
+  }
 
   // Terrain tiles (ADR-0021): static public-domain artifacts on their own R2 public domain,
   // proxied here so the app stays same-origin (no CORS, no second hostname in the client).

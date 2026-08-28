@@ -41,6 +41,9 @@ export function route(fx, pathname, params) {
   // every basin here, exactly the shape the unregulated Nooksack gets from the real API.
   if (pathname === '/geo/rivers') return fx.riverNetwork ?? { status: 404, body: { detail: 'no river network in the stub fixtures' } };
   if (pathname === '/geo/labels') return fx.labels ?? { status: 404, body: { detail: 'no label set in the stub fixtures' } };
+  if (pathname === '/geo/cameras') return fx.cameras ?? { status: 404, body: { detail: 'no camera set in the stub fixtures' } };
+  if (pathname === '/geo/flood') return fx.flood ?? { status: 404, body: { detail: 'no flood geography in the stub fixtures' } };
+  if (pathname.startsWith('/cameras/usgs/')) return { status: 404, body: { detail: 'the stub serves no live camera frames' } };
   if ((m = pathname.match(/^\/basins\/([^/]+)\/reservoirs$/))) return { basin_id: m[1], as_of: asOf ?? new Date().toISOString(), reservoirs: [], provenance_refs: {} };
   if ((m = pathname.match(/^\/viz\/fields\/([a-z_]+)$/))) {
     // the archived fixture hour/day, echoed at the requested knowledge time — freshness is

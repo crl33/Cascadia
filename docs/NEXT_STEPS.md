@@ -9,6 +9,15 @@ quantized-mesh, 57 MB in the `cascadia-terrain` R2 bucket, gateway `/terrain/*`)
 (`defer_job.py`, `requeue_stalled_jobs.py`, `publish_terrain.py`). Production health `ok`
 17/17. The visual proof of the composed scene: `research/img/composed-scene-skagit-2026-08-28.png`.
 
+**2026-08-28 late delta (satellite-first session):** imagery = USGS USGSImageryOnly (PD,
+keyless, z16 cap — research: `research/imagery-providers-2026-08-28.md`); labels = GNIS
+(`scripts/build_labels.py`); flood geo = FEMA NFHL + USACE NLD (`build_flood_geography.py`,
+Skagit outlet gap explicit); cameras = USGS HIVIS + WSDOT curated (`build_cameras.py`, tiers
+with reasons); horizons = contract 1.6.0 `RiverVisualizationState.horizons`. Owner-action
+keys available when wanted: WSDOT Traveler AccessCode (free email form), King County APIM
+subscription, Snohomish Contrail login. Highest-value verified-ingestable sensor gap: Pierce
+County KiWIS (keyless, 338 stations; REDISTRIBUTION TERMS UNVERIFIED — check before ingest).
+
 **Next, in order:** (1) oblique-camera crest showcase (gates ADR-0021 Accepted; churns e2e
 baselines deliberately); (2) C3c second half — snow-level over hypsometry on the map;
 (3) C4 forecast fields (WPC QPF rasters ride the same machinery; needs timeline-future

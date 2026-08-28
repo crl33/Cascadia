@@ -9,7 +9,7 @@
 - **REPORTED** — stated by a page read today, but not independently probed.
 - **UNVERIFIED** — could not be confirmed today.
 
-Status: IN PROGRESS — sections are appended as probes complete.
+Status: COMPLETE (all probes run 2026-08-28, ~22:50–23:05 UTC).
 
 ---
 ## 1. WSDOT Traveler Information API — Highway Cameras
@@ -201,3 +201,108 @@ Queried `.../FeatureServer/0/query?where=UPPER(CameraTitle) LIKE ...` today:
 - Cadence: per-camera `ingest.intr` (15–60 min for WA cams) — VERIFIED from today's API payload.
   Stills + generated time-lapses (`tlDir`); no live video.
 
+## 4. King County / City of Kent — Green River cameras
+
+### King County Flood Warning System — VERIFIED (probed 2026-08-28): gauges yes, cameras no
+
+- `https://flood.kingcounty.gov/` — HTTP 200 today; Next.js app. Gauge pages exist for the Green
+  River corridor (e.g. `/gauge/40/` "Green River at 200th St in Kent", `/gauge/3/` near Auburn,
+  `/gauge/4/` Tukwila; river index `/river/2/`). Grepped the served HTML and the gauge-page JS
+  bundle today: **no camera or webcam assets of any kind**; the client pulls USGS water data
+  (the only external URL in the gauge bundle is `waterdata.usgs.gov`). The legacy
+  `green2.kingcounty.gov/rivergagedata/gage-data.aspx?r=green` now redirects to
+  `https://flood.kingcounty.gov/river/2/` (followed today).
+- Conclusion: **King County does not publish flood/river cameras machine-readably today.** Its
+  flood-warning product is gauge data (REPORTED on kingcounty.gov pages read today: updated every
+  10 minutes from USGS/NOAA).
+
+### City of Kent Green River levee cameras — VERIFIED live remnant, mostly gone (probed 2026-08-28)
+
+- Historical record (Wayback CDX, queried today): Kent served a Green River camera page
+  (`kentwa.gov/greenrivercamera/`, snapshots 2011–2013, Howard Hanson Dam era) and camera images at
+  `https://kentapps.kentwa.gov/greenrivercameraimages/272nd_Street_Bridge.jpeg` and
+  `https://kentapps.kentwa.gov/greenrivercameraimages/Veterans_Drive_228th_Bridge.jpeg`
+  (both archived 2020-10-16 with HTTP 200).
+- **Live probes today:**
+  - `Veterans_Drive_228th_Bridge.jpeg` → **HTTP 200, `image/jpeg`, 1280×720** — the endpoint still
+    exists publicly. BUT `Last-Modified: Thu, 11 Dec 2025 23:05:37 GMT` — the frame is **frozen at
+    the December 2025 flood event, ~8.5 months stale**. No CORS headers; no referrer gating.
+  - `272nd_Street_Bridge.jpeg` → **HTTP 404** (camera image removed).
+  - Directory listing of `/greenrivercameraimages/` → 403; nine candidate filenames for other
+    bridges (277th, 212th, Meeker, Russell Rd, etc.) all → 404.
+  - `kentwa.gov` HTML pages are WAF-blocked to non-browser clients (403 to curl with browser UA and
+    to WebFetch), so whether any Kent page still links these images is **UNVERIFIED** today.
+- Conclusion: Kent's Green River levee camera program is effectively defunct as a data source — one
+  stale endpoint survives, one is gone, and no machine-readable index exists.
+
+## 5. Snohomish County / Everett
+
+### Snohomish County flood program — no public cameras found (checked 2026-08-28)
+
+- The county's real-time flood system is `https://snohomish.onerain.com/` (OneRain Contrail;
+  linked from `snohomishcountywa.gov/796/Flood-Information-Center` and `/925/All-Real-Time-Gauges-by-Basin`,
+  per search today). Probed today: the root **302-redirects to a login page**
+  (`/login/?status=300...`); no public camera resources surfaced. Gauge data (Stillaguamish at
+  I-5/Arlington/Pioneer Hwy, Snohomish at Snohomish/Monroe) is the product, not imagery —
+  cameras: **none found** (UNVERIFIED that none exist behind login).
+- Flood-corridor imagery for these rivers instead comes from the WSDOT cameras verified in §1
+  (I-5 @ 209.3 Stillaguamish, SR 532 @ 3.3, SR 529 @ 4.1 Snohomish, US 2 @ 2 Ebey Slough).
+
+### City of Everett traffic cameras — VERIFIED (probed 2026-08-28)
+
+- Index (HTML, not machine-readable): `https://www.everettwa.gov/2937/All-Everett-Traffic-Cameras`
+  — HTTP 200 today; **40 unique camera image URLs** embedded, pattern
+  `https://coe.everettwa.gov/Broadway/Images/<Name>/<Name>.jpg`.
+- Image probe (`Broadway_Hewitt.jpg`, foreign Origin): HTTP 200, `image/jpeg`, 720×480, IIS.
+  **No CORS headers** → `<img>` hotlink OK, pixel reads blocked. No referrer gating.
+- **Refresh cadence VERIFIED by measurement:** `Last-Modified` advanced 23:00:40 → 23:02:40 GMT
+  across a 90 s wait — a **2-minute refresh**, matching the city's own FAQ claim
+  (`everettwa.gov/1630/Traffic-Camera-FAQs`, REPORTED via search snippet today).
+- No JSON/GeoJSON metadata feed found — coordinates would have to be assigned once by hand from
+  the page's names (stable-looking URL scheme; stability over time UNVERIFIED). Terms: no camera
+  terms page fetched today — UNVERIFIED; ownership is City of Everett.
+
+## 6. Copied-claim verdicts (all six)
+
+| Claim | Verdict (2026-08-28) |
+|---|---|
+| "I-5 MP 209.3 Stillaguamish River camera" | **VERIFIED** — WSDOT id 9240, image live today |
+| "SR 532 MP 3.3" | **VERIFIED** — WSDOT id 9187 "SR 532 at MP 3.3: Stillaguamish River" |
+| "SR 529 MP 4.1 Snohomish River" | **VERIFIED** — two WSDOT cameras (ids 9316/9317, South+North) |
+| "US 2 MP 2 Ebey Slough" | **VERIFIED** — WSDOT id 9357, image URL live |
+| "Green River S 277th St camera" | **REFUTED as stated** — no such camera today. Near-misses: USGS *gauge* 12113150 is named "Green River above S 277th St at Kent" (a gauge, no camera); Kent formerly served a *272nd* St Bridge camera image, HTTP 404 today |
+| "Green River S 228th St camera" | **PARTIALLY VERIFIED** — Kent's `Veterans_Drive_228th_Bridge.jpeg` (S 228th St/Veterans Dr crossing) still returns HTTP 200 today, but the image is frozen at 2025-12-11 — a dead feed behind a live URL |
+
+## 7. Summary for the platform
+
+| Source | Machine-readable? | Auth | CORS (data / images) | Cadence | Verdict |
+|---|---|---|---|---|---|
+| WSDOT Traveler API (HighwayCameras) | JSON/XML | **AccessCode (free, email form — owner action)** | n/a (server-side) | images ~3–5 min (measured 194 s) | richest metadata (owner, IsActive, milepost) |
+| WSDOT ArcGIS `TravelInfoCamerasWeather` | JSON (ArcGIS query), keyless | none | open / **no CORS on images** | same imagery | best keyless path; "low volume" terms |
+| SDOT ArcGIS `Traffic_Cameras_CDL` | JSON, keyless | none | `*` / no CORS on images | cache policy 5 min; observed one ~2 h-stale frame | good; trust Last-Modified per camera |
+| USGS HIVIS/NIMS | JSON API + listable S3, keyless | none | open / **`*` on images (canvas-safe)** | 15–60 min per `ingest.intr` | public domain; Skagit + Nooksack only in Puget lowland |
+| King County flood system | gauges only | — | — | — | **no cameras** |
+| City of Kent Green River cams | no index; 1 stale JPEG | none | no CORS | frozen 2025-12-11 | do not use |
+| Snohomish Co. OneRain | login-walled | — | — | — | no public cameras found |
+| City of Everett | HTML page only (40 stills) | none | no CORS on images | **2 min (measured)** | usable with hand-built index |
+
+**Recommended ingestion posture:** WSDOT ArcGIS layer (keyless) for corridor cameras now; request a
+free Traveler API AccessCode (owner action) to gain `CameraOwner`/`IsActive`/milepost metadata;
+USGS NIMS for Skagit/Nooksack river-eye imagery (only CORS-open, public-domain imagery in the set);
+Everett stills as an optional hand-indexed extra. Serve all camera imagery through our own proxy if
+client-side pixel access is ever needed (only USGS is CORS-open), and carry `Last-Modified` as the
+knowledge-time of every frame — the Kent endpoint proves an HTTP 200 is not evidence of freshness.
+
+## What could NOT be verified today
+
+- Any written WSDOT policy explicitly granting rebroadcast of `images.wsdot.wa.gov` imagery (the
+  ArcGIS "low volume" disclaimer is the closest fetched text; the camera-page disclaimer text was
+  only seen via search snippets — REPORTED).
+- WSDOT Traveler API response shape as actually served (needs the AccessCode; schema taken from
+  official class docs).
+- Undocumented rate limits on any of the probed hosts.
+- SDOT video streams (`STREAM_NAME` implies they exist; no stream endpoint probed).
+- Whether any kentwa.gov page still references the surviving 228th-St image (site WAF-blocks
+  non-browser clients).
+- Snohomish County OneRain content behind its login redirect.
+- Long-term URL stability everywhere (today's naming schemes look stable; only today observed).
