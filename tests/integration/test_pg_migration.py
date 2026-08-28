@@ -58,6 +58,22 @@ def scratch_url():
         admin.dispose()
 
 
+def test_the_partition_function_is_security_definer_with_a_pinned_search_path(scratch_url: str) -> None:
+    """ADR-0019: the one DDL door ingest_writer may open — definer rights, hardened path."""
+    eng = create_engine(scratch_url, poolclass=NullPool)
+    try:
+        with eng.connect() as c:
+            prosecdef, proconfig = c.execute(text(
+                "SELECT prosecdef, proconfig FROM pg_proc WHERE proname = 'cascade_ensure_month_partitions'"
+            )).one()
+            assert prosecdef is True
+            assert any(cfg.startswith("search_path=") for cfg in (proconfig or [])), (
+                "a definer function without a pinned search_path is a schema-shadowing hole"
+            )
+    finally:
+        eng.dispose()
+
+
 def test_migration_builds_postgis_partitioned_schema(scratch_url: str) -> None:
     eng = create_engine(scratch_url, poolclass=NullPool)
     try:

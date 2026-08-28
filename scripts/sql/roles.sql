@@ -49,6 +49,21 @@ GRANT UPDATE ON basin, station, forecast_point, data_source, source_product,
                 basin_geometry, job_run
 TO ingest_writer;
 
+-- The queue's own bookkeeping legitimately updates and deletes: full DML on the
+-- procrastinate tables only (they are the queue, not history).
+DO $$
+DECLARE t record;
+BEGIN
+    FOR t IN SELECT tablename FROM pg_tables WHERE schemaname = 'public' AND tablename LIKE 'procrastinate%'
+    LOOP
+        EXECUTE format('GRANT SELECT, INSERT, UPDATE, DELETE ON %I TO ingest_writer', t.tablename);
+    END LOOP;
+END
+$$;
+
+-- The ONE DDL capability, through the SECURITY DEFINER function (ADR-0019, migration 0006):
+GRANT EXECUTE ON FUNCTION cascade_ensure_month_partitions(date, date) TO ingest_writer;
+
 -- Objects created later by the role running migrations inherit the same shape.
 -- (ALTER DEFAULT PRIVILEGES applies to objects created by the role executing this
 -- statement — run this file as the same role that runs scripts/migrate.sh.)
