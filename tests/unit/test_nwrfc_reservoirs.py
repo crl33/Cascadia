@@ -265,3 +265,43 @@ async def test_the_basin_endpoint_serves_verbatim_state_and_the_nooksack_truth(s
         early = await client.get("/basins/basin:green-duwamish/reservoirs",
                                  params={"as_of": "2026-08-27T00:00:00Z"})
         assert early.json()["reservoirs"][0]["variables"] == {}
+
+
+@respx.mock
+async def test_a_newer_row_from_another_product_cannot_shadow_the_reservoir_series(sessions, tmp_path) -> None:
+    """The argmax is product-scoped: without it, a future product writing the same variable at
+    the same station would outrank the reservoir row and the endpoint would show the variable
+    as absent while the data sat ranked second (adversarial review 2026-08-28)."""
+    from datetime import timedelta
+
+    from httpx import ASGITransport, AsyncClient
+
+    from cascade_api.main import create_app
+    from cascade_core.settings import Settings
+    from tests.conftest import GEO as GEO_DIR
+
+    _mock_all()
+    async with sessions() as s:
+        await nwrfc_jobs.run_fetch_reservoirs(s, _fetcher(tmp_path), now=NOW)
+        await s.commit()
+        newest = (await s.execute(
+            select(Observation).where(Observation.variable == "inflow")
+            .order_by(Observation.valid_time.desc()).limit(1))).scalar_one()
+        s.add(Observation(
+            station_id=newest.station_id, product_id="product:usgs-iv", variable="inflow",
+            value=999999.0, unit="cfs", valid_time=newest.valid_time + timedelta(hours=1),
+            retrieved_at=NOW, available_at=NOW, raw_artifact_id=newest.raw_artifact_id,
+        ))
+        await s.commit()
+        shadowed_station = newest.station_id
+    engine = make_engine(f"sqlite+aiosqlite:///{tmp_path}/nwrfc.db")
+    app = create_app(Settings(db_url="sqlite+aiosqlite://", geo_dir=GEO_DIR), engine=engine)
+    lid = shadowed_station.rsplit(":", 1)[-1]
+    basin = {"HHDW1": "green-duwamish", "MMRW1": "puyallup-white", "RODW1": "skagit",
+             "UBDW1": "skagit", "DIAW1": "skagit", "MORW1": "cedar", "TLRW1": "snohomish-snoqualmie"}[lid]
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        r = await client.get(f"/basins/basin:{basin}/reservoirs",
+                             params={"as_of": NOW.isoformat().replace("+00:00", "Z")})
+        station = next(x for x in r.json()["reservoirs"] if x["station_id"] == shadowed_station)
+        assert station["variables"]["inflow"]["value"] != 999999.0, "the imposter must not shadow"
+        assert station["variables"]["inflow"]["unit"] == "cubic feet per second"

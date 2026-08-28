@@ -224,7 +224,9 @@ async def basin_reservoirs(session: Session, as_of: AsOf, basin_id: Annotated[st
         if st.agency == "nwrfc" and st.basin_id == basin_id
     ]
     latest = await k.latest_observations(
-        [st.id for st in stations], RESERVOIR_VARIABLES, lookback=timedelta(days=3)
+        [st.id for st in stations], RESERVOIR_VARIABLES, lookback=timedelta(days=3),
+        product_id=RESERVOIR_PRODUCT,  # the argmax itself is product-scoped: a newer row from
+        # another product must not shadow the reservoir series (adversarial review 2026-08-28)
     )
     products = await k.products()
     product = products.get(RESERVOIR_PRODUCT)

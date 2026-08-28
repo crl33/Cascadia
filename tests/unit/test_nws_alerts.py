@@ -310,3 +310,44 @@ async def test_an_alert_is_invisible_to_replays_before_cascadia_knew_it(
             "sent 04:00, known 05:00 — invisible at 04:30"
         )
         assert len(await as_known_at(s, NOW).active_alerts()) == 1
+
+
+@respx.mock
+async def test_an_alert_that_never_says_when_it_ends_is_bounded_not_eternal(sessions, tmp_path) -> None:
+    """CAP permits a message with neither ends nor expires; 'active forever' is a duration the
+    issuer never claimed, so the reader bounds it at MAX_UNBOUNDED_ALERT_AGE from sent."""
+    from cascade_core.knowledge import MAX_UNBOUNDED_ALERT_AGE
+
+    endless = _flood_alert("urn:test.e.1", ugc=["WAC057"], sent="2026-08-28T00:00:00+00:00", ends=None)
+    endless["properties"]["expires"] = None
+    respx.get(ALERTS_URL).mock(return_value=httpx.Response(
+        200, content=_payload(endless), headers={"content-type": "application/geo+json"}))
+    async with sessions() as s:
+        await alerts_jobs.run_fetch_alerts(s, _fetcher(tmp_path), geo_dir=GEO)
+        await s.commit()
+        soon = datetime(2026, 8, 28, 12, 0, tzinfo=UTC)
+        assert len(await as_known_at(s, soon).active_alerts()) == 1
+        past_cap = datetime(2026, 8, 28, 0, 0, tzinfo=UTC) + MAX_UNBOUNDED_ALERT_AGE + timedelta(hours=1)
+        assert await as_known_at(s, past_cap).active_alerts() == []
+
+
+@respx.mock
+async def test_supersession_outlives_a_short_lived_cancel(sessions, tmp_path) -> None:
+    """The time-sliced candidate read must not resurrect a cancelled alert: the Cancel's own
+    end can be long past while its target's natural end is not, and the reference must still
+    suppress the target (the regression the SQL prefilter would have introduced)."""
+    original = _flood_alert("urn:test.c.1", ugc=["WAC057"], sent="2026-08-28T00:00:00+00:00",
+                            ends="2026-08-30T00:00:00+00:00")
+    cancel = _flood_alert("urn:test.c.2", ugc=["WAC057"], sent="2026-08-28T02:00:00+00:00",
+                          ends="2026-08-28T02:30:00+00:00", references=["urn:test.c.1"],
+                          message_type="Update")
+    respx.get(ALERTS_URL).mock(return_value=httpx.Response(
+        200, content=_payload(original, cancel), headers={"content-type": "application/geo+json"}))
+    async with sessions() as s:
+        await alerts_jobs.run_fetch_alerts(s, _fetcher(tmp_path), geo_dir=GEO)
+        await s.commit()
+        # hours after the Cancel itself ended, days before the original would have:
+        later = datetime(2026, 8, 28, 20, 0, tzinfo=UTC)
+        assert await as_known_at(s, later).active_alerts() == [], (
+            "the cancelled alert must stay dead even when the Cancel left the time slice"
+        )

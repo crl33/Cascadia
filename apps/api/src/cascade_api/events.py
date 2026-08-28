@@ -89,7 +89,13 @@ class IngestEventBroker:
             anchors = await as_known_at(session, utcnow()).product_freshness_anchors()
         current: dict[str, datetime] = {}
         for pid, anchor in anchors.items():
-            instant = anchor.retrieved_at or anchor.valid_time
+            # The VALUE instant, preferentially: for valid-until-superseded products the
+            # retrieved_at advances on EVERY successful poll (that is its freshness job), and
+            # keying change detection on it made quiet weather emit an invalidation every five
+            # minutes — a cache-defeating event about nothing (adversarial review 2026-08-28).
+            # New CONTENT moves valid_time; a bare re-check does not, and clients have nothing
+            # to refetch from a re-check.
+            instant = anchor.valid_time or anchor.retrieved_at
             if instant is not None:
                 current[pid] = instant
         if not self._primed:
@@ -105,9 +111,18 @@ class IngestEventBroker:
             try:
                 q.put_nowait(payload)
             except asyncio.QueueFull:
-                # A reader this far behind is not reading; EventSource will reconnect.
+                # A reader this far behind is not reading. Discarding the queue alone left a
+                # ZOMBIE stream — heartbeats forever, events never (adversarial review
+                # 2026-08-28) — so the stream is told to END: the None sentinel replaces the
+                # oldest queued event, sse_stream terminates on it, and EventSource reconnects
+                # with a fresh subscription.
                 self._subscribers.discard(q)
-                log.warning("dropped a slow /system/events subscriber")
+                try:
+                    q.get_nowait()
+                    q.put_nowait(None)
+                except (asyncio.QueueEmpty, asyncio.QueueFull):
+                    pass
+                log.warning("dropped a slow /system/events subscriber; its stream will close")
 
 
 async def sse_stream(broker: IngestEventBroker) -> AsyncIterator[str]:
@@ -118,6 +133,8 @@ async def sse_stream(broker: IngestEventBroker) -> AsyncIterator[str]:
         while True:
             try:
                 payload = await asyncio.wait_for(q.get(), timeout=HEARTBEAT_SECONDS)
+                if payload is None:  # dropped by the broker: end, so the client reconnects
+                    return
                 yield f"event: ingest\ndata: {payload}\n\n"
             except TimeoutError:
                 yield ": keep-alive\n\n"

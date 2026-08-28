@@ -106,3 +106,40 @@ async def test_a_replay_never_reaches_this_endpoint_by_design() -> None:
     from cascade_api.routes import system_events
 
     assert "as_of" not in inspect.signature(system_events).parameters
+
+
+async def test_a_quiet_poll_advances_no_event_and_a_dropped_stream_ends(db) -> None:
+    """Two review findings pinned together. A poll that re-checked unchanged content must not
+    invalidate every client cache (the anchor's valid_time stays the CONTENT instant); and a
+    subscriber dropped for a full queue gets a terminated stream, not a zombie of heartbeats."""
+    broker = IngestEventBroker(sessions=db, poll_seconds=0.05)
+    now = utcnow()
+    async with db() as s:
+        s.add(_artifact(PRODUCT_NWS_ALERTS, now - timedelta(minutes=20), 1))
+        s.add(OfficialAlertRecord(id="urn:q.1", event="Flood Warning", status="Actual",
+                                  message_type="Alert", sent=now - timedelta(minutes=20),
+                                  ugc=["WAC057"], basin_ids=[], mapping_method_id="m",
+                                  references=[], retrieved_at=now - timedelta(minutes=20),
+                                  available_at=now - timedelta(minutes=20)))
+        await s.commit()
+    q = broker.subscribe()
+    try:
+        await asyncio.sleep(0.2)  # primes
+        # a NEW POLL lands (fresh artifact), but no new alert: content unchanged
+        async with db() as s:
+            s.add(_artifact(PRODUCT_NWS_ALERTS, now, 2))
+            await s.commit()
+        await asyncio.sleep(0.2)
+        assert q.empty(), "a re-check with unchanged content is not a change"
+        # queue-full drop: the stream must terminate
+        import cascade_api.events as events_mod
+        for _ in range(events_mod.MAX_QUEUED_EVENTS):
+            q.put_nowait("x")
+        broker._broadcast("product:whatever", now)
+        assert q.full() and broker._subscribers == set()
+        drained = []
+        while not q.empty():
+            drained.append(q.get_nowait())
+        assert drained[-1] is None, "the sentinel ends the stream so EventSource reconnects"
+    finally:
+        broker.unsubscribe(q)

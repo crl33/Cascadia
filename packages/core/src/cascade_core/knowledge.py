@@ -52,6 +52,11 @@ from cascade_core.registry import (
 )
 from cascade_core.timeutils import to_utc
 
+#: A CAP message that states NEITHER `ends` nor `expires` is bounded by this age from `sent`
+#: before active_alerts stops calling it active. 48 h is a display policy, stated once, here:
+#: the alternative — active forever — asserts a duration the issuer never claimed.
+MAX_UNBOUNDED_ALERT_AGE = timedelta(hours=48)
+
 # Which products are an OFFICIAL forecast, resolved from the registry rather than listed here
 # (cascade_core.registry is the only place a source's SourceKind is declared). P3 puts a second
 # forecast product — the NWM medium-range ensemble — into `forecast_run`, so "the latest run at
@@ -145,23 +150,48 @@ class Knowledge:
     async def active_alerts(self) -> list["OfficialAlertRecord"]:
         """Every alert KNOWN at ``as_of`` and not yet ended then, minus superseded ones.
 
-        Loaded whole and filtered in Python on purpose: the active set is a handful of rows,
-        and portable JSON-list membership queries are not worth their complexity. Supersession
-        is resolved here — an alert referenced by a LATER-known alert stops being active —
-        which is the ForecastRun chain shape, resolved at read time so no row ever mutates.
+        Two reads, both deliberate (adversarial review 2026-08-28): candidates are the
+        TIME-PLAUSIBLE slice, filtered in SQL, because the append-only table grows forever and
+        materializing its history per envelope grew without bound — and a row with NEITHER
+        ``ends`` nor ``expires`` (CAP permits it) is bounded by MAX_UNBOUNDED_ALERT_AGE from
+        ``sent``, since "active forever" is a duration the issuer never claimed. Supersession
+        stays the ForecastRun chain shape, resolved at read time so no row ever mutates.
         """
         key = ("active_alerts",)
         if key not in self._memo:
             rows = list(
                 (
                     await self.session.execute(
-                        select(OfficialAlertRecord).where(OfficialAlertRecord.available_at <= self.as_of)
+                        select(OfficialAlertRecord)
+                        .where(OfficialAlertRecord.available_at <= self.as_of)
+                        # SQL-side superset of the Python policy below, so the working set is
+                        # the plausible-active slice, not the append-only table's full history
+                        # (which grows forever): rows whose every end instant is already past
+                        # can never be active at as_of, and an endless row older than the
+                        # unbounded-age cap cannot either.
+                        .where(
+                            or_(
+                                OfficialAlertRecord.ends >= self.as_of,
+                                and_(OfficialAlertRecord.ends.is_(None), OfficialAlertRecord.expires >= self.as_of),
+                                and_(
+                                    OfficialAlertRecord.ends.is_(None),
+                                    OfficialAlertRecord.expires.is_(None),
+                                    OfficialAlertRecord.sent >= self.as_of - MAX_UNBOUNDED_ALERT_AGE,
+                                ),
+                            )
+                        )
                     )
                 ).scalars()
             )
+            # References come from ALL known rows, single column: supersession must outlive
+            # the superseder — a short-lived Cancel drops out of the time slice above while
+            # its long-lived target stays, and collecting references only from candidates
+            # would quietly resurrect the cancelled alert (adversarial review 2026-08-28).
             superseded: set[str] = set()
-            for row in rows:
-                superseded.update(row.references or [])
+            for (refs,) in await self.session.execute(
+                select(OfficialAlertRecord.references).where(OfficialAlertRecord.available_at <= self.as_of)
+            ):
+                superseded.update(refs or [])
             active = [
                 row
                 for row in rows
@@ -360,7 +390,7 @@ class Knowledge:
         return any(_covers(w, (lo, hi)) for w in self._memo.get(("observation_windows", station_id, variable), ()))
 
     async def latest_observation(self, station_id: str, variable: str, lookback: timedelta = DEFAULT_OBSERVATION_LOOKBACK) -> Observation | None:
-        key = ("latest_observation", station_id, variable, lookback)
+        key = ("latest_observation", station_id, variable, lookback, None)  # None: no product filter
         if key not in self._memo:
             rows = await self.observations(station_id, variable, since=self.as_of - lookback)
             self._memo[key] = rows[-1] if rows else None
@@ -372,6 +402,7 @@ class Knowledge:
         variables: Iterable[str],
         *,
         lookback: timedelta = DEFAULT_OBSERVATION_LOOKBACK,
+        product_id: str | None = None,
     ) -> dict[tuple[str, str], Observation]:
         """The latest known-at-T observation per (station, variable), in ONE statement.
 
@@ -384,7 +415,12 @@ class Knowledge:
         """
         stations = sorted({s for s in station_ids if s})
         names = sorted({v for v in variables if v})
-        missing = [(s, v) for s in stations for v in names if ("latest_observation", s, v, lookback) not in self._memo]
+        # `product_id` narrows the argmax to ONE product's rows. Without it, filtering after
+        # the per-(station, variable) rank lets a newer row from ANOTHER product win the rank
+        # and then be discarded by the caller — the variable reads absent while the wanted
+        # product's row sits ranked second (adversarial review 2026-08-28). None keeps the
+        # cross-product semantics the station panels rely on; the memo key carries the choice.
+        missing = [(s, v) for s in stations for v in names if ("latest_observation", s, v, lookback, product_id) not in self._memo]
         if missing:
             ranked = (
                 select(
@@ -400,18 +436,19 @@ class Knowledge:
                 .where(Observation.variable.in_(sorted({v for _, v in missing})))
                 .where(Observation.available_at <= self.as_of)
                 .where(Observation.valid_time >= self.as_of - lookback, Observation.valid_time <= self.as_of)
+                .where(Observation.product_id == product_id if product_id is not None else sa_literal(True))
                 .subquery()
             )
             latest = aliased(Observation, ranked)
             rows = (await self.session.execute(select(latest).where(ranked.c.rank == 1))).scalars().all()
             found = {(row.station_id, row.variable): row for row in rows}
             for pair in missing:
-                self._memo[("latest_observation", *pair, lookback)] = found.get(pair)
+                self._memo[("latest_observation", *pair, lookback, product_id)] = found.get(pair)
         return {
             (s, v): row
             for s in stations
             for v in names
-            if (row := self._memo[("latest_observation", s, v, lookback)]) is not None
+            if (row := self._memo[("latest_observation", s, v, lookback, product_id)]) is not None
         }
 
     async def latest_forecast_run(
@@ -802,13 +839,16 @@ class Knowledge:
                 have = anchors.get(pid)
                 if kind == "raw_artifact" and pid in VALID_UNTIL_SUPERSEDED_PRODUCTS:
                     # Valid-until-superseded: the newest value row can be months old on a healthy
-                    # system, so merge in the last successful fetch — freshness here is "when did
-                    # we last check", not "how old is the value" (registry). `have` may be None:
-                    # active CAP alerts legitimately hold ZERO rows through a quiet week, and the
-                    # poll itself is then the whole signal.
+                    # system, so merge the last successful fetch into RETRIEVED_AT — freshness
+                    # is "when did we last check" (registry) and compute_freshness reads that
+                    # column. VALID_TIME stays the VALUE side untouched: it is the instant the
+                    # CONTENT last changed, and merging the poll clock into it made the SSE
+                    # broker emit a cache-defeating "changed!" every five quiet minutes
+                    # (adversarial review 2026-08-28). `have` may be None — zero alert rows
+                    # through a quiet week — and then the poll is the only instant there is.
                     anchors[pid] = FreshnessAnchor(
                         kind=kind if have is None else f"{have.kind}+{kind}",
-                        valid_time=fix(v) if have is None else newer(have.valid_time, fix(v)),
+                        valid_time=fix(v) if have is None else have.valid_time,
                         retrieved_at=fix(r) if have is None else newer(have.retrieved_at, fix(r)),
                     )
                     continue

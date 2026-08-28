@@ -38,8 +38,13 @@ METHOD_QPE = "method:basin-qpe@1.0.0"
 #: 6 h answers "is it raining hard right now", 24 h the storm, 72 h the wet-up — the AR-event
 #: duration scales of docs/HYDROLOGY.md §2 (the regime section). Nothing here scores or fuses.
 WINDOWS_H = (6, 24, 72)
-#: Widest window plus the measured archive lag, rounded up: how far back the reader must ask.
-LOOKBACK = timedelta(hours=max(WINDOWS_H) + 2)
+#: Widest window plus how stale the ANCHOR itself may be: the windows end at the newest
+#: OBSERVED hour, so after an archive outage t_end can sit hours behind the knowledge clock,
+#: and a read that only reaches back max(window)+lag from as_of would truncate the window's
+#: EARLIEST hours — which then read as "missing" while sitting in the database (found by
+#: adversarial review 2026-08-28). 26 h covers the MRMS job's own 24-h backfill reach plus
+#: the measured publication lag; an anchor staler than that is an incident, not a lag.
+LOOKBACK = timedelta(hours=max(WINDOWS_H) + 26)
 
 
 def antecedent_ref_key(basin_id: str) -> str:
