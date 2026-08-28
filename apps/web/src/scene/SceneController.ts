@@ -13,6 +13,7 @@ import type { MotionPreference } from '../design-system/motion';
 import { createSceneHandle } from '../layers/cesium-handle';
 import type { LayerHit, LayerId, SceneHandle, SceneLayer, SelectionState } from '../layers/contract';
 import { BasinsLayer, type BasinsLayerData } from '../layers/basins/BasinsLayer';
+import { BasinSusceptibilityLayer, type BasinSusceptibilityLayerData } from '../layers/susceptibility/BasinSusceptibilityLayer';
 import { osmKeyless, type BasemapProvider } from '../layers/basemap/BasemapProvider';
 import { RiversLayer } from '../layers/rivers/RiversLayer';
 import { CESIUM_RENDERER_CREDIT_HTML } from './credits';
@@ -24,7 +25,11 @@ export interface Selection { basinId: string | null; forecastPointId: string | n
 export interface SelectOptions { reason: FlightReason; cut?: boolean }
 export type PickedHandler = (hit: LayerHit) => void;
 
-interface LayerDataMap { basins: BasinsLayerData; rivers: RiverEnvelope }
+interface LayerDataMap {
+  basins: BasinsLayerData;
+  rivers: RiverEnvelope;
+  basin_susceptibility: BasinSusceptibilityLayerData;
+}
 
 export class SceneController {
   readonly viewer: Viewer;
@@ -84,7 +89,7 @@ export class SceneController {
     this.unsubscribes.push(this.camera.onSample((sample) => this.zoom.onCameraSample(sample)));
     this.unsubscribes.push(this.zoom.on('bandChanged', (e) => this.applyBand(e.next)));
 
-    for (const layer of [new BasinsLayer(), new RiversLayer()] as SceneLayer[]) {
+    for (const layer of [new BasinSusceptibilityLayer(), new BasinsLayer(), new RiversLayer()] as SceneLayer[]) {
       this.layers.set(layer.id, layer);
       this.intents.set(layer.id, true);
       layer.mount(this.handle);

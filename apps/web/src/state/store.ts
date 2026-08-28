@@ -12,7 +12,7 @@ import type { Band } from '../scene/bands';
 import { windowEndingAt, type TimelineWindow } from '../timeline/window';
 
 export type EntityId = string;
-export type LayerId = 'basemap' | 'basins' | 'rivers';
+export type LayerId = 'basemap' | 'basins' | 'rivers' | 'basin_susceptibility';
 export type QualityTier = 'ultra' | 'high' | 'balanced' | 'low';
 export type FlightState = 'idle' | 'flying' | 'settled';
 export type TimelineMode = 'now' | 'past' | 'event';
@@ -85,7 +85,7 @@ export const DEFAULT_STATE: SceneState = {
   altitudeBand: 'orbital',
   motionSetting: 'system',
   systemReducedMotion: false,
-  activeLayers: ['basemap', 'basins', 'rivers'],
+  activeLayers: ['basemap', 'basin_susceptibility', 'basins', 'rivers'],
   time: { valid: 'now' },
   timeline: { mode: 'now', asOf: null, window: windowEndingAt(new Date().toISOString()), eventId: null, at: null },
   cameraPose: null,

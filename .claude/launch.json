@@ -4,14 +4,31 @@
     {
       "name": "web-dev",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["--prefix", "apps/web", "run", "dev"],
-      "port": 5173
+      "runtimeArgs": [
+        "--prefix",
+        "apps/web",
+        "run",
+        "dev"
+      ],
+      "port": 5177,
+      "env": {
+        "VITE_DEV_PORT": "5177",
+        "VITE_API_BASE": "http://localhost:8000"
+      }
     },
     {
       "name": "stub-api",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["--prefix", "apps/web", "run", "stub"],
-      "port": 8000
+      "runtimeArgs": [
+        "--prefix",
+        "apps/web",
+        "run",
+        "stub"
+      ],
+      "port": 8000,
+      "env": {
+        "CASCADE_CORS_ORIGINS": "http://localhost:5177,http://localhost:5173,http://localhost:4173"
+      }
     }
   ]
 }

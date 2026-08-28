@@ -25,7 +25,11 @@ export default defineConfig({
       })),
     }),
   ],
-  server: { port: 5173, strictPort: true },
+  // `strictPort` stays true so a misconfigured port fails loudly instead of silently serving
+  // somewhere the Playwright config and the CORS allowlist do not expect. The port itself is
+  // overridable, because 5173 is a common default and another project holding it should not stop
+  // a developer running this one.
+  server: { port: Number(process.env.VITE_DEV_PORT ?? 5173), strictPort: true },
   build: { chunkSizeWarningLimit: 5000 }, // CesiumJS is one ~4.4 MB chunk by nature; code-splitting it is a later optimisation
   test: {
     include: ['src/**/*.test.ts'],
