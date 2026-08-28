@@ -101,6 +101,7 @@ from cascade_core.knowledge import Knowledge
 from cascade_core.models import Basin, DerivedFeature, SourceProduct
 from cascade_core.registry import (
     PRODUCT_AWDB_DAILY,
+    PRODUCT_SNODAS_SWE,
     PRODUCT_USGS_DOY_NORMALS,
     PRODUCT_USGS_OGC_DAILY,
     SOURCES,
@@ -153,6 +154,11 @@ CLIMATOLOGY_FEATURE = "streamflow_doy_climatology"
 RECORD_CONTEXT_FEATURE = "streamflow_record_context"
 GROWTH_REFERENCE_FEATURE = "streamflow_growth_reference"
 SWE_FEATURE = "basin_swe_percent_of_median"
+#: SNODAS gridded snow model (written by cascade_providers_snodas.jobs; names pinned by test).
+#: MODELED, assimilates the same pillows the SNOTEL context shows — not independent evidence.
+SNODAS_METHOD_ID = "method:basin-snodas-swe@1.0.0"
+SNODAS_SWE_FEATURE = "basin_swe_mm"
+SNODAS_SCF_FEATURE = "basin_snow_covered_fraction"
 PRECIP_FEATURE = "snotel_precip_14d_percent_of_median"
 SOIL_FEATURE = "soil_saturation_percentile"
 MULTIPLE_FEATURE = "streamflow_seasonal_multiple"
@@ -793,6 +799,8 @@ READ_SPECS: tuple[tuple[str, str, None], ...] = (
     (PERCENTILE_FEATURE, PERCENTILE_ROW_METHOD_ID, None),
     (SWE_FEATURE, SWE_METHOD_ID, None),
     (PRECIP_FEATURE, PRECIP_METHOD_ID, None),
+    (SNODAS_SWE_FEATURE, SNODAS_METHOD_ID, None),
+    (SNODAS_SCF_FEATURE, SNODAS_METHOD_ID, None),
 )
 
 #: The widest lookback any of :data:`READ_SPECS` is read over. The velocity's history read is
@@ -1027,6 +1035,55 @@ async def assess(
         precip_row, feature=PRECIP_FEATURE, rank=30, prov_key=f"awdb-prec-{slug}", refs=refs, products=products, now=now,
         fallback_label="No SNOTEL precipitation context ingested for this basin",
     ))
+
+    # SNODAS beside the pillows: a spatially complete MODELED surface (basin land-mean SWE and
+    # snow-covered fraction). It assimilates those same pillows, so it is corroboration of
+    # coverage, never independent validation — the label says so, and like all snow it is
+    # context, never score (HYDROLOGY §7).
+    snodas_row = await k.latest_derived_feature(SNODAS_SWE_FEATURE, basin.id, method_id=SNODAS_METHOD_ID, lookback=CONTEXT_LOOKBACK)
+    scf_row = await k.latest_derived_feature(SNODAS_SCF_FEATURE, basin.id, method_id=SNODAS_METHOD_ID, lookback=CONTEXT_LOOKBACK)
+    snodas_key = f"snodas-swe-{slug}"
+    if snodas_row is not None:
+        snodas_product = products.get(PRODUCT_SNODAS_SWE)
+        flags = tuple(snodas_row.quality or ())
+        caveats = []
+        if "swe_saturated_cells_excluded" in flags:
+            caveats.append("saturated glacier cells excluded (the documented SNODAS alpine artifact)")
+        if "static_water_cells_present" in flags:
+            caveats.append("lakes excluded; the mean is the land mean")
+        refs[snodas_key] = ProvenanceRef(
+            source_id=snodas_product.source_id if snodas_product else "src:snodas",
+            source_kind=resolved_source_kind(snodas_product.source_id if snodas_product else "src:snodas"),
+            product_id=PRODUCT_SNODAS_SWE,
+            method_id=snodas_row.method_id,
+            valid_time=snodas_row.valid_time,
+            retrieved_at=snodas_row.computed_at,
+            freshness=compute_freshness(
+                expected_cadence_seconds=snodas_product.expected_cadence_seconds if snodas_product else None,
+                grace_seconds=snodas_product.grace_seconds if snodas_product else None,
+                valid_time=snodas_row.valid_time,
+                retrieved_at=snodas_row.available_at,
+                now=now,
+            ),
+            quality=flags,
+            label=(
+                f"SNODAS modeled SWE, basin land mean, {snodas_row.valid_time:%Y-%m-%d %H}Z snapshot"
+                + (f" ({'; '.join(caveats)})" if caveats else "")
+                + ". MODELED: assimilates the SNOTEL pillows shown above, so it corroborates "
+                "coverage rather than independently validating it. More SWE is not more risk; "
+                "context only."
+            ),
+            raw_artifact_id=str(snodas_row.raw_artifact_id) if snodas_row.raw_artifact_id is not None else None,
+        )
+        drivers.append(Driver(
+            feature=SNODAS_SWE_FEATURE, value=snodas_row.value, unit=snodas_row.unit,
+            direction=CONTEXT_DIRECTION, rank=25, prov=snodas_key,
+        ))
+        if scf_row is not None and scf_row.valid_time == snodas_row.valid_time and scf_row.value is not None:
+            drivers.append(Driver(
+                feature=SNODAS_SCF_FEATURE, value=round(scf_row.value * 100.0, 2), unit="pct",
+                direction=CONTEXT_DIRECTION, rank=26, prov=snodas_key,
+            ))
 
     # 4. soil: always present, always null, always with its reason
     drivers.append(soil_driver)

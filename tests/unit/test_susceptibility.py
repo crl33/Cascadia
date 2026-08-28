@@ -1270,3 +1270,57 @@ async def test_every_seeded_gauge_has_a_time_zone_so_the_day_boundary_is_never_a
         for station in (await session.execute(select(Station))).scalars():
             assert station.time_zone, f"{station.id} has no time_zone"
             assert station.time_zone in SEEDABLE_TIME_ZONES, station.id
+
+
+def test_the_snodas_names_are_pinned_to_what_the_job_writes() -> None:
+    from cascade_providers_snodas import jobs as snodas_jobs
+
+    assert susceptibility.SNODAS_SWE_FEATURE == snodas_jobs.FEATURE_SWE
+    assert susceptibility.SNODAS_SCF_FEATURE == snodas_jobs.FEATURE_SCF
+    assert susceptibility.SNODAS_METHOD_ID == snodas_jobs.METHOD_SWE
+
+
+@respx.mock
+async def test_snodas_context_rides_beside_the_pillows_with_its_caveats(sessions, tmp_path) -> None:
+    """Stored SNODAS rows become two context drivers whose label admits assimilation and names
+    the artifact exclusions. Context rides only on a COMPUTED surface (the SNOTEL rule), so the
+    percentile path is ingested first."""
+    from datetime import timedelta
+
+    from cascade_core.knowledge import as_known_at
+    from cascade_core.models import DerivedFeature
+    from cascade_hydrology.assemble import basin_envelope
+
+    _mock_usgs_stats()
+    _mock_awdb()
+    await _ingest(sessions, tmp_path)
+    now = NOW
+    snapshot = now.replace(hour=6, minute=0, second=0, microsecond=0)
+    async with sessions() as s:
+        shared = dict(scope_kind="basin", scope_id="basin:puyallup-white", window=None,
+                      valid_time=snapshot, issued_at=None, computed_at=snapshot + timedelta(hours=5),
+                      available_at=snapshot + timedelta(hours=5),  # 11:00Z < NOW; knowledge-visible
+                      method_id=susceptibility.SNODAS_METHOD_ID,
+                      product_id="product:snodas-swe-daily",
+                      quality=["swe_saturated_cells_excluded", "static_water_cells_present"])
+        s.add(DerivedFeature(feature=susceptibility.SNODAS_SWE_FEATURE, value=77.8, unit="mm",
+                             values_json={"saturated_fraction": 0.0006}, **shared))
+        s.add(DerivedFeature(feature=susceptibility.SNODAS_SCF_FEATURE, value=0.0105,
+                             unit="fraction", values_json={}, **shared))
+        await s.commit()
+    async with sessions() as s:
+        k = as_known_at(s, now)
+        env = await basin_envelope(k, await k.basins(), generated_at=now)
+    item = next(i for i in env.items if i.id == "basin:puyallup-white")
+    by_feature = {d.feature: d for d in item.headline_drivers}
+    swe = by_feature[susceptibility.SNODAS_SWE_FEATURE]
+    scf = by_feature[susceptibility.SNODAS_SCF_FEATURE]
+    assert swe.value == 77.8 and swe.unit == "mm" and swe.direction == "context_not_scored"
+    assert scf.value == 1.05 and scf.unit == "pct"
+    ref = env.provenance_refs[swe.prov]
+    assert ref.source_kind.value == "MODELED"
+    assert "assimilates the SNOTEL pillows" in ref.label
+    assert "saturated glacier cells excluded" in ref.label and "land mean" in ref.label
+    # basins with no SNODAS rows carry no SNODAS driver — absence is absence, not a zero
+    cedar = next(i for i in env.items if i.id == "basin:cedar")
+    assert not any(d.feature == susceptibility.SNODAS_SWE_FEATURE for d in cedar.headline_drivers)
