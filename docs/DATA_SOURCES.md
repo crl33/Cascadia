@@ -329,7 +329,9 @@ HEFS, NWRFC and NWM facts come from fetched URLs in
   00Z at 22:48Z the prior evening), so `available_at` (origin Last-Modified) legitimately
   precedes `issued_at` (cycle identity). grid_jpeg packing leaves ~-0.01 mm reconstruction
   noise, clamped to zero at aggregation and flagged. Fixtures:
-  `tests/fixtures/providers/wpc/` (real cycle 2026-08-28 00Z); tests `tests/unit/test_wpc.py`.
+  `tests/fixtures/providers/wpc/` (real cycle 2026-08-28 00Z); tests `tests/unit/test_wpc.py`. Object
+  lifecycle: `wpc/` expires at 90 d (`expire-wpc-90d`, added 2026-08-28) — origin retention is
+  ~2 weeks, so the derived rows are the permanent record here too.
 - **SourceProduct.** `product:wpc-qpf-gis` · PT6H · PT8H; `product:wpc-ero` · PT6H · PT12H; `product:wpc-qpf-5km-grib` · PT6H · PT8H.
 - **Evidence.** FACT https://mapservices.weather.noaa.gov/vector/rest/services/precip/wpc_qpf/MapServer?f=pjson · FACT https://www.wpc.ncep.noaa.gov/qpf/excessive_rainfall_outlook_ero.php · FACT https://ftp-wpc.ncep.noaa.gov/5km_qpf/ · INFERENCE https://www.nwahomepage.com/weather/weather-101/weather-101-wpc-excessive-rainfall-outlooks/
 

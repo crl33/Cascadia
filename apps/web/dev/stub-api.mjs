@@ -33,6 +33,15 @@ const server = createServer((req, res) => {
   let pathname;
   try { pathname = decodeURIComponent(url.pathname); } catch { res.writeHead(400, headers); return res.end(JSON.stringify({ detail: 'bad path' })); }
   if (pathname.length > 256) { res.writeHead(414, headers); return res.end(JSON.stringify({ detail: 'path too long' })); }
+  if (pathname === '/system/events') {
+    // Heartbeat-only SSE: the stub never ingests, so a stream with no events is the truth —
+    // and the EventSource in main.tsx gets a real connection instead of a 404 retry loop.
+    res.writeHead(200, { ...headers, 'Content-Type': 'text/event-stream' });
+    res.write('retry: 5000\n\n');
+    const beat = setInterval(() => res.write(': keep-alive\n\n'), 15000);
+    req.on('close', () => clearInterval(beat));
+    return;
+  }
   let result;
   try { result = route(fx, pathname, url.searchParams); } catch (err) { console.error(err); result = { status: 500, body: { detail: 'stub error' } }; }
   const isError = isErrorResult(result);

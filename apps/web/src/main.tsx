@@ -2,6 +2,7 @@
 import { createRoot } from 'react-dom/client';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from './api/hooks';
+import { connectIngestEvents } from './api/events';
 import { App } from './app/App';
 import { parseDeepLink } from './app/deep-link';
 import { eventById, eventBootTimeline } from './event/registry';
@@ -40,6 +41,11 @@ useSceneStore.setState({
     : { mode: asOf === null ? 'now' : 'past', asOf, window: window72h, eventId: null, at: null },
 });
 reducedMotionQuery.addEventListener('change', (e) => useSceneStore.getState().setSystemReducedMotion(e.matches));
+
+// Live ingest notifications: one SSE connection for the app's lifetime. The invalidation
+// itself is live-only (events.ts rule 1), so the stream stays connected through replays and
+// simply has nothing to say to them.
+connectIngestEvents(queryClient);
 
 // No StrictMode: its dev-only double effect would build and destroy the Cesium viewer twice.
 createRoot(document.getElementById('root')!).render(

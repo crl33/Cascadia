@@ -1,0 +1,23 @@
+{
+ "_provenance": "generated from cascade_core.registry PRODUCTS; pinned by tests/unit/test_job_registry.py and apps/web/src/api/events.test.ts",
+ "ids": [
+  "product:awdb-snotel-daily",
+  "product:awdb-stations",
+  "product:mrms-gaugeinfl-01h-pass2",
+  "product:mrms-qpe-01h-pass2",
+  "product:nbm-v5-core",
+  "product:nbm-v5-qmd",
+  "product:nwm-mr-via-nwps",
+  "product:nwps-forecast",
+  "product:nwps-hefs-ensemble",
+  "product:nwps-hefs-quantiles",
+  "product:nwps-thresholds",
+  "product:nws-api-alerts-active",
+  "product:nws-fls-crest",
+  "product:usgs-daily-stats",
+  "product:usgs-doy-normals",
+  "product:usgs-iv",
+  "product:usgs-ogc-daily",
+  "product:wpc-qpf-5km-grib"
+ ]
+}

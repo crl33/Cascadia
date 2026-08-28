@@ -7,8 +7,10 @@ from datetime import datetime, timedelta
 from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, Request
+from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from cascade_api.events import sse_stream
 from cascade_contracts import SceneSummary
 from cascade_contracts.common import CONTRACT_VERSION
 from cascade_core.freshness import DEGRADED_MULTIPLIER, compute_freshness
@@ -400,6 +402,22 @@ async def agreement_explanation(session: Session, as_of: AsOf, basin_id: Annotat
         "method": ag.result.method_record,
         "quality": list(ag.result.quality),
     }
+
+
+@router.get("/system/events")
+async def system_events(request: Request) -> StreamingResponse:
+    """Server-sent events: `{kind, available_at}` when a product's ingest advances.
+
+    Notify-then-fetch (CINEMATIC_ROADMAP C3a): no payloads ride the stream — a client
+    invalidates what `kind` feeds and refetches through the normal read path, which is the only
+    read path. Replay (`as_of`) never touches this endpoint: the past does not change.
+    The poller behind it runs only while at least one client is connected (events.py).
+    """
+    return StreamingResponse(
+        sse_stream(request.app.state.events),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-store", "X-Accel-Buffering": "no"},
+    )
 
 
 @router.get("/system/version")

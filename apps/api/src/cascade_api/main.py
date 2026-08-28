@@ -9,6 +9,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.ext.asyncio import AsyncEngine
 
+from cascade_api.events import IngestEventBroker
 from cascade_api.geo import Geography
 from cascade_api.routes import router
 from cascade_core.db import make_engine, make_session_factory
@@ -24,6 +25,7 @@ def create_app(settings: Settings | None = None, engine: AsyncEngine | None = No
     app.state.engine = engine
     app.state.sessions = make_session_factory(engine)
     app.state.geo = Geography.load(settings.geo_dir)
+    app.state.events = IngestEventBroker(sessions=app.state.sessions)
     # The elevation-area curves ship in the same geo directory. Missing is tolerated — the
     # surface simply emits no rain-exposed fraction — but never silently: the absence of a whole
     # analytical input is worth one loud line at startup, not a quiet degradation.

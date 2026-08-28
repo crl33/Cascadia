@@ -138,3 +138,18 @@ def test_health_covers_every_registered_job(job_name: str) -> None:
 def test_health_expects_every_product_a_registered_job_writes() -> None:
     assert set(HEALTH_PRODUCTS) == set(PRODUCT_WRITERS)
     assert "product:nbm-v5-core" in HEALTH_PRODUCTS  # the product behind finding C
+
+
+def test_the_web_product_id_fixture_matches_the_registry() -> None:
+    """apps/web/dev/product-ids.json pins the SSE kind map to real registry ids from the Python
+    side; events.test.ts pins the map to the fixture from the TS side. A renamed product breaks
+    one of the two instead of silently orphaning its invalidation."""
+    import json
+    from pathlib import Path
+
+    from cascade_core.registry import PRODUCTS
+
+    fixture = json.loads(
+        (Path(__file__).resolve().parents[2] / "apps" / "web" / "dev" / "product-ids.json").read_text()
+    )
+    assert fixture["ids"] == sorted(p["id"] for p in PRODUCTS)

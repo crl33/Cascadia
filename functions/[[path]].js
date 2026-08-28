@@ -53,16 +53,23 @@ export async function onRequest(context) {
     const upstream = new URL(origin);
     upstream.pathname = url.pathname;
     upstream.search = url.search;
+    // The SSE stream is the one deliberately long-lived response: no abort backstop (the
+    // heartbeat detects a dead backend within seconds) and the client's own Accept passes
+    // through so the backend answers text/event-stream.
+    const streaming = url.pathname === '/system/events';
     try {
       const resp = await fetch(upstream, {
         method: 'GET',
-        headers: { Accept: 'application/json', 'User-Agent': 'CascadiaPapsukkal-gateway/0.1' },
+        headers: {
+          Accept: streaming ? 'text/event-stream' : 'application/json',
+          'User-Agent': 'CascadiaPapsukkal-gateway/0.1',
+        },
         // 30 s backstop against a hung backend — NOT a latency budget. /viz/basins was 21.8 s
         // when P3 landed (120 round trips) and forced a temporary 60 s abort; the read path was
         // batched to 13 statements and it now measures ~2.6-2.8 s in production, so 30 s is ~10x
         // headroom over normal behaviour. The residual is ~195 ms per query of cross-region round
         // trip, not amplification (docs/NEXT_STEPS.md).
-        signal: AbortSignal.timeout(30000),
+        signal: streaming ? undefined : AbortSignal.timeout(30000),
       });
       const headers = new Headers(resp.headers);
       for (const [k, v] of Object.entries(HEADERS)) headers.set(k, v);
@@ -75,6 +82,16 @@ export async function onRequest(context) {
   }
 
   // Fixture-backed stub (previews without a configured backend).
+  if (url.pathname === '/system/events') {
+    // The fixture stub never ingests: an event stream with only a retry hint and heartbeats
+    // is the truth. TransformStream keeps the response open without buffering.
+    const { readable, writable } = new TransformStream();
+    const writer = writable.getWriter();
+    const enc = new TextEncoder();
+    writer.write(enc.encode('retry: 15000\n\n'));
+    const beat = setInterval(() => writer.write(enc.encode(': keep-alive\n\n')).catch(() => clearInterval(beat)), 15000);
+    return new Response(readable, { status: 200, headers: { ...HEADERS, 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-store' } });
+  }
   let result;
   try {
     result = route(fx, decodeURIComponent(url.pathname), url.searchParams);
