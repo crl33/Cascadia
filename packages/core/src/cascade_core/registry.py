@@ -36,6 +36,7 @@ SRC_USGS_NORMALS = "src:usgs-wdfn-normals"
 SRC_AWDB = "src:nrcs-awdb"
 SRC_MRMS = "src:mrms"
 SRC_NWS_API = "src:nws-api"
+SRC_WPC = "src:wpc"
 
 PRODUCT_USGS_IV = "product:usgs-iv"
 PRODUCT_NWPS_FORECAST = "product:nwps-forecast"
@@ -53,6 +54,7 @@ PRODUCT_USGS_DOY_NORMALS = "product:usgs-doy-normals"
 PRODUCT_AWDB_DAILY = "product:awdb-snotel-daily"
 PRODUCT_AWDB_STATIONS = "product:awdb-stations"
 PRODUCT_MRMS_QPE = "product:mrms-qpe-01h-pass2"
+PRODUCT_WPC_QPF = "product:wpc-qpf-5km-grib"
 PRODUCT_MRMS_GAUGEINFL = "product:mrms-gaugeinfl-01h-pass2"
 PRODUCT_NWS_ALERTS = "product:nws-api-alerts-active"
 
@@ -94,6 +96,7 @@ SOURCES: tuple[dict[str, str], ...] = (
     # statement about its own estimate, not a Cascadia judgement.
     {"id": SRC_MRMS, "authority": "NOAA NSSL/NCEP Multi-Radar Multi-Sensor (MRMS) via NODD", "kind": "OBSERVED", "base_url": "https://noaa-mrms-pds.s3.amazonaws.com/", "docs_url": "https://www.nssl.noaa.gov/projects/mrms/"},
     {"id": SRC_NWS_API, "authority": "NOAA National Weather Service API (CAP alerts, WFO products)", "kind": "OFFICIAL_FORECAST", "base_url": "https://api.weather.gov/", "docs_url": "https://www.weather.gov/documentation/services-web-api"},
+    {"id": SRC_WPC, "authority": "NOAA/NWS Weather Prediction Center (human-forecaster national QPF)", "kind": "OFFICIAL_FORECAST", "base_url": "https://ftp-wpc.ncep.noaa.gov/5km_qpf/", "docs_url": "https://www.wpc.ncep.noaa.gov/qpf/qpf2.shtml"},
 )
 
 PRODUCTS: tuple[dict[str, object], ...] = (
@@ -154,6 +157,9 @@ PRODUCTS: tuple[dict[str, object], ...] = (
     # Active CAP alerts, polled every 5 min (the provider allows once or twice a minute; the
     # payload is one ~5-50 KB request). Grace 10 min: two missed polls is a real gap.
     {"id": PRODUCT_NWS_ALERTS, "source_id": SRC_NWS_API, "label": "NWS active CAP alerts for Washington (api.weather.gov), routed to basins by the derived UGC mapping", "variables": ["alert"], "expected_cadence_seconds": 300, "grace_seconds": 600},
+    # Two cycles daily (00/12Z), each published ~48 min BEFORE its nominal hour (measured
+    # 2026-08-28: 12Z at 10:48Z, 00Z at 22:48Z the prior evening). Grace 4 h on a 12 h cadence.
+    {"id": PRODUCT_WPC_QPF, "source_id": SRC_WPC, "label": "WPC 5-km official QPF, 24-h windows Day 1-3, basin-aggregated", "variables": ["precip"], "expected_cadence_seconds": 43200, "grace_seconds": 14400},
 )
 
 
@@ -217,6 +223,8 @@ JOBS: tuple[JobSpec, ...] = (
     # on a schedule: each run lists the day prefix and ingests every accumulation not stored.
     JobSpec("mrms.fetch_qpe", "mrms", SRC_MRMS, (PRODUCT_MRMS_QPE, PRODUCT_MRMS_GAUGEINFL), 3600),
     JobSpec("nws.fetch_alerts", "nws-api", SRC_NWS_API, (PRODUCT_NWS_ALERTS,), 300),
+    # Twice daily at 11:10Z/23:10Z — ~20 min after each cycle's measured publication.
+    JobSpec("wpc.fetch_qpf", "wpc", SRC_WPC, (PRODUCT_WPC_QPF,), 43200),
     # Registered on the QUEUE only, never in `scheduler.JOBS` (it needs PostgreSQL, and `run-once`
     # must keep working on sqlite) — but it runs through `run_job` like everything else, leaves
     # job_run rows, and keeps the observation partition horizon ahead of ingestion. It belongs

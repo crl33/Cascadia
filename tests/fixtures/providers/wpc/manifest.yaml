@@ -1,0 +1,12 @@
+# WPC 5-km QPF fixtures — REAL files, captured 2026-08-28 ~06:1xZ from
+# https://ftp-wpc.ncep.noaa.gov/5km_qpf/ (cycle 2026-08-28 00Z, published 22:48Z 2026-08-27 —
+# ~72 min BEFORE the nominal cycle hour; the inversion is the provider's real behaviour).
+# Gzipped for the repo; the live files are served uncompressed (~300 KB each).
+# Grid: GRIB2 lambert, 1073x689 @ ~5.08 km, LoV 265, Latin1=Latin2=25, radius 6371200,
+# grid_jpeg packing (tiny negative reconstruction noise around zero is real and handled).
+# Probed basin means (f024, mm): skagit 1.22, nooksack 1.71, snohomish 0.44, cedar 0.11,
+# green 0.24, puyallup 0.13; sentinel(9999) cells inside seed basins: 0 of all six.
+files:
+  p24m_2026082800f024.grb.gz: {step: "0-24", cycle: "2026-08-28T00:00:00Z"}
+  p24m_2026082800f048.grb.gz: {step: "24-48", cycle: "2026-08-28T00:00:00Z"}
+  p24m_2026082800f072.grb.gz: {step: "48-72", cycle: "2026-08-28T00:00:00Z"}

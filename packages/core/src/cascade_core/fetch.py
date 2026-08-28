@@ -24,6 +24,7 @@ import time
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime
+from email.utils import parsedate_to_datetime
 from urllib.parse import urlsplit
 
 import httpx
@@ -54,6 +55,7 @@ PROVIDER_HOSTS: frozenset[str] = frozenset(
         "wcc.sc.egov.usda.gov",              # S1 NRCS AWDB (SNOTEL WTEQ/PREC)
         "noaa-mrms-pds.s3.amazonaws.com",    # P1 MRMS QPE + gauge-influence (NODD mirror)
         "api.weather.gov",                   # W1 NWS API: CAP alerts (Phase 1), grids later
+        "ftp-wpc.ncep.noaa.gov",             # W6 WPC 5-km QPF files (official human QPF)
     }
 )
 
@@ -75,6 +77,11 @@ class FetchResult:
     sha256: str
     object_key: str
     artifact_id: int
+    #: The origin's own Last-Modified, when it sent one — the honest publication instant for
+    #: plain-HTTP file servers (the S3-listing LastModified idea, without a listing). None when
+    #: the origin stays silent; callers then fall back to ``fetched_at``, which can only ever be
+    #: LATER than the truth — the conservative direction for replay.
+    last_modified: datetime | None = None
 
 
 class HostRateLimiter:
@@ -216,6 +223,11 @@ class ArchivingFetcher:
             )
             session.add(artifact)
             await session.flush()
+            lm = response.headers.get("last-modified")
+            try:
+                last_modified = parsedate_to_datetime(lm) if lm else None
+            except (TypeError, ValueError):
+                last_modified = None
             return FetchResult(
                 url=str(target),
                 http_status=response.status_code,
@@ -225,6 +237,7 @@ class ArchivingFetcher:
                 sha256=artifact.sha256,
                 object_key=key,
                 artifact_id=artifact.id,
+                last_modified=last_modified,
             )
         finally:
             if owns:

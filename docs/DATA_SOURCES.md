@@ -312,13 +312,24 @@ HEFS, NWRFC and NWM facts come from fetched URLs in
 - **SourceProduct.** `product:gefs-0p50-ivt-inputs` (pgrb2a+pgrb2b subset) · PT6H · PT8H; `product:gefs-0p25-surface` · PT6H · PT8H.
 - **Evidence.** FACT https://noaa-gefs-pds.s3.amazonaws.com/gefs.20260821/12/atmos/pgrb2ap5/gep01.t12z.pgrb2a.0p50.f006.idx · FACT https://noaa-gefs-pds.s3.amazonaws.com/gefs.20260821/12/atmos/pgrb2bp5/gep01.t12z.pgrb2b.0p50.f006.idx · FACT https://www.nco.ncep.noaa.gov/pmb/products/gens/ · INFERENCE https://www.emc.ncep.noaa.gov/emc/pages/numerical_forecast_systems/gefs.php
 
-#### W6 · WPC Quantitative Precipitation Forecast and Excessive Rainfall Outlook — `src:wpc` · researched · Phase 2
+#### W6 · WPC Quantitative Precipitation Forecast and Excessive Rainfall Outlook — `src:wpc` · **QPF ingesting** (ERO researched) · Phase 2
 - **What / authority / kind.** Human-forecaster national QPF and flash-flood risk outlook; NOAA/NWS WPC; OFFICIAL_FORECAST.
 - **Access.** ArcGIS REST `https://mapservices.weather.noaa.gov/vector/rest/services/precip/wpc_qpf/MapServer` (layers 0–25: 24-h Day 1/2/3, 48-h Day 4-5/6-7, cumulative 48/72/120/168 h, 6-h intervals 00-06…72-78 h; fields `qpf`, `units`, `issue_time`, `start_time`, `end_time`, `idp_ingestdate`) and `hazards/wpc_precip_hazards/MapServer` (layers 0–4 ERO Day 1–5); ERO GeoJSON `https://www.wpc.ncep.noaa.gov/exper/eromap/geojson/Day{1..5}_Latest.geojson`; shapefiles `https://ftp-wpc.ncep.noaa.gov/shapefiles/qpf/{day1,…,excessive}/`; 5-km GRIB `https://ftp-wpc.ncep.noaa.gov/5km_qpf/p06m_YYYYMMDDHHfFFF.grb` (f006–f168), `p24m`, `p48m`, `p120m`, `p168m` (FACT). `ftp.wpc.ncep.noaa.gov` 302-redirects to `ftp-wpc`; KML page 403 to automated fetch (FACT). No auth.
 - **Cadence / history.** 6-h files per 00/06/12/18Z init; 24/120/168-h per 00/12Z; ERO several times daily (Day-1 issued 2026-08-21 23:22); GRIB retention ~2 weeks, shapefiles ≥ ~2 months, GIS current issuance only (FACT).
 - **Missing / units.** No polygon = no risk area; `OUTLOOK` strings e.g. "Marginal (At Least 5%)"; QPF inches in GIS; GRIB units kg m⁻² (INFERENCE). ERO = probability of exceeding FFG within 40 km; Marginal ≥5 %, Slight ≥15 % (FACT); Moderate ≥40 % (INFERENCE), High ≥70 % Day 1–2 only (OPEN QUESTION).
 - **Limitations.** – Coarse human guidance; complements NBM/HRRR basin QPF. – GIS holds current issuance only — archive each pull.
 - **License.** Public domain; `copyrightText` NOAA/NWS/WPC (FACT). **Feeds.** Official QPF consistency check, ERO as an OFFICIAL risk layer, NBM v5.0 input awareness.
+- **Ingest (landed 2026-08-28).** `wpc.fetch_qpf` (cron 10 11,23 * * *) pulls the three 24-h
+  windows `p24m_{cycle}f024/f048/f072` (~300 KB each, ~2 MB/day both cycles) — the
+  scientifically sufficient subset for a 72-h horizon at basin scale — parses the 5-km GRIB2
+  Lambert grid on the shared LCC/mask machinery (Section-3 hash identity), and writes
+  `basin_qpf_24h_official` DerivedFeature rows (`method:basin-qpf-wpc@1.0.0`, kind
+  OFFICIAL_FORECAST — never averaged with the NBM blend). **Measured knowledge-time
+  inversion:** each cycle's files publish ~48-72 min BEFORE the nominal hour (12Z at 10:48Z,
+  00Z at 22:48Z the prior evening), so `available_at` (origin Last-Modified) legitimately
+  precedes `issued_at` (cycle identity). grid_jpeg packing leaves ~-0.01 mm reconstruction
+  noise, clamped to zero at aggregation and flagged. Fixtures:
+  `tests/fixtures/providers/wpc/` (real cycle 2026-08-28 00Z); tests `tests/unit/test_wpc.py`.
 - **SourceProduct.** `product:wpc-qpf-gis` · PT6H · PT8H; `product:wpc-ero` · PT6H · PT12H; `product:wpc-qpf-5km-grib` · PT6H · PT8H.
 - **Evidence.** FACT https://mapservices.weather.noaa.gov/vector/rest/services/precip/wpc_qpf/MapServer?f=pjson · FACT https://www.wpc.ncep.noaa.gov/qpf/excessive_rainfall_outlook_ero.php · FACT https://ftp-wpc.ncep.noaa.gov/5km_qpf/ · INFERENCE https://www.nwahomepage.com/weather/weather-101/weather-101-wpc-excessive-rainfall-outlooks/
 
