@@ -357,6 +357,48 @@ def official_qpf_ref_key(basin_id: str) -> str:
     return f"wpc-qpf-{basin_id.split(':', 1)[-1]}"
 
 
+#: The forecaster-vs-blend comparison (docs/research/qpf-agreement-design-2026-08-28.md).
+#: Every rule the note fixes lives under this id: window alignment, same-nominal-cycle,
+#: no percentile differencing, sub-millimetre ratio suppression.
+METHOD_QPF_AGREEMENT = "method:qpf-agreement@1.0.0"
+AGREEMENT_24H_FEATURE = "qpf_official_vs_blend_24h_delta"
+AGREEMENT_72H_FEATURE = "qpf_official_vs_blend_72h_delta"
+#: Below this blend median a ratio reads as violent disagreement about nothing (design §2).
+AGREEMENT_RATIO_FLOOR_MM = 1.0
+
+
+def agreement_ref_key(basin_id: str) -> str:
+    return f"qpf-agreement-{basin_id.split(':', 1)[-1]}"
+
+
+def _agreement_window_sentence(
+    window_name: str,
+    official: float,
+    blend_p50: float | None,
+    blend_det: float | None,
+    band: tuple[float, float] | None,
+) -> str:
+    """One window's comparison, said in words. Pure and total so the wording is testable."""
+    if blend_p50 is None:
+        return f"{window_name}: the blend's window is not stored for this cycle; no comparison."
+    delta = official - blend_p50
+    head = f"{window_name}: official {official:.1f} mm vs blend p50 {blend_p50:.1f} mm ({delta:+.1f} mm"
+    if blend_p50 >= AGREEMENT_RATIO_FLOOR_MM:
+        head += f", {official / blend_p50:.1f}x the blend median"
+    head += ")"
+    parts = [head]
+    if blend_det is not None:
+        parts.append(f"{official - blend_det:+.1f} mm against the deterministic member")
+    if band is not None:
+        lo, hi = band
+        inside = lo <= official <= hi
+        parts.append(
+            ("inside" if inside else "OUTSIDE")
+            + f" the blend's pointwise p10-p90 ({lo:.1f}-{hi:.1f} mm). {POINTWISE_CAVEAT}"
+        )
+    return "; ".join(parts)
+
+
 def assess_from_rows(
     basin_id: str,
     *,
@@ -554,6 +596,76 @@ def assess_from_rows(
                 )
             )
 
+            # AGREEMENT: the forecaster vs the blend (design note 2026-08-28). Two windows are
+            # facts — Day-1 window-for-window, and the 72-h totals; Day-2/3 individually are
+            # NOT compared, because the blend stores CUMULATIVE percentile windows and
+            # percentiles do not subtract. Only the SAME nominal cycle compares: a stale-vs-
+            # fresh pair dressed as agreement says nothing, so a cycle mismatch yields
+            # value-None drivers whose ref names both cycles instead.
+            agr_key = agreement_ref_key(basin_id)
+            nbm_cycle = headline.issued_at
+            if wpc_cycle != nbm_cycle:
+                refs[agr_key] = ProvenanceRef(
+                    source_id=SRC_CASCADE,
+                    source_kind=SourceKind.DERIVED,
+                    method_id=METHOD_QPF_AGREEMENT,
+                    freshness=Freshness(state=FreshnessState.UNKNOWN),
+                    label=(
+                        f"No comparison: the newest complete WPC cycle is "
+                        f"{wpc_cycle:%Y-%m-%d %H}Z while the blend cycle shown is "
+                        f"{nbm_cycle:%Y-%m-%d %H}Z. Only the same nominal cycle compares — "
+                        "a stale-vs-fresh pair is not agreement (method:qpf-agreement@1.0.0)."
+                    ),
+                )
+                for feature in (AGREEMENT_24H_FEATURE, AGREEMENT_72H_FEATURE):
+                    drivers.append(Driver(
+                        feature=feature, value=None, unit="mm",
+                        direction=DIRECTION_CONTEXT, rank=len(drivers) + 1, prov=agr_key,
+                    ))
+            else:
+                day1_official = windows[0].value
+                row_24_p50 = by_feature.get(qpf_feature(24, HEADLINE_PERCENTILE))
+                row_24_det = by_feature.get(qpf_feature(24, None))
+                row_72_det = by_feature.get(qpf_feature(FORCING_HORIZON_H, None))
+                p50_24 = row_24_p50.value if row_24_p50 is not None else None
+                det_24 = row_24_det.value if row_24_det is not None else None
+                det_72 = row_72_det.value if row_72_det is not None else None
+                band_72 = (
+                    (spread["pointwise_p10"], spread["pointwise_p90"])
+                    if "pointwise_p10" in spread and "pointwise_p90" in spread
+                    else None
+                )
+                sentences = [
+                    _agreement_window_sentence("Day 1 (0-24 h)", day1_official, p50_24, det_24, None),
+                    _agreement_window_sentence("72-h total", total, headline.value, det_72, band_72),
+                ]
+                refs[agr_key] = ProvenanceRef(
+                    source_id=SRC_CASCADE,
+                    source_kind=SourceKind.DERIVED,
+                    product_id=wpc_product,
+                    method_id=METHOD_QPF_AGREEMENT,
+                    issued_at=nbm_cycle,
+                    valid_time=windows[-1].valid_time,
+                    retrieved_at=windows[0].computed_at,
+                    freshness=freshness,
+                    quality=(POINTWISE_FLAG,),
+                    label=(
+                        f"Forecaster vs blend, {nbm_cycle:%Y-%m-%d %H}Z cycle. "
+                        + " ".join(sentences)
+                        + " Disagreement is information; the two are never averaged."
+                    ),
+                )
+                drivers.append(Driver(
+                    feature=AGREEMENT_24H_FEATURE,
+                    value=None if p50_24 is None else round(day1_official - p50_24, 2),
+                    unit="mm", direction=DIRECTION_CONTEXT, rank=len(drivers) + 1, prov=agr_key,
+                ))
+                drivers.append(Driver(
+                    feature=AGREEMENT_72H_FEATURE,
+                    value=round(total - headline.value, 2),
+                    unit="mm", direction=DIRECTION_CONTEXT, rank=len(drivers) + 1, prov=agr_key,
+                ))
+
     level = FORCING_BANDS.level(headline.value)
     return ForcingAssessment(
         surface=SurfaceState(
@@ -600,6 +712,11 @@ def read_specs() -> list[tuple[str, str, str | None]]:
         # rain-exposed fraction can carry the snow level's own spread rather than a bare number.
         *[(snow_level_feature(p), METHOD_BASIN_SNOW_LEVEL, None) for p in SNOW_LEVEL_PERCENTILES],
         (WPC_QPF_FEATURE, METHOD_QPF_WPC, "24h"),
+        # the agreement comparison's blend side: the 24-h window's p50 and both deterministic
+        # members, in the same batched family (design note 2026-08-28)
+        (qpf_feature(24, HEADLINE_PERCENTILE), METHOD_BASIN_QPF, window_label(24)),
+        (qpf_feature(24, None), METHOD_BASIN_QPF, window_label(24)),
+        (qpf_feature(FORCING_HORIZON_H, None), METHOD_BASIN_QPF, window),
     ]
 
 
@@ -651,6 +768,19 @@ async def assess(
         return _unknown(basin.id, ForcingReason.NO_CYCLE)
     cycle = max((r.issued_at for r in horizon_rows if r.issued_at is not None), default=None)
     qpf_rows = [r for r in horizon_rows if r.issued_at == cycle]
+    for feature, feature_window in (
+        (qpf_feature(24, HEADLINE_PERCENTILE), window_label(24)),
+        (qpf_feature(24, None), window_label(24)),
+        (qpf_feature(FORCING_HORIZON_H, None), window_label(FORCING_HORIZON_H)),
+    ):
+        qpf_rows += [
+            r
+            for r in await k.derived_features(
+                feature, basin.id, method_id=METHOD_BASIN_QPF, window=feature_window,
+                valid_from=when - MAX_CYCLE_AGE,
+            )
+            if r.issued_at == cycle
+        ]
     for percentile in SPREAD_PERCENTILES:
         qpf_rows += [
             r

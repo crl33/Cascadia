@@ -260,3 +260,87 @@ def test_a_partial_cycle_yields_no_total_and_no_silent_fallback_to_an_older_one(
         "a 72-h total from two windows would read as a small forecast; and quietly showing "
         "yesterday's cycle instead would claim the newest official word is older than it is"
     )
+
+
+# --- forecaster vs blend (design note 2026-08-28; each rule is a pinned obligation) --------
+
+
+def _blend_rows_for_agreement() -> list[DerivedFeature]:
+    return _qpf_rows() + [
+        _row(forcing.qpf_feature(24, 50), 4.0),
+        _row(forcing.qpf_feature(24, None), 3.5),
+        _row(forcing.qpf_feature(72, None), 11.0),
+    ]
+
+
+def test_matching_cycles_yield_two_deltas_and_the_whole_story_in_one_label() -> None:
+    result = assess_from_rows(
+        "basin:test", qpf_rows=_blend_rows_for_agreement(), products=_products(), now=NOW,
+        official_qpf_rows=[_wpc_row(1, 1.2), _wpc_row(2, 4.2), _wpc_row(3, 0.4)],
+    )
+    by = {d.feature: d for d in result.drivers}
+    d24 = by[forcing.AGREEMENT_24H_FEATURE]
+    d72 = by[forcing.AGREEMENT_72H_FEATURE]
+    assert d24.value == pytest.approx(-2.8)  # official Day-1 1.2 vs blend 24h p50 4.0
+    assert d72.value == pytest.approx(-6.2)  # official total 5.8 vs blend 72h p50 12.0
+    assert d24.direction == d72.direction == forcing.DIRECTION_CONTEXT, "context, never scored"
+    assert d24.prov == d72.prov
+    label = result.refs[d24.prov].label
+    assert "Day 1 (0-24 h)" in label and "-2.8 mm" in label and "0.3x the blend median" in label
+    assert "-2.3 mm against the deterministic member" in label  # 1.2 - 3.5
+    assert "inside the blend's pointwise p10-p90 (2.0-30.0 mm)" in label  # 5.8 in [2, 30]
+    assert forcing.POINTWISE_CAVEAT in label, "the caveat travels verbatim (design §obligations)"
+    assert "never averaged" in label
+    assert result.refs[d24.prov].source_kind.value == "DERIVED"
+    assert result.refs[d24.prov].method_id == "method:qpf-agreement@1.0.0"
+
+
+def test_offset_cycles_refuse_and_name_both_cycles_instead_of_comparing_stale_to_fresh() -> None:
+    older = CYCLE - timedelta(hours=12)
+    result = assess_from_rows(
+        "basin:test", qpf_rows=_blend_rows_for_agreement(), products=_products(), now=NOW,
+        official_qpf_rows=[_wpc_row(1, 9.0, cycle=older), _wpc_row(2, 9.0, cycle=older), _wpc_row(3, 9.0, cycle=older)],
+    )
+    by = {d.feature: d for d in result.drivers}
+    assert by[forcing.AGREEMENT_24H_FEATURE].value is None
+    assert by[forcing.AGREEMENT_72H_FEATURE].value is None
+    label = result.refs[by[forcing.AGREEMENT_24H_FEATURE].prov].label
+    assert "No comparison" in label
+    assert f"{older:%Y-%m-%d %H}Z" in label and f"{CYCLE:%Y-%m-%d %H}Z" in label
+
+
+def test_trace_amounts_carry_a_delta_but_never_a_ratio() -> None:
+    rows = _qpf_rows() + [_row(forcing.qpf_feature(24, 50), 0.4)]
+    result = assess_from_rows(
+        "basin:test", qpf_rows=rows, products=_products(), now=NOW,
+        official_qpf_rows=[_wpc_row(1, 1.2), _wpc_row(2, 4.2), _wpc_row(3, 0.4)],
+    )
+    by = {d.feature: d for d in result.drivers}
+    label = result.refs[by[forcing.AGREEMENT_24H_FEATURE].prov].label
+    day1 = label.split("72-h total")[0]
+    assert "+0.8 mm" in day1 and "x the blend median" not in day1, (
+        "a 3x about 0.4 mm reads as violent disagreement about nothing (design §2)"
+    )
+
+
+def test_only_the_two_declared_windows_are_ever_compared() -> None:
+    """The no-percentile-differencing pin: Day-2/Day-3 windows must not appear as agreement
+    features — the blend stores CUMULATIVE percentiles and percentiles do not subtract."""
+    result = assess_from_rows(
+        "basin:test", qpf_rows=_blend_rows_for_agreement(), products=_products(), now=NOW,
+        official_qpf_rows=[_wpc_row(1, 1.2), _wpc_row(2, 4.2), _wpc_row(3, 0.4)],
+    )
+    agreement_features = {d.feature for d in result.drivers if "vs_blend" in d.feature}
+    assert agreement_features == {forcing.AGREEMENT_24H_FEATURE, forcing.AGREEMENT_72H_FEATURE}
+
+
+def test_a_missing_blend_window_says_so_instead_of_skipping_quietly() -> None:
+    result = assess_from_rows(
+        "basin:test", qpf_rows=_qpf_rows(), products=_products(), now=NOW,  # no 24h p50 stored
+        official_qpf_rows=[_wpc_row(1, 1.2), _wpc_row(2, 4.2), _wpc_row(3, 0.4)],
+    )
+    by = {d.feature: d for d in result.drivers}
+    assert by[forcing.AGREEMENT_24H_FEATURE].value is None
+    assert by[forcing.AGREEMENT_72H_FEATURE].value == pytest.approx(-6.2), "the 72-h half still compares"
+    label = result.refs[by[forcing.AGREEMENT_24H_FEATURE].prov].label
+    assert "not stored for this cycle; no comparison" in label
