@@ -20,6 +20,26 @@ export interface BasemapProvider {
 
 export const OSM_ATTRIBUTION = '© OpenStreetMap contributors';
 
+/**
+ * The muted ground (design direction 2026-08-28): raw OSM's green parks, red highways and
+ * label clutter were the loudest visual language on screen — an engineering-GIS look, not
+ * Cascadia's world. These are Cesium ImageryLayer colour adjustments applied at the LAYER, so
+ * the tiles, attribution and usage policy are untouched: the same cartography, spoken quietly,
+ * under which cyan water and amber tension are the only saturated things.
+ */
+export const BASEMAP_SATURATION = 0.25;
+export const BASEMAP_BRIGHTNESS = 0.82;
+export const BASEMAP_CONTRAST = 1.05;
+export const BASEMAP_GAMMA = 1.08;
+
+function muted(layer: ImageryLayer): ImageryLayer {
+  layer.saturation = BASEMAP_SATURATION;
+  layer.brightness = BASEMAP_BRIGHTNESS;
+  layer.contrast = BASEMAP_CONTRAST;
+  layer.gamma = BASEMAP_GAMMA;
+  return layer;
+}
+
 export const osmKeyless: BasemapProvider = {
   id: 'osm-keyless',
   kind: 'natural_colour',
@@ -29,9 +49,9 @@ export const osmKeyless: BasemapProvider = {
   requiresKey: false,
   terrainLevel: 'ellipsoid',
   createImagery: () =>
-    new ImageryLayer(
+    muted(new ImageryLayer(
       new OpenStreetMapImageryProvider({ url: 'https://tile.openstreetmap.org/', maximumLevel: 18, credit: new Credit(OSM_ATTRIBUTION, true) }),
-    ),
+    )),
   createTerrain: () => new EllipsoidTerrainProvider(),
 };
 

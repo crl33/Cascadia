@@ -15,14 +15,14 @@
  * are tested there against the doctrine. This file only diffs entities and applies the result.
  */
 import {
+  Cartesian2,
   Cartesian3,
   Color,
   ColorMaterialProperty,
   CustomDataSource,
   Entity,
+  ImageMaterialProperty,
   PolygonHierarchy,
-  StripeMaterialProperty,
-  StripeOrientation,
   type Viewer,
 } from 'cesium';
 import type { ConfidenceLabel, GeoFeature, SurfaceLevel } from '../../contracts/schemas';
@@ -31,7 +31,7 @@ import type { Band } from '../../scene/bands';
 import type { LayerHit, LayerStatus, SceneHandle, SceneLayer, SelectionState } from '../contract';
 import { viewerOf } from '../cesium-handle';
 import { outerRings } from '../geojson';
-import { susceptibilityFill, type SusceptibilityFill } from './style';
+import { HATCH_SPACING_DEG, susceptibilityFill, type SusceptibilityFill } from './style';
 
 export interface BasinSusceptibility {
   state: SurfaceLevel;
@@ -46,11 +46,53 @@ export interface BasinSusceptibilityLayerData {
   surfaces: Record<string, BasinSusceptibility>;
 }
 
-interface FillRecord { basinId: string; entities: Entity[] }
+interface FillRecord {
+  basinId: string;
+  entities: Entity[];
+  /** lon/lat extent of the basin's rings, so hatch density normalises across basin sizes:
+   *  polygon texture space is per-polygon, and a fixed repeat drew broad bands on the Skagit
+   *  and fine ones on the Cedar. */
+  extentDeg: number;
+}
 
 const TAG_PREFIX = 'basin_susceptibility|';
+const HATCH_TILE_PX = 32;
+const HATCH_LINE_PX = 1.5;
 const hslToColor = (c: { h: number; s: number; l: number }, alpha: number) =>
   Color.fromHsl(c.h / 360, c.s / 100, c.l / 100, alpha);
+
+const cssRgba = (c: { h: number; s: number; l: number }, alpha: number) =>
+  `hsla(${c.h}, ${c.s}%, ${c.l}%, ${alpha})`;
+
+/**
+ * One seamless hatch tile: the restrained wash as the ground, one fine 45° line as the
+ * carrier (drawn thrice so the diagonal wraps cleanly). Cached — six basins share at most a
+ * handful of (tone, wash, hatch) combinations per restyle.
+ */
+const tileCache = new Map<string, HTMLCanvasElement>();
+function hatchTile(color: { h: number; s: number; l: number }, washAlpha: number, hatchAlpha: number): HTMLCanvasElement | null {
+  const key = `${color.h}|${color.s}|${color.l}|${washAlpha.toFixed(3)}|${hatchAlpha.toFixed(3)}`;
+  const cached = tileCache.get(key);
+  if (cached) return cached;
+  const canvas = document.createElement('canvas');
+  canvas.width = HATCH_TILE_PX;
+  canvas.height = HATCH_TILE_PX;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return null;
+  ctx.fillStyle = cssRgba(color, washAlpha);
+  ctx.fillRect(0, 0, HATCH_TILE_PX, HATCH_TILE_PX);
+  ctx.strokeStyle = cssRgba(color, hatchAlpha);
+  ctx.lineWidth = HATCH_LINE_PX;
+  ctx.lineCap = 'butt';
+  for (const offset of [-HATCH_TILE_PX, 0, HATCH_TILE_PX]) {
+    ctx.beginPath();
+    ctx.moveTo(offset - HATCH_LINE_PX, HATCH_TILE_PX + HATCH_LINE_PX);
+    ctx.lineTo(offset + HATCH_TILE_PX + HATCH_LINE_PX, -HATCH_LINE_PX);
+    ctx.stroke();
+  }
+  tileCache.set(key, canvas);
+  return canvas;
+}
 
 /** A basin with no surface at all is UNKNOWN, not absent — the doctrine's incomplete state. */
 const MISSING: BasinSusceptibility = {
@@ -131,7 +173,8 @@ export class BasinSusceptibilityLayer implements SceneLayer<BasinSusceptibilityL
     for (const [basinId, feature] of Object.entries(data.geometry)) {
       wanted.add(basinId);
       if (this.fills.has(basinId)) continue;
-      const entities = outerRings(feature).map((ring, index) =>
+      const rings = outerRings(feature);
+      const entities = rings.map((ring, index) =>
         this.source.entities.add({
           id: `${TAG_PREFIX}${basinId}|${index}`,
           polygon: {
@@ -142,7 +185,17 @@ export class BasinSusceptibilityLayer implements SceneLayer<BasinSusceptibilityL
           },
         }),
       );
-      this.fills.set(basinId, { basinId, entities });
+      let minLon = Infinity, maxLon = -Infinity, minLat = Infinity, maxLat = -Infinity;
+      for (const ring of rings) {
+        for (const [lon, lat] of ring) {
+          if (lon < minLon) minLon = lon;
+          if (lon > maxLon) maxLon = lon;
+          if (lat < minLat) minLat = lat;
+          if (lat > maxLat) maxLat = lat;
+        }
+      }
+      const extentDeg = Math.max(maxLon - minLon, maxLat - minLat, HATCH_SPACING_DEG);
+      this.fills.set(basinId, { basinId, entities, extentDeg });
     }
     for (const [basinId, record] of this.fills) {
       if (wanted.has(basinId)) continue;
@@ -177,12 +230,12 @@ export class BasinSusceptibilityLayer implements SceneLayer<BasinSusceptibilityL
         selected: record.basinId === this.selection.basinId,
         reason: surface.reason,
       });
-      record.entities.forEach((entity) => this.apply(entity, style));
+      record.entities.forEach((entity) => this.apply(entity, style, record.extentDeg));
     }
     this.viewer?.scene.requestRender();
   }
 
-  private apply(entity: Entity, style: SusceptibilityFill): void {
+  private apply(entity: Entity, style: SusceptibilityFill, extentDeg: number): void {
     const polygon = entity.polygon;
     if (!polygon) return;
     // `outlineOnly` is the UNKNOWN treatment: the basin is drawn as incomplete rather than filled,
@@ -190,15 +243,25 @@ export class BasinSusceptibilityLayer implements SceneLayer<BasinSusceptibilityL
     entity.show = style.show && this.visible && !style.outlineOnly;
     if (!entity.show) return;
     const base = hslToColor(style.color, style.alpha);
-    polygon.material = style.striped
-      // The stripe is the mandatory non-colour carrier (§7.2): it survives a greyscale screenshot,
-      // which is how an experimental wash stays distinguishable from an official category fill.
-      ? new StripeMaterialProperty({
-          evenColor: base,
-          oddColor: Color.TRANSPARENT,
-          repeat: 36,
-          orientation: StripeOrientation.VERTICAL,
-        })
-      : new ColorMaterialProperty(base);
+    if (!style.striped) {
+      polygon.material = new ColorMaterialProperty(base);
+      return;
+    }
+    // The hatch is the mandatory non-colour carrier (§7.2): it survives a greyscale screenshot,
+    // which is how an experimental wash stays distinguishable from an official category fill.
+    // It is a FINE texture over a restrained wash — the old repeat-36 vertical bands read as a
+    // debugging mask and were the loudest thing on screen (design direction 2026-08-28). The
+    // repeat normalises by basin extent, so the Skagit and the Cedar carry the same line spacing.
+    const tile = hatchTile(style.color, style.alpha, style.hatchAlpha);
+    if (tile === null) {
+      polygon.material = new ColorMaterialProperty(base); // no canvas (headless): wash only
+      return;
+    }
+    const repeat = Math.max(1, Math.round(extentDeg / HATCH_SPACING_DEG));
+    polygon.material = new ImageMaterialProperty({
+      image: tile,
+      repeat: new Cartesian2(repeat, repeat),
+      transparent: true,
+    });
   }
 }

@@ -41,15 +41,28 @@ export interface SusceptibilitySemantic {
 export interface SusceptibilityFill {
   show: boolean;
   color: Hsl;
+  /** The restrained transparent WASH under the carrier — deliberately faint: the index must
+   *  contextualise the geography, never obscure the towns, rivers and terrain it sits over. */
   alpha: number;
   /** The mandatory non-colour carrier (§7.2). On for every experimental fill. */
   striped: boolean;
+  /** The carrier's own opacity: a fine hatch slightly stronger than the wash, so a greyscale
+   *  screenshot still separates experimental from official — without the carrier becoming the
+   *  loudest thing on screen (design direction 2026-08-28: the old broad vertical bands read
+   *  as a debugging mask). */
+  hatchAlpha: number;
   /** Outline-only, no saturated fill — the UNKNOWN treatment. */
   outlineOnly: boolean;
   /** Printed on the label. Never null while `experimental` is true. */
   badge: 'EXPERIMENTAL' | null;
   labelText: string;
 }
+
+/** One hatch line about every this-many degrees of basin extent (~3 km here): fine enough to
+ *  read as texture rather than banding on every seed basin, from the Cedar to the Skagit. */
+export const HATCH_SPACING_DEG = 0.04;
+/** The carrier's opacity — above every wash alpha (the greyscale separation lives here). */
+export const HATCH_ALPHA = 0.30;
 
 /**
  * Level → tone. Cyan for nominal, amber as tension rises, and nothing beyond amber.
@@ -76,12 +89,13 @@ const LEVEL_WORD: Record<SurfaceLevel, string> = {
   unknown: 'unknown',
 };
 
-/** Lower confidence reads fainter — it never changes the tone, which would restate the level. */
+/** Lower confidence reads fainter — it never changes the tone, which would restate the level.
+ *  Halved 2026-08-28: the wash is context under a fine hatch now, not the statement itself. */
 const CONFIDENCE_ALPHA: Record<ConfidenceLabel, number> = {
-  high: 0.30,
-  moderate: 0.24,
-  low: 0.18,
-  unknown: 0.14,
+  high: 0.15,
+  moderate: 0.12,
+  low: 0.09,
+  unknown: 0.07,
 };
 
 export function susceptibilityFill(s: SusceptibilitySemantic): SusceptibilityFill {
@@ -98,6 +112,7 @@ export function susceptibilityFill(s: SusceptibilitySemantic): SusceptibilityFil
       color: COLOR.neutralUnknown,
       alpha: 0,           // no saturation: an unknown basin must not look like a calm one
       striped: false,
+      hatchAlpha: 0,
       outlineOnly: true,  // incomplete-looking, per the unknown register
       badge,
       labelText: `Susceptibility unknown${s.reason ? ` — ${s.reason}` : ''}${suffix}`,
@@ -108,8 +123,9 @@ export function susceptibilityFill(s: SusceptibilitySemantic): SusceptibilityFil
   return {
     show: overview,
     color: LEVEL_TONE[s.state],
-    alpha: Math.min(alpha, 0.40),
+    alpha: Math.min(alpha, 0.20),
     striped: s.experimental,
+    hatchAlpha: s.experimental ? HATCH_ALPHA : 0,
     outlineOnly: false,
     badge,
     labelText: `Susceptibility ${LEVEL_WORD[s.state]} · confidence ${s.confidence}${suffix}`,

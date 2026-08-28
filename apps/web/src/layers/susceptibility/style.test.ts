@@ -128,3 +128,20 @@ describe('susceptibility fill', () => {
     }
   });
 });
+
+describe('the restrained treatment (design direction 2026-08-28)', () => {
+  it('keeps the carrier stronger than the wash — greyscale separation lives in the hatch now', () => {
+    for (const state of ['low', 'moderate', 'high', 'very_high'] as const) {
+      for (const confidence of ['high', 'moderate', 'low', 'unknown'] as const) {
+        const fill = susceptibilityFill(base({ state, confidence }));
+        expect(fill.hatchAlpha).toBeGreaterThan(fill.alpha);
+        expect(fill.alpha).toBeLessThanOrEqual(0.20 * 1.25); // context, never a mask
+      }
+    }
+  });
+  it('gives UNKNOWN no hatch either — outline-only stays the whole treatment', () => {
+    const fill = susceptibilityFill(base({ state: 'unknown' }));
+    expect(fill.hatchAlpha).toBe(0);
+    expect(fill.outlineOnly).toBe(true);
+  });
+});
