@@ -121,6 +121,36 @@ catalogue).
   refusal, printed verbatim). Gotcha recorded: the Pages bundle deploys a minute behind the
   Railway API — a just-deployed feature can 404/no-op in the browser briefly.
 
+## Adversarial review and remediation (post-checkpoint, same session)
+
+A 27-agent adversarial workflow (find x4 module groups → refute-verify per finding) reviewed
+every semantic module this session landed. ~20 findings CONFIRMED, several by concrete
+reproduction against real PostgreSQL. All remediated in three batches (commits `c28acc9`,
+`3ecb48a`, `8456307`+`b232295`), each fix pinned by a test. Highlights:
+
+- antecedent read-window truncation after archive lag ("missing" said of stored hours);
+- active_alerts unbounded per-envelope history + never-expiring CAP rows (now: SQL time
+  slice, 48 h cap on endless messages, references scanned thin across ALL history so a
+  short-lived Cancel keeps suppressing its long-lived target — query budget 16→17, deliberate);
+- SSE zombie streams after queue-full drops; quiet-poll cache-defeating invalidations
+  (valid-until anchors keep valid_time content-pure);
+- WPC late-published cycles permanently skipped (reproduced end-to-end; the loop now visits
+  every candidate) and half-published cycles crashing the job (now NOT-READY/retry);
+- SNODAS non-UTC `now` wedging PostgreSQL on the identity constraint (reproduced); partial
+  days now complete row-by-row; masks per each field's own grid hash; corrupt negatives named;
+- NWRFC last-child-wins parsing fabricating readings (QR's element is `<discharge>` — the
+  captures' own word; unexpected siblings refuse);
+- Hydrograph band clipping (both sides, counted), truthful band-absence sentences, surfaced
+  fetch errors, event-crest = maximum; ReservoirsSection error state; dead kind-map prefixes.
+
+Also landed post-checkpoint: **QPF agreement live** (deltas + placement in production, every
+design-note rule mutation-killed), **ADR-0018** (knowable_at hindcast clock), **ADR-0019 +
+migration 0006 + ingest_writer LIVE** (the worker runs append-only in production; partition
+DDL through the one SECURITY DEFINER door; proven by refused UPDATE/DELETE and a
+writer-created partition owned by the migrator; role census: api_reader + ingest_writer
+serving, owner idle). VIIRS S9 recorded as externally blocked (Earthdata credentials are an
+owner action).
+
 ## Dependency-ordered continuation
 
 (The stub fixture was refreshed as part of this checkpoint: the committed capture is 1.4.0
