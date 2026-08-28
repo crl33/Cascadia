@@ -60,6 +60,24 @@ What exists without ion:
   gateway's in-code default with `TERRAIN_ORIGIN` as override ('off' disables) — the same
   standing as the OSM tile URL in the client.
 
+## Deployment addendum (2026-08-28, later)
+
+Two build-tool truths the first publish surfaced, both now encoded in the pyramid:
+
+- **ctb stops ascending once the dataset fits one tile** (z6 here) and its own `-l` metadata
+  then OVERCLAIMS availability — Cesium 404'd the z0 roots first, then the under-built
+  z4-z7 rows. The pyramid now carries a zero-height world underlay (z0-5, the window's real
+  heights downsampled onto it) plus padded-canvas completions (z1-7 over the region), and
+  `layer.json.available` is REBUILT FROM DISK (per-row rectangles of files that exist) —
+  never from ctb's claim. Ancestry is verified complete z0→z12 over the window.
+- **Serving state**: 8,789 objects / ~57 MB; the deployed provider streams with zero tile
+  errors and the Cloudflare edge negotiates the gzip transparently (a client without
+  Accept-Encoding receives decoded mesh, verified by header decode).
+
+The "crest in relief" exit shot awaits the oblique-camera work: the current basin-band pitch
+is near-nadir by design, which shows terrain as edge-of-frame parallax rather than skyline.
+That is a camera decision on the cinematic trajectory, not a terrain defect.
+
 ## Exit test (gates Accepted)
 
 - Measured pyramid size on disk and in R2 (estimate: single-digit GB at z12 for 3°x4°; if the

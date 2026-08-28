@@ -179,3 +179,54 @@ with 98 refs, SNODAS/WPC/agreement drivers aboard, and the full e2e suite re-pin
 4. **ingest_writer ADR** (partition DDL ownership); then the role.
 5. Opportunistic: hydrology mypy burn-down; C3b MRMS raster tiles; SSE client reconnect UX.
 
+
+## Post-checkpoint arcs (2026-08-28, evening session) — the visible day
+
+Everything below is LANDED + DEPLOYED + PRODUCTION-VERIFIED unless marked. HEAD at this
+amendment: see `git log`; contract **1.5.0**; migrations at **0007**; health `ok` 17/17 at
+last check (21:1xZ).
+
+**Production defects found and closed (each with the test it lacked):**
+- `_routes.json` include-list lacked `/geo/*` — the SPA's index.html answered `/geo/rivers`
+  with a 200 while the origin served 181 KB; rivers were silently absent. The gateway's
+  proxy branch now has its own vitest (`apps/web/src/gateway.test.ts`).
+- The gateway's security-header stamp rewrote `text/event-stream` to `application/json`;
+  EventSource aborted and live invalidation was dead in production. Upstream Content-Type now
+  survives the stamp (test-pinned); verified live.
+- SNODAS staleness: NSIDC published late, one daily cron slot = 24 h exposure. Cron now
+  `40 13,17 * * *`; `scripts/defer_job.py` is the manual-defer path as tooling (job 915
+  healed production same-day).
+- The orphaned-`doing` wedge: a deploy killed a worker mid-`usgs.fetch_instantaneous`; the
+  `lock=name` orphan wedged the task ~80 min. `scripts/requeue_stalled_jobs.py` (procrastinate's
+  own recovery API; fails the orphan out when a queued duplicate holds the queueing lock).
+
+**Rivers respond** (`flow_visual_intensity` derived at last): station DOY percentile / 100,
+same row/rounding/staleness as the susceptibility surface; batched into existing prefetch
+statements (budgets hold 17); name-joined to the OSM network client-side; width+alpha only.
+5 of 6 outlets are their basin's gauge — Green read p60, Snoqualmie p8 live; the Skagit stays
+honestly cartographic (its gauge is deliberately the Sauk).
+
+**C3b/C3c fields (ADR-0020, migration 0007, contract 1.5.0):** `field_raster` window rasters
+cut at ingest from planes the jobs already decode (`cascade_geo.window_raster`, shared MRMS +
+SNODAS; SNODAS 32767 saturation packed as sentinel); `GET /viz/fields/{precip_observed,
+snow_cover}` with per-layer freshness bounds (6 h / 36 h), reasoned 404s; retention DELETE is
+the writer's one non-queue DELETE (roles.sql, granted live). Web: WeatherFieldLayer washes
+(dry transparent, unknown transparent, saturating ramps; rain blue-teal OBSERVED, snow
+white-blue MODELED), FieldLegend with ProvenancePopovers, scrub-refetches-the-field e2e pin.
+Both fields verified live through the gateway (rain 19-20Z hours; snow 06Z same-day via defer
+job 951).
+
+**Terrain (ADR-0021, executed):** 3DEP 1" -> ctb quantized-mesh; z13/14 dropped as
+past-fidelity (~800 MB), world underlay + padded completions for ancestry, availability
+rebuilt from disk; 8,789 objects / 57 MB in the new `cascadia-terrain` R2 bucket behind its
+managed public domain; gateway proxies `/terrain/*` same-origin (tiles immutable + stated
+`Content-Encoding: gzip` — R2 drops stored encodings; layer.json max-age 300);
+`scripts/publish_terrain.py` is the whole pipeline. Deployed provider streams with zero tile
+errors; the crest showcase awaits the oblique-camera work (camera decision, not a terrain
+defect). Status: Proposed with executed measurements; Accepted gates on that showcase.
+
+**Continuation (dependency order):** oblique-camera pitch at basin/river bands (makes terrain
+AND the flights read; churns e2e baselines deliberately) -> C3c's second half (snow-level over
+hypsometry on the map) -> C4 forecast fields (WPC QPF rasters ride the same machinery; needs
+the timeline-future design) -> P6 hindcast harness (ADR-0018) -> VIIRS SCA (owner Earthdata
+credentials) -> hydrology mypy burn-down (67).
