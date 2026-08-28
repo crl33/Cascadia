@@ -3,7 +3,7 @@ name = "cascade-worker"
 version = "0.1.0"
 description = "Cascadia Papsukkal — the only writing process: seed, scheduled provider jobs, job-run health."
 requires-python = ">=3.12"
-dependencies = ["cascade-core", "cascade-providers-usgs", "cascade-providers-nwps", "cascade-providers-nbm", "cascade-providers-awdb", "cascade-providers-mrms", "cascade-providers-wpc", "cascade-providers-snodas", "sqlalchemy>=2.0", "httpx>=0.27", "procrastinate>=3.9"]
+dependencies = ["cascade-core", "cascade-providers-usgs", "cascade-providers-nwps", "cascade-providers-nbm", "cascade-providers-awdb", "cascade-providers-mrms", "cascade-providers-wpc", "cascade-providers-snodas", "cascade-providers-nwrfc", "sqlalchemy>=2.0", "httpx>=0.27", "procrastinate>=3.9"]
 
 [project.optional-dependencies]
 # GRIB2 decoding for the NBM forcing jobs (p3-surfaces-design §1.3). Worker-only and

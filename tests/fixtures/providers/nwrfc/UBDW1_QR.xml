@@ -1,0 +1,199 @@
+<?xml version="1.0" ?>
+<HydroMetData 
+xmlns="/xml/schemas/2004/03/hydromet_data">
+<SiteData id="UBDW1">
+<description>BAKER - UPPER BAKER LAKE</description>
+<county>WHATCOM</county>
+<state>WASHINGTON</state>
+<elevation units="feet">393</elevation>
+<latitude units="decimal degrees">48.648889</latitude>
+<longitude units="decimal degrees">121.690833</longitude>
+<forecastData>
+<forecastValue petype="QR" durCode="0" tsCode="FZ" extremumCode="Z">
+<creationDateTime>2026-08-27T15:51:00Z</creationDateTime>
+<dataDateTime>2026-08-28T12:00:00Z</dataDateTime>
+<discharge units="cubic feet per second">706.46</discharge>
+</forecastValue>
+<forecastValue petype="QR" durCode="0" tsCode="FZ" extremumCode="Z">
+<creationDateTime>2026-08-27T15:51:00Z</creationDateTime>
+<dataDateTime>2026-08-28T18:00:00Z</dataDateTime>
+<discharge units="cubic feet per second">691.30</discharge>
+</forecastValue>
+<forecastValue petype="QR" durCode="0" tsCode="FZ" extremumCode="Z">
+<creationDateTime>2026-08-27T15:51:00Z</creationDateTime>
+<dataDateTime>2026-08-29T00:00:00Z</dataDateTime>
+<discharge units="cubic feet per second">628.70</discharge>
+</forecastValue>
+<forecastValue petype="QR" durCode="0" tsCode="FZ" extremumCode="Z">
+<creationDateTime>2026-08-27T15:51:00Z</creationDateTime>
+<dataDateTime>2026-08-29T06:00:00Z</dataDateTime>
+<discharge units="cubic feet per second">597.87</discharge>
+</forecastValue>
+<forecastValue petype="QR" durCode="0" tsCode="FZ" extremumCode="Z">
+<creationDateTime>2026-08-27T15:51:00Z</creationDateTime>
+<dataDateTime>2026-08-29T12:00:00Z</dataDateTime>
+<discharge units="cubic feet per second">643.03</discharge>
+</forecastValue>
+<forecastValue petype="QR" durCode="0" tsCode="FZ" extremumCode="Z">
+<creationDateTime>2026-08-27T15:51:00Z</creationDateTime>
+<dataDateTime>2026-08-29T18:00:00Z</dataDateTime>
+<discharge units="cubic feet per second">783.10</discharge>
+</forecastValue>
+<forecastValue petype="QR" durCode="0" tsCode="FZ" extremumCode="Z">
+<creationDateTime>2026-08-27T15:51:00Z</creationDateTime>
+<dataDateTime>2026-08-30T00:00:00Z</dataDateTime>
+<discharge units="cubic feet per second">941.18</discharge>
+</forecastValue>
+<forecastValue petype="QR" durCode="0" tsCode="FZ" extremumCode="Z">
+<creationDateTime>2026-08-27T15:51:00Z</creationDateTime>
+<dataDateTime>2026-08-30T06:00:00Z</dataDateTime>
+<discharge units="cubic feet per second">942.96</discharge>
+</forecastValue>
+<forecastValue petype="QR" durCode="0" tsCode="FZ" extremumCode="Z">
+<creationDateTime>2026-08-27T15:51:00Z</creationDateTime>
+<dataDateTime>2026-08-30T12:00:00Z</dataDateTime>
+<discharge units="cubic feet per second">838.45</discharge>
+</forecastValue>
+<forecastValue petype="QR" durCode="0" tsCode="FZ" extremumCode="Z">
+<creationDateTime>2026-08-27T15:51:00Z</creationDateTime>
+<dataDateTime>2026-08-30T18:00:00Z</dataDateTime>
+<discharge units="cubic feet per second">684.83</discharge>
+</forecastValue>
+<forecastValue petype="QR" durCode="0" tsCode="FZ" extremumCode="Z">
+<creationDateTime>2026-08-27T15:51:00Z</creationDateTime>
+<dataDateTime>2026-08-31T00:00:00Z</dataDateTime>
+<discharge units="cubic feet per second">581.33</discharge>
+</forecastValue>
+<forecastValue petype="QR" durCode="0" tsCode="FZ" extremumCode="Z">
+<creationDateTime>2026-08-27T15:51:00Z</creationDateTime>
+<dataDateTime>2026-08-31T06:00:00Z</dataDateTime>
+<discharge units="cubic feet per second">560.81</discharge>
+</forecastValue>
+<forecastValue petype="QR" durCode="0" tsCode="FZ" extremumCode="Z">
+<creationDateTime>2026-08-27T15:51:00Z</creationDateTime>
+<dataDateTime>2026-08-31T12:00:00Z</dataDateTime>
+<discharge units="cubic feet per second">557.57</discharge>
+</forecastValue>
+<forecastValue petype="QR" durCode="0" tsCode="FZ" extremumCode="Z">
+<creationDateTime>2026-08-27T15:51:00Z</creationDateTime>
+<dataDateTime>2026-08-31T18:00:00Z</dataDateTime>
+<discharge units="cubic feet per second">556.37</discharge>
+</forecastValue>
+<forecastValue petype="QR" durCode="0" tsCode="FZ" extremumCode="Z">
+<creationDateTime>2026-08-27T15:51:00Z</creationDateTime>
+<dataDateTime>2026-09-01T00:00:00Z</dataDateTime>
+<discharge units="cubic feet per second">562.26</discharge>
+</forecastValue>
+<forecastValue petype="QR" durCode="0" tsCode="FZ" extremumCode="Z">
+<creationDateTime>2026-08-27T15:51:00Z</creationDateTime>
+<dataDateTime>2026-09-01T06:00:00Z</dataDateTime>
+<discharge units="cubic feet per second">583.32</discharge>
+</forecastValue>
+<forecastValue petype="QR" durCode="0" tsCode="FZ" extremumCode="Z">
+<creationDateTime>2026-08-27T15:51:00Z</creationDateTime>
+<dataDateTime>2026-09-01T12:00:00Z</dataDateTime>
+<discharge units="cubic feet per second">627.80</discharge>
+</forecastValue>
+<forecastValue petype="QR" durCode="0" tsCode="FZ" extremumCode="Z">
+<creationDateTime>2026-08-27T15:51:00Z</creationDateTime>
+<dataDateTime>2026-09-01T18:00:00Z</dataDateTime>
+<discharge units="cubic feet per second">726.69</discharge>
+</forecastValue>
+<forecastValue petype="QR" durCode="0" tsCode="FZ" extremumCode="Z">
+<creationDateTime>2026-08-27T15:51:00Z</creationDateTime>
+<dataDateTime>2026-09-02T00:00:00Z</dataDateTime>
+<discharge units="cubic feet per second">825.78</discharge>
+</forecastValue>
+<forecastValue petype="QR" durCode="0" tsCode="FZ" extremumCode="Z">
+<creationDateTime>2026-08-27T15:51:00Z</creationDateTime>
+<dataDateTime>2026-09-02T06:00:00Z</dataDateTime>
+<discharge units="cubic feet per second">979.21</discharge>
+</forecastValue>
+<forecastValue petype="QR" durCode="0" tsCode="FZ" extremumCode="Z">
+<creationDateTime>2026-08-27T15:51:00Z</creationDateTime>
+<dataDateTime>2026-09-02T12:00:00Z</dataDateTime>
+<discharge units="cubic feet per second">1207.06</discharge>
+</forecastValue>
+<forecastValue petype="QR" durCode="0" tsCode="FZ" extremumCode="Z">
+<creationDateTime>2026-08-27T15:51:00Z</creationDateTime>
+<dataDateTime>2026-09-02T18:00:00Z</dataDateTime>
+<discharge units="cubic feet per second">1388.62</discharge>
+</forecastValue>
+<forecastValue petype="QR" durCode="0" tsCode="FZ" extremumCode="Z">
+<creationDateTime>2026-08-27T15:51:00Z</creationDateTime>
+<dataDateTime>2026-09-03T00:00:00Z</dataDateTime>
+<discharge units="cubic feet per second">1544.86</discharge>
+</forecastValue>
+<forecastValue petype="QR" durCode="0" tsCode="FZ" extremumCode="Z">
+<creationDateTime>2026-08-27T15:51:00Z</creationDateTime>
+<dataDateTime>2026-09-03T06:00:00Z</dataDateTime>
+<discharge units="cubic feet per second">1755.72</discharge>
+</forecastValue>
+<forecastValue petype="QR" durCode="0" tsCode="FZ" extremumCode="Z">
+<creationDateTime>2026-08-27T15:51:00Z</creationDateTime>
+<dataDateTime>2026-09-03T12:00:00Z</dataDateTime>
+<discharge units="cubic feet per second">1931.36</discharge>
+</forecastValue>
+<forecastValue petype="QR" durCode="0" tsCode="FZ" extremumCode="Z">
+<creationDateTime>2026-08-27T15:51:00Z</creationDateTime>
+<dataDateTime>2026-09-03T18:00:00Z</dataDateTime>
+<discharge units="cubic feet per second">1970.98</discharge>
+</forecastValue>
+<forecastValue petype="QR" durCode="0" tsCode="FZ" extremumCode="Z">
+<creationDateTime>2026-08-27T15:51:00Z</creationDateTime>
+<dataDateTime>2026-09-04T00:00:00Z</dataDateTime>
+<discharge units="cubic feet per second">1977.80</discharge>
+</forecastValue>
+<forecastValue petype="QR" durCode="0" tsCode="FZ" extremumCode="Z">
+<creationDateTime>2026-08-27T15:51:00Z</creationDateTime>
+<dataDateTime>2026-09-04T06:00:00Z</dataDateTime>
+<discharge units="cubic feet per second">1894.95</discharge>
+</forecastValue>
+<forecastValue petype="QR" durCode="0" tsCode="FZ" extremumCode="Z">
+<creationDateTime>2026-08-27T15:51:00Z</creationDateTime>
+<dataDateTime>2026-09-04T12:00:00Z</dataDateTime>
+<discharge units="cubic feet per second">1686.89</discharge>
+</forecastValue>
+<forecastValue petype="QR" durCode="0" tsCode="FZ" extremumCode="Z">
+<creationDateTime>2026-08-27T15:51:00Z</creationDateTime>
+<dataDateTime>2026-09-04T18:00:00Z</dataDateTime>
+<discharge units="cubic feet per second">1392.09</discharge>
+</forecastValue>
+<forecastValue petype="QR" durCode="0" tsCode="FZ" extremumCode="Z">
+<creationDateTime>2026-08-27T15:51:00Z</creationDateTime>
+<dataDateTime>2026-09-05T00:00:00Z</dataDateTime>
+<discharge units="cubic feet per second">1182.85</discharge>
+</forecastValue>
+<forecastValue petype="QR" durCode="0" tsCode="FZ" extremumCode="Z">
+<creationDateTime>2026-08-27T15:51:00Z</creationDateTime>
+<dataDateTime>2026-09-05T06:00:00Z</dataDateTime>
+<discharge units="cubic feet per second">1307.47</discharge>
+</forecastValue>
+<forecastValue petype="QR" durCode="0" tsCode="FZ" extremumCode="Z">
+<creationDateTime>2026-08-27T15:51:00Z</creationDateTime>
+<dataDateTime>2026-09-05T12:00:00Z</dataDateTime>
+<discharge units="cubic feet per second">1431.76</discharge>
+</forecastValue>
+<forecastValue petype="QR" durCode="0" tsCode="FZ" extremumCode="Z">
+<creationDateTime>2026-08-27T15:51:00Z</creationDateTime>
+<dataDateTime>2026-09-05T18:00:00Z</dataDateTime>
+<discharge units="cubic feet per second">1291.42</discharge>
+</forecastValue>
+<forecastValue petype="QR" durCode="0" tsCode="FZ" extremumCode="Z">
+<creationDateTime>2026-08-27T15:51:00Z</creationDateTime>
+<dataDateTime>2026-09-06T00:00:00Z</dataDateTime>
+<discharge units="cubic feet per second">1005.79</discharge>
+</forecastValue>
+<forecastValue petype="QR" durCode="0" tsCode="FZ" extremumCode="Z">
+<creationDateTime>2026-08-27T15:51:00Z</creationDateTime>
+<dataDateTime>2026-09-06T06:00:00Z</dataDateTime>
+<discharge units="cubic feet per second">834.99</discharge>
+</forecastValue>
+<forecastValue petype="QR" durCode="0" tsCode="FZ" extremumCode="Z">
+<creationDateTime>2026-08-27T15:51:00Z</creationDateTime>
+<dataDateTime>2026-09-06T12:00:00Z</dataDateTime>
+<discharge units="cubic feet per second">805.14</discharge>
+</forecastValue>
+</forecastData>
+</SiteData>
+</HydroMetData>

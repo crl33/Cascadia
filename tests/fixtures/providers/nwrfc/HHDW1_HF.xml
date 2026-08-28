@@ -1,0 +1,393 @@
+<?xml version="1.0" ?>
+<HydroMetData 
+xmlns="/xml/schemas/2004/03/hydromet_data">
+<SiteData id="HHDW1">
+<description>GREEN - HOWARD HANSON DAM</description>
+<county>KING</county>
+<state>WASHINGTON</state>
+<elevation units="feet">1206</elevation>
+<latitude units="decimal degrees">47.277872</latitude>
+<longitude units="decimal degrees">121.787114</longitude>
+<observedData>
+<observedValue petype="HF" durCode="0" tsCode="RZ" extremumCode="Z">
+<dataDateTime>2026-08-26T09:00:00Z</dataDateTime>
+<forebay_elevation units="feet">1155.03</forebay_elevation>
+</observedValue>
+<observedValue petype="HF" durCode="0" tsCode="RZ" extremumCode="Z">
+<dataDateTime>2026-08-26T10:00:00Z</dataDateTime>
+<forebay_elevation units="feet">1155.01</forebay_elevation>
+</observedValue>
+<observedValue petype="HF" durCode="0" tsCode="RZ" extremumCode="Z">
+<dataDateTime>2026-08-26T11:00:00Z</dataDateTime>
+<forebay_elevation units="feet">1154.99</forebay_elevation>
+</observedValue>
+<observedValue petype="HF" durCode="0" tsCode="RZ" extremumCode="Z">
+<dataDateTime>2026-08-26T12:00:00Z</dataDateTime>
+<forebay_elevation units="feet">1154.98</forebay_elevation>
+</observedValue>
+<observedValue petype="HF" durCode="0" tsCode="RZ" extremumCode="Z">
+<dataDateTime>2026-08-26T13:00:00Z</dataDateTime>
+<forebay_elevation units="feet">1154.96</forebay_elevation>
+</observedValue>
+<observedValue petype="HF" durCode="0" tsCode="RZ" extremumCode="Z">
+<dataDateTime>2026-08-26T14:00:00Z</dataDateTime>
+<forebay_elevation units="feet">1154.94</forebay_elevation>
+</observedValue>
+<observedValue petype="HF" durCode="0" tsCode="RZ" extremumCode="Z">
+<dataDateTime>2026-08-26T15:00:00Z</dataDateTime>
+<forebay_elevation units="feet">1154.92</forebay_elevation>
+</observedValue>
+<observedValue petype="HF" durCode="0" tsCode="RZ" extremumCode="Z">
+<dataDateTime>2026-08-26T16:00:00Z</dataDateTime>
+<forebay_elevation units="feet">1154.92</forebay_elevation>
+</observedValue>
+<observedValue petype="HF" durCode="0" tsCode="RZ" extremumCode="Z">
+<dataDateTime>2026-08-26T17:00:00Z</dataDateTime>
+<forebay_elevation units="feet">1154.90</forebay_elevation>
+</observedValue>
+<observedValue petype="HF" durCode="0" tsCode="RZ" extremumCode="Z">
+<dataDateTime>2026-08-26T18:00:00Z</dataDateTime>
+<forebay_elevation units="feet">1154.88</forebay_elevation>
+</observedValue>
+<observedValue petype="HF" durCode="0" tsCode="RZ" extremumCode="Z">
+<dataDateTime>2026-08-26T19:00:00Z</dataDateTime>
+<forebay_elevation units="feet">1154.87</forebay_elevation>
+</observedValue>
+<observedValue petype="HF" durCode="0" tsCode="RZ" extremumCode="Z">
+<dataDateTime>2026-08-26T20:00:00Z</dataDateTime>
+<forebay_elevation units="feet">1154.85</forebay_elevation>
+</observedValue>
+<observedValue petype="HF" durCode="0" tsCode="RZ" extremumCode="Z">
+<dataDateTime>2026-08-26T21:00:00Z</dataDateTime>
+<forebay_elevation units="feet">1154.85</forebay_elevation>
+</observedValue>
+<observedValue petype="HF" durCode="0" tsCode="RZ" extremumCode="Z">
+<dataDateTime>2026-08-26T22:00:00Z</dataDateTime>
+<forebay_elevation units="feet">1154.83</forebay_elevation>
+</observedValue>
+<observedValue petype="HF" durCode="0" tsCode="RZ" extremumCode="Z">
+<dataDateTime>2026-08-26T23:00:00Z</dataDateTime>
+<forebay_elevation units="feet">1154.83</forebay_elevation>
+</observedValue>
+<observedValue petype="HF" durCode="0" tsCode="RZ" extremumCode="Z">
+<dataDateTime>2026-08-27T00:00:00Z</dataDateTime>
+<forebay_elevation units="feet">1154.83</forebay_elevation>
+</observedValue>
+<observedValue petype="HF" durCode="0" tsCode="RZ" extremumCode="Z">
+<dataDateTime>2026-08-27T01:00:00Z</dataDateTime>
+<forebay_elevation units="feet">1154.81</forebay_elevation>
+</observedValue>
+<observedValue petype="HF" durCode="0" tsCode="RZ" extremumCode="Z">
+<dataDateTime>2026-08-27T02:00:00Z</dataDateTime>
+<forebay_elevation units="feet">1154.80</forebay_elevation>
+</observedValue>
+<observedValue petype="HF" durCode="0" tsCode="RZ" extremumCode="Z">
+<dataDateTime>2026-08-27T03:00:00Z</dataDateTime>
+<forebay_elevation units="feet">1154.78</forebay_elevation>
+</observedValue>
+<observedValue petype="HF" durCode="0" tsCode="RZ" extremumCode="Z">
+<dataDateTime>2026-08-27T04:00:00Z</dataDateTime>
+<forebay_elevation units="feet">1154.75</forebay_elevation>
+</observedValue>
+<observedValue petype="HF" durCode="0" tsCode="RZ" extremumCode="Z">
+<dataDateTime>2026-08-27T05:00:00Z</dataDateTime>
+<forebay_elevation units="feet">1154.73</forebay_elevation>
+</observedValue>
+<observedValue petype="HF" durCode="0" tsCode="RZ" extremumCode="Z">
+<dataDateTime>2026-08-27T06:00:00Z</dataDateTime>
+<forebay_elevation units="feet">1154.72</forebay_elevation>
+</observedValue>
+<observedValue petype="HF" durCode="0" tsCode="RZ" extremumCode="Z">
+<dataDateTime>2026-08-27T07:00:00Z</dataDateTime>
+<forebay_elevation units="feet">1154.70</forebay_elevation>
+</observedValue>
+<observedValue petype="HF" durCode="0" tsCode="RZ" extremumCode="Z">
+<dataDateTime>2026-08-27T08:00:00Z</dataDateTime>
+<forebay_elevation units="feet">1154.68</forebay_elevation>
+</observedValue>
+<observedValue petype="HF" durCode="0" tsCode="RZ" extremumCode="Z">
+<dataDateTime>2026-08-27T09:00:00Z</dataDateTime>
+<forebay_elevation units="feet">1154.69</forebay_elevation>
+</observedValue>
+<observedValue petype="HF" durCode="0" tsCode="RZ" extremumCode="Z">
+<dataDateTime>2026-08-27T10:00:00Z</dataDateTime>
+<forebay_elevation units="feet">1154.65</forebay_elevation>
+</observedValue>
+<observedValue petype="HF" durCode="0" tsCode="RZ" extremumCode="Z">
+<dataDateTime>2026-08-27T11:00:00Z</dataDateTime>
+<forebay_elevation units="feet">1154.64</forebay_elevation>
+</observedValue>
+<observedValue petype="HF" durCode="0" tsCode="RZ" extremumCode="Z">
+<dataDateTime>2026-08-27T12:00:00Z</dataDateTime>
+<forebay_elevation units="feet">1154.63</forebay_elevation>
+</observedValue>
+<observedValue petype="HF" durCode="0" tsCode="RZ" extremumCode="Z">
+<dataDateTime>2026-08-27T13:00:00Z</dataDateTime>
+<forebay_elevation units="feet">1154.60</forebay_elevation>
+</observedValue>
+<observedValue petype="HF" durCode="0" tsCode="RZ" extremumCode="Z">
+<dataDateTime>2026-08-27T14:00:00Z</dataDateTime>
+<forebay_elevation units="feet">1154.60</forebay_elevation>
+</observedValue>
+<observedValue petype="HF" durCode="0" tsCode="RZ" extremumCode="Z">
+<dataDateTime>2026-08-27T15:00:00Z</dataDateTime>
+<forebay_elevation units="feet">1154.59</forebay_elevation>
+</observedValue>
+<observedValue petype="HF" durCode="0" tsCode="RZ" extremumCode="Z">
+<dataDateTime>2026-08-27T16:00:00Z</dataDateTime>
+<forebay_elevation units="feet">1154.55</forebay_elevation>
+</observedValue>
+<observedValue petype="HF" durCode="0" tsCode="RZ" extremumCode="Z">
+<dataDateTime>2026-08-27T17:00:00Z</dataDateTime>
+<forebay_elevation units="feet">1154.56</forebay_elevation>
+</observedValue>
+<observedValue petype="HF" durCode="0" tsCode="RZ" extremumCode="Z">
+<dataDateTime>2026-08-27T18:00:00Z</dataDateTime>
+<forebay_elevation units="feet">1154.52</forebay_elevation>
+</observedValue>
+<observedValue petype="HF" durCode="0" tsCode="RZ" extremumCode="Z">
+<dataDateTime>2026-08-27T19:00:00Z</dataDateTime>
+<forebay_elevation units="feet">1154.51</forebay_elevation>
+</observedValue>
+<observedValue petype="HF" durCode="0" tsCode="RZ" extremumCode="Z">
+<dataDateTime>2026-08-27T20:00:00Z</dataDateTime>
+<forebay_elevation units="feet">1154.50</forebay_elevation>
+</observedValue>
+<observedValue petype="HF" durCode="0" tsCode="RZ" extremumCode="Z">
+<dataDateTime>2026-08-27T21:00:00Z</dataDateTime>
+<forebay_elevation units="feet">1154.49</forebay_elevation>
+</observedValue>
+<observedValue petype="HF" durCode="0" tsCode="RZ" extremumCode="Z">
+<dataDateTime>2026-08-27T22:00:00Z</dataDateTime>
+<forebay_elevation units="feet">1154.47</forebay_elevation>
+</observedValue>
+<observedValue petype="HF" durCode="0" tsCode="RZ" extremumCode="Z">
+<dataDateTime>2026-08-27T23:00:00Z</dataDateTime>
+<forebay_elevation units="feet">1154.47</forebay_elevation>
+</observedValue>
+<observedValue petype="HF" durCode="0" tsCode="RZ" extremumCode="Z">
+<dataDateTime>2026-08-28T00:00:00Z</dataDateTime>
+<forebay_elevation units="feet">1154.44</forebay_elevation>
+</observedValue>
+<observedValue petype="HF" durCode="0" tsCode="RZ" extremumCode="Z">
+<dataDateTime>2026-08-28T01:00:00Z</dataDateTime>
+<forebay_elevation units="feet">1154.43</forebay_elevation>
+</observedValue>
+<observedValue petype="HF" durCode="0" tsCode="RZ" extremumCode="Z">
+<dataDateTime>2026-08-28T02:00:00Z</dataDateTime>
+<forebay_elevation units="feet">1154.43</forebay_elevation>
+</observedValue>
+<observedValue petype="HF" durCode="0" tsCode="RZ" extremumCode="Z">
+<dataDateTime>2026-08-28T03:00:00Z</dataDateTime>
+<forebay_elevation units="feet">1154.41</forebay_elevation>
+</observedValue>
+<observedValue petype="HF" durCode="0" tsCode="RZ" extremumCode="Z">
+<dataDateTime>2026-08-28T04:00:00Z</dataDateTime>
+<forebay_elevation units="feet">1154.38</forebay_elevation>
+</observedValue>
+<observedValue petype="HF" durCode="0" tsCode="RZ" extremumCode="Z">
+<dataDateTime>2026-08-28T05:00:00Z</dataDateTime>
+<forebay_elevation units="feet">1154.37</forebay_elevation>
+</observedValue>
+<observedValue petype="HF" durCode="0" tsCode="RZ" extremumCode="Z">
+<dataDateTime>2026-08-28T06:00:00Z</dataDateTime>
+<forebay_elevation units="feet">1154.36</forebay_elevation>
+</observedValue>
+<observedValue petype="HF" durCode="0" tsCode="RZ" extremumCode="Z">
+<dataDateTime>2026-08-28T07:00:00Z</dataDateTime>
+<forebay_elevation units="feet">1154.35</forebay_elevation>
+</observedValue>
+<observedValue petype="HF" durCode="0" tsCode="RZ" extremumCode="Z">
+<dataDateTime>2026-08-28T08:00:00Z</dataDateTime>
+<forebay_elevation units="feet">1154.33</forebay_elevation>
+</observedValue>
+</observedData>
+<forecastData>
+<forecastValue petype="HF" durCode="0" tsCode="FZ" extremumCode="Z">
+<creationDateTime>2026-08-27T23:09:00Z</creationDateTime>
+<dataDateTime>2026-08-28T12:00:00Z</dataDateTime>
+<forebay_elevation units="feet">1154.26</forebay_elevation>
+</forecastValue>
+<forecastValue petype="HF" durCode="0" tsCode="FZ" extremumCode="Z">
+<creationDateTime>2026-08-27T23:09:00Z</creationDateTime>
+<dataDateTime>2026-08-28T18:00:00Z</dataDateTime>
+<forebay_elevation units="feet">1154.18</forebay_elevation>
+</forecastValue>
+<forecastValue petype="HF" durCode="0" tsCode="FZ" extremumCode="Z">
+<creationDateTime>2026-08-27T23:09:00Z</creationDateTime>
+<dataDateTime>2026-08-29T00:00:00Z</dataDateTime>
+<forebay_elevation units="feet">1154.09</forebay_elevation>
+</forecastValue>
+<forecastValue petype="HF" durCode="0" tsCode="FZ" extremumCode="Z">
+<creationDateTime>2026-08-27T23:09:00Z</creationDateTime>
+<dataDateTime>2026-08-29T06:00:00Z</dataDateTime>
+<forebay_elevation units="feet">1154.01</forebay_elevation>
+</forecastValue>
+<forecastValue petype="HF" durCode="0" tsCode="FZ" extremumCode="Z">
+<creationDateTime>2026-08-27T23:09:00Z</creationDateTime>
+<dataDateTime>2026-08-29T12:00:00Z</dataDateTime>
+<forebay_elevation units="feet">1153.93</forebay_elevation>
+</forecastValue>
+<forecastValue petype="HF" durCode="0" tsCode="FZ" extremumCode="Z">
+<creationDateTime>2026-08-27T23:09:00Z</creationDateTime>
+<dataDateTime>2026-08-29T18:00:00Z</dataDateTime>
+<forebay_elevation units="feet">1153.85</forebay_elevation>
+</forecastValue>
+<forecastValue petype="HF" durCode="0" tsCode="FZ" extremumCode="Z">
+<creationDateTime>2026-08-27T23:09:00Z</creationDateTime>
+<dataDateTime>2026-08-30T00:00:00Z</dataDateTime>
+<forebay_elevation units="feet">1153.77</forebay_elevation>
+</forecastValue>
+<forecastValue petype="HF" durCode="0" tsCode="FZ" extremumCode="Z">
+<creationDateTime>2026-08-27T23:09:00Z</creationDateTime>
+<dataDateTime>2026-08-30T06:00:00Z</dataDateTime>
+<forebay_elevation units="feet">1153.68</forebay_elevation>
+</forecastValue>
+<forecastValue petype="HF" durCode="0" tsCode="FZ" extremumCode="Z">
+<creationDateTime>2026-08-27T23:09:00Z</creationDateTime>
+<dataDateTime>2026-08-30T12:00:00Z</dataDateTime>
+<forebay_elevation units="feet">1153.60</forebay_elevation>
+</forecastValue>
+<forecastValue petype="HF" durCode="0" tsCode="FZ" extremumCode="Z">
+<creationDateTime>2026-08-27T23:09:00Z</creationDateTime>
+<dataDateTime>2026-08-30T18:00:00Z</dataDateTime>
+<forebay_elevation units="feet">1153.52</forebay_elevation>
+</forecastValue>
+<forecastValue petype="HF" durCode="0" tsCode="FZ" extremumCode="Z">
+<creationDateTime>2026-08-27T23:09:00Z</creationDateTime>
+<dataDateTime>2026-08-31T00:00:00Z</dataDateTime>
+<forebay_elevation units="feet">1153.44</forebay_elevation>
+</forecastValue>
+<forecastValue petype="HF" durCode="0" tsCode="FZ" extremumCode="Z">
+<creationDateTime>2026-08-27T23:09:00Z</creationDateTime>
+<dataDateTime>2026-08-31T06:00:00Z</dataDateTime>
+<forebay_elevation units="feet">1153.35</forebay_elevation>
+</forecastValue>
+<forecastValue petype="HF" durCode="0" tsCode="FZ" extremumCode="Z">
+<creationDateTime>2026-08-27T23:09:00Z</creationDateTime>
+<dataDateTime>2026-08-31T12:00:00Z</dataDateTime>
+<forebay_elevation units="feet">1153.27</forebay_elevation>
+</forecastValue>
+<forecastValue petype="HF" durCode="0" tsCode="FZ" extremumCode="Z">
+<creationDateTime>2026-08-27T23:09:00Z</creationDateTime>
+<dataDateTime>2026-08-31T18:00:00Z</dataDateTime>
+<forebay_elevation units="feet">1153.18</forebay_elevation>
+</forecastValue>
+<forecastValue petype="HF" durCode="0" tsCode="FZ" extremumCode="Z">
+<creationDateTime>2026-08-27T23:09:00Z</creationDateTime>
+<dataDateTime>2026-09-01T00:00:00Z</dataDateTime>
+<forebay_elevation units="feet">1153.10</forebay_elevation>
+</forecastValue>
+<forecastValue petype="HF" durCode="0" tsCode="FZ" extremumCode="Z">
+<creationDateTime>2026-08-27T23:09:00Z</creationDateTime>
+<dataDateTime>2026-09-01T06:00:00Z</dataDateTime>
+<forebay_elevation units="feet">1153.01</forebay_elevation>
+</forecastValue>
+<forecastValue petype="HF" durCode="0" tsCode="FZ" extremumCode="Z">
+<creationDateTime>2026-08-27T23:09:00Z</creationDateTime>
+<dataDateTime>2026-09-01T12:00:00Z</dataDateTime>
+<forebay_elevation units="feet">1152.93</forebay_elevation>
+</forecastValue>
+<forecastValue petype="HF" durCode="0" tsCode="FZ" extremumCode="Z">
+<creationDateTime>2026-08-27T23:09:00Z</creationDateTime>
+<dataDateTime>2026-09-01T18:00:00Z</dataDateTime>
+<forebay_elevation units="feet">1152.84</forebay_elevation>
+</forecastValue>
+<forecastValue petype="HF" durCode="0" tsCode="FZ" extremumCode="Z">
+<creationDateTime>2026-08-27T23:09:00Z</creationDateTime>
+<dataDateTime>2026-09-02T00:00:00Z</dataDateTime>
+<forebay_elevation units="feet">1152.76</forebay_elevation>
+</forecastValue>
+<forecastValue petype="HF" durCode="0" tsCode="FZ" extremumCode="Z">
+<creationDateTime>2026-08-27T23:09:00Z</creationDateTime>
+<dataDateTime>2026-09-02T06:00:00Z</dataDateTime>
+<forebay_elevation units="feet">1152.68</forebay_elevation>
+</forecastValue>
+<forecastValue petype="HF" durCode="0" tsCode="FZ" extremumCode="Z">
+<creationDateTime>2026-08-27T23:09:00Z</creationDateTime>
+<dataDateTime>2026-09-02T12:00:00Z</dataDateTime>
+<forebay_elevation units="feet">1152.59</forebay_elevation>
+</forecastValue>
+<forecastValue petype="HF" durCode="0" tsCode="FZ" extremumCode="Z">
+<creationDateTime>2026-08-27T23:09:00Z</creationDateTime>
+<dataDateTime>2026-09-02T18:00:00Z</dataDateTime>
+<forebay_elevation units="feet">1152.51</forebay_elevation>
+</forecastValue>
+<forecastValue petype="HF" durCode="0" tsCode="FZ" extremumCode="Z">
+<creationDateTime>2026-08-27T23:09:00Z</creationDateTime>
+<dataDateTime>2026-09-03T00:00:00Z</dataDateTime>
+<forebay_elevation units="feet">1152.42</forebay_elevation>
+</forecastValue>
+<forecastValue petype="HF" durCode="0" tsCode="FZ" extremumCode="Z">
+<creationDateTime>2026-08-27T23:09:00Z</creationDateTime>
+<dataDateTime>2026-09-03T06:00:00Z</dataDateTime>
+<forebay_elevation units="feet">1152.34</forebay_elevation>
+</forecastValue>
+<forecastValue petype="HF" durCode="0" tsCode="FZ" extremumCode="Z">
+<creationDateTime>2026-08-27T23:09:00Z</creationDateTime>
+<dataDateTime>2026-09-03T12:00:00Z</dataDateTime>
+<forebay_elevation units="feet">1152.26</forebay_elevation>
+</forecastValue>
+<forecastValue petype="HF" durCode="0" tsCode="FZ" extremumCode="Z">
+<creationDateTime>2026-08-27T23:09:00Z</creationDateTime>
+<dataDateTime>2026-09-03T18:00:00Z</dataDateTime>
+<forebay_elevation units="feet">1152.17</forebay_elevation>
+</forecastValue>
+<forecastValue petype="HF" durCode="0" tsCode="FZ" extremumCode="Z">
+<creationDateTime>2026-08-27T23:09:00Z</creationDateTime>
+<dataDateTime>2026-09-04T00:00:00Z</dataDateTime>
+<forebay_elevation units="feet">1152.09</forebay_elevation>
+</forecastValue>
+<forecastValue petype="HF" durCode="0" tsCode="FZ" extremumCode="Z">
+<creationDateTime>2026-08-27T23:09:00Z</creationDateTime>
+<dataDateTime>2026-09-04T06:00:00Z</dataDateTime>
+<forebay_elevation units="feet">1152.01</forebay_elevation>
+</forecastValue>
+<forecastValue petype="HF" durCode="0" tsCode="FZ" extremumCode="Z">
+<creationDateTime>2026-08-27T23:09:00Z</creationDateTime>
+<dataDateTime>2026-09-04T12:00:00Z</dataDateTime>
+<forebay_elevation units="feet">1151.92</forebay_elevation>
+</forecastValue>
+<forecastValue petype="HF" durCode="0" tsCode="FZ" extremumCode="Z">
+<creationDateTime>2026-08-27T23:09:00Z</creationDateTime>
+<dataDateTime>2026-09-04T18:00:00Z</dataDateTime>
+<forebay_elevation units="feet">1151.84</forebay_elevation>
+</forecastValue>
+<forecastValue petype="HF" durCode="0" tsCode="FZ" extremumCode="Z">
+<creationDateTime>2026-08-27T23:09:00Z</creationDateTime>
+<dataDateTime>2026-09-05T00:00:00Z</dataDateTime>
+<forebay_elevation units="feet">1151.75</forebay_elevation>
+</forecastValue>
+<forecastValue petype="HF" durCode="0" tsCode="FZ" extremumCode="Z">
+<creationDateTime>2026-08-27T23:09:00Z</creationDateTime>
+<dataDateTime>2026-09-05T06:00:00Z</dataDateTime>
+<forebay_elevation units="feet">1151.67</forebay_elevation>
+</forecastValue>
+<forecastValue petype="HF" durCode="0" tsCode="FZ" extremumCode="Z">
+<creationDateTime>2026-08-27T23:09:00Z</creationDateTime>
+<dataDateTime>2026-09-05T12:00:00Z</dataDateTime>
+<forebay_elevation units="feet">1151.59</forebay_elevation>
+</forecastValue>
+<forecastValue petype="HF" durCode="0" tsCode="FZ" extremumCode="Z">
+<creationDateTime>2026-08-27T23:09:00Z</creationDateTime>
+<dataDateTime>2026-09-05T18:00:00Z</dataDateTime>
+<forebay_elevation units="feet">1151.50</forebay_elevation>
+</forecastValue>
+<forecastValue petype="HF" durCode="0" tsCode="FZ" extremumCode="Z">
+<creationDateTime>2026-08-27T23:09:00Z</creationDateTime>
+<dataDateTime>2026-09-06T00:00:00Z</dataDateTime>
+<forebay_elevation units="feet">1151.42</forebay_elevation>
+</forecastValue>
+<forecastValue petype="HF" durCode="0" tsCode="FZ" extremumCode="Z">
+<creationDateTime>2026-08-27T23:09:00Z</creationDateTime>
+<dataDateTime>2026-09-06T06:00:00Z</dataDateTime>
+<forebay_elevation units="feet">1151.33</forebay_elevation>
+</forecastValue>
+<forecastValue petype="HF" durCode="0" tsCode="FZ" extremumCode="Z">
+<creationDateTime>2026-08-27T23:09:00Z</creationDateTime>
+<dataDateTime>2026-09-06T12:00:00Z</dataDateTime>
+<forebay_elevation units="feet">1151.25</forebay_elevation>
+</forecastValue>
+</forecastData>
+</SiteData>
+</HydroMetData>

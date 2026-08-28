@@ -58,6 +58,7 @@ PROVIDER_HOSTS: frozenset[str] = frozenset(
         "api.weather.gov",                   # W1 NWS API: CAP alerts (Phase 1), grids later
         "ftp-wpc.ncep.noaa.gov",             # W6 WPC 5-km QPF files (official human QPF)
         "noaadata.apps.nsidc.org",           # S2 SNODAS daily tars (NOAA@NSIDC G02158)
+        "www.nwrfc.noaa.gov",                # R4 xml.cgi reservoir series
     }
 )
 

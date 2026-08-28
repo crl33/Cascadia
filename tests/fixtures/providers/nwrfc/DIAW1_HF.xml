@@ -1,0 +1,12 @@
+<?xml version="1.0" ?>
+<HydroMetData 
+xmlns="/xml/schemas/2004/03/hydromet_data">
+<SiteData id="DIAW1">
+<description>SKAGIT - DIABLO RESERVOIR</description>
+<county>WHATCOM</county>
+<state>WASHINGTON</state>
+<elevation units="feet">891</elevation>
+<latitude units="decimal degrees">48.714167</latitude>
+<longitude units="decimal degrees">121.143056</longitude>
+</SiteData>
+</HydroMetData>

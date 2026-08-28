@@ -561,7 +561,18 @@ under CWMS office **NWDP**, not NWS (FACT).
 - **Decision.** Fallback only; migrate before decommission. **SourceProduct.** `product:usace-dataquery-fallback` · PT15M · PT2H (disabled by default).
 - **Evidence.** FACT https://www.nwd-wc.usace.army.mil/dd/common/dataquery/www/js/main.js · FACT https://www.nwd-wc.usace.army.mil/dd/common/web_service/webexec/ecsv?id=LWSC.Elev-Lake.Inst.15Minutes.0.IRIDIUM-REV:units=ft&headers=true&lookback=1d · FACT https://www.nwd-wc.usace.army.mil/dd/common/projects/www/lwsc.html
 
-#### R4 · NWRFC xml.cgi and NWPS API — reservoir stations (HHDW1, MMRW1, RODW1, UBDW1, DIAW1, MORW1, TLRW1) — `src:nwrfc-web` / `src:nwps-v1` (products) · researched · Phase 4
+#### R4 · NWRFC xml.cgi and NWPS API — reservoir stations (HHDW1, MMRW1, RODW1, UBDW1, DIAW1, MORW1, TLRW1) — `src:nwrfc-web` / `src:nwps-v1` (products) · **observations ingesting** · Phase 4
+- **Ingest (landed 2026-08-28).** `nwrfc.fetch_reservoirs` (cron 50 * * * *) polls xml.cgi for
+  the 21 researched (LID, PE) series and stores Observation rows (`station:nwrfc:<LID>`, seeded
+  from the provider's own SiteData via `seed/reservoirs.json`): variables
+  forebay_elevation/storage/inflow/outflow, units VERBATIM ("k-acre-feet", "cubic feet per
+  second"), datum None + `datum_unstated_by_provider` (never invented, ADR-0009). Measured on
+  capture day: several researched series serve EMPTY (DIAW1 entirely; UBDW1 QI only; TLRW1/MORW1
+  pool only) — an empty series stores nothing and is not an outage; and one instant arrives
+  under SEVERAL SHEF type-source codes (LS under RG+RR, HP under RZ+RG, RX in the wild) — one
+  row per instant by declared preference, chosen code in `qualifier_raw`,
+  `multi_source_values_differ` flagged when they disagree. Fixtures:
+  `tests/fixtures/providers/nwrfc/` (23 real series); tests `tests/unit/test_nwrfc_reservoirs.py`.
 - **Facts.** `xml.cgi?id=<LID>&pe=<PE>&dtype=b&numdays=<N>` with PE codes: HHDW1 HF (forebay elevation), LS (storage), QI (inflow) + HAHW1 QR (outflow); MMRW1 HF/LS/QI/QR (MMDW1 is the gauge below the dam, HG/QR); RODW1 HF/HL/LS/QI/QR; UBDW1 HF/HP/LS/QI/QR; DIAW1 HF/LS/QI; GORW1 HG/TW; MORW1 HP/QI (+CDRW1 QR); TLRW1 HP/QI/QR (FACT). NWPS: HHDW1 (usgsId 12105800) observed pedts `QIIRZ` (inflow, kcfs); MMRW1 "White River at Mud Mtn. Dam – Outflow" flood flows action 4,500 / minor 9,000 / moderate 12,000 / major 14,000 cfs, Dec 2025 crest 10,300 cfs on 2025-12-14; RODW1 = USGS 12175000, UBDW1 = 12191600, MORW1 = 12115900, TLRW1 = 12147900 (FACT). Forecasts daily ~08:05–08:15 PDT, 6-hourly steps; NWPS stageflow for HHDW1 returned 718 hourly observed points and 0 forecast points at fetch (FACT).
 - **Semantics.** NWPS −999/−9999 sentinels, `obs_not_current` seen for MORW1/TLRW1; NWRFC omits missing values; units feet, cfs, **kaf** for LS storage, kcfs in NWPS (FACT). No NWRFC/NWPS station for Lower Baker/Lake Shannon (FACT).
 - **Use.** The only source combining observed and RFC-forecast pool/inflow/outflow. **SourceProduct.** `product:nwrfc-reservoir-xml` · PT1H · PT2H; `product:nwps-reservoir-stageflow` · PT1H · PT2H; `product:nwrfc-reservoir-forecast` · P1D · PT18H.

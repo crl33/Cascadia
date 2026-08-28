@@ -65,7 +65,7 @@ def test_every_registered_job_is_in_the_registry_catalogue() -> None:
     # 14 since 2026-08-28: mrms.fetch_qpe and nws.fetch_alerts both landed that day
     # (12 was nwps.fetch_hefs). The literal is the point: adding a job is a deliberate
     # edit here, not something that slides in with a passing suite.
-    assert len(JOBS) == len(REGISTERED_JOB_NAMES) == 16
+    assert len(JOBS) == len(REGISTERED_JOB_NAMES) == 17
 
 
 def test_a_job_registered_only_in_the_worker_fails_the_check() -> None:

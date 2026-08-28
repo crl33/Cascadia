@@ -298,7 +298,11 @@ async def test_the_guard_does_not_fire_for_any_station_the_platform_serves(sessi
         points = list((await s.execute(select(ForecastPoint))).scalars())
 
     assert len(points) == 6, "the six seeded forecast points"
-    assert len(stations) == 7, "six forecast-point stations plus the Sauk susceptibility proxy"
+    # six forecast-point stations + the Sauk proxy + seven NWRFC reservoir stations
+    # (2026-08-28). The reservoirs claim FLUVIAL by physical impossibility — sites above
+    # 1,100 ft elevation, beyond any tidal reach — which their seed notes state; the guard's
+    # price-of-seeding rule is thereby paid with an argument stronger than the measurement.
+    assert len(stations) == 14, "a new station must pay the tidal-marker price to get here"
     assert {st.tidal_class for st in stations} == {"FLUVIAL"}
     for st in stations:
         assert tidal_refusal(TidalClass(st.tidal_class)) is None, st.id

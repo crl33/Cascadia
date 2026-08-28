@@ -12,6 +12,7 @@
   "product:nwps-hefs-ensemble",
   "product:nwps-hefs-quantiles",
   "product:nwps-thresholds",
+  "product:nwrfc-reservoir-obs",
   "product:nws-api-alerts-active",
   "product:nws-fls-crest",
   "product:snodas-swe-daily",

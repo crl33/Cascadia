@@ -1,0 +1,390 @@
+<?xml version="1.0" ?>
+<HydroMetData 
+xmlns="/xml/schemas/2004/03/hydromet_data">
+<SiteData id="HHDW1">
+<description>GREEN - HOWARD HANSON DAM</description>
+<county>KING</county>
+<state>WASHINGTON</state>
+<elevation units="feet">1206</elevation>
+<latitude units="decimal degrees">47.277872</latitude>
+<longitude units="decimal degrees">121.787114</longitude>
+<observedData>
+<observedValue petype="LS" durCode="0" tsCode="RG" extremumCode="Z">
+<dataDateTime>2026-08-26T09:00:00Z</dataDateTime>
+<lake_storage units="k-acre-feet">35.84</lake_storage>
+</observedValue>
+<observedValue petype="LS" durCode="0" tsCode="RR" extremumCode="Z">
+<dataDateTime>2026-08-26T09:00:00Z</dataDateTime>
+<lake_storage units="k-acre-feet">35.84</lake_storage>
+</observedValue>
+<observedValue petype="LS" durCode="0" tsCode="RG" extremumCode="Z">
+<dataDateTime>2026-08-26T10:00:00Z</dataDateTime>
+<lake_storage units="k-acre-feet">35.83</lake_storage>
+</observedValue>
+<observedValue petype="LS" durCode="0" tsCode="RR" extremumCode="Z">
+<dataDateTime>2026-08-26T10:00:00Z</dataDateTime>
+<lake_storage units="k-acre-feet">35.82</lake_storage>
+</observedValue>
+<observedValue petype="LS" durCode="0" tsCode="RG" extremumCode="Z">
+<dataDateTime>2026-08-26T11:00:00Z</dataDateTime>
+<lake_storage units="k-acre-feet">35.81</lake_storage>
+</observedValue>
+<observedValue petype="LS" durCode="0" tsCode="RR" extremumCode="Z">
+<dataDateTime>2026-08-26T11:00:00Z</dataDateTime>
+<lake_storage units="k-acre-feet">35.80</lake_storage>
+</observedValue>
+<observedValue petype="LS" durCode="0" tsCode="RG" extremumCode="Z">
+<dataDateTime>2026-08-26T12:00:00Z</dataDateTime>
+<lake_storage units="k-acre-feet">35.79</lake_storage>
+</observedValue>
+<observedValue petype="LS" durCode="0" tsCode="RR" extremumCode="Z">
+<dataDateTime>2026-08-26T12:00:00Z</dataDateTime>
+<lake_storage units="k-acre-feet">35.79</lake_storage>
+</observedValue>
+<observedValue petype="LS" durCode="0" tsCode="RG" extremumCode="Z">
+<dataDateTime>2026-08-26T13:00:00Z</dataDateTime>
+<lake_storage units="k-acre-feet">35.78</lake_storage>
+</observedValue>
+<observedValue petype="LS" durCode="0" tsCode="RR" extremumCode="Z">
+<dataDateTime>2026-08-26T13:00:00Z</dataDateTime>
+<lake_storage units="k-acre-feet">35.77</lake_storage>
+</observedValue>
+<observedValue petype="LS" durCode="0" tsCode="RG" extremumCode="Z">
+<dataDateTime>2026-08-26T14:00:00Z</dataDateTime>
+<lake_storage units="k-acre-feet">35.77</lake_storage>
+</observedValue>
+<observedValue petype="LS" durCode="0" tsCode="RR" extremumCode="Z">
+<dataDateTime>2026-08-26T14:00:00Z</dataDateTime>
+<lake_storage units="k-acre-feet">35.76</lake_storage>
+</observedValue>
+<observedValue petype="LS" durCode="0" tsCode="RG" extremumCode="Z">
+<dataDateTime>2026-08-26T15:00:00Z</dataDateTime>
+<lake_storage units="k-acre-feet">35.76</lake_storage>
+</observedValue>
+<observedValue petype="LS" durCode="0" tsCode="RR" extremumCode="Z">
+<dataDateTime>2026-08-26T15:00:00Z</dataDateTime>
+<lake_storage units="k-acre-feet">35.74</lake_storage>
+</observedValue>
+<observedValue petype="LS" durCode="0" tsCode="RG" extremumCode="Z">
+<dataDateTime>2026-08-26T16:00:00Z</dataDateTime>
+<lake_storage units="k-acre-feet">35.74</lake_storage>
+</observedValue>
+<observedValue petype="LS" durCode="0" tsCode="RR" extremumCode="Z">
+<dataDateTime>2026-08-26T16:00:00Z</dataDateTime>
+<lake_storage units="k-acre-feet">35.74</lake_storage>
+</observedValue>
+<observedValue petype="LS" durCode="0" tsCode="RG" extremumCode="Z">
+<dataDateTime>2026-08-26T17:00:00Z</dataDateTime>
+<lake_storage units="k-acre-feet">35.73</lake_storage>
+</observedValue>
+<observedValue petype="LS" durCode="0" tsCode="RR" extremumCode="Z">
+<dataDateTime>2026-08-26T17:00:00Z</dataDateTime>
+<lake_storage units="k-acre-feet">35.72</lake_storage>
+</observedValue>
+<observedValue petype="LS" durCode="0" tsCode="RG" extremumCode="Z">
+<dataDateTime>2026-08-26T18:00:00Z</dataDateTime>
+<lake_storage units="k-acre-feet">35.71</lake_storage>
+</observedValue>
+<observedValue petype="LS" durCode="0" tsCode="RR" extremumCode="Z">
+<dataDateTime>2026-08-26T18:00:00Z</dataDateTime>
+<lake_storage units="k-acre-feet">35.70</lake_storage>
+</observedValue>
+<observedValue petype="LS" durCode="0" tsCode="RG" extremumCode="Z">
+<dataDateTime>2026-08-26T19:00:00Z</dataDateTime>
+<lake_storage units="k-acre-feet">35.69</lake_storage>
+</observedValue>
+<observedValue petype="LS" durCode="0" tsCode="RR" extremumCode="Z">
+<dataDateTime>2026-08-26T19:00:00Z</dataDateTime>
+<lake_storage units="k-acre-feet">35.69</lake_storage>
+</observedValue>
+<observedValue petype="LS" durCode="0" tsCode="RG" extremumCode="Z">
+<dataDateTime>2026-08-26T20:00:00Z</dataDateTime>
+<lake_storage units="k-acre-feet">35.68</lake_storage>
+</observedValue>
+<observedValue petype="LS" durCode="0" tsCode="RR" extremumCode="Z">
+<dataDateTime>2026-08-26T20:00:00Z</dataDateTime>
+<lake_storage units="k-acre-feet">35.67</lake_storage>
+</observedValue>
+<observedValue petype="LS" durCode="0" tsCode="RG" extremumCode="Z">
+<dataDateTime>2026-08-26T21:00:00Z</dataDateTime>
+<lake_storage units="k-acre-feet">35.67</lake_storage>
+</observedValue>
+<observedValue petype="LS" durCode="0" tsCode="RR" extremumCode="Z">
+<dataDateTime>2026-08-26T21:00:00Z</dataDateTime>
+<lake_storage units="k-acre-feet">35.67</lake_storage>
+</observedValue>
+<observedValue petype="LS" durCode="0" tsCode="RG" extremumCode="Z">
+<dataDateTime>2026-08-26T22:00:00Z</dataDateTime>
+<lake_storage units="k-acre-feet">35.66</lake_storage>
+</observedValue>
+<observedValue petype="LS" durCode="0" tsCode="RR" extremumCode="Z">
+<dataDateTime>2026-08-26T22:00:00Z</dataDateTime>
+<lake_storage units="k-acre-feet">35.65</lake_storage>
+</observedValue>
+<observedValue petype="LS" durCode="0" tsCode="RG" extremumCode="Z">
+<dataDateTime>2026-08-26T23:00:00Z</dataDateTime>
+<lake_storage units="k-acre-feet">35.65</lake_storage>
+</observedValue>
+<observedValue petype="LS" durCode="0" tsCode="RR" extremumCode="Z">
+<dataDateTime>2026-08-26T23:00:00Z</dataDateTime>
+<lake_storage units="k-acre-feet">35.65</lake_storage>
+</observedValue>
+<observedValue petype="LS" durCode="0" tsCode="RG" extremumCode="Z">
+<dataDateTime>2026-08-27T00:00:00Z</dataDateTime>
+<lake_storage units="k-acre-feet">35.64</lake_storage>
+</observedValue>
+<observedValue petype="LS" durCode="0" tsCode="RR" extremumCode="Z">
+<dataDateTime>2026-08-27T00:00:00Z</dataDateTime>
+<lake_storage units="k-acre-feet">35.65</lake_storage>
+</observedValue>
+<observedValue petype="LS" durCode="0" tsCode="RG" extremumCode="Z">
+<dataDateTime>2026-08-27T01:00:00Z</dataDateTime>
+<lake_storage units="k-acre-feet">35.63</lake_storage>
+</observedValue>
+<observedValue petype="LS" durCode="0" tsCode="RR" extremumCode="Z">
+<dataDateTime>2026-08-27T01:00:00Z</dataDateTime>
+<lake_storage units="k-acre-feet">35.63</lake_storage>
+</observedValue>
+<observedValue petype="LS" durCode="0" tsCode="RG" extremumCode="Z">
+<dataDateTime>2026-08-27T02:00:00Z</dataDateTime>
+<lake_storage units="k-acre-feet">35.62</lake_storage>
+</observedValue>
+<observedValue petype="LS" durCode="0" tsCode="RR" extremumCode="Z">
+<dataDateTime>2026-08-27T02:00:00Z</dataDateTime>
+<lake_storage units="k-acre-feet">35.62</lake_storage>
+</observedValue>
+<observedValue petype="LS" durCode="0" tsCode="RG" extremumCode="Z">
+<dataDateTime>2026-08-27T03:00:00Z</dataDateTime>
+<lake_storage units="k-acre-feet">35.60</lake_storage>
+</observedValue>
+<observedValue petype="LS" durCode="0" tsCode="RR" extremumCode="Z">
+<dataDateTime>2026-08-27T03:00:00Z</dataDateTime>
+<lake_storage units="k-acre-feet">35.60</lake_storage>
+</observedValue>
+<observedValue petype="LS" durCode="0" tsCode="RG" extremumCode="Z">
+<dataDateTime>2026-08-27T04:00:00Z</dataDateTime>
+<lake_storage units="k-acre-feet">35.58</lake_storage>
+</observedValue>
+<observedValue petype="LS" durCode="0" tsCode="RR" extremumCode="Z">
+<dataDateTime>2026-08-27T04:00:00Z</dataDateTime>
+<lake_storage units="k-acre-feet">35.57</lake_storage>
+</observedValue>
+<observedValue petype="LS" durCode="0" tsCode="RG" extremumCode="Z">
+<dataDateTime>2026-08-27T05:00:00Z</dataDateTime>
+<lake_storage units="k-acre-feet">35.56</lake_storage>
+</observedValue>
+<observedValue petype="LS" durCode="0" tsCode="RR" extremumCode="Z">
+<dataDateTime>2026-08-27T05:00:00Z</dataDateTime>
+<lake_storage units="k-acre-feet">35.55</lake_storage>
+</observedValue>
+<observedValue petype="LS" durCode="0" tsCode="RG" extremumCode="Z">
+<dataDateTime>2026-08-27T06:00:00Z</dataDateTime>
+<lake_storage units="k-acre-feet">35.54</lake_storage>
+</observedValue>
+<observedValue petype="LS" durCode="0" tsCode="RR" extremumCode="Z">
+<dataDateTime>2026-08-27T06:00:00Z</dataDateTime>
+<lake_storage units="k-acre-feet">35.54</lake_storage>
+</observedValue>
+<observedValue petype="LS" durCode="0" tsCode="RG" extremumCode="Z">
+<dataDateTime>2026-08-27T07:00:00Z</dataDateTime>
+<lake_storage units="k-acre-feet">35.53</lake_storage>
+</observedValue>
+<observedValue petype="LS" durCode="0" tsCode="RR" extremumCode="Z">
+<dataDateTime>2026-08-27T07:00:00Z</dataDateTime>
+<lake_storage units="k-acre-feet">35.52</lake_storage>
+</observedValue>
+<observedValue petype="LS" durCode="0" tsCode="RG" extremumCode="Z">
+<dataDateTime>2026-08-27T08:00:00Z</dataDateTime>
+<lake_storage units="k-acre-feet">35.51</lake_storage>
+</observedValue>
+<observedValue petype="LS" durCode="0" tsCode="RR" extremumCode="Z">
+<dataDateTime>2026-08-27T08:00:00Z</dataDateTime>
+<lake_storage units="k-acre-feet">35.50</lake_storage>
+</observedValue>
+<observedValue petype="LS" durCode="0" tsCode="RG" extremumCode="Z">
+<dataDateTime>2026-08-27T09:00:00Z</dataDateTime>
+<lake_storage units="k-acre-feet">35.50</lake_storage>
+</observedValue>
+<observedValue petype="LS" durCode="0" tsCode="RR" extremumCode="Z">
+<dataDateTime>2026-08-27T09:00:00Z</dataDateTime>
+<lake_storage units="k-acre-feet">35.51</lake_storage>
+</observedValue>
+<observedValue petype="LS" durCode="0" tsCode="RG" extremumCode="Z">
+<dataDateTime>2026-08-27T10:00:00Z</dataDateTime>
+<lake_storage units="k-acre-feet">35.48</lake_storage>
+</observedValue>
+<observedValue petype="LS" durCode="0" tsCode="RR" extremumCode="Z">
+<dataDateTime>2026-08-27T10:00:00Z</dataDateTime>
+<lake_storage units="k-acre-feet">35.47</lake_storage>
+</observedValue>
+<observedValue petype="LS" durCode="0" tsCode="RG" extremumCode="Z">
+<dataDateTime>2026-08-27T11:00:00Z</dataDateTime>
+<lake_storage units="k-acre-feet">35.47</lake_storage>
+</observedValue>
+<observedValue petype="LS" durCode="0" tsCode="RR" extremumCode="Z">
+<dataDateTime>2026-08-27T11:00:00Z</dataDateTime>
+<lake_storage units="k-acre-feet">35.46</lake_storage>
+</observedValue>
+<observedValue petype="LS" durCode="0" tsCode="RG" extremumCode="Z">
+<dataDateTime>2026-08-27T12:00:00Z</dataDateTime>
+<lake_storage units="k-acre-feet">35.45</lake_storage>
+</observedValue>
+<observedValue petype="LS" durCode="0" tsCode="RR" extremumCode="Z">
+<dataDateTime>2026-08-27T12:00:00Z</dataDateTime>
+<lake_storage units="k-acre-feet">35.45</lake_storage>
+</observedValue>
+<observedValue petype="LS" durCode="0" tsCode="RG" extremumCode="Z">
+<dataDateTime>2026-08-27T13:00:00Z</dataDateTime>
+<lake_storage units="k-acre-feet">35.43</lake_storage>
+</observedValue>
+<observedValue petype="LS" durCode="0" tsCode="RR" extremumCode="Z">
+<dataDateTime>2026-08-27T13:00:00Z</dataDateTime>
+<lake_storage units="k-acre-feet">35.42</lake_storage>
+</observedValue>
+<observedValue petype="LS" durCode="0" tsCode="RG" extremumCode="Z">
+<dataDateTime>2026-08-27T14:00:00Z</dataDateTime>
+<lake_storage units="k-acre-feet">35.42</lake_storage>
+</observedValue>
+<observedValue petype="LS" durCode="0" tsCode="RR" extremumCode="Z">
+<dataDateTime>2026-08-27T14:00:00Z</dataDateTime>
+<lake_storage units="k-acre-feet">35.42</lake_storage>
+</observedValue>
+<observedValue petype="LS" durCode="0" tsCode="RG" extremumCode="Z">
+<dataDateTime>2026-08-27T15:00:00Z</dataDateTime>
+<lake_storage units="k-acre-feet">35.40</lake_storage>
+</observedValue>
+<observedValue petype="LS" durCode="0" tsCode="RR" extremumCode="Z">
+<dataDateTime>2026-08-27T15:00:00Z</dataDateTime>
+<lake_storage units="k-acre-feet">35.41</lake_storage>
+</observedValue>
+<observedValue petype="LS" durCode="0" tsCode="RG" extremumCode="Z">
+<dataDateTime>2026-08-27T16:00:00Z</dataDateTime>
+<lake_storage units="k-acre-feet">35.39</lake_storage>
+</observedValue>
+<observedValue petype="LS" durCode="0" tsCode="RR" extremumCode="Z">
+<dataDateTime>2026-08-27T16:00:00Z</dataDateTime>
+<lake_storage units="k-acre-feet">35.38</lake_storage>
+</observedValue>
+<observedValue petype="LS" durCode="0" tsCode="RG" extremumCode="Z">
+<dataDateTime>2026-08-27T17:00:00Z</dataDateTime>
+<lake_storage units="k-acre-feet">35.38</lake_storage>
+</observedValue>
+<observedValue petype="LS" durCode="0" tsCode="RR" extremumCode="Z">
+<dataDateTime>2026-08-27T17:00:00Z</dataDateTime>
+<lake_storage units="k-acre-feet">35.38</lake_storage>
+</observedValue>
+<observedValue petype="LS" durCode="0" tsCode="RG" extremumCode="Z">
+<dataDateTime>2026-08-27T18:00:00Z</dataDateTime>
+<lake_storage units="k-acre-feet">35.37</lake_storage>
+</observedValue>
+<observedValue petype="LS" durCode="0" tsCode="RR" extremumCode="Z">
+<dataDateTime>2026-08-27T18:00:00Z</dataDateTime>
+<lake_storage units="k-acre-feet">35.35</lake_storage>
+</observedValue>
+<observedValue petype="LS" durCode="0" tsCode="RG" extremumCode="Z">
+<dataDateTime>2026-08-27T19:00:00Z</dataDateTime>
+<lake_storage units="k-acre-feet">35.35</lake_storage>
+</observedValue>
+<observedValue petype="LS" durCode="0" tsCode="RR" extremumCode="Z">
+<dataDateTime>2026-08-27T19:00:00Z</dataDateTime>
+<lake_storage units="k-acre-feet">35.34</lake_storage>
+</observedValue>
+<observedValue petype="LS" durCode="0" tsCode="RG" extremumCode="Z">
+<dataDateTime>2026-08-27T20:00:00Z</dataDateTime>
+<lake_storage units="k-acre-feet">35.33</lake_storage>
+</observedValue>
+<observedValue petype="LS" durCode="0" tsCode="RR" extremumCode="Z">
+<dataDateTime>2026-08-27T20:00:00Z</dataDateTime>
+<lake_storage units="k-acre-feet">35.33</lake_storage>
+</observedValue>
+<observedValue petype="LS" durCode="0" tsCode="RG" extremumCode="Z">
+<dataDateTime>2026-08-27T21:00:00Z</dataDateTime>
+<lake_storage units="k-acre-feet">35.32</lake_storage>
+</observedValue>
+<observedValue petype="LS" durCode="0" tsCode="RR" extremumCode="Z">
+<dataDateTime>2026-08-27T21:00:00Z</dataDateTime>
+<lake_storage units="k-acre-feet">35.32</lake_storage>
+</observedValue>
+<observedValue petype="LS" durCode="0" tsCode="RG" extremumCode="Z">
+<dataDateTime>2026-08-27T22:00:00Z</dataDateTime>
+<lake_storage units="k-acre-feet">35.31</lake_storage>
+</observedValue>
+<observedValue petype="LS" durCode="0" tsCode="RR" extremumCode="Z">
+<dataDateTime>2026-08-27T22:00:00Z</dataDateTime>
+<lake_storage units="k-acre-feet">35.30</lake_storage>
+</observedValue>
+<observedValue petype="LS" durCode="0" tsCode="RG" extremumCode="Z">
+<dataDateTime>2026-08-27T23:00:00Z</dataDateTime>
+<lake_storage units="k-acre-feet">35.30</lake_storage>
+</observedValue>
+<observedValue petype="LS" durCode="0" tsCode="RR" extremumCode="Z">
+<dataDateTime>2026-08-27T23:00:00Z</dataDateTime>
+<lake_storage units="k-acre-feet">35.30</lake_storage>
+</observedValue>
+<observedValue petype="LS" durCode="0" tsCode="RG" extremumCode="Z">
+<dataDateTime>2026-08-28T00:00:00Z</dataDateTime>
+<lake_storage units="k-acre-feet">35.29</lake_storage>
+</observedValue>
+<observedValue petype="LS" durCode="0" tsCode="RR" extremumCode="Z">
+<dataDateTime>2026-08-28T00:00:00Z</dataDateTime>
+<lake_storage units="k-acre-feet">35.27</lake_storage>
+</observedValue>
+<observedValue petype="LS" durCode="0" tsCode="RG" extremumCode="Z">
+<dataDateTime>2026-08-28T01:00:00Z</dataDateTime>
+<lake_storage units="k-acre-feet">35.27</lake_storage>
+</observedValue>
+<observedValue petype="LS" durCode="0" tsCode="RR" extremumCode="Z">
+<dataDateTime>2026-08-28T01:00:00Z</dataDateTime>
+<lake_storage units="k-acre-feet">35.26</lake_storage>
+</observedValue>
+<observedValue petype="LS" durCode="0" tsCode="RG" extremumCode="Z">
+<dataDateTime>2026-08-28T02:00:00Z</dataDateTime>
+<lake_storage units="k-acre-feet">35.26</lake_storage>
+</observedValue>
+<observedValue petype="LS" durCode="0" tsCode="RR" extremumCode="Z">
+<dataDateTime>2026-08-28T02:00:00Z</dataDateTime>
+<lake_storage units="k-acre-feet">35.26</lake_storage>
+</observedValue>
+<observedValue petype="LS" durCode="0" tsCode="RG" extremumCode="Z">
+<dataDateTime>2026-08-28T03:00:00Z</dataDateTime>
+<lake_storage units="k-acre-feet">35.24</lake_storage>
+</observedValue>
+<observedValue petype="LS" durCode="0" tsCode="RR" extremumCode="Z">
+<dataDateTime>2026-08-28T03:00:00Z</dataDateTime>
+<lake_storage units="k-acre-feet">35.24</lake_storage>
+</observedValue>
+<observedValue petype="LS" durCode="0" tsCode="RG" extremumCode="Z">
+<dataDateTime>2026-08-28T04:00:00Z</dataDateTime>
+<lake_storage units="k-acre-feet">35.23</lake_storage>
+</observedValue>
+<observedValue petype="LS" durCode="0" tsCode="RR" extremumCode="Z">
+<dataDateTime>2026-08-28T04:00:00Z</dataDateTime>
+<lake_storage units="k-acre-feet">35.21</lake_storage>
+</observedValue>
+<observedValue petype="LS" durCode="0" tsCode="RG" extremumCode="Z">
+<dataDateTime>2026-08-28T05:00:00Z</dataDateTime>
+<lake_storage units="k-acre-feet">35.21</lake_storage>
+</observedValue>
+<observedValue petype="LS" durCode="0" tsCode="RR" extremumCode="Z">
+<dataDateTime>2026-08-28T05:00:00Z</dataDateTime>
+<lake_storage units="k-acre-feet">35.20</lake_storage>
+</observedValue>
+<observedValue petype="LS" durCode="0" tsCode="RG" extremumCode="Z">
+<dataDateTime>2026-08-28T06:00:00Z</dataDateTime>
+<lake_storage units="k-acre-feet">35.20</lake_storage>
+</observedValue>
+<observedValue petype="LS" durCode="0" tsCode="RR" extremumCode="Z">
+<dataDateTime>2026-08-28T06:00:00Z</dataDateTime>
+<lake_storage units="k-acre-feet">35.19</lake_storage>
+</observedValue>
+<observedValue petype="LS" durCode="0" tsCode="RG" extremumCode="Z">
+<dataDateTime>2026-08-28T07:00:00Z</dataDateTime>
+<lake_storage units="k-acre-feet">35.18</lake_storage>
+</observedValue>
+<observedValue petype="LS" durCode="0" tsCode="RR" extremumCode="Z">
+<dataDateTime>2026-08-28T07:00:00Z</dataDateTime>
+<lake_storage units="k-acre-feet">35.18</lake_storage>
+</observedValue>
+</observedData>
+</SiteData>
+</HydroMetData>

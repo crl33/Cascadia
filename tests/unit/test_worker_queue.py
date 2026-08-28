@@ -79,6 +79,7 @@ def test_tasks_registered_with_locks_retry_and_cron() -> None:
         "mrms.fetch_qpe": "20 * * * *",
         "wpc.fetch_qpf": "10 11,23 * * *",
         "snodas.fetch_swe": "40 13 * * *",
+        "nwrfc.fetch_reservoirs": "50 * * * *",
         "nws.fetch_alerts": "*/5 * * * *",
         # P3 (design §6 stage 2). The mask build owns an explicit slot 20 min ahead of the qmd
         # fetch that depends on it; the climatology is annual and fires on 1 January only.

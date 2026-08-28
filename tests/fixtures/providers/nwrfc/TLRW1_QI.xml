@@ -1,0 +1,199 @@
+<?xml version="1.0" ?>
+<HydroMetData 
+xmlns="/xml/schemas/2004/03/hydromet_data">
+<SiteData id="TLRW1">
+<description>SF TOLT - TOLT RESERVOIR</description>
+<county>KING</county>
+<state>WASHINGTON</state>
+<elevation units="feet">1765</elevation>
+<latitude units="decimal degrees">47.693714</latitude>
+<longitude units="decimal degrees">121.689000</longitude>
+<forecastData>
+<forecastValue petype="QI" durCode="0" tsCode="FZ" extremumCode="Z">
+<creationDateTime>2026-08-27T15:31:00Z</creationDateTime>
+<dataDateTime>2026-08-28T12:00:00Z</dataDateTime>
+<inflow units="cubic feet per second">8.15</inflow>
+</forecastValue>
+<forecastValue petype="QI" durCode="0" tsCode="FZ" extremumCode="Z">
+<creationDateTime>2026-08-27T15:31:00Z</creationDateTime>
+<dataDateTime>2026-08-28T18:00:00Z</dataDateTime>
+<inflow units="cubic feet per second">8.15</inflow>
+</forecastValue>
+<forecastValue petype="QI" durCode="0" tsCode="FZ" extremumCode="Z">
+<creationDateTime>2026-08-27T15:31:00Z</creationDateTime>
+<dataDateTime>2026-08-29T00:00:00Z</dataDateTime>
+<inflow units="cubic feet per second">8.15</inflow>
+</forecastValue>
+<forecastValue petype="QI" durCode="0" tsCode="FZ" extremumCode="Z">
+<creationDateTime>2026-08-27T15:31:00Z</creationDateTime>
+<dataDateTime>2026-08-29T06:00:00Z</dataDateTime>
+<inflow units="cubic feet per second">11.12</inflow>
+</forecastValue>
+<forecastValue petype="QI" durCode="0" tsCode="FZ" extremumCode="Z">
+<creationDateTime>2026-08-27T15:31:00Z</creationDateTime>
+<dataDateTime>2026-08-29T12:00:00Z</dataDateTime>
+<inflow units="cubic feet per second">12.13</inflow>
+</forecastValue>
+<forecastValue petype="QI" durCode="0" tsCode="FZ" extremumCode="Z">
+<creationDateTime>2026-08-27T15:31:00Z</creationDateTime>
+<dataDateTime>2026-08-29T18:00:00Z</dataDateTime>
+<inflow units="cubic feet per second">18.75</inflow>
+</forecastValue>
+<forecastValue petype="QI" durCode="0" tsCode="FZ" extremumCode="Z">
+<creationDateTime>2026-08-27T15:31:00Z</creationDateTime>
+<dataDateTime>2026-08-30T00:00:00Z</dataDateTime>
+<inflow units="cubic feet per second">21.61</inflow>
+</forecastValue>
+<forecastValue petype="QI" durCode="0" tsCode="FZ" extremumCode="Z">
+<creationDateTime>2026-08-27T15:31:00Z</creationDateTime>
+<dataDateTime>2026-08-30T06:00:00Z</dataDateTime>
+<inflow units="cubic feet per second">14.43</inflow>
+</forecastValue>
+<forecastValue petype="QI" durCode="0" tsCode="FZ" extremumCode="Z">
+<creationDateTime>2026-08-27T15:31:00Z</creationDateTime>
+<dataDateTime>2026-08-30T12:00:00Z</dataDateTime>
+<inflow units="cubic feet per second">9.64</inflow>
+</forecastValue>
+<forecastValue petype="QI" durCode="0" tsCode="FZ" extremumCode="Z">
+<creationDateTime>2026-08-27T15:31:00Z</creationDateTime>
+<dataDateTime>2026-08-30T18:00:00Z</dataDateTime>
+<inflow units="cubic feet per second">8.34</inflow>
+</forecastValue>
+<forecastValue petype="QI" durCode="0" tsCode="FZ" extremumCode="Z">
+<creationDateTime>2026-08-27T15:31:00Z</creationDateTime>
+<dataDateTime>2026-08-31T00:00:00Z</dataDateTime>
+<inflow units="cubic feet per second">8.03</inflow>
+</forecastValue>
+<forecastValue petype="QI" durCode="0" tsCode="FZ" extremumCode="Z">
+<creationDateTime>2026-08-27T15:31:00Z</creationDateTime>
+<dataDateTime>2026-08-31T06:00:00Z</dataDateTime>
+<inflow units="cubic feet per second">7.99</inflow>
+</forecastValue>
+<forecastValue petype="QI" durCode="0" tsCode="FZ" extremumCode="Z">
+<creationDateTime>2026-08-27T15:31:00Z</creationDateTime>
+<dataDateTime>2026-08-31T12:00:00Z</dataDateTime>
+<inflow units="cubic feet per second">7.99</inflow>
+</forecastValue>
+<forecastValue petype="QI" durCode="0" tsCode="FZ" extremumCode="Z">
+<creationDateTime>2026-08-27T15:31:00Z</creationDateTime>
+<dataDateTime>2026-08-31T18:00:00Z</dataDateTime>
+<inflow units="cubic feet per second">7.99</inflow>
+</forecastValue>
+<forecastValue petype="QI" durCode="0" tsCode="FZ" extremumCode="Z">
+<creationDateTime>2026-08-27T15:31:00Z</creationDateTime>
+<dataDateTime>2026-09-01T00:00:00Z</dataDateTime>
+<inflow units="cubic feet per second">7.99</inflow>
+</forecastValue>
+<forecastValue petype="QI" durCode="0" tsCode="FZ" extremumCode="Z">
+<creationDateTime>2026-08-27T15:31:00Z</creationDateTime>
+<dataDateTime>2026-09-01T06:00:00Z</dataDateTime>
+<inflow units="cubic feet per second">10.50</inflow>
+</forecastValue>
+<forecastValue petype="QI" durCode="0" tsCode="FZ" extremumCode="Z">
+<creationDateTime>2026-08-27T15:31:00Z</creationDateTime>
+<dataDateTime>2026-09-01T12:00:00Z</dataDateTime>
+<inflow units="cubic feet per second">12.89</inflow>
+</forecastValue>
+<forecastValue petype="QI" durCode="0" tsCode="FZ" extremumCode="Z">
+<creationDateTime>2026-08-27T15:31:00Z</creationDateTime>
+<dataDateTime>2026-09-01T18:00:00Z</dataDateTime>
+<inflow units="cubic feet per second">13.90</inflow>
+</forecastValue>
+<forecastValue petype="QI" durCode="0" tsCode="FZ" extremumCode="Z">
+<creationDateTime>2026-08-27T15:31:00Z</creationDateTime>
+<dataDateTime>2026-09-02T00:00:00Z</dataDateTime>
+<inflow units="cubic feet per second">17.09</inflow>
+</forecastValue>
+<forecastValue petype="QI" durCode="0" tsCode="FZ" extremumCode="Z">
+<creationDateTime>2026-08-27T15:31:00Z</creationDateTime>
+<dataDateTime>2026-09-02T06:00:00Z</dataDateTime>
+<inflow units="cubic feet per second">18.07</inflow>
+</forecastValue>
+<forecastValue petype="QI" durCode="0" tsCode="FZ" extremumCode="Z">
+<creationDateTime>2026-08-27T15:31:00Z</creationDateTime>
+<dataDateTime>2026-09-02T12:00:00Z</dataDateTime>
+<inflow units="cubic feet per second">20.88</inflow>
+</forecastValue>
+<forecastValue petype="QI" durCode="0" tsCode="FZ" extremumCode="Z">
+<creationDateTime>2026-08-27T15:31:00Z</creationDateTime>
+<dataDateTime>2026-09-02T18:00:00Z</dataDateTime>
+<inflow units="cubic feet per second">28.18</inflow>
+</forecastValue>
+<forecastValue petype="QI" durCode="0" tsCode="FZ" extremumCode="Z">
+<creationDateTime>2026-08-27T15:31:00Z</creationDateTime>
+<dataDateTime>2026-09-03T00:00:00Z</dataDateTime>
+<inflow units="cubic feet per second">37.19</inflow>
+</forecastValue>
+<forecastValue petype="QI" durCode="0" tsCode="FZ" extremumCode="Z">
+<creationDateTime>2026-08-27T15:31:00Z</creationDateTime>
+<dataDateTime>2026-09-03T06:00:00Z</dataDateTime>
+<inflow units="cubic feet per second">39.47</inflow>
+</forecastValue>
+<forecastValue petype="QI" durCode="0" tsCode="FZ" extremumCode="Z">
+<creationDateTime>2026-08-27T15:31:00Z</creationDateTime>
+<dataDateTime>2026-09-03T12:00:00Z</dataDateTime>
+<inflow units="cubic feet per second">48.41</inflow>
+</forecastValue>
+<forecastValue petype="QI" durCode="0" tsCode="FZ" extremumCode="Z">
+<creationDateTime>2026-08-27T15:31:00Z</creationDateTime>
+<dataDateTime>2026-09-03T18:00:00Z</dataDateTime>
+<inflow units="cubic feet per second">56.83</inflow>
+</forecastValue>
+<forecastValue petype="QI" durCode="0" tsCode="FZ" extremumCode="Z">
+<creationDateTime>2026-08-27T15:31:00Z</creationDateTime>
+<dataDateTime>2026-09-04T00:00:00Z</dataDateTime>
+<inflow units="cubic feet per second">60.95</inflow>
+</forecastValue>
+<forecastValue petype="QI" durCode="0" tsCode="FZ" extremumCode="Z">
+<creationDateTime>2026-08-27T15:31:00Z</creationDateTime>
+<dataDateTime>2026-09-04T06:00:00Z</dataDateTime>
+<inflow units="cubic feet per second">56.18</inflow>
+</forecastValue>
+<forecastValue petype="QI" durCode="0" tsCode="FZ" extremumCode="Z">
+<creationDateTime>2026-08-27T15:31:00Z</creationDateTime>
+<dataDateTime>2026-09-04T12:00:00Z</dataDateTime>
+<inflow units="cubic feet per second">43.70</inflow>
+</forecastValue>
+<forecastValue petype="QI" durCode="0" tsCode="FZ" extremumCode="Z">
+<creationDateTime>2026-08-27T15:31:00Z</creationDateTime>
+<dataDateTime>2026-09-04T18:00:00Z</dataDateTime>
+<inflow units="cubic feet per second">31.53</inflow>
+</forecastValue>
+<forecastValue petype="QI" durCode="0" tsCode="FZ" extremumCode="Z">
+<creationDateTime>2026-08-27T15:31:00Z</creationDateTime>
+<dataDateTime>2026-09-05T00:00:00Z</dataDateTime>
+<inflow units="cubic feet per second">33.10</inflow>
+</forecastValue>
+<forecastValue petype="QI" durCode="0" tsCode="FZ" extremumCode="Z">
+<creationDateTime>2026-08-27T15:31:00Z</creationDateTime>
+<dataDateTime>2026-09-05T06:00:00Z</dataDateTime>
+<inflow units="cubic feet per second">40.57</inflow>
+</forecastValue>
+<forecastValue petype="QI" durCode="0" tsCode="FZ" extremumCode="Z">
+<creationDateTime>2026-08-27T15:31:00Z</creationDateTime>
+<dataDateTime>2026-09-05T12:00:00Z</dataDateTime>
+<inflow units="cubic feet per second">34.98</inflow>
+</forecastValue>
+<forecastValue petype="QI" durCode="0" tsCode="FZ" extremumCode="Z">
+<creationDateTime>2026-08-27T15:31:00Z</creationDateTime>
+<dataDateTime>2026-09-05T18:00:00Z</dataDateTime>
+<inflow units="cubic feet per second">29.91</inflow>
+</forecastValue>
+<forecastValue petype="QI" durCode="0" tsCode="FZ" extremumCode="Z">
+<creationDateTime>2026-08-27T15:31:00Z</creationDateTime>
+<dataDateTime>2026-09-06T00:00:00Z</dataDateTime>
+<inflow units="cubic feet per second">23.57</inflow>
+</forecastValue>
+<forecastValue petype="QI" durCode="0" tsCode="FZ" extremumCode="Z">
+<creationDateTime>2026-08-27T15:31:00Z</creationDateTime>
+<dataDateTime>2026-09-06T06:00:00Z</dataDateTime>
+<inflow units="cubic feet per second">19.23</inflow>
+</forecastValue>
+<forecastValue petype="QI" durCode="0" tsCode="FZ" extremumCode="Z">
+<creationDateTime>2026-08-27T15:31:00Z</creationDateTime>
+<dataDateTime>2026-09-06T12:00:00Z</dataDateTime>
+<inflow units="cubic feet per second">22.12</inflow>
+</forecastValue>
+</forecastData>
+</SiteData>
+</HydroMetData>

@@ -1,0 +1,12 @@
+<?xml version="1.0" ?>
+<HydroMetData 
+xmlns="/xml/schemas/2004/03/hydromet_data">
+<SiteData id="UBDW1">
+<description>BAKER - UPPER BAKER LAKE</description>
+<county>WHATCOM</county>
+<state>WASHINGTON</state>
+<elevation units="feet">393</elevation>
+<latitude units="decimal degrees">48.648889</latitude>
+<longitude units="decimal degrees">121.690833</longitude>
+</SiteData>
+</HydroMetData>

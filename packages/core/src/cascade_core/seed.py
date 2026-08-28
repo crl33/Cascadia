@@ -34,7 +34,7 @@ from cascade_core.models import Basin, DataSource, ForecastPoint, SourceProduct,
 from cascade_core.registry import PRODUCTS, SOURCES
 
 # Seed addenda, merged in order after the primary seed file. Siblings of the primary file.
-ADDENDUM_FILES: tuple[str, ...] = ("p3_surfaces.json",)
+ADDENDUM_FILES: tuple[str, ...] = ("p3_surfaces.json", "reservoirs.json")
 
 #: Pacific time, by its CANONICAL IANA name. Every Washington gauge the platform seeds is in it.
 PACIFIC_TIME_ZONE = "America/Los_Angeles"

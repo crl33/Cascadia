@@ -1,0 +1,12 @@
+<?xml version="1.0" ?>
+<HydroMetData 
+xmlns="/xml/schemas/2004/03/hydromet_data">
+<SiteData id="RODW1">
+<description>SKAGIT - ROSS RESERVOIR</description>
+<county>WHATCOM</county>
+<state>WASHINGTON</state>
+<elevation units="feet">1605</elevation>
+<latitude units="decimal degrees">48.733333</latitude>
+<longitude units="decimal degrees">121.066667</longitude>
+</SiteData>
+</HydroMetData>

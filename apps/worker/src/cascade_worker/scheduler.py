@@ -25,6 +25,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 
 from cascade_providers_mrms import jobs as mrms_jobs
+from cascade_providers_nwrfc import jobs as nwrfc_jobs
 from cascade_providers_snodas import jobs as snodas_jobs
 from cascade_providers_wpc import jobs as wpc_jobs
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -76,6 +77,11 @@ async def _run_fetch_snodas_swe(session: AsyncSession, fetcher: ArchivingFetcher
     return await snodas_jobs.run_fetch_swe(session, fetcher, geo_dir=Settings.from_env().geo_dir)
 
 
+async def _run_fetch_reservoirs(session: AsyncSession, fetcher: ArchivingFetcher) -> int:
+    """Reservoir observations adapted to the JobFn contract."""
+    return await nwrfc_jobs.run_fetch_reservoirs(session, fetcher)
+
+
 async def _run_build_grid_masks(session: AsyncSession, fetcher: ArchivingFetcher) -> int:
     """`nbm.build_grid_masks` adapted to the `JobFn` contract (it returns per-basin reports).
 
@@ -97,6 +103,7 @@ JOBS: tuple[Job, ...] = (
     Job(mrms_jobs.JOB_NAME, mrms_jobs.CADENCE_SECONDS, _run_fetch_mrms_qpe, cron=mrms_jobs.CRON),
     Job(wpc_jobs.JOB_NAME, wpc_jobs.CADENCE_SECONDS, _run_fetch_wpc_qpf, cron=wpc_jobs.CRON),
     Job(snodas_jobs.JOB_NAME, snodas_jobs.CADENCE_SECONDS, _run_fetch_snodas_swe, cron=snodas_jobs.CRON),
+    Job(nwrfc_jobs.JOB_NAME, nwrfc_jobs.CADENCE_SECONDS, _run_fetch_reservoirs, cron=nwrfc_jobs.CRON),
     Job(alerts_jobs.JOB_NAME, alerts_jobs.CADENCE_SECONDS, _run_fetch_alerts),
     Job(usgs_jobs.JOB_NAME, usgs_jobs.CADENCE_SECONDS, usgs_jobs.run_fetch_instantaneous),
     # --- P3 forcing: masks first, then the two NBM subsets ------------------------------

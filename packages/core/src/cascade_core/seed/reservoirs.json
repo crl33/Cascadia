@@ -1,0 +1,100 @@
+{
+ "_provenance": {
+  "derived_at": "2026-08-28",
+  "source": "NWRFC xml.cgi SiteData blocks (captured fixtures, tests/fixtures/providers/nwrfc/)",
+  "note": "Coordinates and descriptions are the provider's own; longitudes served unsigned west, sign restored."
+ },
+ "stations": [
+  {
+   "id": "station:nwrfc:HHDW1",
+   "agency": "nwrfc",
+   "external_id": "HHDW1",
+   "name": "Howard Hanson Dam (GREEN - HOWARD HANSON DAM)",
+   "basin_id": "basin:green-duwamish",
+   "lon": -121.787114,
+   "lat": 47.277872,
+   "vertical_datum": null,
+   "time_zone": "America/Los_Angeles",
+   "note": "Reservoir station on the Green; NWRFC xml.cgi observed series (DATA_SOURCES R4). Forebay elevations carry NO vertical datum: the provider states none and none is invented (ADR-0009); rows say datum_unstated_by_provider. Not an NWPS forecast point. tidal_class FLUVIAL by physical impossibility, not by the coastal-reference measurement protocol: the site elevation is above 1,100 ft, beyond any tidal reach.",
+   "tidal_class": "FLUVIAL"
+  },
+  {
+   "id": "station:nwrfc:MMRW1",
+   "agency": "nwrfc",
+   "external_id": "MMRW1",
+   "name": "Mud Mountain Dam (WHITE - AT MUD MOUNTAIN DAM)",
+   "basin_id": "basin:puyallup-white",
+   "lon": -121.93,
+   "lat": 47.140833,
+   "vertical_datum": null,
+   "time_zone": "America/Los_Angeles",
+   "note": "Reservoir station on the White; NWRFC xml.cgi observed series (DATA_SOURCES R4). Forebay elevations carry NO vertical datum: the provider states none and none is invented (ADR-0009); rows say datum_unstated_by_provider. Not an NWPS forecast point. tidal_class FLUVIAL by physical impossibility, not by the coastal-reference measurement protocol: the site elevation is above 1,100 ft, beyond any tidal reach.",
+   "tidal_class": "FLUVIAL"
+  },
+  {
+   "id": "station:nwrfc:RODW1",
+   "agency": "nwrfc",
+   "external_id": "RODW1",
+   "name": "Ross Dam (SKAGIT - ROSS RESERVOIR)",
+   "basin_id": "basin:skagit",
+   "lon": -121.066667,
+   "lat": 48.733333,
+   "vertical_datum": null,
+   "time_zone": "America/Los_Angeles",
+   "note": "Reservoir station on the Skagit (upper, regulated); NWRFC xml.cgi observed series (DATA_SOURCES R4). Forebay elevations carry NO vertical datum: the provider states none and none is invented (ADR-0009); rows say datum_unstated_by_provider. Not an NWPS forecast point. tidal_class FLUVIAL by physical impossibility, not by the coastal-reference measurement protocol: the site elevation is above 1,100 ft, beyond any tidal reach.",
+   "tidal_class": "FLUVIAL"
+  },
+  {
+   "id": "station:nwrfc:UBDW1",
+   "agency": "nwrfc",
+   "external_id": "UBDW1",
+   "name": "Upper Baker Dam (BAKER - UPPER BAKER LAKE)",
+   "basin_id": "basin:skagit",
+   "lon": -121.690833,
+   "lat": 48.648889,
+   "vertical_datum": null,
+   "time_zone": "America/Los_Angeles",
+   "note": "Reservoir station on the Baker; NWRFC xml.cgi observed series (DATA_SOURCES R4). Forebay elevations carry NO vertical datum: the provider states none and none is invented (ADR-0009); rows say datum_unstated_by_provider. Not an NWPS forecast point. tidal_class FLUVIAL by physical impossibility, not by the coastal-reference measurement protocol: the site elevation is above 1,100 ft, beyond any tidal reach.",
+   "tidal_class": "FLUVIAL"
+  },
+  {
+   "id": "station:nwrfc:DIAW1",
+   "agency": "nwrfc",
+   "external_id": "DIAW1",
+   "name": "Diablo Dam (SKAGIT - DIABLO RESERVOIR)",
+   "basin_id": "basin:skagit",
+   "lon": -121.143056,
+   "lat": 48.714167,
+   "vertical_datum": null,
+   "time_zone": "America/Los_Angeles",
+   "note": "Reservoir station on the Skagit (upper, regulated); NWRFC xml.cgi observed series (DATA_SOURCES R4). Forebay elevations carry NO vertical datum: the provider states none and none is invented (ADR-0009); rows say datum_unstated_by_provider. Not an NWPS forecast point. tidal_class FLUVIAL by physical impossibility, not by the coastal-reference measurement protocol: the site elevation is above 1,100 ft, beyond any tidal reach.",
+   "tidal_class": "FLUVIAL"
+  },
+  {
+   "id": "station:nwrfc:MORW1",
+   "agency": "nwrfc",
+   "external_id": "MORW1",
+   "name": "Chester Morse Lake (Masonry Dam) (CEDAR - CHESTER MORSE LAKE)",
+   "basin_id": "basin:cedar",
+   "lon": -121.722778,
+   "lat": 47.409444,
+   "vertical_datum": null,
+   "time_zone": "America/Los_Angeles",
+   "note": "Reservoir station on the Cedar; NWRFC xml.cgi observed series (DATA_SOURCES R4). Forebay elevations carry NO vertical datum: the provider states none and none is invented (ADR-0009); rows say datum_unstated_by_provider. Not an NWPS forecast point. tidal_class FLUVIAL by physical impossibility, not by the coastal-reference measurement protocol: the site elevation is above 1,100 ft, beyond any tidal reach.",
+   "tidal_class": "FLUVIAL"
+  },
+  {
+   "id": "station:nwrfc:TLRW1",
+   "agency": "nwrfc",
+   "external_id": "TLRW1",
+   "name": "Tolt Reservoir (SF TOLT - TOLT RESERVOIR)",
+   "basin_id": "basin:snohomish-snoqualmie",
+   "lon": -121.689,
+   "lat": 47.693714,
+   "vertical_datum": null,
+   "time_zone": "America/Los_Angeles",
+   "note": "Reservoir station on the South Fork Tolt; NWRFC xml.cgi observed series (DATA_SOURCES R4). Forebay elevations carry NO vertical datum: the provider states none and none is invented (ADR-0009); rows say datum_unstated_by_provider. Not an NWPS forecast point. tidal_class FLUVIAL by physical impossibility, not by the coastal-reference measurement protocol: the site elevation is above 1,100 ft, beyond any tidal reach.",
+   "tidal_class": "FLUVIAL"
+  }
+ ]
+}
