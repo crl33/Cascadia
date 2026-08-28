@@ -170,3 +170,22 @@ body { background: var(--canvas); color: var(--text-primary); font-family: var(-
   .t0-line { gap: 4px; }
   .t0-figure { font-size: 13px; }
 }
+
+/* Progressive disclosure (design direction 2026-08-28) */
+.disclosure { border-top: 1px solid var(--stroke); }
+.disclosure-summary { display: flex; align-items: baseline; gap: 8px; padding: 8px 0; cursor: pointer; list-style: none; }
+.disclosure-summary::-webkit-details-marker { display: none; }
+.disclosure-summary::before { content: '▸'; color: var(--text-muted); font-size: 10px; transition: transform 120ms; }
+@media (prefers-reduced-motion: reduce) { .disclosure-summary::before { transition: none; } }
+.disclosure[open] > .disclosure-summary::before { transform: rotate(90deg); }
+.disclosure-label { font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.06em; color: var(--text-secondary); text-transform: uppercase; }
+.disclosure-hint { font-size: 11px; }
+.disclosure-body { padding-bottom: 6px; }
+.disclosure-summary:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; border-radius: 3px; }
+
+/* The compact basin summary */
+.basin-summary { padding: 10px 0 6px; display: flex; flex-direction: column; gap: 6px; }
+.summary-line { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.summary-state { font-family: var(--font-mono); font-size: 15px; letter-spacing: 0.08em; font-weight: 600; }
+.summary-key { font-family: var(--font-mono); font-size: 14px; font-variant-numeric: tabular-nums; }
+.summary-tag { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.06em; color: var(--text-muted); text-transform: uppercase; min-width: 74px; }

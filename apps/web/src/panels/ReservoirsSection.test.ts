@@ -7,7 +7,7 @@ import { createElement } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { describe, expect, it } from 'vitest';
 import { keys } from '../api/keys';
-import { ReservoirsSection } from './BasinPanel';
+import { ReservoirsSection } from './ReservoirsSection';
 
 function render(basinId: string, doc: unknown): string {
   const qc = new QueryClient();

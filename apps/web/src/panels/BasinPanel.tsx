@@ -16,70 +16,25 @@
  *    `pointwise_p90` stays pointwise, because a basin mean of a per-cell percentile is not a
  *    basin-scale 90th percentile.
  */
-import type { ReactNode } from 'react';
-import { useBasinReservoirs, useBasinState } from '../api/hooks';
+import { useBasinState } from '../api/hooks';
 import { useSceneStore } from '../state/store';
+import { ProvenancePopover } from '../design-system/ProvenancePopover';
+import type { BasinVisualizationState } from '../contracts/schemas';
 import { Badge } from '../design-system/Badge';
 import { CATEGORY_BADGE } from '../design-system/badges';
-import { ProvenancePopover } from '../design-system/ProvenancePopover';
-import type { BasinVisualizationState, ProvenanceRef, TruthClass } from '../contracts/schemas';
+import { AntecedentSection } from './AntecedentSection';
+import { BasinSummary } from './BasinSummary';
+import { Disclosure } from './Disclosure';
+import { DriverRow } from './DriverRow';
 import { ProvenanceLine } from './ProvenanceLine';
+import { ReservoirsSection } from './ReservoirsSection';
+import { SurfaceRow } from './SurfaceRow';
+import { SurfaceValue } from './SurfaceValue';
 import { Tier0Section } from './Tier0Section';
-import { formatNumber, formatQuantity, formatUtc, words } from './format';
+import { formatUtc, words } from './format';
 
 type Surfaces = BasinVisualizationState['surfaces'];
-type SurfaceState = Surfaces['forcing'];
-type Driver = NonNullable<BasinVisualizationState['headline_drivers']>[number];
 type ModelProbability = NonNullable<Surfaces['hazard']['model_probability']>;
-
-interface SurfaceRowProps {
-  title: string;
-  state: string;
-  reason: string | null | undefined;
-  provKey: string;
-  refs: Record<string, ProvenanceRef | undefined>;
-  truth: TruthClass | null;
-  testId: string;
-  extra?: ReactNode;
-  /** Rendered BELOW this surface's own provenance line, so a trailing badge is never misread as
-   *  belonging to the block after it. Tier 0 uses this: its statements carry their own badges. */
-  after?: ReactNode;
-}
-
-function SurfaceRow({ title, state, reason, provKey, refs, truth, testId, extra, after }: SurfaceRowProps) {
-  return (
-    <div className="row" data-testid={testId}>
-      <div className="row-head">
-        <span className="row-title">{title}</span>
-        <span className={`state-word state-${state}`} data-testid={`${testId}-state`}>{words(state).toUpperCase()}</span>
-      </div>
-      {extra}
-      {reason ? <p className="reason" data-testid={`${testId}-reason`}>{reason}</p> : null}
-      <ProvenanceLine provKey={provKey} prov={refs[provKey]} truth={truth} testId={`${testId}-badge`} />
-      {after}
-    </div>
-  );
-}
-
-/**
- * The headline quantity a surface was banded from, its named spread points and its confidence.
- * Absent when the surface has no value — an UNKNOWN surface prints its reason instead, never a
- * blank number.
- */
-function SurfaceValue({ surface, testId }: { surface: SurfaceState; testId: string }) {
-  const spread = surface.spread ? Object.entries(surface.spread) : [];
-  if (!surface.value && spread.length === 0) return null;
-  const unit = surface.value?.unit ?? '';
-  return (
-    <p className="value-line" data-testid={testId}>
-      {surface.value ? <span className="value" data-testid={`${testId}-quantity`}>{formatQuantity(surface.value, 1)}</span> : null}
-      {spread.map(([key, value]) => (
-        <span key={key} className="muted mono">{words(key)} {formatNumber(value)} {unit}</span>
-      ))}
-      <span className="muted">confidence {words(surface.confidence)}</span>
-    </p>
-  );
-}
 
 /**
  * The one honestly probabilistic number the platform prints: a count of model members over an
@@ -91,107 +46,6 @@ function modelProbabilityText(probability: ModelProbability): string {
     return `${exceeding} of ${members} ${typeof model === 'string' ? model : 'model'} members crest at or above ${exceeds}`;
   }
   return JSON.stringify(probability); // an unrecognised shape is shown verbatim, not summarised
-}
-
-function DriverRow({ driver, refs }: { driver: Driver; refs: Record<string, ProvenanceRef | undefined> }) {
-  const unavailable = driver.value == null;
-  return (
-    <li className="driver" data-testid={`driver-${driver.feature}`}>
-      <div className="driver-head">
-        <span className="driver-name" title={driver.feature}>{words(driver.feature)}</span>
-        <span className="driver-value mono" data-testid={`driver-${driver.feature}-value`}>
-          {unavailable ? 'UNAVAILABLE' : `${formatNumber(driver.value)} ${driver.unit ?? ''}`.trim()}
-        </span>
-      </div>
-      <span className="driver-direction mono">{words(driver.direction)}</span>
-      <ProvenanceLine provKey={driver.prov} prov={refs[driver.prov]} truth={null} testId={`driver-${driver.feature}-badge`} />
-    </li>
-  );
-}
-
-type AntecedentEntry = NonNullable<BasinVisualizationState['antecedent_precip']>[number];
-
-/**
- * Observed trailing-window precipitation. Three honesty rules travel from the contract to the
- * screen intact: the window ends at the newest OBSERVED hour (printed, so nobody reads it as
- * "the last N hours on the clock"); a partial sum keeps its `reason` beside the number, because
- * the number alone is a known underestimate; and an absent total prints its reason, never 0 mm —
- * zero rain and unknown rain are different facts.
- */
-export function AntecedentSection({ entries, refs }: { entries: AntecedentEntry[]; refs: Record<string, ProvenanceRef | undefined> }) {
-  if (entries.length === 0) return null;
-  const anchor = entries.find((e) => e.window_end != null);
-  return (
-    <div className="row" data-testid="antecedent-precip">
-      <div className="row-head">
-        <span className="row-title">Antecedent precipitation</span>
-        {anchor ? <span className="muted mono" data-testid="antecedent-window-end">to {formatUtc(anchor.window_end)}</span> : null}
-      </div>
-      <ul>
-        {entries.map((e) => (
-          <li key={e.window_h} className="mono" data-testid={`antecedent-${e.window_h}h`}>
-            {e.window_h} h · {e.total ? `${formatQuantity(e.total, 1)} (${e.hours_present}/${e.hours_expected} hours)` : 'UNKNOWN'}
-            {e.reason ? <span className="reason" data-testid={`antecedent-${e.window_h}h-reason`}> — {e.reason}</span> : null}
-          </li>
-        ))}
-      </ul>
-      <ProvenanceLine provKey={entries[0].prov} prov={refs[entries[0].prov]} truth={entries[0].truth} testId="antecedent-badge" />
-    </div>
-  );
-}
-
-const VARIABLE_LABEL: Record<string, string> = {
-  forebay_elevation: 'forebay', storage: 'storage', inflow: 'inflow', outflow: 'outflow',
-};
-
-/**
- * Reservoir state for a regulated basin: the latest observation per (dam, variable), verbatim.
- * Long-form units are the provider's own and stay unabbreviated; a forebay elevation renders
- * with its no-datum caveat, because a number on an unstated datum invites false comparison;
- * an unregulated basin renders nothing at all — no section, no empty shell.
- */
-export function ReservoirsSection({ basinId }: { basinId: string }) {
-  const query = useBasinReservoirs(basinId);
-  const doc = query.data;
-  if (query.isError) {
-    // a failed endpoint must not read as "unregulated": Green with Howard Hanson dark is a
-    // different fact from the Nooksack having no dams (adversarial review 2026-08-28)
-    return (
-      <div className="row" data-testid="reservoirs">
-        <div className="row-head"><span className="row-title">Reservoirs</span></div>
-        <p className="reason" data-testid="reservoirs-error">Reservoir state unavailable: {query.error.message}</p>
-      </div>
-    );
-  }
-  if (!doc || doc.reservoirs.length === 0) return null;
-  const refs = doc.provenance_refs;
-  return (
-    <div className="row" data-testid="reservoirs">
-      <div className="row-head"><span className="row-title">Reservoirs</span></div>
-      <ul>
-        {doc.reservoirs.map((r) => (
-          <li key={r.station_id} data-testid={`reservoir-${r.lid}`}>
-            <div className="driver-head">
-              <span className="driver-name">{r.name}</span>
-              {r.prov ? <ProvenancePopover provKey={r.prov} prov={refs[r.prov]} truth={null} /> : null}
-            </div>
-            {Object.keys(r.variables).length > 0 ? (
-              <p className="value-line mono" data-testid={`reservoir-${r.lid}-values`}>
-                {Object.entries(r.variables).map(([name, v]) => (
-                  <span key={name}>
-                    {VARIABLE_LABEL[name] ?? words(name)} {v.value === null ? 'UNKNOWN' : formatNumber(v.value)} {v.unit}
-                    {name === 'forebay_elevation' ? <span className="muted"> (datum unstated)</span> : null}
-                  </span>
-                ))}
-              </p>
-            ) : (
-              <p className="reason">No series served for this dam at this knowledge time.</p>
-            )}
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
 }
 
 export function BasinPanel() {
@@ -218,6 +72,9 @@ export function BasinPanel() {
         <p className="muted">regulation: <span className="mono">{words(item.regulation_class)}</span> · valid {formatUtc(query.data.time.valid)} ({query.data.time.mode})</p>
       </header>
 
+      <BasinSummary item={item} refs={refs} />
+
+      <Disclosure id="why" label="Why?" hint={`${drivers.length} drivers`}>
       <SurfaceRow
         title="Basin susceptibility"
         state={susceptibility.state}
@@ -240,6 +97,19 @@ export function BasinPanel() {
           />
         }
       />
+      <div className="row" data-testid="headline-drivers">
+        <div className="row-head"><span className="row-title">Headline drivers</span></div>
+        {drivers.length > 0 ? (
+          <ul className="drivers">
+            {drivers.map((d) => <DriverRow key={d.feature} driver={d} refs={refs} />)}
+          </ul>
+        ) : (
+          <p className="reason" data-testid="drivers-empty">No headline drivers in this document: no surface produced one at this knowledge time.</p>
+        )}
+      </div>
+      </Disclosure>
+
+      <Disclosure id="forecasts" label="Forecasts" hint={`${(item.official_alerts ?? []).length} alerts`}>
       <SurfaceRow
         title={`Meteorological forcing${forcing.horizon_h ? ` · ${forcing.horizon_h} h` : ''}`}
         state={forcing.state}
@@ -250,8 +120,6 @@ export function BasinPanel() {
         testId="surface-forcing"
         extra={<SurfaceValue surface={forcing} testId="surface-forcing-value" />}
       />
-      <AntecedentSection entries={item.antecedent_precip ?? []} refs={refs} />
-      <ReservoirsSection basinId={item.id} />
       <SurfaceRow
         title={`Flood hazard · ${hazard.horizon_h} h`}
         state={hazard.official_category}
@@ -307,16 +175,13 @@ export function BasinPanel() {
           <p className="reason" data-testid="alerts-empty">No official alerts for this basin at this knowledge time. Watches and warnings are issued by the National Weather Service and polled every five minutes; an empty list means none of the active ones cover this basin.</p>
         )}
       </div>
-      <div className="row" data-testid="headline-drivers">
-        <div className="row-head"><span className="row-title">Headline drivers</span></div>
-        {drivers.length > 0 ? (
-          <ul className="drivers">
-            {drivers.map((d) => <DriverRow key={d.feature} driver={d} refs={refs} />)}
-          </ul>
-        ) : (
-          <p className="reason" data-testid="drivers-empty">No headline drivers in this document: no surface produced one at this knowledge time.</p>
-        )}
-      </div>
+      </Disclosure>
+
+      <Disclosure id="context" label="Context">
+        <AntecedentSection entries={item.antecedent_precip ?? []} refs={refs} />
+        <ReservoirsSection basinId={item.id} />
+      </Disclosure>
+
       {item.outlet_forecast_point_id ? <p className="muted">outlet forecast point: <span className="mono">{item.outlet_forecast_point_id}</span></p> : null}
     </section>
   );

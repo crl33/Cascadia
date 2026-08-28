@@ -672,3 +672,39 @@ this phase by rule).
    document follows CAMERA_SYSTEM §7 (C2).
 9. The spike on disk: SQLite store (§5.1), `vite-plugin-cesium` vs ADR-0006 (§5 risks), and
    `BasinVisualizationState` schema drift (§8 C3a) — each to be closed before SPIKE exit.
+
+## Design direction 2026-08-28 — "world as interface" (owner assessment, adopted)
+
+The owner's screen review, adopted as the working visual trajectory. The interface
+architecture is right and stays; development energy shifts to the rendering experience.
+Estimates at review: engineering/client framework ~70-75%, operational hydrology UI ~55-60%,
+full cinematic C0-C8 vision ~25-30% — the remaining gap is precisely the increasingly
+VISIBLE work.
+
+```
+CURRENT   flat OSM map + basin outline + experimental hatch + dense panel + timeline
+NEXT      muted terrain-first Cascadia world + rivers as first-class visual objects
+          + restrained basin-state treatment + precipitation / snow / freezing-level fields
+          + atmospheric forcing + timeline-driven spatial changes
+          + compact summary panel + expandable forensic detail
+FINAL     terrain + hydrologic network + atmosphere + weather evolving through space and time
+          + snow/rain partition over elevation + reservoirs / levees / infrastructure
+          + forecast evolution + Event Mode + local detail + presentation/cinematic mode
+```
+
+Landed the same day (each verified by screenshot):
+- **Muted ground** — OSM spoken quietly via Cesium layer adjustments (saturation 0.25,
+  brightness 0.82); cyan water and amber tension are the only saturated things.
+- **Restrained susceptibility** — the repeat-36 vertical bands (read as a debugging mask)
+  became a fine 45° hatch over a halved wash, density normalised per basin extent; the
+  doctrine's non-colour carrier and amber ceiling intact and test-pinned.
+- **Panel progressive disclosure** — a compact summary (state words + key figures, every line
+  still provenance-chipped; the OFFICIAL hazard category and any active alert NEVER fold) over
+  three disclosures: Why? / Forecasts / Context. Nothing deleted; everything one level deeper.
+
+Still ahead on this trajectory, in the order the assessment implies: rivers as first-class
+visual objects (width/presence from flow_visual_intensity), precipitation/snow/freezing-level
+FIELDS on the map (C3b/C3c — the map absorbing what the panel carries), chrome compaction,
+terrain (needs an ion-free terrain source decision — ADR territory), atmosphere, and
+timeline-driven spatial change.
+

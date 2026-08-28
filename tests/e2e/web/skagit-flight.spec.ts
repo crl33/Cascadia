@@ -37,7 +37,13 @@ test('search Skagit → basin selected → BasinPanel shows Skagit with an OFFIC
   await expect(page.getByTestId('basin-panel-name')).toHaveText('Skagit');
   await expect(page.getByTestId('surface-hazard-badge')).toContainText('OFFICIAL FORECAST');
   // The stub serves a REAL production capture (2026-08-28) since the pre-P3 envelope was
-  // retired: the surfaces carry live values, and the EXPERIMENTAL badge must ride along.
+  // The compact summary answers first (progressive disclosure, 2026-08-28)...
+  await expect(page.getByTestId('summary-susceptibility')).toContainText('LOW SUSCEPTIBILITY');
+  await expect(page.getByTestId('summary-forcing')).toContainText('LOW');
+  // ...and the forensic layer is one fold deeper, intact.
+  await page.getByTestId('disclosure-why').locator('summary.disclosure-summary').click();
+  await page.getByTestId('disclosure-forecasts').locator('summary.disclosure-summary').click();
+  await page.getByTestId('disclosure-context').locator('summary.disclosure-summary').click();
   await expect(page.getByTestId('surface-susceptibility-state')).toHaveText('LOW');
   await expect(page.getByTestId('surface-forcing-state')).toHaveText('LOW');
   await expect(page.getByTestId('surface-susceptibility-badge')).toContainText('EXPERIMENTAL');

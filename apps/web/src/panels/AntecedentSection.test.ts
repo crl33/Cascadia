@@ -5,7 +5,7 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { createElement } from 'react';
 import { describe, expect, it } from 'vitest';
-import { AntecedentSection } from './BasinPanel';
+import { AntecedentSection } from './AntecedentSection';
 import type { BasinVisualizationState, ProvenanceRef } from '../contracts/schemas';
 
 type Entry = NonNullable<BasinVisualizationState['antecedent_precip']>[number];

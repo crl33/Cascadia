@@ -20,11 +20,23 @@ const BEFORE_ANY_REFERENCE = '1999-01-01T00:00:00Z';
 const url = (basin: string, asOf: string) =>
   `/?basin=${encodeURIComponent(basin)}&as_of=${encodeURIComponent(asOf)}&motion=reduced`;
 
+/** Tier 0 lives inside the panel's "Why?" disclosure (progressive disclosure, 2026-08-28):
+ *  the compact summary answers at a glance; these specs interrogate the forensic layer, so
+ *  they open it exactly the way a user does. */
+async function openWhy(page: import('@playwright/test').Page): Promise<void> {
+  const why = page.getByTestId('disclosure-why');
+  await expect(why).toBeVisible();
+  if (!(await why.evaluate((el) => (el as HTMLDetailsElement).open))) {
+    await why.locator('summary.disclosure-summary').click();
+  }
+}
+
 test('the below-p90 growth rank reaches the screen', async ({ page }) => {
   // THE regression this spec exists for. snohomish-snoqualmie sits at p72.4 — below the level's
   // p90 read edge — with a real 24 h rise. Before 595fc92 the growth rank inherited that edge and
   // was absent exactly here; a client-side `percentile >= 90` guard would reintroduce it.
   await page.goto(url('basin:snohomish-snoqualmie', POPULATED));
+  await openWhy(page);
   const level = page.getByTestId('tier0-level');
   await expect(level).toBeVisible();
   await expect(page.getByTestId('tier0-level-observed')).toContainText('6,110 cfs');
@@ -44,6 +56,7 @@ test('the below-p90 growth rank reaches the screen', async ({ page }) => {
 
 test('a clamped level reads as a bound, with its exact rank and the record it beat', async ({ page }) => {
   await page.goto(url('basin:skagit', POPULATED));
+  await openWhy(page);
   await expect(page.getByTestId('tier0-level-clamped')).toContainText('At or above the stored p95 limit');
   await expect(page.getByTestId('tier0-level-multiple')).toContainText('4.99×');
   await expect(page.getByTestId('tier0-level-multiple')).toContainText('12,550 cfs');
@@ -61,6 +74,7 @@ test('a MODERATE band and a large, high-ranked change coexist without collapsing
   // The exact situation the design exists for: the level is unremarkable, the CHANGE is not, and
   // the reader must be able to hold both without the UI implying Cascadia has declared a flood.
   await page.goto(url('basin:snohomish-snoqualmie', POPULATED));
+  await openWhy(page);
   await expect(page.getByTestId('surface-susceptibility-state')).toHaveText('MODERATE');
   await expect(page.getByTestId('tier0-change-24h-growth')).toContainText('2.10×');
   await expect(page.getByTestId('tier0-change-24h-rank')).toContainText('759th');
@@ -85,6 +99,7 @@ test('a MODERATE band and a large, high-ranked change coexist without collapsing
 
 test('every Tier 0 refusal keeps the backend reason instead of a generic Unavailable', async ({ page }) => {
   await page.goto(url('basin:cedar', POPULATED));
+  await openWhy(page);
   const absent = page.getByTestId('tier0-change-24h-absent');
   await expect(absent).toContainText('No 24 h change');
   // the specific reason is one interaction away, not several, and is the backend's own sentence
@@ -92,6 +107,7 @@ test('every Tier 0 refusal keeps the backend reason instead of a generic Unavail
   await expect(page.getByTestId('tier0-change-24h-absent-reason')).toContainText('no daily mean within 6 h');
 
   await page.goto(url('basin:green-duwamish', POPULATED));
+  await openWhy(page);
   await expect(page.getByTestId('tier0-change-24h-growth')).toContainText('1.34×');
   const notRanked = page.getByTestId('tier0-change-24h-rank-absent');
   await expect(notRanked).toContainText('Not ranked');
@@ -101,11 +117,13 @@ test('every Tier 0 refusal keeps the backend reason instead of a generic Unavail
 
 test('moving the replay cursor never leaves a later knowledge time on screen', async ({ page }) => {
   await page.goto(url('basin:skagit', POPULATED));
+  await openWhy(page);
   await expect(page.getByTestId('tier0-level-observed')).toContainText('62,600 cfs');
 
   // step back to a knowledge time before any reference existed: the surface must REFUSE, and
   // the populated values must be gone rather than left stale
   await page.goto(url('basin:skagit', BEFORE_ANY_REFERENCE));
+  await openWhy(page);
   await expect(page.getByTestId('tier0-absent')).toBeVisible();
   await expect(page.getByTestId('tier0-absent-reason')).toContainText('No level or change statement at this knowledge time');
   await expect(page.getByTestId('tier0-level-observed')).toHaveCount(0);
@@ -114,11 +132,13 @@ test('moving the replay cursor never leaves a later knowledge time on screen', a
 
   // and forward again restores it
   await page.goto(url('basin:skagit', POPULATED));
+  await openWhy(page);
   await expect(page.getByTestId('tier0-level-observed')).toContainText('62,600 cfs');
 });
 
 test('each Tier 0 statement carries its own provenance, reachable by keyboard', async ({ page }) => {
   await page.goto(url('basin:skagit', POPULATED));
+  await openWhy(page);
   const levelBadge = page.getByTestId('tier0-level-badge');
   const changeBadge = page.getByTestId('tier0-change-24h-badge');
   await expect(levelBadge).toBeVisible();
@@ -138,6 +158,7 @@ test('each Tier 0 statement carries its own provenance, reachable by keyboard', 
 test('the refusal disclosure is keyboard operable and does not overflow at mobile width', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto(url('basin:cedar', POPULATED));
+  await openWhy(page);
   const summary = page.getByTestId('tier0-change-24h-absent').locator('summary');
   await summary.focus();
   await page.keyboard.press('Enter');
