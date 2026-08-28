@@ -107,21 +107,32 @@ catalogue).
   `SERVED_ON_CAPTURE` pins reality; the poll keeps asking.
 - hydrology mypy (67 findings); DIAW1/TLRW1/MORW1 empty series.
 
+## Post-checkpoint additions (same session, each proven live)
+
+- **Reservoir surfacing** — `GET /basins/{id}/reservoirs` (as_of-honest; empty list is the
+  Nooksack's truth) + a panel Reservoirs section (verbatim units, "(datum unstated)" beside
+  every forebay number). Proven: Howard Hanson 1154.33 ft / 35.16 k-acre-feet / 40 cfs inflow
+  live; Nooksack `[]`.
+- **HEFS band on the hydrograph (C5 opens)** — the provider's 0.05/0.50/0.95 traces as a band
+  + dashed median under full overlay honesty (flow axis only; exact levels or nothing; case-
+  insensitive unit orthography; clipped rows COUNTED in the legend). **Visually proven in
+  production**: `img/hefs-band-aubw1-2026-08-28.png` (band + MODELED badge + "80 rows beyond
+  the charted window not drawn") and `img/hefs-refusal-mvew1-2026-08-28.png` (the stage-axis
+  refusal, printed verbatim). Gotcha recorded: the Pages bundle deploys a minute behind the
+  Railway API — a just-deployed feature can 404/no-op in the browser briefly.
+
 ## Dependency-ordered continuation
 
 (The stub fixture was refreshed as part of this checkpoint: the committed capture is 1.4.0
 with 98 refs, SNODAS/WPC/agreement drivers aboard, and the full e2e suite re-pinned to it.)
 
 
-1. **Surface reservoirs**: river/basin panel section (forebay + storage + in/out, verbatim
-   units, datum caveat); consider `flow_visual_intensity` untouched (regulation is context).
-2. **P5 next slice**: RiverPanel consumes `/hefs/latest` (exceedance ladder rendered as the
-   provider's own probabilities, §9(a)); then agreement-surface design note for WPC-vs-NBM QPF
-   (they are two KINDS — the comparison is information, never an average).
-3. **VIIRS SCA (S9)** — the observed half of the rain-on-snow gate; measure granule cost first
+1. **Agreement-surface design note for WPC-vs-NBM QPF** (two KINDS; the comparison is
+   information, never an average) — design before code.
+2. **VIIRS SCA (S9)** — the observed half of the rain-on-snow gate; measure granule cost first
    (LAADS/LANCE auth needed — check keys).
-4. **P6 hindcast harness design**: knowledge-time model for backfilled rows
+3. **P6 hindcast harness design**: knowledge-time model for backfilled rows
    (`original_available_at` vs `available_at`) — an ADR before code.
-5. **ingest_writer ADR** (partition DDL ownership); then the role.
-6. Opportunistic: hydrology mypy burn-down; C3b MRMS raster tiles; SSE client reconnect UX.
+4. **ingest_writer ADR** (partition DDL ownership); then the role.
+5. Opportunistic: hydrology mypy burn-down; C3b MRMS raster tiles; SSE client reconnect UX.
 
