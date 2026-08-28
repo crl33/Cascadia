@@ -24,7 +24,7 @@ from __future__ import annotations
 import gzip
 import json
 import logging
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from pathlib import Path
 
 from sqlalchemy import select
@@ -33,7 +33,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from cascade_core.fetch import ArchivingFetcher, FetchError
 from cascade_core.models import Basin, DerivedFeature, GridMask
 from cascade_core.registry import PRODUCT_SNODAS_SWE
-from cascade_core.timeutils import utcnow
+from cascade_core.timeutils import to_utc, utcnow
 from cascade_geo.latlon import LatLonGridSpec
 from cascade_geo.masks import BasinMask, build_basin_mask
 from cascade_providers_snodas.client import fetch_day_tar
@@ -60,6 +60,7 @@ LOOKBACK_DAYS = 3
 INSUFFICIENT_COVERAGE = "insufficient_grid_coverage"
 WATER_CELLS = "static_water_cells_present"
 SATURATED_CELLS = "swe_saturated_cells_excluded"
+CORRUPT_CELLS = "negative_non_sentinel_cells_excluded"
 
 
 async def _basins(session: AsyncSession) -> list[Basin]:
@@ -138,12 +139,14 @@ def _aggregate(mask: BasinMask, values) -> dict:
     w = np.fromiter((wt for _, wt in mask.cells), dtype=np.float64, count=len(mask.cells))
     v = values[idx]
     valid = (v != NODATA) & (v != SATURATED) & (v >= 0)
+    corrupt = (v < 0) & (v != NODATA)  # negatives that are NOT the sentinel: damage, named
     wsum = float(w.sum())
     valid_fraction = float(w[valid].sum() / wsum) if wsum else 0.0
     out = {
         "valid_fraction": round(valid_fraction, 6),
         "water_fraction": round(float(w[v == NODATA].sum() / wsum), 6) if wsum else 0.0,
         "saturated_fraction": round(float(w[v == SATURATED].sum() / wsum), 6) if wsum else 0.0,
+        "corrupt_fraction": round(float(w[corrupt].sum() / wsum), 6) if wsum else 0.0,
         "cell_count": int(idx.size),
     }
     if valid_fraction >= MIN_VALID_FRACTION:
@@ -167,41 +170,57 @@ def _flags(stats: dict) -> list[str]:
         flags.append(WATER_CELLS)
     if stats["saturated_fraction"] > 0:
         flags.append(SATURATED_CELLS)
+    if stats["corrupt_fraction"] > 0:
+        flags.append(CORRUPT_CELLS)
     return flags
 
 
-async def _stored_days(session: AsyncSession, n_basins: int, since: datetime) -> set[datetime]:
-    """valid_times already fully written (both features, every basin) — partial writes re-run."""
+async def _stored_scopes_by_day(session: AsyncSession, since: datetime) -> dict[date, set[str]]:
+    """Per UTC calendar day: the basins whose BOTH features are already stored.
+
+    Keyed by DATE, not the 06:00 instant — the header's own Start hour is the authority and
+    a day NOHRSC ships at a different hour must not be refetched forever against a hard-coded
+    six. Returning scope sets (not a complete/incomplete verdict) lets the write loop complete
+    a partial day row-by-row instead of re-inserting whole — the re-insert tripped
+    uq_derived_feature_identity on PostgreSQL (both from the adversarial review, 2026-08-28).
+    """
     rows = (
         await session.execute(
-            select(DerivedFeature.valid_time, DerivedFeature.feature)
+            select(DerivedFeature.valid_time, DerivedFeature.scope_id, DerivedFeature.feature)
             .where(DerivedFeature.feature.in_([FEATURE_SWE, FEATURE_SCF]),
                    DerivedFeature.valid_time >= since)
         )
     ).all()
-    counts: dict[datetime, int] = {}
-    for t, _feature in rows:
-        counts[t] = counts.get(t, 0) + 1
-    return {t for t, n in counts.items() if n >= n_basins * 2}
+    seen: dict[tuple[date, str], set[str]] = {}
+    for t, sid, feature in rows:
+        seen.setdefault((t.date(), sid), set()).add(feature)
+    out: dict[date, set[str]] = {}
+    for (day, sid), feats in seen.items():
+        if feats >= {FEATURE_SWE, FEATURE_SCF}:
+            out.setdefault(day, set()).add(sid)
+    return out
 
 
 async def run_fetch_swe(
     session: AsyncSession, fetcher: ArchivingFetcher, *, geo_dir: Path, now: datetime | None = None
 ) -> int:
     """Ingest every recent day not yet fully stored, newest last. Returns rows written."""
-    now = now or utcnow()
+    # UTC throughout: a non-UTC (or naive) `now` made the membership probe never match the
+    # stored 06:00 UTC instants — every stored day refetched, and on PostgreSQL the re-insert
+    # wedged on the identity constraint (reproduced by the adversarial review, 2026-08-28).
+    now = to_utc(now) if now is not None else utcnow()
     basins = await _basins(session)
     if not basins:
         log.warning("snodas: no basins seeded; nothing to aggregate")
         return 0
     since = now - timedelta(days=LOOKBACK_DAYS + 1)
-    have = await _stored_days(session, len(basins), since)
+    stored_by_day = await _stored_scopes_by_day(session, since)
     written = 0
-    masks: dict[str, BasinMask] | None = None
+    masks_by_hash: dict[str, dict[str, BasinMask]] = {}
     for back in range(LOOKBACK_DAYS, -1, -1):
         day = (now - timedelta(days=back)).date()
-        snapshot = datetime(day.year, day.month, day.day, 6, tzinfo=now.tzinfo)
-        if snapshot in have:
+        done = stored_by_day.get(day, set())
+        if {b.id for b in basins} <= done:
             continue
         try:
             result = await fetch_day_tar(fetcher, session, day)
@@ -214,10 +233,16 @@ async def run_fetch_swe(
             raise ValueError(
                 f"snodas: file for {day.isoformat()} says snapshot {field.valid_time.isoformat()}"
             )
-        if masks is None:
-            masks = await _masks_for(session, field.grid, basins, geo_dir)
+        # masks are keyed by EACH field's own grid hash — resolving once from the first file
+        # and reusing across a mid-run grid change would aggregate with the wrong flat indices
+        # (the convention the hash exists for; adversarial review 2026-08-28)
+        if field.grid.definition_hash not in masks_by_hash:
+            masks_by_hash[field.grid.definition_hash] = await _masks_for(session, field.grid, basins, geo_dir)
+        masks = masks_by_hash[field.grid.definition_hash]
         available_at = result.last_modified or result.fetched_at
         for basin in basins:
+            if basin.id in done:
+                continue  # complete a partial day row-by-row; never re-insert
             mask = masks.get(basin.id)
             if mask is None:
                 continue

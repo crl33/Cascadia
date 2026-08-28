@@ -175,3 +175,49 @@ async def test_a_file_under_the_wrong_day_name_is_refused(sessions, tmp_path) ->
         with pytest.raises(ValueError, match="says snapshot"):
             await snodas_jobs.run_fetch_swe(s, _fetcher(tmp_path), geo_dir=GEO,
                                             now=datetime(2026, 8, 26, 13, 40, tzinfo=UTC))
+
+
+@respx.mock
+async def test_a_non_utc_now_neither_refetches_nor_wedges(sessions, tmp_path) -> None:
+    """The review reproduced the wedge on real PostgreSQL: an America/Los_Angeles `now` made
+    the membership probe never match the stored UTC instants, so every stored day re-inserted
+    and tripped the identity constraint. `now` is normalized to UTC at entry."""
+    from zoneinfo import ZoneInfo
+
+    respx.get(day_tar_url(date(2026, 8, 27))).mock(
+        return_value=httpx.Response(200, content=TAR, headers={"Last-Modified": PUBLISHED}))
+    respx.get(url__startswith="https://noaadata.apps.nsidc.org/").mock(
+        return_value=httpx.Response(404))
+    async with sessions() as s:
+        first = await snodas_jobs.run_fetch_swe(s, _fetcher(tmp_path), geo_dir=GEO, now=NOW)
+        await s.commit()
+    la_now = NOW.astimezone(ZoneInfo("America/Los_Angeles"))
+    async with sessions() as s:
+        second = await snodas_jobs.run_fetch_swe(s, _fetcher(tmp_path), geo_dir=GEO, now=la_now)
+        await s.commit()
+        total = len((await s.execute(select(DerivedFeature))).scalars().all())
+    assert first == 12 and second == 0 and total == 12
+
+
+@respx.mock
+async def test_a_partial_day_is_completed_row_by_row_never_reinserted(sessions, tmp_path) -> None:
+    """One basin's rows deleted (standing in for a basin seeded without geometry, then given
+    it): the rerun writes ONLY the missing basin — a whole-day re-insert was the PostgreSQL
+    crash-loop the review reproduced."""
+    respx.get(day_tar_url(date(2026, 8, 27))).mock(
+        return_value=httpx.Response(200, content=TAR, headers={"Last-Modified": PUBLISHED}))
+    respx.get(url__startswith="https://noaadata.apps.nsidc.org/").mock(
+        return_value=httpx.Response(404))
+    async with sessions() as s:
+        await snodas_jobs.run_fetch_swe(s, _fetcher(tmp_path), geo_dir=GEO, now=NOW)
+        await s.commit()
+        from sqlalchemy import delete
+
+        await s.execute(delete(DerivedFeature).where(DerivedFeature.scope_id == "basin:cedar"))
+        await s.commit()
+    async with sessions() as s:
+        written = await snodas_jobs.run_fetch_swe(s, _fetcher(tmp_path), geo_dir=GEO, now=NOW)
+        await s.commit()
+        rows = (await s.execute(select(DerivedFeature))).scalars().all()
+    assert written == 2, "exactly the missing basin's two features, nothing re-inserted"
+    assert len(rows) == 12

@@ -179,13 +179,17 @@ def _flags(stats: dict) -> list[str]:
     return flags
 
 
-async def _cycle_complete(session: AsyncSession, cycle: datetime, n_basins: int) -> bool:
-    """True when every (basin, valid_time) row for this cycle already exists."""
+async def _stored_pairs(session: AsyncSession, cycle: datetime) -> set[tuple[str, datetime]]:
+    """The (scope, valid_time) pairs already stored for this cycle — the write loop's skip set.
+
+    Keyed on (scope, valid_time), NOT (scope, window): the window string is always "24h" here.
+    Returning the SET rather than a complete/incomplete verdict serves two review findings at
+    once: a partially stored cycle is completed row-by-row instead of re-inserted whole (the
+    re-insert tripped uq_derived_feature_identity on PostgreSQL — a crash-loop), and the
+    denominator no longer counts basins the write loop would skip.
+    """
     rows = (
         await session.execute(
-            # (scope, valid_time) — NOT (scope, window): the window string is always "24h"
-            # here, and counting it collapsed the three days to one, so no cycle ever read
-            # as complete and a rerun hit the identity constraint (caught by test).
             select(DerivedFeature.scope_id, DerivedFeature.valid_time)
             .where(
                 DerivedFeature.feature == FEATURE_QPF,
@@ -193,33 +197,44 @@ async def _cycle_complete(session: AsyncSession, cycle: datetime, n_basins: int)
             )
         )
     ).all()
-    return len(set(rows)) >= n_basins * len(FORECAST_HOURS)
+    return {(sid, t) for sid, t in rows}
 
 
 async def run_fetch_qpf(
     session: AsyncSession, fetcher: ArchivingFetcher, *, geo_dir: Path, now: datetime | None = None
 ) -> int:
-    """Ingest the newest available cycle not yet fully stored. Returns rows written."""
+    """Ingest EVERY candidate cycle not yet fully stored, oldest gaps included.
+
+    Two review findings shape the loop (2026-08-28, both reproduced): returning on the first
+    complete cycle permanently skipped a cycle whose publication landed inside the 2-minute
+    late edge of its measured spread — the official 00Z judgment then read as "never issued"
+    to any later hindcast — so every candidate is now visited; and a half-published cycle
+    (Day 1 up, Day 2 not yet) is NOT-READY — skipped whole to be retried, never crashed on
+    and never stored as a Day-1-only picture that reads as dry Day 2/3.
+    """
     now = now or utcnow()
     basins = await _basins(session)
     if not basins:
         log.warning("wpc: no basins seeded; nothing to aggregate")
         return 0
 
+    total_written = 0
     for cycle in cycle_candidates(now):
-        if await _cycle_complete(session, cycle, len(basins)):
+        stored = await _stored_pairs(session, cycle)
+        expected = {
+            (b.id, cycle + timedelta(hours=fh)) for b in basins for fh in FORECAST_HOURS
+        }
+        if not (expected - {(sid, t.replace(tzinfo=cycle.tzinfo)) for sid, t in stored}):
             log.info("wpc: cycle %s already stored", cycle.isoformat())
-            return 0
-        try:
-            first = await fetch_qpf_file(fetcher, session, cycle, FORECAST_HOURS[0])
-        except FetchError as e:
-            log.info("wpc: cycle %s not served yet (%s); trying older", cycle.isoformat(), e)
             continue
-        results = {FORECAST_HOURS[0]: first}
-        for fhour in FORECAST_HOURS[1:]:
-            # Day 1 exists but a later window does not: a half-published cycle. Refuse the
-            # whole cycle rather than storing a Day-1-only picture that reads as "dry Day 2/3".
-            results[fhour] = await fetch_qpf_file(fetcher, session, cycle, fhour)
+        try:
+            results = {
+                fhour: await fetch_qpf_file(fetcher, session, cycle, fhour)
+                for fhour in FORECAST_HOURS
+            }
+        except FetchError as e:
+            log.info("wpc: cycle %s not fully served yet (%s); will retry", cycle.isoformat(), e)
+            continue
         written = 0
         masks: dict[str, BasinMask] | None = None
         for fhour, result in sorted(results.items()):
@@ -236,10 +251,13 @@ async def run_fetch_qpf(
             if masks is None:
                 masks = await _masks_for(session, field.grid, basins, geo_dir)
             available_at = result.last_modified or result.fetched_at
+            row_valid_time = cycle + timedelta(hours=field.step_end_h)
             for basin in basins:
                 mask = masks.get(basin.id)
                 if mask is None:
                     continue
+                if any(sid == basin.id and t.replace(tzinfo=cycle.tzinfo) == row_valid_time for sid, t in stored):
+                    continue  # complete a partial cycle row-by-row; never re-insert
                 stats = _aggregate(mask, field.values)
                 session.add(
                     DerivedFeature(
@@ -275,6 +293,7 @@ async def run_fetch_qpf(
                 written += 1
         await session.flush()
         log.info("wpc: cycle %s -> %d rows", cycle.isoformat(), written)
-        return written
-    log.warning("wpc: no candidate cycle was served; nothing ingested")
-    return 0
+        total_written += written
+    if total_written == 0:
+        log.info("wpc: no candidate cycle needed ingesting")
+    return total_written

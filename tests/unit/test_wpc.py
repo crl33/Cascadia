@@ -23,7 +23,7 @@ import respx
 from sqlalchemy import select
 
 from cascade_core.db import create_schema, make_engine, make_session_factory
-from cascade_core.fetch import ArchivingFetcher, FetchError, HostRateLimiter
+from cascade_core.fetch import ArchivingFetcher, HostRateLimiter
 from cascade_core.models import DerivedFeature, GridMask
 from cascade_core.objectstore import LocalFilesystemStore
 from cascade_core.seed import seed_all
@@ -191,18 +191,53 @@ async def test_a_second_run_writes_nothing(sessions, tmp_path) -> None:
 
 
 @respx.mock
-async def test_a_half_published_cycle_is_refused_whole(sessions, tmp_path) -> None:
-    """Day 1 up, Day 2 missing: no rows at all — a Day-1-only picture reads as dry Day 2/3."""
+async def test_a_half_published_cycle_is_not_ready_never_partial_never_a_crash(sessions, tmp_path) -> None:
+    """Day 1 up, Day 2 missing: NOT-READY. No rows (a Day-1-only picture reads as dry Day
+    2/3), no crash (the review reproduced the old raise wedging the job inside the 2-minute
+    publication window), and the next run — when the cycle completes — ingests it whole."""
     respx.get(BASE_URL + qpf_filename(CYCLE, 24)).mock(
         return_value=httpx.Response(200, content=FILES[24], headers={"Last-Modified": PUBLISHED}))
     respx.get(url__startswith=BASE_URL).mock(return_value=httpx.Response(404))
     async with sessions() as s:
-        with pytest.raises(FetchError):
-            await wpc_jobs.run_fetch_qpf(s, _fetcher(tmp_path), geo_dir=GEO, now=NOW)
-        await s.rollback()
+        written = await wpc_jobs.run_fetch_qpf(s, _fetcher(tmp_path), geo_dir=GEO, now=NOW)
+        await s.commit()
         rows = (await s.execute(select(DerivedFeature).where(
             DerivedFeature.feature == wpc_jobs.FEATURE_QPF))).scalars().all()
-        assert rows == []
+        assert written == 0 and rows == []
+
+
+@respx.mock
+async def test_a_late_published_cycle_is_backfilled_not_permanently_skipped(sessions, tmp_path) -> None:
+    """The review reproduced the loss end-to-end: with newest-only ingestion, a cycle landing
+    at the late edge of its spread was NEVER fetched once any newer cycle stored, and a
+    hindcast read the official judgment as 'never issued'. Every candidate is visited now."""
+    later = datetime(2026, 8, 28, 12, 0, tzinfo=UTC)
+    for fhour, content in FILES.items():
+        # the OLDER (00Z) cycle serves...
+        respx.get(BASE_URL + qpf_filename(CYCLE, fhour)).mock(
+            return_value=httpx.Response(200, content=content, headers={"Last-Modified": PUBLISHED}))
+    # ...the 12Z cycle's routes exist FIRST as 404s (respx matches in registration order, so
+    # they must precede the catch-all to be re-mockable later), then everything else 404s.
+    late_routes = {
+        fhour: respx.get(BASE_URL + qpf_filename(later, fhour)).mock(return_value=httpx.Response(404))
+        for fhour in FILES
+    }
+    respx.get(url__startswith=BASE_URL).mock(return_value=httpx.Response(404))
+    run_at = datetime(2026, 8, 28, 23, 10, tzinfo=UTC)
+    async with sessions() as s:
+        # first run: the newer 12Z is not served; the 00Z ingests
+        first = await wpc_jobs.run_fetch_qpf(s, _fetcher(tmp_path), geo_dir=GEO, now=run_at)
+        await s.commit()
+    assert first == 18
+    # …now the 12Z publishes LATE. A rerun must fetch it even though 00Z is already stored.
+    for fhour, content in FILES.items():
+        # same real bytes under the 12Z name: reaching the reference-time guard IS the proof
+        # that the loop went back for the missed cycle
+        late_routes[fhour].mock(
+            return_value=httpx.Response(200, content=content, headers={"Last-Modified": PUBLISHED}))
+    async with sessions() as s:
+        with pytest.raises(ValueError, match="stale name"):
+            await wpc_jobs.run_fetch_qpf(s, _fetcher(tmp_path), geo_dir=GEO, now=run_at)
 
 
 @respx.mock

@@ -45,6 +45,13 @@ OBJECT_PREFIX = "nwrfc/"
 VARIABLE_BY_PE = {"HF": "forebay_elevation", "HP": "forebay_elevation",
                   "LS": "storage", "QI": "inflow", "QR": "outflow"}
 
+#: PE code -> the ONE element tag that may carry the value (verified against every captured
+#: series). "Any non-dataDateTime child, last one wins" let an extra sibling element
+#: silently replace the reading with its own number and unit (adversarial review 2026-08-28
+#: demonstrated a fabricated forebay of 2.0 'count'); an unexpected tag now refuses.
+ELEMENT_BY_PE = {"HF": "forebay_elevation", "HP": "forebay_elevation",
+                 "LS": "lake_storage", "QI": "inflow", "QR": "discharge"}
+
 #: Which PE codes each reservoir station serves (DATA_SOURCES R4, verified 2026-08-28 by the
 #: captured fixtures). Keys are the NWS LIDs; station ids are ``station:nwrfc:<LID>``.
 SERIES: dict[str, tuple[str, ...]] = {
@@ -137,6 +144,7 @@ def parse_series(content: bytes, *, lid: str, pe: str) -> tuple[ReservoirValue, 
         when: datetime | None = None
         value: float | None = None
         unit: str | None = None
+        expected_tag = ELEMENT_BY_PE[pe]
         for child in ov:
             tag = _strip(child.tag)
             if tag == "dataDateTime":
@@ -145,12 +153,19 @@ def parse_series(content: bytes, *, lid: str, pe: str) -> tuple[ReservoirValue, 
                 if parsed.tzinfo is None:
                     raise ReservoirParseError("naive_instant", f"{lid}/{pe}: {raw!r} carries no offset")
                 when = parsed.astimezone(UTC)
-            else:
+            elif tag == expected_tag:
+                if value is not None:
+                    raise ReservoirParseError("duplicate_value", f"{lid}/{pe}: two <{tag}> in one row")
                 unit = str(child.attrib.get("units", ""))
                 try:
                     value = float((child.text or "").strip())
                 except ValueError as e:
                     raise ReservoirParseError("bad_value", f"{lid}/{pe}: {child.text!r}") from e
+            else:
+                raise ReservoirParseError(
+                    "unexpected_element",
+                    f"{lid}/{pe}: <{tag}> where only <{expected_tag}> may carry the value",
+                )
         if when is None or value is None or not unit:
             raise ReservoirParseError("incomplete_row", f"{lid}/{pe}: a row lacks instant, value or unit")
         by_instant.setdefault(when, []).append((ts_code, value, unit))

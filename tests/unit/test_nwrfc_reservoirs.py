@@ -305,3 +305,17 @@ async def test_a_newer_row_from_another_product_cannot_shadow_the_reservoir_seri
         station = next(x for x in r.json()["reservoirs"] if x["station_id"] == shadowed_station)
         assert station["variables"]["inflow"]["value"] != 999999.0, "the imposter must not shadow"
         assert station["variables"]["inflow"]["unit"] == "cubic feet per second"
+
+
+def test_an_unexpected_sibling_element_refuses_instead_of_fabricating_the_reading() -> None:
+    """Demonstrated by the review: a <revision> sibling silently became a forebay of 2.0
+    'count' under last-child-wins. The one element the PE maps to is the only one accepted."""
+    doc = b"""<?xml version="1.0" ?><HydroMetData xmlns="/xml/schemas/2004/03/hydromet_data">
+    <SiteData id="HHDW1"><observedData>
+    <observedValue petype="HF" durCode="0" tsCode="RZ" extremumCode="Z">
+      <dataDateTime>2026-08-28T00:00:00Z</dataDateTime>
+      <forebay_elevation units="feet">1155.03</forebay_elevation>
+      <revision units="count">2</revision></observedValue>
+    </observedData></SiteData></HydroMetData>"""
+    with pytest.raises(ReservoirParseError, match="unexpected_element"):
+        parse_series(doc, lid="HHDW1", pe="HF")

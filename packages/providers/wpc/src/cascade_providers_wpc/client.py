@@ -51,6 +51,10 @@ def cycle_candidates(now: datetime, count: int = 3) -> list[datetime]:
     "May exist" includes the cycle ~70 minutes AHEAD of the clock (measured: files land
     ~48 minutes before the nominal hour), so the 23:10Z poll finds the next day's 00Z cycle.
     """
+    if now.tzinfo is None:
+        # astimezone() would silently reinterpret a naive instant as machine-local time —
+        # a hindcast on a PST machine then reads a cycle 8 h in its future (review 2026-08-28)
+        raise ValueError("cycle_candidates requires an aware datetime; naive instants are refused")
     horizon = now.astimezone(UTC) + timedelta(minutes=75)
     day = horizon.date()
     out: list[datetime] = []
