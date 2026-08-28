@@ -32,6 +32,14 @@ export function SceneDataBridge({ controller }: Props) {
     return out;
   }, [vizBasins.data]);
 
+  // Alert PRESENCE only (any event type): the edge dash says "an official advisory names this
+  // basin"; what it is, and how severe, lives in the panel where the words fit.
+  const alerted = useMemo(() => {
+    const out: Record<string, boolean> = {};
+    vizBasins.data?.items.forEach((b) => { out[b.id] = (b.official_alerts?.length ?? 0) > 0; });
+    return out;
+  }, [vizBasins.data]);
+
   // The Cascade-derived susceptibility, read straight off the surface the envelope already carried. Nothing is
   // computed here: `state`, `confidence`, `experimental` and `reason` are the backend's own
   // fields, and a basin the backend refused arrives as `unknown` WITH its reason rather than
@@ -55,8 +63,8 @@ export function SceneDataBridge({ controller }: Props) {
   useEffect(() => {
     const basinLod: Record<string, GeoFeature> = {};
     if (selectedBasinId && selectedGeometry.data) basinLod[selectedBasinId] = selectedGeometry.data;
-    controller.setData('basins', { stateLod, basinLod, categories });
-  }, [controller, stateLod, selectedBasinId, selectedGeometry.data, categories]);
+    controller.setData('basins', { stateLod, basinLod, categories, alerted });
+  }, [controller, stateLod, selectedBasinId, selectedGeometry.data, categories, alerted]);
 
   useEffect(() => {
     controller.setData('basin_susceptibility', { geometry: stateLod, surfaces: susceptibility });

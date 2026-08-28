@@ -15,11 +15,13 @@ export interface BasinEdgeSemantic {
   hovered: boolean;
   /** Official hazard category of the basin outlet, or 'unknown'. */
   category: FloodCategory;
+  /** At least one active NWS alert routed to this basin (any event type). */
+  alerted: boolean;
   /** Whether a basin-LOD outline exists for this basin (then the state-LOD one yields to it). */
   hasBasinLod: boolean;
 }
 
-export interface EdgeStyle { show: boolean; widthPx: number; color: Hsl; alpha: number; fadeIn: boolean }
+export interface EdgeStyle { show: boolean; widthPx: number; color: Hsl; alpha: number; fadeIn: boolean; dashed: boolean }
 
 const categoryColor = (category: FloodCategory): Hsl => {
   switch (category) {
@@ -35,13 +37,20 @@ const categoryColor = (category: FloodCategory): Hsl => {
 export function basinEdge(s: BasinEdgeSemantic): EdgeStyle {
   const color = categoryColor(s.category);
   const overview = s.band === 'orbital' || s.band === 'state';
+  // An active NWS alert is carried by the DASH — a non-colour channel, the stripe principle
+  // (VISUAL_TRUTH_DOCTRINE): colour stays the outlet category, because an Air Quality Alert
+  // must not paint a basin flood-amber, and a dash says "an official advisory names this
+  // basin — open it" without asserting severity the edge does not know.
+  const dashed = s.alerted;
   if (s.lod === 'basin') {
     // Only the selected basin carries a basin-LOD outline; it is the stronger edge at every band.
-    return { show: s.selected, widthPx: 2.2, color, alpha: 0.9, fadeIn: true };
+    return { show: s.selected, widthPx: 2.2, color, alpha: 0.9, fadeIn: true, dashed };
   }
-  if (s.selected && s.hasBasinLod) return { show: false, widthPx: 0, color, alpha: 0, fadeIn: false };
-  if (s.selected) return { show: true, widthPx: 2, color, alpha: 0.85, fadeIn: true };
-  if (!overview) return { show: false, widthPx: 0, color, alpha: 0, fadeIn: false };
-  if (s.hovered) return { show: true, widthPx: 1.6, color, alpha: 0.6, fadeIn: false };
-  return { show: true, widthPx: 1, color, alpha: 0.32, fadeIn: false };
+  if (s.selected && s.hasBasinLod) return { show: false, widthPx: 0, color, alpha: 0, fadeIn: false, dashed };
+  if (s.selected) return { show: true, widthPx: 2, color, alpha: 0.85, fadeIn: true, dashed };
+  if (!overview) return { show: false, widthPx: 0, color, alpha: 0, fadeIn: false, dashed };
+  if (s.hovered) return { show: true, widthPx: 1.6, color, alpha: 0.6, fadeIn: false, dashed };
+  // an alerted basin keeps a slightly firmer resting edge, so the dash is findable from orbit
+  if (s.alerted) return { show: true, widthPx: 1.4, color, alpha: 0.5, fadeIn: false, dashed: true };
+  return { show: true, widthPx: 1, color, alpha: 0.32, fadeIn: false, dashed: false };
 }

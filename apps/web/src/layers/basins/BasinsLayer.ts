@@ -4,7 +4,7 @@
  * and the official hazard category per basin (for the edge tone). Diffs by (basinId, lod).
  * Presentation comes only from style.ts; fades are CallbackProperties (no React involved).
  */
-import { CallbackProperty, Cartesian3, Color, ColorMaterialProperty, CustomDataSource, Entity, type Viewer } from 'cesium';
+import { CallbackProperty, Cartesian3, Color, ColorMaterialProperty, CustomDataSource, Entity, PolylineDashMaterialProperty, type Viewer } from 'cesium';
 import type { FloodCategory, GeoFeature } from '../../contracts/schemas';
 import { MOTION, type MotionPreference } from '../../design-system/motion';
 import type { Band } from '../../scene/bands';
@@ -17,6 +17,8 @@ export interface BasinsLayerData {
   stateLod: Record<string, GeoFeature>;
   basinLod: Record<string, GeoFeature>;
   categories: Record<string, FloodCategory>;
+  /** basins with at least one active NWS alert; rendered as a dashed edge (non-colour channel). */
+  alerted: Record<string, boolean>;
 }
 
 interface OutlineRecord { basinId: string; lod: 'state' | 'basin'; entities: Entity[]; shownSince: number | null }
@@ -37,6 +39,7 @@ export class BasinsLayer implements SceneLayer<BasinsLayerData> {
   private readonly source = new CustomDataSource('basins');
   private readonly outlines = new Map<string, OutlineRecord>();
   private categories: Record<string, FloodCategory> = {};
+  private alerted: Record<string, boolean> = {};
   private band: Band = 'orbital';
   private selection: SelectionState = { basinId: null, forecastPointId: null, hovered: null };
   private visible = true;
@@ -82,6 +85,7 @@ export class BasinsLayer implements SceneLayer<BasinsLayerData> {
   setData(data: BasinsLayerData): void {
     if (this.disposed) return;
     this.categories = data.categories;
+    this.alerted = data.alerted ?? {};
     const wanted = new Set<string>();
     const upsert = (lod: 'state' | 'basin', features: Record<string, GeoFeature>) => {
       for (const [basinId, feature] of Object.entries(features)) {
@@ -125,6 +129,7 @@ export class BasinsLayer implements SceneLayer<BasinsLayerData> {
         selected: record.basinId === this.selection.basinId,
         hovered: record.basinId === this.selection.hovered,
         category: this.categories[record.basinId] ?? 'unknown',
+        alerted: this.alerted[record.basinId] ?? false,
         hasBasinLod: this.outlines.has(`basin:${record.basinId}`),
       });
       const wasShown = record.shownSince !== null;
@@ -143,13 +148,18 @@ export class BasinsLayer implements SceneLayer<BasinsLayerData> {
     // PolylineGraphics.width must be > 0 even when hidden (Cesium DeveloperError otherwise).
     polyline.width = Math.max(style.widthPx, 0.5) as never;
     const base = hslToColor(style.color, style.alpha);
+    // The dash carries "an official advisory names this basin"; colour stays the category.
+    const material = (color: Color | CallbackProperty) =>
+      style.dashed
+        ? new PolylineDashMaterialProperty({ color: color as never, dashLength: 12 })
+        : new ColorMaterialProperty(color as never);
     if (fadeStart === null) {
-      polyline.material = new ColorMaterialProperty(base);
+      polyline.material = material(base);
       return;
     }
     const duration = MOTION.duration.state;
     const faded = new Color();
-    polyline.material = new ColorMaterialProperty(
+    polyline.material = material(
       new CallbackProperty(() => {
         const t = Math.min(1, (performance.now() - fadeStart) / duration);
         const eased = 1 - Math.pow(1 - t, 3);
