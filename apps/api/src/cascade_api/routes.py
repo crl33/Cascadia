@@ -102,6 +102,13 @@ def _parse_window(start: str | None, end: str | None) -> tuple[datetime, datetim
     return lo, hi
 
 
+def _hypsometry(request: Request) -> dict | None:
+    """The startup-loaded elevation-area curves, or None — an absent input, never a crash."""
+    hyps = getattr(request.app.state, "hypsometry", None)
+    return hyps.basins if hyps is not None else None
+
+
+
 def _dump(model) -> dict:
     return model.model_dump(mode="json", by_alias=True)
 
@@ -121,18 +128,18 @@ async def basin_geometry(request: Request, basin_id: Annotated[str, Path(pattern
 
 
 @router.get("/basins/{basin_id}/state")
-async def basin_state(session: Session, as_of: AsOf, basin_id: Annotated[str, Path(pattern=BASIN_ID)]) -> dict:
+async def basin_state(request: Request, session: Session, as_of: AsOf, basin_id: Annotated[str, Path(pattern=BASIN_ID)]) -> dict:
     k = as_known_at(session, as_of)
     basin = await k.basin(basin_id)
     if basin is None:
         raise HTTPException(status_code=404, detail="unknown basin")
-    return _dump(await basin_envelope(k, [basin], generated_at=utcnow()))
+    return _dump(await basin_envelope(k, [basin], generated_at=utcnow(), hypsometry=_hypsometry(request)))
 
 
 @router.get("/viz/basins")
-async def viz_basins(session: Session, as_of: AsOf) -> dict:
+async def viz_basins(request: Request, session: Session, as_of: AsOf) -> dict:
     k = as_known_at(session, as_of)
-    return _dump(await basin_envelope(k, await k.basins(), generated_at=utcnow()))
+    return _dump(await basin_envelope(k, await k.basins(), generated_at=utcnow(), hypsometry=_hypsometry(request)))
 
 
 @router.get("/viz/rivers")

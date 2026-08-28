@@ -1,7 +1,7 @@
 {
   "as_of": "2026-08-24T23:00:00Z",
   "contract": "BasinVisualizationState",
-  "generated_at": "2026-08-28T01:44:22.937803Z",
+  "generated_at": "2026-08-28T04:03:32.647582Z",
   "items": [
     {
       "geometry_ref": {
@@ -91,10 +91,18 @@
           "value": 3136.1720032325784
         },
         {
+          "direction": "context_not_scored",
+          "feature": "basin_rain_exposed_fraction",
+          "prov": "rain-exposed-skagit",
+          "rank": 11,
+          "unit": "pct",
+          "value": 100.0
+        },
+        {
           "direction": "reference",
           "feature": "agreement_crest_flow_official",
           "prov": "nwps-forecast-mvew1",
-          "rank": 11,
+          "rank": 12,
           "unit": "cfs",
           "value": 6710.0
         },
@@ -102,7 +110,7 @@
           "direction": "model_below_official",
           "feature": "agreement_crest_flow_nwm_median",
           "prov": "nwm-mr-mvew1",
-          "rank": 12,
+          "rank": 13,
           "unit": "cfs",
           "value": 6688.6
         },
@@ -110,7 +118,7 @@
           "direction": "neither_forecast_crests_in_window",
           "feature": "agreement_crest_timing_delta_h",
           "prov": "nwm-mr-mvew1",
-          "rank": 13,
+          "rank": 14,
           "unit": "h",
           "value": null
         }
@@ -481,6 +489,25 @@
       "source_id": "src:nwps-v1",
       "source_kind": "OFFICIAL_FORECAST",
       "valid_time": "2026-08-27T06:00:00Z"
+    },
+    "rain-exposed-skagit": {
+      "freshness": {
+        "age_seconds": 39600,
+        "expected_cadence_seconds": 21600,
+        "state": "current"
+      },
+      "issued_at": "2026-08-24T12:00:00Z",
+      "label": "Fraction of the basin surface below the forecast snow level p50 at +24 h (p10 snow level -> 100 %, p90 -> 100 %). Rain, not snow, falls there if precipitation arrives. Elevation-area curve: method:basin-hypsometry@1.0.0 from USGS 3DEP over the seeded HUC8-union geometry — NOT the outlet-contributing area. Context only; not scored.",
+      "method_id": "method:basin-rain-exposed-fraction@1.0.0",
+      "product_id": "product:nbm-v5-core",
+      "quality": [
+        "pointwise_percentile"
+      ],
+      "raw_artifact_id": "21",
+      "retrieved_at": "2026-08-24T22:10:00Z",
+      "source_id": "src:nbm-v5",
+      "source_kind": "MODELED",
+      "valid_time": "2026-08-25T12:00:00Z"
     },
     "usgs-daily-12189500": {
       "freshness": {

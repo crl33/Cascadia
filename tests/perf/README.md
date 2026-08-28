@@ -23,6 +23,12 @@ any of them is expensive — and whatever is done about that, the body it return
 > `direction: context_not_scored`, so no band, score or susceptibility state moved — all six basins
 > are byte-identical on those. The number changing is the point: it was wrong before.
 >
+> **Regenerated 2026-08-28** for the rain-exposed fraction (hypsometry x forecast snow level).
+> The diff is ONE new driver per basin — `basin_rain_exposed_fraction`, `context_not_scored` — plus
+> its provenance ref; every pre-existing value is unchanged and only shifted by the insertion. The
+> query count did NOT move: the two extra snow-level percentiles ride the same set-based prefetch
+> statement, and the per-feature reads hit the request-scoped memo.
+>
 > The same regeneration refreshed two things that had gone stale earlier and that no test guards:
 > `total_queries` 13 → **14**, which is the growth-rank split (`595fc92`) reading the growth
 > reference as its own prefetch, and the per-station observation timestamps in

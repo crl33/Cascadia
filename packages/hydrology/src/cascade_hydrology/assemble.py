@@ -7,7 +7,7 @@ category. No colour, camera or renderer concept is produced here."""
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 
@@ -59,6 +59,7 @@ from cascade_core.registry import (
     SRC_NWPS,
     SRC_USGS,
 )
+from cascade_geo.hypsometry import BasinHypsometry
 from cascade_hydrology import agreement, forcing, surfaces, susceptibility
 from cascade_hydrology.category import CategoryResult, Measure, ThresholdSet, categorize
 from cascade_hydrology.headroom import headroom as compute_headroom
@@ -461,7 +462,13 @@ async def _prefetch_basins(k: Knowledge, basins: Sequence[Basin]) -> None:
     await forcing.prefetch(k, basins)
 
 
-async def basin_envelope(k: Knowledge, basins: list[Basin], *, generated_at: datetime) -> ContractEnvelope:
+async def basin_envelope(
+    k: Knowledge,
+    basins: list[Basin],
+    *,
+    generated_at: datetime,
+    hypsometry: Mapping[str, BasinHypsometry] | None = None,
+) -> ContractEnvelope:
     """The basin envelope: four surfaces per basin, each computed by its own method module.
 
     P3 wiring (docs/research/p3-surfaces-design-2026-08-24.md §6 stage 2). Every surface here
@@ -519,7 +526,7 @@ async def basin_envelope(k: Knowledge, basins: list[Basin], *, generated_at: dat
         sus = await susceptibility.assess(k, basin, products)
         refs.update(sus.refs)
         # FORCING: basin-mean NBM QPF, banded. EXPERIMENTAL, and the spread is pointwise.
-        frc = await forcing.assess(k, basin, products)
+        frc = await forcing.assess(k, basin, products, hypsometry=(hypsometry or {}).get(basin.id))
         refs.update(frc.refs)
 
         hazard_reason = " ".join(x for x in (hazard.reason, model_probability_note) if x) or None

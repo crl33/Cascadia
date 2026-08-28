@@ -295,9 +295,20 @@ X13, X14, X16, X17).
 
   **Corrected 2026-08-28: the snow level now exists and is live.** `nbm.fetch_core_snowlvl` writes
   `basin_snow_level_pointwise_p{10,50,90}` under `method:basin-snow-level@1.0.0`, area-weighted
-  over the basin mask, every 6 h — 120 rows per percentile in production, 1,876-3,765 m. Only
-  hypsometry is still missing, which halves the stated distance to a rain-exposed fraction and
-  moves it onto the critical path.
+  over the basin mask, every 6 h — 120 rows per percentile in production, 1,876-3,765 m.
+
+  **And later the same day, hypsometry landed too** (`method:basin-hypsometry@1.0.0`): per-basin
+  elevation-area curves in 20 m bins, derived offline from USGS 3DEP 1-arc-second tiles over the
+  full-resolution seeded polygons (`scripts/build_basin_hypsometry.py`), validated against the
+  physical basins — Rainier caps the Puyallup-White at 4,388.8 m, Baker the Nooksack at 3,283 m,
+  and the Skagit pixel sum reproduces the WBD area to 0.30 %. The 3DEP staged tiles carry full
+  data north of 49°N (probed: zero nodata on the all-Canada tile), so the cross-border Skagit and
+  Nooksack headwaters are in the curve rather than silently clipped at the border. The
+  **rain-exposed fraction** — the surface below the forecast snow level, where precipitation
+  arrives as rain — now ships as a `context_not_scored` driver on the forcing surface
+  (`method:basin-rain-exposed-fraction@1.0.0`), its spread taken from the snow level's own
+  p10-p90 and its label carrying the HUC8-union geometry caveat. Rain-ON-SNOW exposure remains
+  open: it additionally needs observed snow-covered area, which no ingested product yet supplies.
 
   It also settles what resolution that hypsometry needs, which is less than it looks. Measured
   over 96 basin-hours of live rows, the snow level's OWN p10-p90 spread has a **median of 241 m**

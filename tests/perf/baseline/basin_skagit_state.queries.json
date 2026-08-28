@@ -3,7 +3,7 @@
   "distinct_queries": 14,
   "exact_repeats": 0,
   "distinct_statement_texts": 13,
-  "sql_wall_ms": 15.69,
+  "sql_wall_ms": 12.07,
   "by_table": {
     "derived_feature": 4,
     "(SELECT": 3,
@@ -16,20 +16,20 @@
     "observation": 1
   },
   "by_call_site": {
-    "basin <- apps/api/src/cascade_api/routes.py:126 in basin_state": 1,
-    "products <- packages/hydrology/src/cascade_hydrology/assemble.py:475 in basin_envelope": 1,
-    "forecast_points_by_lid <- packages/hydrology/src/cascade_hydrology/assemble.py:455 in _prefetch_basins": 1,
-    "stations_by_id <- packages/hydrology/src/cascade_hydrology/assemble.py:457 in _prefetch_basins": 1,
-    "thresholds_for <- packages/hydrology/src/cascade_hydrology/assemble.py:184 in prefetch_points": 1,
-    "latest_forecast_runs <- packages/hydrology/src/cascade_hydrology/assemble.py:185 in prefetch_points": 1,
-    "forecast_values_for <- packages/hydrology/src/cascade_hydrology/assemble.py:186 in prefetch_points": 1,
-    "latest_observations <- packages/hydrology/src/cascade_hydrology/assemble.py:192 in prefetch_points": 1,
-    "observations_for <- packages/hydrology/src/cascade_hydrology/assemble.py:204 in prefetch_points": 1,
+    "basin <- apps/api/src/cascade_api/routes.py:133 in basin_state": 1,
+    "products <- packages/hydrology/src/cascade_hydrology/assemble.py:482 in basin_envelope": 1,
+    "forecast_points_by_lid <- packages/hydrology/src/cascade_hydrology/assemble.py:456 in _prefetch_basins": 1,
+    "stations_by_id <- packages/hydrology/src/cascade_hydrology/assemble.py:458 in _prefetch_basins": 1,
+    "thresholds_for <- packages/hydrology/src/cascade_hydrology/assemble.py:185 in prefetch_points": 1,
+    "latest_forecast_runs <- packages/hydrology/src/cascade_hydrology/assemble.py:186 in prefetch_points": 1,
+    "forecast_values_for <- packages/hydrology/src/cascade_hydrology/assemble.py:187 in prefetch_points": 1,
+    "latest_observations <- packages/hydrology/src/cascade_hydrology/assemble.py:193 in prefetch_points": 1,
+    "observations_for <- packages/hydrology/src/cascade_hydrology/assemble.py:205 in prefetch_points": 1,
     "latest_forecast_runs <- packages/hydrology/src/cascade_hydrology/agreement.py:960 in prefetch": 1,
     "derived_features_for <- packages/hydrology/src/cascade_hydrology/agreement.py:963 in prefetch": 1,
     "latest_derived_features <- packages/hydrology/src/cascade_hydrology/susceptibility.py:842 in prefetch": 1,
     "latest_derived_features <- packages/hydrology/src/cascade_hydrology/susceptibility.py:853 in prefetch": 1,
-    "derived_features_for <- packages/hydrology/src/cascade_hydrology/forcing.py:495 in prefetch": 1
+    "derived_features_for <- packages/hydrology/src/cascade_hydrology/forcing.py:564 in prefetch": 1
   },
   "statement_texts": [
     "SELECT basin.id AS basin_id, basin.name AS basin_name, basin.regulation_class AS basin_regulation_class, basin.outlet_fp_id AS basin_outlet_fp_id, basin.huc8 AS basin_huc8, basin.centroid AS basin_centroid, basin.bbox AS basin_bbox, basin.geometry_ref AS basin_geometry_ref, basin.regulated_by AS basin_regulated_by, basin.susceptibility_gauge_id AS basin_susceptibility_gauge_id, basin.susceptibility_confidence_ceiling AS basin_susceptibility_confidence_ceiling, basin.susceptibility_note AS basin_susceptibility_note FROM basin WHERE basin.id = ?",
@@ -44,7 +44,7 @@
     "SELECT anon_1.id, anon_1.product_id, anon_1.fp_id, anon_1.issued_at, anon_1.retrieved_at, anon_1.available_at, anon_1.issuer, anon_1.primary_variable, anon_1.unit, anon_1.stage_unit, anon_1.flow_unit, anon_1.datum, anon_1.raw_artifact_id, anon_1.supersedes_run_id FROM (SELECT forecast_run.id AS id, forecast_run.product_id AS product_id, forecast_run.fp_id AS fp_id, forecast_run.issued_at AS issued_at, forecast_run.retrieved_at AS retrieved_at, forecast_run.available_at AS available_at, forecast_run.issuer AS issuer, forecast_run.primary_variable AS primary_variable, forecast_run.unit AS unit, forecast_run.stage_unit AS stage_unit, forecast_run.flow_unit AS flow_unit, forecast_run.datum AS datum, forecast_run.raw_artifact_id AS raw_artifact_id, forecast_run.supersedes_run_id AS supersedes_run_id, row_number() OVER (PARTITION BY forecast_run.fp_id ORDER BY forecast_run.issued_at DESC, forecast_run.id DESC) AS rank FROM forecast_run WHERE forecast_run.fp_id IN (?) AND forecast_run.available_at <= ? AND forecast_run.product_id IN (?)) AS anon_1 WHERE anon_1.rank = ?",
     "SELECT derived_feature.id, derived_feature.feature, derived_feature.scope_kind, derived_feature.scope_id, derived_feature.window, derived_feature.valid_time, derived_feature.issued_at, derived_feature.computed_at, derived_feature.available_at, derived_feature.method_id, derived_feature.product_id, derived_feature.value, derived_feature.values_json, derived_feature.unit, derived_feature.percentile, derived_feature.climatology_ref, derived_feature.confidence_label, derived_feature.quality, derived_feature.inputs, derived_feature.raw_inputs_hash, derived_feature.raw_artifact_id FROM derived_feature WHERE derived_feature.scope_id IN (?) AND derived_feature.available_at <= ? AND derived_feature.feature = ? AND derived_feature.method_id = ? AND derived_feature.valid_time >= ? AND derived_feature.valid_time <= ? ORDER BY derived_feature.valid_time, derived_feature.available_at, derived_feature.id",
     "SELECT derived_feature.id, derived_feature.feature, derived_feature.scope_kind, derived_feature.scope_id, derived_feature.window, derived_feature.valid_time, derived_feature.issued_at, derived_feature.computed_at, derived_feature.available_at, derived_feature.method_id, derived_feature.product_id, derived_feature.value, derived_feature.values_json, derived_feature.unit, derived_feature.percentile, derived_feature.climatology_ref, derived_feature.confidence_label, derived_feature.quality, derived_feature.inputs, derived_feature.raw_inputs_hash, derived_feature.raw_artifact_id FROM derived_feature WHERE derived_feature.scope_id IN (?, ?) AND derived_feature.available_at <= ? AND (derived_feature.feature = ? AND derived_feature.method_id = ? OR derived_feature.feature = ? AND derived_feature.method_id = ? OR derived_feature.feature = ? AND derived_feature.method_id = ?) AND derived_feature.valid_time >= ? AND derived_feature.valid_time <= ? ORDER BY derived_feature.valid_time, derived_feature.available_at, derived_feature.id",
-    "SELECT derived_feature.id, derived_feature.feature, derived_feature.scope_kind, derived_feature.scope_id, derived_feature.window, derived_feature.valid_time, derived_feature.issued_at, derived_feature.computed_at, derived_feature.available_at, derived_feature.method_id, derived_feature.product_id, derived_feature.value, derived_feature.values_json, derived_feature.unit, derived_feature.percentile, derived_feature.climatology_ref, derived_feature.confidence_label, derived_feature.quality, derived_feature.inputs, derived_feature.raw_inputs_hash, derived_feature.raw_artifact_id FROM derived_feature WHERE derived_feature.scope_id IN (?) AND derived_feature.available_at <= ? AND (derived_feature.feature = ? AND derived_feature.method_id = ? AND derived_feature.window = ? OR derived_feature.feature = ? AND derived_feature.method_id = ? AND derived_feature.window = ? OR derived_feature.feature = ? AND derived_feature.method_id = ? AND derived_feature.window = ? OR derived_feature.feature = ? AND derived_feature.method_id = ?) AND derived_feature.valid_time >= ? ORDER BY derived_feature.valid_time, derived_feature.available_at, derived_feature.id"
+    "SELECT derived_feature.id, derived_feature.feature, derived_feature.scope_kind, derived_feature.scope_id, derived_feature.window, derived_feature.valid_time, derived_feature.issued_at, derived_feature.computed_at, derived_feature.available_at, derived_feature.method_id, derived_feature.product_id, derived_feature.value, derived_feature.values_json, derived_feature.unit, derived_feature.percentile, derived_feature.climatology_ref, derived_feature.confidence_label, derived_feature.quality, derived_feature.inputs, derived_feature.raw_inputs_hash, derived_feature.raw_artifact_id FROM derived_feature WHERE derived_feature.scope_id IN (?) AND derived_feature.available_at <= ? AND (derived_feature.feature = ? AND derived_feature.method_id = ? AND derived_feature.window = ? OR derived_feature.feature = ? AND derived_feature.method_id = ? AND derived_feature.window = ? OR derived_feature.feature = ? AND derived_feature.method_id = ? AND derived_feature.window = ? OR derived_feature.feature = ? AND derived_feature.method_id = ? OR derived_feature.feature = ? AND derived_feature.method_id = ? OR derived_feature.feature = ? AND derived_feature.method_id = ?) AND derived_feature.valid_time >= ? ORDER BY derived_feature.valid_time, derived_feature.available_at, derived_feature.id"
   ],
   "distinct_statements": [
     {
@@ -52,12 +52,12 @@
       "table": "basin",
       "reader": "basin",
       "call_sites": [
-        "basin <- apps/api/src/cascade_api/routes.py:126 in basin_state"
+        "basin <- apps/api/src/cascade_api/routes.py:133 in basin_state"
       ],
       "statement_ref": 0,
       "parameters": "('basin:skagit',)",
       "stack": [
-        "apps/api/src/cascade_api/routes.py:126 in basin_state",
+        "apps/api/src/cascade_api/routes.py:133 in basin_state",
         "tests/perf/capture_baseline.py:176 in main",
         "tests/perf/capture_baseline.py:180 in <module>"
       ]
@@ -67,13 +67,13 @@
       "table": "source_product",
       "reader": "products",
       "call_sites": [
-        "products <- packages/hydrology/src/cascade_hydrology/assemble.py:475 in basin_envelope"
+        "products <- packages/hydrology/src/cascade_hydrology/assemble.py:482 in basin_envelope"
       ],
       "statement_ref": 1,
       "parameters": "()",
       "stack": [
-        "packages/hydrology/src/cascade_hydrology/assemble.py:475 in basin_envelope",
-        "apps/api/src/cascade_api/routes.py:129 in basin_state",
+        "packages/hydrology/src/cascade_hydrology/assemble.py:482 in basin_envelope",
+        "apps/api/src/cascade_api/routes.py:136 in basin_state",
         "tests/perf/capture_baseline.py:176 in main"
       ]
     },
@@ -82,14 +82,14 @@
       "table": "forecast_point",
       "reader": "forecast_points_by_lid",
       "call_sites": [
-        "forecast_points_by_lid <- packages/hydrology/src/cascade_hydrology/assemble.py:455 in _prefetch_basins"
+        "forecast_points_by_lid <- packages/hydrology/src/cascade_hydrology/assemble.py:456 in _prefetch_basins"
       ],
       "statement_ref": 2,
       "parameters": "('MVEW1',)",
       "stack": [
-        "packages/hydrology/src/cascade_hydrology/assemble.py:455 in _prefetch_basins",
-        "packages/hydrology/src/cascade_hydrology/assemble.py:476 in basin_envelope",
-        "apps/api/src/cascade_api/routes.py:129 in basin_state"
+        "packages/hydrology/src/cascade_hydrology/assemble.py:456 in _prefetch_basins",
+        "packages/hydrology/src/cascade_hydrology/assemble.py:483 in basin_envelope",
+        "apps/api/src/cascade_api/routes.py:136 in basin_state"
       ]
     },
     {
@@ -97,14 +97,14 @@
       "table": "station",
       "reader": "stations_by_id",
       "call_sites": [
-        "stations_by_id <- packages/hydrology/src/cascade_hydrology/assemble.py:457 in _prefetch_basins"
+        "stations_by_id <- packages/hydrology/src/cascade_hydrology/assemble.py:458 in _prefetch_basins"
       ],
       "statement_ref": 3,
       "parameters": "('station:usgs:12189500', 'station:usgs:12200500')",
       "stack": [
-        "packages/hydrology/src/cascade_hydrology/assemble.py:457 in _prefetch_basins",
-        "packages/hydrology/src/cascade_hydrology/assemble.py:476 in basin_envelope",
-        "apps/api/src/cascade_api/routes.py:129 in basin_state"
+        "packages/hydrology/src/cascade_hydrology/assemble.py:458 in _prefetch_basins",
+        "packages/hydrology/src/cascade_hydrology/assemble.py:483 in basin_envelope",
+        "apps/api/src/cascade_api/routes.py:136 in basin_state"
       ]
     },
     {
@@ -112,14 +112,14 @@
       "table": "threshold",
       "reader": "thresholds_for",
       "call_sites": [
-        "thresholds_for <- packages/hydrology/src/cascade_hydrology/assemble.py:184 in prefetch_points"
+        "thresholds_for <- packages/hydrology/src/cascade_hydrology/assemble.py:185 in prefetch_points"
       ],
       "statement_ref": 4,
       "parameters": "('fp:nwps:MVEW1', '2026-08-24 23:00:00.000000')",
       "stack": [
-        "packages/hydrology/src/cascade_hydrology/assemble.py:184 in prefetch_points",
-        "packages/hydrology/src/cascade_hydrology/assemble.py:458 in _prefetch_basins",
-        "packages/hydrology/src/cascade_hydrology/assemble.py:476 in basin_envelope"
+        "packages/hydrology/src/cascade_hydrology/assemble.py:185 in prefetch_points",
+        "packages/hydrology/src/cascade_hydrology/assemble.py:459 in _prefetch_basins",
+        "packages/hydrology/src/cascade_hydrology/assemble.py:483 in basin_envelope"
       ]
     },
     {
@@ -127,14 +127,14 @@
       "table": "(SELECT",
       "reader": "latest_forecast_runs",
       "call_sites": [
-        "latest_forecast_runs <- packages/hydrology/src/cascade_hydrology/assemble.py:185 in prefetch_points"
+        "latest_forecast_runs <- packages/hydrology/src/cascade_hydrology/assemble.py:186 in prefetch_points"
       ],
       "statement_ref": 5,
       "parameters": "('fp:nwps:MVEW1', '2026-08-24 23:00:00.000000', 'product:nwps-forecast', 'product:nwps-thresholds', 'product:nws-fls-crest', 1)",
       "stack": [
-        "packages/hydrology/src/cascade_hydrology/assemble.py:185 in prefetch_points",
-        "packages/hydrology/src/cascade_hydrology/assemble.py:458 in _prefetch_basins",
-        "packages/hydrology/src/cascade_hydrology/assemble.py:476 in basin_envelope"
+        "packages/hydrology/src/cascade_hydrology/assemble.py:186 in prefetch_points",
+        "packages/hydrology/src/cascade_hydrology/assemble.py:459 in _prefetch_basins",
+        "packages/hydrology/src/cascade_hydrology/assemble.py:483 in basin_envelope"
       ]
     },
     {
@@ -142,14 +142,14 @@
       "table": "forecast_value",
       "reader": "forecast_values_for",
       "call_sites": [
-        "forecast_values_for <- packages/hydrology/src/cascade_hydrology/assemble.py:186 in prefetch_points"
+        "forecast_values_for <- packages/hydrology/src/cascade_hydrology/assemble.py:187 in prefetch_points"
       ],
       "statement_ref": 6,
       "parameters": "(3,)",
       "stack": [
-        "packages/hydrology/src/cascade_hydrology/assemble.py:186 in prefetch_points",
-        "packages/hydrology/src/cascade_hydrology/assemble.py:458 in _prefetch_basins",
-        "packages/hydrology/src/cascade_hydrology/assemble.py:476 in basin_envelope"
+        "packages/hydrology/src/cascade_hydrology/assemble.py:187 in prefetch_points",
+        "packages/hydrology/src/cascade_hydrology/assemble.py:459 in _prefetch_basins",
+        "packages/hydrology/src/cascade_hydrology/assemble.py:483 in basin_envelope"
       ]
     },
     {
@@ -157,14 +157,14 @@
       "table": "(SELECT",
       "reader": "latest_observations",
       "call_sites": [
-        "latest_observations <- packages/hydrology/src/cascade_hydrology/assemble.py:192 in prefetch_points"
+        "latest_observations <- packages/hydrology/src/cascade_hydrology/assemble.py:193 in prefetch_points"
       ],
       "statement_ref": 7,
       "parameters": "('station:usgs:12200500', 'flow', 'stage', '2026-08-24 23:00:00.000000', '2026-08-10 23:00:00.000000', '2026-08-24 23:00:00.000000', 1)",
       "stack": [
-        "packages/hydrology/src/cascade_hydrology/assemble.py:192 in prefetch_points",
-        "packages/hydrology/src/cascade_hydrology/assemble.py:458 in _prefetch_basins",
-        "packages/hydrology/src/cascade_hydrology/assemble.py:476 in basin_envelope"
+        "packages/hydrology/src/cascade_hydrology/assemble.py:193 in prefetch_points",
+        "packages/hydrology/src/cascade_hydrology/assemble.py:459 in _prefetch_basins",
+        "packages/hydrology/src/cascade_hydrology/assemble.py:483 in basin_envelope"
       ]
     },
     {
@@ -172,14 +172,14 @@
       "table": "observation",
       "reader": "observations_for",
       "call_sites": [
-        "observations_for <- packages/hydrology/src/cascade_hydrology/assemble.py:204 in prefetch_points"
+        "observations_for <- packages/hydrology/src/cascade_hydrology/assemble.py:205 in prefetch_points"
       ],
       "statement_ref": 8,
       "parameters": "('2026-08-24 23:00:00.000000', '2026-08-22 13:30:00.000000', '2026-08-24 23:00:00.000000', 'station:usgs:12200500', 'flow', '2026-08-22 13:30:00.000000', '2026-08-22 13:30:00.000000', 'station:usgs:12200500', 'stage', '2026-08-24 17:00:00.000000', '2026-08-24 23:00:00.000000')",
       "stack": [
-        "packages/hydrology/src/cascade_hydrology/assemble.py:204 in prefetch_points",
-        "packages/hydrology/src/cascade_hydrology/assemble.py:458 in _prefetch_basins",
-        "packages/hydrology/src/cascade_hydrology/assemble.py:476 in basin_envelope"
+        "packages/hydrology/src/cascade_hydrology/assemble.py:205 in prefetch_points",
+        "packages/hydrology/src/cascade_hydrology/assemble.py:459 in _prefetch_basins",
+        "packages/hydrology/src/cascade_hydrology/assemble.py:483 in basin_envelope"
       ]
     },
     {
@@ -193,8 +193,8 @@
       "parameters": "('fp:nwps:MVEW1', '2026-08-24 23:00:00.000000', 'product:nwm-mr-via-nwps', 1)",
       "stack": [
         "packages/hydrology/src/cascade_hydrology/agreement.py:960 in prefetch",
-        "packages/hydrology/src/cascade_hydrology/assemble.py:459 in _prefetch_basins",
-        "packages/hydrology/src/cascade_hydrology/assemble.py:476 in basin_envelope"
+        "packages/hydrology/src/cascade_hydrology/assemble.py:460 in _prefetch_basins",
+        "packages/hydrology/src/cascade_hydrology/assemble.py:483 in basin_envelope"
       ]
     },
     {
@@ -208,8 +208,8 @@
       "parameters": "('fp:nwps:MVEW1', '2026-08-24 23:00:00.000000', 'nwm_mr_member_flow_series', 'method:nwm-member-series@2.0.0', '2026-08-24 12:00:00.000000', '2026-08-24 12:00:00.000000')",
       "stack": [
         "packages/hydrology/src/cascade_hydrology/agreement.py:963 in prefetch",
-        "packages/hydrology/src/cascade_hydrology/assemble.py:459 in _prefetch_basins",
-        "packages/hydrology/src/cascade_hydrology/assemble.py:476 in basin_envelope"
+        "packages/hydrology/src/cascade_hydrology/assemble.py:460 in _prefetch_basins",
+        "packages/hydrology/src/cascade_hydrology/assemble.py:483 in basin_envelope"
       ]
     },
     {
@@ -223,8 +223,8 @@
       "parameters": "('basin:skagit', 'station:usgs:12189500', '2026-08-24 23:00:00.000000', 'basin_swe_percent_of_median', 'method:snotel-basin-swe-context@1.0.0', 'snotel_precip_14d_percent_of_median', 'method:snotel-precip-14d-context@1.0.0', 'streamflow_doy_percentile', 'method:susceptibility-index@0.1.0', '2026-08-17 23:00:00.000000', '2026-08-24 23:00:00.000000')",
       "stack": [
         "packages/hydrology/src/cascade_hydrology/susceptibility.py:842 in prefetch",
-        "packages/hydrology/src/cascade_hydrology/assemble.py:460 in _prefetch_basins",
-        "packages/hydrology/src/cascade_hydrology/assemble.py:476 in basin_envelope"
+        "packages/hydrology/src/cascade_hydrology/assemble.py:461 in _prefetch_basins",
+        "packages/hydrology/src/cascade_hydrology/assemble.py:483 in basin_envelope"
       ]
     },
     {
@@ -238,8 +238,8 @@
       "parameters": "('station:usgs:12189500', '2026-08-24 23:00:00.000000', 'streamflow_growth_reference', 'method:streamflow-growth-reference@1.0.0', '2016-08-26 23:00:00.000000', '2026-08-24 23:00:00.000000')",
       "stack": [
         "packages/hydrology/src/cascade_hydrology/susceptibility.py:853 in prefetch",
-        "packages/hydrology/src/cascade_hydrology/assemble.py:460 in _prefetch_basins",
-        "packages/hydrology/src/cascade_hydrology/assemble.py:476 in basin_envelope"
+        "packages/hydrology/src/cascade_hydrology/assemble.py:461 in _prefetch_basins",
+        "packages/hydrology/src/cascade_hydrology/assemble.py:483 in basin_envelope"
       ]
     },
     {
@@ -247,14 +247,14 @@
       "table": "derived_feature",
       "reader": "derived_features_for",
       "call_sites": [
-        "derived_features_for <- packages/hydrology/src/cascade_hydrology/forcing.py:495 in prefetch"
+        "derived_features_for <- packages/hydrology/src/cascade_hydrology/forcing.py:564 in prefetch"
       ],
       "statement_ref": 12,
-      "parameters": "('basin:skagit', '2026-08-24 23:00:00.000000', 'basin_qpf_72h_pointwise_p10', 'method:basin-qpf@1.0.0', '72h', 'basin_qpf_72h_pointwise_p50', 'method:basin-qpf@1.0.0', '72h', 'basin_qpf_72h_pointwise_p90', 'method:basin-qpf@1.0.0', '72h', 'basin_snow_level_pointwise_p50', 'method:basin-snow-level@1.0.0', '2026-08-22 23:00:00.000000')",
+      "parameters": "('basin:skagit', '2026-08-24 23:00:00.000000', 'basin_qpf_72h_pointwise_p10', 'method:basin-qpf@1.0.0', '72h', 'basin_qpf_72h_pointwise_p50', 'method:basin-qpf@1.0.0', '72h', 'basin_qpf_72h_pointwise_p90', 'method:basin-qpf@1.0.0', '72h', 'basin_snow_level_pointwise_p10', 'method:basin-snow-level@1.0.0', 'basin_snow_level_pointwise_p50', 'method:basin-snow-level@1.0.0', 'basin_snow_level_pointwise_p90', 'method:basin-snow-level@1.0.0', '2026-08-22 23:00:00.000000')",
       "stack": [
-        "packages/hydrology/src/cascade_hydrology/forcing.py:495 in prefetch",
-        "packages/hydrology/src/cascade_hydrology/assemble.py:461 in _prefetch_basins",
-        "packages/hydrology/src/cascade_hydrology/assemble.py:476 in basin_envelope"
+        "packages/hydrology/src/cascade_hydrology/forcing.py:564 in prefetch",
+        "packages/hydrology/src/cascade_hydrology/assemble.py:462 in _prefetch_basins",
+        "packages/hydrology/src/cascade_hydrology/assemble.py:483 in basin_envelope"
       ]
     }
   ],
@@ -262,83 +262,83 @@
     {
       "n": 1,
       "reader": "basin",
-      "call_site": "apps/api/src/cascade_api/routes.py:126 in basin_state",
+      "call_site": "apps/api/src/cascade_api/routes.py:133 in basin_state",
       "table": "basin",
       "statement_ref": 0,
       "parameters": "('basin:skagit',)",
-      "duration_ms": 1.746
+      "duration_ms": 0.811
     },
     {
       "n": 2,
       "reader": "products",
-      "call_site": "packages/hydrology/src/cascade_hydrology/assemble.py:475 in basin_envelope",
+      "call_site": "packages/hydrology/src/cascade_hydrology/assemble.py:482 in basin_envelope",
       "table": "source_product",
       "statement_ref": 1,
       "parameters": "()",
-      "duration_ms": 0.742
+      "duration_ms": 0.806
     },
     {
       "n": 3,
       "reader": "forecast_points_by_lid",
-      "call_site": "packages/hydrology/src/cascade_hydrology/assemble.py:455 in _prefetch_basins",
+      "call_site": "packages/hydrology/src/cascade_hydrology/assemble.py:456 in _prefetch_basins",
       "table": "forecast_point",
       "statement_ref": 2,
       "parameters": "('MVEW1',)",
-      "duration_ms": 1.296
+      "duration_ms": 0.721
     },
     {
       "n": 4,
       "reader": "stations_by_id",
-      "call_site": "packages/hydrology/src/cascade_hydrology/assemble.py:457 in _prefetch_basins",
+      "call_site": "packages/hydrology/src/cascade_hydrology/assemble.py:458 in _prefetch_basins",
       "table": "station",
       "statement_ref": 3,
       "parameters": "('station:usgs:12189500', 'station:usgs:12200500')",
-      "duration_ms": 0.886
+      "duration_ms": 0.713
     },
     {
       "n": 5,
       "reader": "thresholds_for",
-      "call_site": "packages/hydrology/src/cascade_hydrology/assemble.py:184 in prefetch_points",
+      "call_site": "packages/hydrology/src/cascade_hydrology/assemble.py:185 in prefetch_points",
       "table": "threshold",
       "statement_ref": 4,
       "parameters": "('fp:nwps:MVEW1', '2026-08-24 23:00:00.000000')",
-      "duration_ms": 1.151
+      "duration_ms": 0.709
     },
     {
       "n": 6,
       "reader": "latest_forecast_runs",
-      "call_site": "packages/hydrology/src/cascade_hydrology/assemble.py:185 in prefetch_points",
+      "call_site": "packages/hydrology/src/cascade_hydrology/assemble.py:186 in prefetch_points",
       "table": "(SELECT",
       "statement_ref": 5,
       "parameters": "('fp:nwps:MVEW1', '2026-08-24 23:00:00.000000', 'product:nwps-forecast', 'product:nwps-thresholds', 'product:nws-fls-crest', 1)",
-      "duration_ms": 1.078
+      "duration_ms": 0.859
     },
     {
       "n": 7,
       "reader": "forecast_values_for",
-      "call_site": "packages/hydrology/src/cascade_hydrology/assemble.py:186 in prefetch_points",
+      "call_site": "packages/hydrology/src/cascade_hydrology/assemble.py:187 in prefetch_points",
       "table": "forecast_value",
       "statement_ref": 6,
       "parameters": "(3,)",
-      "duration_ms": 1.375
+      "duration_ms": 0.866
     },
     {
       "n": 8,
       "reader": "latest_observations",
-      "call_site": "packages/hydrology/src/cascade_hydrology/assemble.py:192 in prefetch_points",
+      "call_site": "packages/hydrology/src/cascade_hydrology/assemble.py:193 in prefetch_points",
       "table": "(SELECT",
       "statement_ref": 7,
       "parameters": "('station:usgs:12200500', 'flow', 'stage', '2026-08-24 23:00:00.000000', '2026-08-10 23:00:00.000000', '2026-08-24 23:00:00.000000', 1)",
-      "duration_ms": 1.224
+      "duration_ms": 1.06
     },
     {
       "n": 9,
       "reader": "observations_for",
-      "call_site": "packages/hydrology/src/cascade_hydrology/assemble.py:204 in prefetch_points",
+      "call_site": "packages/hydrology/src/cascade_hydrology/assemble.py:205 in prefetch_points",
       "table": "observation",
       "statement_ref": 8,
       "parameters": "('2026-08-24 23:00:00.000000', '2026-08-22 13:30:00.000000', '2026-08-24 23:00:00.000000', 'station:usgs:12200500', 'flow', '2026-08-22 13:30:00.000000', '2026-08-22 13:30:00.000000', 'station:usgs:12200500', 'stage', '2026-08-24 17:00:00.000000', '2026-08-24 23:00:00.000000')",
-      "duration_ms": 0.867
+      "duration_ms": 0.863
     },
     {
       "n": 10,
@@ -347,7 +347,7 @@
       "table": "(SELECT",
       "statement_ref": 9,
       "parameters": "('fp:nwps:MVEW1', '2026-08-24 23:00:00.000000', 'product:nwm-mr-via-nwps', 1)",
-      "duration_ms": 0.947
+      "duration_ms": 1.151
     },
     {
       "n": 11,
@@ -356,7 +356,7 @@
       "table": "derived_feature",
       "statement_ref": 10,
       "parameters": "('fp:nwps:MVEW1', '2026-08-24 23:00:00.000000', 'nwm_mr_member_flow_series', 'method:nwm-member-series@2.0.0', '2026-08-24 12:00:00.000000', '2026-08-24 12:00:00.000000')",
-      "duration_ms": 1.003
+      "duration_ms": 0.89
     },
     {
       "n": 12,
@@ -365,7 +365,7 @@
       "table": "derived_feature",
       "statement_ref": 11,
       "parameters": "('basin:skagit', 'station:usgs:12189500', '2026-08-24 23:00:00.000000', 'basin_swe_percent_of_median', 'method:snotel-basin-swe-context@1.0.0', 'snotel_precip_14d_percent_of_median', 'method:snotel-precip-14d-context@1.0.0', 'streamflow_doy_percentile', 'method:susceptibility-index@0.1.0', '2026-08-17 23:00:00.000000', '2026-08-24 23:00:00.000000')",
-      "duration_ms": 1.105
+      "duration_ms": 0.829
     },
     {
       "n": 13,
@@ -374,16 +374,16 @@
       "table": "derived_feature",
       "statement_ref": 10,
       "parameters": "('station:usgs:12189500', '2026-08-24 23:00:00.000000', 'streamflow_growth_reference', 'method:streamflow-growth-reference@1.0.0', '2016-08-26 23:00:00.000000', '2026-08-24 23:00:00.000000')",
-      "duration_ms": 0.943
+      "duration_ms": 0.633
     },
     {
       "n": 14,
       "reader": "derived_features_for",
-      "call_site": "packages/hydrology/src/cascade_hydrology/forcing.py:495 in prefetch",
+      "call_site": "packages/hydrology/src/cascade_hydrology/forcing.py:564 in prefetch",
       "table": "derived_feature",
       "statement_ref": 12,
-      "parameters": "('basin:skagit', '2026-08-24 23:00:00.000000', 'basin_qpf_72h_pointwise_p10', 'method:basin-qpf@1.0.0', '72h', 'basin_qpf_72h_pointwise_p50', 'method:basin-qpf@1.0.0', '72h', 'basin_qpf_72h_pointwise_p90', 'method:basin-qpf@1.0.0', '72h', 'basin_snow_level_pointwise_p50', 'method:basin-snow-level@1.0.0', '2026-08-22 23:00:00.000000')",
-      "duration_ms": 1.325
+      "parameters": "('basin:skagit', '2026-08-24 23:00:00.000000', 'basin_qpf_72h_pointwise_p10', 'method:basin-qpf@1.0.0', '72h', 'basin_qpf_72h_pointwise_p50', 'method:basin-qpf@1.0.0', '72h', 'basin_qpf_72h_pointwise_p90', 'method:basin-qpf@1.0.0', '72h', 'basin_snow_level_pointwise_p10', 'method:basin-snow-level@1.0.0', 'basin_snow_level_pointwise_p50', 'method:basin-snow-level@1.0.0', 'basin_snow_level_pointwise_p90', 'method:basin-snow-level@1.0.0', '2026-08-22 23:00:00.000000')",
+      "duration_ms": 1.16
     }
   ]
 }

@@ -50,6 +50,7 @@ from cascade_core.registry import (
     SRC_CASCADE,
     SRC_NBM,
 )
+from cascade_geo.hypsometry import BasinHypsometry
 
 METHOD_BASIN_QPF = "method:basin-qpf@1.0.0"
 #: The same area-weighted-mean arithmetic applied to the NBM snow-level field. It is a
@@ -333,6 +334,16 @@ def snow_ref_key(basin_id: str) -> str:
     return f"nbm-snowlvl-{basin_id.split(':')[-1]}"
 
 
+def rain_exposed_ref_key(basin_id: str) -> str:
+    return f"rain-exposed-{basin_id.split(':')[-1]}"
+
+
+#: Snow level x hypsometry. Versioned separately from both inputs: a change to how the fraction
+#: is computed is a new method, not a silent shift inside either input's identity.
+METHOD_RAIN_EXPOSED = "method:basin-rain-exposed-fraction@1.0.0"
+RAIN_EXPOSED_FEATURE = "basin_rain_exposed_fraction"
+
+
 def assess_from_rows(
     basin_id: str,
     *,
@@ -340,6 +351,7 @@ def assess_from_rows(
     snow_rows: Sequence[DerivedFeature] = (),
     products: dict[str, SourceProduct],
     now: datetime,
+    hypsometry: BasinHypsometry | None = None,
 ) -> ForcingAssessment:
     """Band the surface from stored basin-QPF rows of ONE cycle.
 
@@ -407,7 +419,8 @@ def assess_from_rows(
         spread[f"pointwise_p{percentile}"] = row.value
         drivers.append(Driver(feature=row.feature, value=row.value, unit=row.unit, direction=direction, rank=rank, prov=qpf_key))
 
-    snow = _nearest_snow_row(snow_rows)
+    p50_feature = snow_level_feature(SNOW_LEVEL_PERCENTILES[1])
+    snow = _nearest_snow_row([r for r in snow_rows if r.feature == p50_feature])
     if snow is not None and snow.value is not None:
         snow_product = snow.product_id or PRODUCT_NBM_CORE
         snow_source = _product_source(snow_product, products)
@@ -430,6 +443,60 @@ def assess_from_rows(
         drivers.append(
             Driver(feature=snow.feature, value=snow.value, unit=snow.unit, direction=DIRECTION_CONTEXT, rank=len(drivers) + 1, prov=snow_key)
         )
+
+        # Snow level x hypsometry: the fraction of the basin surface below the forecast snow
+        # level — where precipitation arrives as RAIN. The elevation-area curve is 20 m bins from
+        # 3DEP; the honest uncertainty is the snow level's own p10-p90 spread, so the spread of
+        # the fraction is the fraction at those two levels, never something invented here.
+        # Context, unscored: more rain-exposed area is not more risk on its own (HYDROLOGY §7).
+        if hypsometry is not None:
+            fraction = hypsometry.fraction_below(snow.value)
+            bracket = ""
+            same_forecast = [
+                r
+                for r in snow_rows
+                if r.feature != p50_feature
+                and r.issued_at == snow.issued_at
+                and r.valid_time == snow.valid_time
+                and r.value is not None
+            ]
+            by_pct = {r.feature: r.value for r in same_forecast}
+            lo = by_pct.get(snow_level_feature(SNOW_LEVEL_PERCENTILES[0]))
+            hi = by_pct.get(snow_level_feature(SNOW_LEVEL_PERCENTILES[2]))
+            if lo is not None and hi is not None:
+                # a LOWER snow level exposes LESS area to rain, so p10 is the low end
+                f_lo, f_hi = hypsometry.fraction_below(lo), hypsometry.fraction_below(hi)
+                bracket = f" (p10 snow level -> {f_lo * 100:.0f} %, p90 -> {f_hi * 100:.0f} %)"
+            frac_key = rain_exposed_ref_key(basin_id)
+            refs[frac_key] = ProvenanceRef(
+                source_id=snow_source,
+                source_kind=source_kind_of(snow_source),
+                product_id=snow_product,
+                method_id=METHOD_RAIN_EXPOSED,
+                issued_at=snow.issued_at,
+                valid_time=snow.valid_time,
+                retrieved_at=snow.computed_at,
+                freshness=_fresh(products, snow_product, cycle=snow.issued_at, retrieved_at=snow.available_at, now=now),
+                quality=(POINTWISE_FLAG,),
+                label=(
+                    f"Fraction of the basin surface below the forecast snow level p50 at "
+                    f"+{lead_h} h{bracket}. Rain, not snow, falls there if precipitation "
+                    "arrives. Elevation-area curve: method:basin-hypsometry@1.0.0 from USGS "
+                    "3DEP over the seeded HUC8-union geometry — NOT the outlet-contributing "
+                    "area. Context only; not scored."
+                ),
+                raw_artifact_id=str(snow.raw_artifact_id) if snow.raw_artifact_id is not None else None,
+            )
+            drivers.append(
+                Driver(
+                    feature=RAIN_EXPOSED_FEATURE,
+                    value=round(fraction * 100.0, 1),
+                    unit="pct",
+                    direction=DIRECTION_CONTEXT,
+                    rank=len(drivers) + 1,
+                    prov=frac_key,
+                )
+            )
 
     level = FORCING_BANDS.level(headline.value)
     return ForcingAssessment(
@@ -473,7 +540,9 @@ def read_specs() -> list[tuple[str, str, str | None]]:
     window = window_label(FORCING_HORIZON_H)
     return [
         *[(qpf_feature(FORCING_HORIZON_H, p), METHOD_BASIN_QPF, window) for p in (HEADLINE_PERCENTILE, *SPREAD_PERCENTILES)],
-        (snow_level_feature(SNOW_LEVEL_PERCENTILES[1]), METHOD_BASIN_SNOW_LEVEL, None),
+        # All three snow-level percentiles: p50 for the context driver, p10/p90 so the
+        # rain-exposed fraction can carry the snow level's own spread rather than a bare number.
+        *[(snow_level_feature(p), METHOD_BASIN_SNOW_LEVEL, None) for p in SNOW_LEVEL_PERCENTILES],
     ]
 
 
@@ -495,7 +564,14 @@ async def prefetch(k: Knowledge, basins: Sequence[Basin], *, now: datetime | Non
         await k.derived_features_for(read_specs(), scopes, valid_from=when - MAX_CYCLE_AGE)
 
 
-async def assess(k: Knowledge, basin: Basin, products: dict[str, SourceProduct], *, now: datetime | None = None) -> ForcingAssessment:
+async def assess(
+    k: Knowledge,
+    basin: Basin,
+    products: dict[str, SourceProduct],
+    *,
+    now: datetime | None = None,
+    hypsometry: BasinHypsometry | None = None,
+) -> ForcingAssessment:
     """Read the stored basin-QPF features known at ``k.as_of`` and band the surface.
 
     Reads four features per basin: the 72-h pointwise p50 (which selects the cycle), the
@@ -532,12 +608,15 @@ async def assess(k: Knowledge, basin: Basin, products: dict[str, SourceProduct],
         ]
     snow_rows = [
         r
+        for percentile in SNOW_LEVEL_PERCENTILES
         for r in await k.derived_features(
-            snow_level_feature(SNOW_LEVEL_PERCENTILES[1]),
+            snow_level_feature(percentile),
             basin.id,
             method_id=METHOD_BASIN_SNOW_LEVEL,
             valid_from=when - MAX_CYCLE_AGE,
         )
         if r.issued_at is not None and r.issued_at >= when - MAX_CYCLE_AGE
     ]
-    return assess_from_rows(basin.id, qpf_rows=qpf_rows, snow_rows=snow_rows, products=products, now=when)
+    return assess_from_rows(
+        basin.id, qpf_rows=qpf_rows, snow_rows=snow_rows, products=products, now=when, hypsometry=hypsometry
+    )
