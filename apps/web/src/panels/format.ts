@@ -11,6 +11,14 @@ export const formatQuantity = (q: Quantity | null | undefined, digits = 2): stri
   return q.datum ? `${value} ${q.unit} (${q.datum})` : `${value} ${q.unit}`;
 };
 
+/** Value + unit WITHOUT the datum — for dense rows whose shared datum is stated once nearby.
+ * Never use where the datum is not visibly carried by the surrounding context. */
+export const formatQuantityBare = (q: Quantity | null | undefined, digits = 2): string => {
+  if (!q) return 'UNKNOWN';
+  const value = Number.isInteger(q.value) ? q.value.toLocaleString('en-US') : q.value.toFixed(digits);
+  return `${value} ${q.unit}`;
+};
+
 export const formatNumber = (n: number | null | undefined, digits = 1): string =>
   n == null ? '—' : Number.isInteger(n) ? n.toLocaleString('en-US') : n.toFixed(digits);
 
