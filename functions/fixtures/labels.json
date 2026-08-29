@@ -1,11 +1,11 @@
 {
  "_provenance": {
   "method_id": "method:labels-gnis@1.0.0",
-  "derived_at": "2026-08-28T22:57:03.092374+00:00",
+  "derived_at": "2026-08-29T03:31:45.115221+00:00",
   "sources": {
    "names_coordinates": "USGS GNIS Domestic Names (public domain), https://prd-tnm.s3.amazonaws.com/StagedProducts/GeographicNames/DomesticNames/DomesticNames_WA_Text.zip",
    "river_anchors": "tests/fixtures/geo/river_network.json.gz mainstem midpoints (method:river-network-osm@1.0.0)",
-   "basin_anchors": "representative interior points of the seeded HUC8-union geometry"
+   "basin_anchors": "curated editorial anchors in each basin's open upper country (cartographic judgment, contains-verified; fallback representative_point)"
   },
   "editorial_note": "Which names label at which band is cartographic judgment recorded in scripts/build_labels.py, not derived data; every curated entry resolved against GNIS by (name, class, county) at build time."
  },
@@ -447,48 +447,48 @@
    "name": "Skagit",
    "kind": "basin",
    "tier": 1,
-   "lon": -121.29146,
-   "lat": 48.63547,
+   "lon": -121.3,
+   "lat": 48.62,
    "basin_id": "basin:skagit"
   },
   {
    "name": "Nooksack",
    "kind": "basin",
    "tier": 1,
-   "lon": -122.21184,
-   "lat": 48.82565,
+   "lon": -121.95,
+   "lat": 48.87,
    "basin_id": "basin:nooksack"
   },
   {
    "name": "Snohomish / Snoqualmie",
    "kind": "basin",
    "tier": 1,
-   "lon": -121.57391,
-   "lat": 47.76053,
+   "lon": -121.45,
+   "lat": 47.78,
    "basin_id": "basin:snohomish-snoqualmie"
   },
   {
    "name": "Cedar / Lake Washington",
    "kind": "basin",
    "tier": 1,
-   "lon": -122.15068,
-   "lat": 47.59436,
+   "lon": -121.72,
+   "lat": 47.37,
    "basin_id": "basin:cedar"
   },
   {
    "name": "Green-Duwamish",
    "kind": "basin",
    "tier": 1,
-   "lon": -122.13337,
-   "lat": 47.34518,
+   "lon": -121.6,
+   "lat": 47.22,
    "basin_id": "basin:green-duwamish"
   },
   {
    "name": "Puyallup / White",
    "kind": "basin",
    "tier": 1,
-   "lon": -121.81547,
-   "lat": 47.03964,
+   "lon": -121.75,
+   "lat": 46.98,
    "basin_id": "basin:puyallup-white"
   }
  ]

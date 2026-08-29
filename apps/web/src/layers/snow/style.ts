@@ -16,7 +16,7 @@ import type { FieldPixel } from '../fields/WeatherFieldLayer';
 /** Below this the analysis is noise-level patchiness, not snowpack. */
 const BARE_BELOW_MM = 1;
 const SATURATE_MM = 400;
-const MAX_ALPHA = 140; // a veil: terrain, rivers and hatches stay legible through full pack
+const MAX_ALPHA = 100; // a veil: terrain, rivers and hatches stay legible through full pack (rebalanced 2026-08-29)
 
 export function snowPixel(mm: number | null): FieldPixel {
   if (mm == null || !Number.isFinite(mm) || mm < BARE_BELOW_MM) {
@@ -28,6 +28,6 @@ export function snowPixel(mm: number | null): FieldPixel {
     r: Math.round(180 + 60 * t),
     g: Math.round(200 + 45 * t),
     b: 255,
-    a: Math.round(30 + (MAX_ALPHA - 30) * t),
+    a: Math.round(22 + (MAX_ALPHA - 22) * t),
   };
 }

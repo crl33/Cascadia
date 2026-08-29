@@ -1,18 +1,23 @@
 /**
- * Label selection: pure, deterministic mapping from (label set, band, selection) to the
- * labels a frame may show — SEMANTIC_ZOOM §6 made computable. No Cesium, no React.
+ * Label selection: pure, deterministic mapping from (label set, band, selection, projection)
+ * to the labels a frame may show — SEMANTIC_ZOOM §6 with the semantic corrections of the
+ * visual-continuity pass (2026-08-29).
  *
- * The doctrine's mandatory rules, implemented:
- * - band eligibility: a class outside its band is not a candidate regardless of budget
- *   (orbital shows BASIN names only — "Cascadia orientation", nothing else);
- * - per-band budgets 8/14/18/22/16 (orbital..local);
- * - priority: P2 basin > P3 river > P4 city > P4 town > P5 water > P6 peak, with the
- *   selected basin's own labels first within each class;
- * - spacing: greedy accept with a minimum GROUND separation per band. The doctrine asks for
- *   28 projected pixels; this uses the ground-distance equivalent of ~28 px at each band's
- *   typical camera height (APPROXIMATION, deterministic and camera-free — measured against
- *   real scenes before any tightening);
- * - over budget, the lowest-priority CLASS drops whole, never a random subset.
+ * CLASS SEMANTICS (the conceptual fix): a basin is NOT a place. Each class carries its own
+ * band window, priority and collision standing:
+ *   basin — analytical region context: orbital/state/basin ONLY, always hidden at river/
+ *           local (the river wins its own valley), and it LOSES every collision (mission
+ *           §14: city beats basin, river beats basin);
+ *   city  — stable orientation anchors, state and deeper;
+ *   town  — flood-corridor communities by editorial tier (2=basin.., 3=river.., 4=local);
+ *   river — anchored to its own geometry, basin and deeper;
+ *   water — lakes/reservoirs on their feature, river and deeper;
+ *   peak  — the hydrologic skyline, state/basin only.
+ *
+ * COLLISION: when a projection is supplied (the live camera), spacing is true screen pixels;
+ * without one (tests, determinism), a per-band ground-distance approximation stands in. Off-
+ * viewport anchors and the chrome exclusion bands drop candidates outright. Budgets cap the
+ * total; the lowest-standing class drops whole first.
  */
 import type { Band } from '../../scene/bands';
 
@@ -28,27 +33,61 @@ export interface LabelEntry {
   basin_id?: string;
 }
 
+export interface ScreenProjection {
+  /** Window coords for an anchor, or null when off-globe/behind. */
+  project(lon: number, lat: number): { x: number; y: number } | null;
+  width: number;
+  height: number;
+}
+
 export const BAND_BUDGET: Record<Band, number> = { orbital: 8, state: 14, basin: 18, river: 22, local: 16 };
-const BAND_MAX_TIER: Record<Band, number> = { orbital: 0, state: 1, basin: 2, river: 3, local: 4 };
-/** ~28 px of ground at each band's typical effective height, in degrees (documented approximation). */
-const BAND_MIN_SEPARATION_DEG: Record<Band, number> = { orbital: 0.5, state: 0.22, basin: 0.09, river: 0.03, local: 0.01 };
-const CLASS_PRIORITY: readonly LabelKind[] = ['basin', 'river', 'city', 'town', 'water', 'peak'];
+/** Class band windows — the semantic core. */
+const CLASS_BANDS: Record<LabelKind, readonly Band[]> = {
+  basin: ['orbital', 'state', 'basin'],
+  city: ['state', 'basin', 'river', 'local'],
+  town: ['basin', 'river', 'local'],
+  river: ['basin', 'river', 'local'],
+  water: ['river', 'local'],
+  peak: ['state', 'basin'],
+};
+/** Collision standing, strongest first — basin loses to everything (mission §14). */
+const CLASS_PRIORITY: readonly LabelKind[] = ['city', 'river', 'town', 'water', 'peak', 'basin'];
+/** Screen-space padding between accepted label RECTS, px (anchor distance alone let long
+ * uppercase basin names overlap city names whose anchors were far enough apart). */
+const RECT_PADDING_PX = 14;
+const LABEL_HEIGHT_PX = 18;
+/** Rough glyph advance for collision purposes only (SANS ~0.58 em, spaced classes wider). */
+export function estimatedWidthPx(entry: LabelEntry): number {
+  const spaced = entry.kind === 'basin';
+  const suffix = entry.kind === 'basin' ? 6 : 0; // " BASIN"
+  const px = spaced ? 11.5 : entry.kind === 'city' ? 9 : 7.5;
+  return (entry.name.length + suffix) * px;
+}
+/** Chrome exclusion bands (top strip / timeline+credits), px. */
+const EXCLUDE_TOP_PX = 64;
+const EXCLUDE_BOTTOM_PX = 96;
+/** Ground-distance stand-in per band when no projection is available (approximation). */
+const BAND_MIN_SEPARATION_DEG: Record<Band, number> = { orbital: 0.5, state: 0.24, basin: 0.1, river: 0.035, local: 0.012 };
 
 function separationDeg(a: LabelEntry, b: LabelEntry): number {
   const latScale = Math.cos(((a.lat + b.lat) / 2) * (Math.PI / 180));
-  const dx = (a.lon - b.lon) * latScale;
-  const dy = a.lat - b.lat;
-  return Math.hypot(dx, dy);
+  return Math.hypot((a.lon - b.lon) * latScale, a.lat - b.lat);
 }
 
 export function selectLabels(
   labels: readonly LabelEntry[],
   band: Band,
   selectedBasinId: string | null,
+  projection?: ScreenProjection,
 ): LabelEntry[] {
-  const eligible = labels.filter((entry) =>
-    band === 'orbital' ? entry.kind === 'basin' : entry.tier <= BAND_MAX_TIER[band],
-  );
+  const eligible = labels.filter((entry) => {
+    if (!CLASS_BANDS[entry.kind].includes(band)) return false;
+    // towns/rivers keep their editorial depth tiers inside their class window
+    if ((entry.kind === 'town' || entry.kind === 'river') && band === 'basin' && entry.tier > 2) return false;
+    if (entry.kind === 'town' && band === 'river' && entry.tier > 3) return false;
+    return true;
+  });
+
   const rank = (entry: LabelEntry): number => CLASS_PRIORITY.indexOf(entry.kind);
   const sorted = [...eligible].sort((a, b) => {
     const classOrder = rank(a) - rank(b);
@@ -61,21 +100,35 @@ export function selectLabels(
   });
 
   const accepted: LabelEntry[] = [];
-  const minSep = BAND_MIN_SEPARATION_DEG[band];
-  for (const candidate of sorted) {
-    if (accepted.every((placed) => separationDeg(candidate, placed) >= minSep)) {
-      accepted.push(candidate);
+  if (projection) {
+    const placed: { x: number; y: number; halfW: number }[] = [];
+    for (const candidate of sorted) {
+      const p = projection.project(candidate.lon, candidate.lat);
+      if (!p) continue;
+      if (p.x < 0 || p.x > projection.width || p.y < EXCLUDE_TOP_PX || p.y > projection.height - EXCLUDE_BOTTOM_PX) continue;
+      const halfW = estimatedWidthPx(candidate) / 2;
+      const clear = placed.every((q) =>
+        Math.abs(p.x - q.x) >= halfW + q.halfW + RECT_PADDING_PX ||
+        Math.abs(p.y - q.y) >= LABEL_HEIGHT_PX + RECT_PADDING_PX,
+      );
+      if (clear) {
+        accepted.push(candidate);
+        placed.push({ x: p.x, y: p.y, halfW });
+      }
+    }
+  } else {
+    const minSep = BAND_MIN_SEPARATION_DEG[band];
+    for (const candidate of sorted) {
+      if (accepted.every((placed) => separationDeg(candidate, placed) >= minSep)) accepted.push(candidate);
     }
   }
 
   const budget = BAND_BUDGET[band];
   if (accepted.length <= budget) return accepted;
-  // Drop the lowest-priority class whole until inside budget; if one class alone still
-  // overflows, truncate within it by the sort order (deterministic, never random).
   let trimmed = accepted;
   for (let classIndex = CLASS_PRIORITY.length - 1; classIndex >= 0 && trimmed.length > budget; classIndex -= 1) {
     const without = trimmed.filter((entry) => rank(entry) !== classIndex);
-    if (without.length > 0) trimmed = without.length >= trimmed.length ? trimmed : without;
+    if (without.length > 0 && without.length < trimmed.length) trimmed = without;
   }
   return trimmed.slice(0, budget);
 }

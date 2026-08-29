@@ -22,6 +22,7 @@ import {
   HorizontalOrigin,
   LabelCollection,
   LabelStyle as CesiumLabelStyle,
+  SceneTransforms,
   VerticalOrigin,
   type Viewer,
 } from 'cesium';
@@ -29,7 +30,7 @@ import type { MotionPreference } from '../../design-system/motion';
 import type { Band } from '../../scene/bands';
 import type { LayerHit, LayerStatus, SceneHandle, SceneLayer, SelectionState } from '../contract';
 import { viewerOf } from '../cesium-handle';
-import { selectLabels, type LabelEntry } from './select';
+import { selectLabels, type LabelEntry, type ScreenProjection } from './select';
 import { displayText, LABEL_STYLE } from './style';
 
 export interface LabelSet {
@@ -57,14 +58,24 @@ export class LabelsLayer implements SceneLayer<LabelSet> {
   private visible = true;
   private disposed = false;
 
+  private detachMoveEnd: (() => void) | null = null;
+
   mount(scene: SceneHandle): void {
     this.viewer = viewerOf(scene);
     this.collection = new LabelCollection({ scene: this.viewer.scene });
     this.viewer.scene.primitives.add(this.collection);
+    // Re-place on camera settle: collision is SCREEN-space (the doctrine's 28-40 px, not a
+    // ground-distance guess), so a settled camera re-evaluates which names fit. moveEnd is a
+    // coarse semantic event — nothing here runs per frame.
+    const onMoveEnd = () => this.rebuild();
+    this.viewer.camera.moveEnd.addEventListener(onMoveEnd);
+    this.detachMoveEnd = () => this.viewer?.camera.moveEnd.removeEventListener(onMoveEnd);
     this.rebuild();
   }
 
   unmount(): void {
+    this.detachMoveEnd?.();
+    this.detachMoveEnd = null;
     if (this.viewer && this.collection) {
       this.viewer.scene.primitives.remove(this.collection); // remove destroys the collection
     }
@@ -114,10 +125,25 @@ export class LabelsLayer implements SceneLayer<LabelSet> {
     return null; // names are not selectable entities
   }
 
+  private projection(): ScreenProjection | undefined {
+    const viewer = this.viewer;
+    if (!viewer) return undefined;
+    const canvas = viewer.scene.canvas;
+    const scratch = new Cartesian2();
+    return {
+      width: canvas.clientWidth,
+      height: canvas.clientHeight,
+      project: (lon, lat) => {
+        const p = SceneTransforms.worldToWindowCoordinates(viewer.scene, Cartesian3.fromDegrees(lon, lat), scratch);
+        return p ? { x: p.x, y: p.y } : null;
+      },
+    };
+  }
+
   private rebuild(): void {
     if (!this.collection || !this.data) return;
     this.collection.removeAll();
-    const chosen = selectLabels(this.data.labels, this.band, this.selection.basinId);
+    const chosen = selectLabels(this.data.labels, this.band, this.selection.basinId, this.projection());
     for (const entry of chosen) {
       const style = LABEL_STYLE[entry.kind];
       this.collection.add({

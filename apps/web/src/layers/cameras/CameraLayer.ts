@@ -33,40 +33,51 @@ export interface CameraSetData {
 const TAG_PREFIX = 'cameras|';
 const glyphCache = new Map<string, HTMLCanvasElement>();
 
-/** A small rounded camera badge: body + lens, dark slate on white ring for both-theme legibility. */
+/** The camera mark, redrawn for satellite ground (2026-08-29): a dark backing disc with a
+ * bright halo ring and a white camera silhouette — unmistakable over snow, forest, ocean or
+ * bright urban imagery alike. Pinned inverts (white disc, dark glyph); official attention
+ * adds an outer ring. Drawn once per (size, state) at 2x for HiDPI. */
 function cameraGlyph(sizePx: number, pinned: boolean, ring: boolean): HTMLCanvasElement {
   const key = `${sizePx}|${pinned}|${ring}`;
   const cached = glyphCache.get(key);
   if (cached) return cached;
-  const scale = 2; // crispness on HiDPI
+  const scale = 2;
   const s = sizePx * scale;
   const canvas = document.createElement('canvas');
   canvas.width = s;
   canvas.height = s;
   const ctx = canvas.getContext('2d');
   if (ctx) {
-    const r = s * 0.2;
-    ctx.fillStyle = pinned ? 'rgba(255,255,255,0.95)' : 'rgba(10,16,24,0.82)';
-    ctx.strokeStyle = pinned ? 'rgba(10,16,24,0.9)' : 'rgba(255,255,255,0.85)';
-    ctx.lineWidth = s * 0.06;
+    const cx = s / 2;
+    const cy = s / 2;
+    const disc = s * 0.42;
+    // halo ring: the legibility guarantee over any ground
     ctx.beginPath();
-    ctx.roundRect(s * 0.08, s * 0.2, s * 0.84, s * 0.6, r);
+    ctx.arc(cx, cy, disc, 0, Math.PI * 2);
+    ctx.fillStyle = pinned ? 'rgba(255,255,255,0.96)' : 'rgba(8,14,22,0.88)';
     ctx.fill();
+    ctx.lineWidth = s * 0.055;
+    ctx.strokeStyle = pinned ? 'rgba(8,14,22,0.9)' : 'rgba(255,255,255,0.92)';
     ctx.stroke();
-    // lens
+    // camera silhouette: body + lens + viewfinder nub
+    const ink = pinned ? 'rgba(8,14,22,0.92)' : 'rgba(255,255,255,0.95)';
+    ctx.fillStyle = ink;
+    const bw = s * 0.42;
+    const bh = s * 0.28;
     ctx.beginPath();
-    ctx.arc(s * 0.5, s * 0.5, s * 0.17, 0, Math.PI * 2);
-    ctx.fillStyle = pinned ? 'rgba(10,16,24,0.9)' : 'rgba(255,255,255,0.9)';
+    ctx.roundRect(cx - bw / 2, cy - bh / 2 + s * 0.02, bw, bh, s * 0.05);
     ctx.fill();
-    // viewfinder nub
-    ctx.fillStyle = pinned ? 'rgba(10,16,24,0.9)' : 'rgba(255,255,255,0.85)';
-    ctx.fillRect(s * 0.3, s * 0.12, s * 0.2, s * 0.1);
+    ctx.fillRect(cx - s * 0.08, cy - bh / 2 - s * 0.035, s * 0.16, s * 0.06);
+    ctx.beginPath();
+    ctx.arc(cx, cy + s * 0.02, s * 0.075, 0, Math.PI * 2);
+    ctx.fillStyle = pinned ? 'rgba(255,255,255,0.95)' : 'rgba(8,14,22,0.9)';
+    ctx.fill();
     if (ring) {
-      // official attention: a double ring, not a colour — the register stays with the words
-      ctx.strokeStyle = 'rgba(255,255,255,0.95)';
-      ctx.lineWidth = s * 0.05;
+      // official attention: an additional outer ring, never a colour change
+      ctx.strokeStyle = pinned ? 'rgba(8,14,22,0.85)' : 'rgba(255,255,255,0.95)';
+      ctx.lineWidth = s * 0.035;
       ctx.beginPath();
-      ctx.arc(s * 0.5, s * 0.5, s * 0.44, 0, Math.PI * 2);
+      ctx.arc(cx, cy, s * 0.48, 0, Math.PI * 2);
       ctx.stroke();
     }
   }
@@ -146,11 +157,17 @@ export class CameraLayer implements SceneLayer<CameraSetData> {
   private rebuild(): void {
     if (!this.collection || !this.data) return;
     this.collection.removeAll();
+    let shown = 0;
+    const hiddenByBand: Record<string, number> = { A: 0, B: 0, C: 0 };
     for (const cam of this.data.cameras) {
       const pinned = cam.id === this.data.pinnedCameraId;
       const attention = cam.basin_id !== null && cam.basin_id in this.data.attention;
       const style = cameraMarker({ tier: cam.tier as CameraTier, band: this.band, pinned, attention });
-      if (!style.show) continue;
+      if (!style.show) {
+        hiddenByBand[cam.tier] += 1;
+        continue;
+      }
+      shown += 1;
       const billboard = this.collection.add({
         position: Cartesian3.fromDegrees(cam.lon, cam.lat),
         image: cameraGlyph(style.sizePx, pinned, style.ring),
@@ -164,6 +181,12 @@ export class CameraLayer implements SceneLayer<CameraSetData> {
       billboard.color = billboard.color.withAlpha(style.alpha);
     }
     this.collection.show = this.visible;
+    // The visibility diagnostic (mission §6): the layer SAYS why cameras are absent instead
+    // of leaving it to guesswork — surfaced through statusReason (inspector/dev tooling).
+    this.statusReason = shown === this.data.cameras.length
+      ? null
+      : `${shown}/${this.data.cameras.length} shown at ${this.band} band; hidden by band gate — A:${hiddenByBand.A} B:${hiddenByBand.B} C:${hiddenByBand.C}`;
+    if (import.meta.env.DEV) console.info(`[cameras] ${this.statusReason ?? `all ${shown} shown`}`);
     this.viewer?.scene.requestRender();
   }
 }

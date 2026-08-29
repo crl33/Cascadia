@@ -1,7 +1,7 @@
 {
  "_provenance": {
   "method_id": "method:flood-cameras@1.0.0",
-  "derived_at": "2026-08-28T23:09:36.585082+00:00",
+  "derived_at": "2026-08-29T03:36:24.933501+00:00",
   "sources": {
    "usgs": "https://api.waterdata.usgs.gov/nims/cameras (public domain; imagery: usgs-nims-images S3, CORS-open)",
    "wsdot": "https://data.wsdot.wa.gov/arcgis/rest/services/TravelInformation/TravelInfoCamerasWeather/FeatureServer/0/query ('low volume use only' + hold-harmless licenseInfo, fetched 2026-08-28)"
@@ -25,9 +25,10 @@
    "refresh_seconds": 900,
    "basin_id": "basin:skagit",
    "nwis_id": "12211190",
-   "tier": "B",
+   "tier": "A",
    "reasons": [
-    "river_named_in_camera_title"
+    "river_named_in_camera_title",
+    "inside_floodway"
    ],
    "orientation": null,
    "attribution": "USGS Hydrologic Imagery Visualization and Information System (public domain)"
@@ -46,9 +47,10 @@
    "refresh_seconds": 900,
    "basin_id": "basin:skagit",
    "nwis_id": "12211195",
-   "tier": "B",
+   "tier": "A",
    "reasons": [
-    "river_named_in_camera_title"
+    "river_named_in_camera_title",
+    "inside_floodway"
    ],
    "orientation": null,
    "attribution": "USGS Hydrologic Imagery Visualization and Information System (public domain)"
@@ -102,6 +104,119 @@
    "attribution": "USGS Hydrologic Imagery Visualization and Information System (public domain)"
   },
   {
+   "id": "cam:wsdot:1021",
+   "provider": "wsdot",
+   "name": "I-5 at MP 156.6: Duwamish River",
+   "lon": -122.2649,
+   "lat": 47.49177,
+   "feed": "still",
+   "image": {
+    "kind": "static-url",
+    "url": "https://images.wsdot.wa.gov/nw/005vc15664.jpg"
+   },
+   "refresh_seconds": 300,
+   "basin_id": "basin:snohomish-snoqualmie",
+   "nwis_id": null,
+   "tier": "B",
+   "reasons": [
+    "river_named_in_camera_title",
+    "orientation_provider_stated"
+   ],
+   "orientation": null,
+   "attribution": "WSDOT Traveler Information (low-volume use; hold-harmless terms)"
+  },
+  {
+   "id": "cam:wsdot:1069",
+   "provider": "wsdot",
+   "name": "I-405 at MP 10.1: Coal Creek Pkwy",
+   "lon": -122.17961,
+   "lat": 47.56744,
+   "feed": "still",
+   "image": {
+    "kind": "static-url",
+    "url": "https://images.wsdot.wa.gov/nw/405vc01016.jpg"
+   },
+   "refresh_seconds": 300,
+   "basin_id": "basin:snohomish-snoqualmie",
+   "nwis_id": null,
+   "tier": "B",
+   "reasons": [
+    "river_named_in_camera_title",
+    "orientation_provider_stated"
+   ],
+   "orientation": null,
+   "attribution": "WSDOT Traveler Information (low-volume use; hold-harmless terms)"
+  },
+  {
+   "id": "cam:wsdot:1463",
+   "provider": "wsdot",
+   "name": "SR 167 at MP 18.9: Green River",
+   "lon": -122.24436,
+   "lat": 47.36893,
+   "feed": "still",
+   "image": {
+    "kind": "static-url",
+    "url": "https://images.wsdot.wa.gov/nw/167vc01899.jpg"
+   },
+   "refresh_seconds": 300,
+   "basin_id": "basin:snohomish-snoqualmie",
+   "nwis_id": null,
+   "tier": "B",
+   "reasons": [
+    "river_named_in_camera_title",
+    "orientation_provider_stated"
+   ],
+   "orientation": null,
+   "attribution": "WSDOT Traveler Information (low-volume use; hold-harmless terms)"
+  },
+  {
+   "id": "cam:wsdot:1528",
+   "provider": "wsdot",
+   "name": "SR 539 at MP 9.5: River Rd",
+   "lon": -122.48574,
+   "lat": 48.92097,
+   "feed": "still",
+   "image": {
+    "kind": "static-url",
+    "url": "https://images.wsdot.wa.gov/nw/539vc00955.jpg"
+   },
+   "refresh_seconds": 300,
+   "basin_id": "basin:skagit",
+   "nwis_id": null,
+   "tier": "A",
+   "reasons": [
+    "river_named_in_camera_title",
+    "inside_floodway",
+    "orientation_provider_stated"
+   ],
+   "orientation": {
+    "cardinal": "S"
+   },
+   "attribution": "WSDOT Traveler Information (low-volume use; hold-harmless terms)"
+  },
+  {
+   "id": "cam:wsdot:9029",
+   "provider": "wsdot",
+   "name": "I-90 at MP 46.8: Denny Creek",
+   "lon": -121.49935,
+   "lat": 47.39644,
+   "feed": "still",
+   "image": {
+    "kind": "static-url",
+    "url": "https://images.wsdot.wa.gov/sc/090VC04680.jpg"
+   },
+   "refresh_seconds": 300,
+   "basin_id": "basin:snohomish-snoqualmie",
+   "nwis_id": null,
+   "tier": "B",
+   "reasons": [
+    "river_named_in_camera_title",
+    "orientation_provider_stated"
+   ],
+   "orientation": null,
+   "attribution": "WSDOT Traveler Information (low-volume use; hold-harmless terms)"
+  },
+  {
    "id": "cam:wsdot:9187",
    "provider": "wsdot",
    "name": "SR 532 at MP 3.3: Stillaguamish River",
@@ -118,6 +233,7 @@
    "tier": "B",
    "reasons": [
     "river_named_in_camera_title",
+    "inside_1pct_floodplain",
     "orientation_provider_stated"
    ],
    "orientation": null,
@@ -137,9 +253,10 @@
    "refresh_seconds": 300,
    "basin_id": "basin:skagit",
    "nwis_id": null,
-   "tier": "B",
+   "tier": "A",
    "reasons": [
     "river_named_in_camera_title",
+    "inside_floodway",
     "orientation_provider_stated"
    ],
    "orientation": null,
@@ -159,9 +276,10 @@
    "refresh_seconds": 300,
    "basin_id": "basin:skagit",
    "nwis_id": null,
-   "tier": "B",
+   "tier": "A",
    "reasons": [
     "river_named_in_camera_title",
+    "inside_floodway",
     "orientation_provider_stated"
    ],
    "orientation": {
@@ -183,14 +301,38 @@
    "refresh_seconds": 300,
    "basin_id": "basin:skagit",
    "nwis_id": null,
-   "tier": "B",
+   "tier": "A",
    "reasons": [
     "river_named_in_camera_title",
+    "inside_floodway",
     "orientation_provider_stated"
    ],
    "orientation": {
     "cardinal": "N"
    },
+   "attribution": "WSDOT Traveler Information (low-volume use; hold-harmless terms)"
+  },
+  {
+   "id": "cam:wsdot:9329",
+   "provider": "wsdot",
+   "name": "I-5 at MP 266.8: California Creek",
+   "lon": -122.61171,
+   "lat": 48.90114,
+   "feed": "still",
+   "image": {
+    "kind": "static-url",
+    "url": "https://images.wsdot.wa.gov/nw/005vc26689.jpg"
+   },
+   "refresh_seconds": 300,
+   "basin_id": "basin:nooksack",
+   "nwis_id": null,
+   "tier": "B",
+   "reasons": [
+    "river_named_in_camera_title",
+    "4170_m_from_mainstem_river",
+    "orientation_provider_stated"
+   ],
+   "orientation": null,
    "attribution": "WSDOT Traveler Information (low-volume use; hold-harmless terms)"
   },
   {
@@ -206,6 +348,208 @@
    },
    "refresh_seconds": 300,
    "basin_id": "basin:skagit",
+   "nwis_id": null,
+   "tier": "A",
+   "reasons": [
+    "river_named_in_camera_title",
+    "inside_floodway",
+    "orientation_provider_stated"
+   ],
+   "orientation": null,
+   "attribution": "WSDOT Traveler Information (low-volume use; hold-harmless terms)"
+  },
+  {
+   "id": "cam:wsdot:9445",
+   "provider": "wsdot",
+   "name": "SR 9 at MP 97.8: Johnson Creek",
+   "lon": -122.26498,
+   "lat": 48.9971,
+   "feed": "still",
+   "image": {
+    "kind": "static-url",
+    "url": "https://images.wsdot.wa.gov/nw/009vc09781.jpg"
+   },
+   "refresh_seconds": 300,
+   "basin_id": "basin:skagit",
+   "nwis_id": null,
+   "tier": "B",
+   "reasons": [
+    "river_named_in_camera_title",
+    "inside_1pct_floodplain",
+    "orientation_provider_stated"
+   ],
+   "orientation": null,
+   "attribution": "WSDOT Traveler Information (low-volume use; hold-harmless terms)"
+  },
+  {
+   "id": "cam:wsdot:9799",
+   "provider": "wsdot",
+   "name": "I-5 at MP 135.2: Puyallup River Bridge",
+   "lon": -122.40222,
+   "lat": 47.24002,
+   "feed": "still",
+   "image": {
+    "kind": "static-url",
+    "url": "https://images.wsdot.wa.gov/orflow/005vc13528.jpg"
+   },
+   "refresh_seconds": 300,
+   "basin_id": "basin:puyallup-white",
+   "nwis_id": null,
+   "tier": "A",
+   "reasons": [
+    "river_named_in_camera_title",
+    "230_m_from_mainstem_river",
+    "orientation_provider_stated"
+   ],
+   "orientation": null,
+   "attribution": "WSDOT Traveler Information (low-volume use; hold-harmless terms)"
+  },
+  {
+   "id": "cam:wsdot:9916",
+   "provider": "wsdot",
+   "name": "I-90 at MP 59.9 Resort Creek",
+   "lon": -121.34906,
+   "lat": 47.33716,
+   "feed": "still",
+   "image": {
+    "kind": "static-url",
+    "url": "https://images.wsdot.wa.gov/sc/090VC05990.jpg"
+   },
+   "refresh_seconds": 300,
+   "basin_id": "basin:snohomish-snoqualmie",
+   "nwis_id": null,
+   "tier": "B",
+   "reasons": [
+    "river_named_in_camera_title",
+    "orientation_provider_stated"
+   ],
+   "orientation": null,
+   "attribution": "WSDOT Traveler Information (low-volume use; hold-harmless terms)"
+  },
+  {
+   "id": "cam:wsdot:9918",
+   "provider": "wsdot",
+   "name": "I-90 at MP 61.1 Price Creek",
+   "lon": -121.33031,
+   "lat": 47.3261,
+   "feed": "still",
+   "image": {
+    "kind": "static-url",
+    "url": "https://images.wsdot.wa.gov/sc/090vc06112.jpg"
+   },
+   "refresh_seconds": 300,
+   "basin_id": "basin:green-duwamish",
+   "nwis_id": null,
+   "tier": "B",
+   "reasons": [
+    "river_named_in_camera_title",
+    "orientation_provider_stated"
+   ],
+   "orientation": null,
+   "attribution": "WSDOT Traveler Information (low-volume use; hold-harmless terms)"
+  },
+  {
+   "id": "cam:wsdot:10064",
+   "provider": "wsdot",
+   "name": "I-5 at MP 135.6: Puyallup River Bridge North",
+   "lon": -122.39599,
+   "lat": 47.24124,
+   "feed": "still",
+   "image": {
+    "kind": "static-url",
+    "url": "https://images.wsdot.wa.gov/orflow/005vc13562.jpg"
+   },
+   "refresh_seconds": 300,
+   "basin_id": "basin:puyallup-white",
+   "nwis_id": null,
+   "tier": "A",
+   "reasons": [
+    "river_named_in_camera_title",
+    "230_m_from_mainstem_river",
+    "orientation_provider_stated"
+   ],
+   "orientation": null,
+   "attribution": "WSDOT Traveler Information (low-volume use; hold-harmless terms)"
+  },
+  {
+   "id": "cam:wsdot:10242",
+   "provider": "wsdot",
+   "name": "I-90 at MP 56.88 Rocky Run Creek",
+   "lon": -121.37643,
+   "lat": 47.37203,
+   "feed": "still",
+   "image": {
+    "kind": "static-url",
+    "url": "https://images.wsdot.wa.gov/sc/090vc05688.jpg"
+   },
+   "refresh_seconds": 300,
+   "basin_id": "basin:snohomish-snoqualmie",
+   "nwis_id": null,
+   "tier": "B",
+   "reasons": [
+    "river_named_in_camera_title",
+    "orientation_provider_stated"
+   ],
+   "orientation": null,
+   "attribution": "WSDOT Traveler Information (low-volume use; hold-harmless terms)"
+  },
+  {
+   "id": "cam:wsdot:10275",
+   "provider": "wsdot",
+   "name": "SR 18 @ MP 26.1: Raging River",
+   "lon": -121.88857,
+   "lat": 47.48367,
+   "feed": "still",
+   "image": {
+    "kind": "static-url",
+    "url": "https://images.wsdot.wa.gov/nw/018vc02612.jpg"
+   },
+   "refresh_seconds": 300,
+   "basin_id": "basin:snohomish-snoqualmie",
+   "nwis_id": null,
+   "tier": "B",
+   "reasons": [
+    "river_named_in_camera_title",
+    "orientation_provider_stated"
+   ],
+   "orientation": null,
+   "attribution": "WSDOT Traveler Information (low-volume use; hold-harmless terms)"
+  },
+  {
+   "id": "cam:wsdot:10278",
+   "provider": "wsdot",
+   "name": "SR 18 @ MP 27.5: Lake Creek",
+   "lon": -121.88517,
+   "lat": 47.50374,
+   "feed": "still",
+   "image": {
+    "kind": "static-url",
+    "url": "https://images.wsdot.wa.gov/nw/018vc02748.jpg"
+   },
+   "refresh_seconds": 300,
+   "basin_id": "basin:snohomish-snoqualmie",
+   "nwis_id": null,
+   "tier": "B",
+   "reasons": [
+    "river_named_in_camera_title",
+    "orientation_provider_stated"
+   ],
+   "orientation": null,
+   "attribution": "WSDOT Traveler Information (low-volume use; hold-harmless terms)"
+  },
+  {
+   "id": "cam:wsdot:10288",
+   "provider": "wsdot",
+   "name": "SR 167 at MP 3.6: Clarks Creek",
+   "lon": -122.34203,
+   "lat": 47.21357,
+   "feed": "still",
+   "image": {
+    "kind": "static-url",
+    "url": "https://images.wsdot.wa.gov/orflow/167vc00366.jpg"
+   },
+   "refresh_seconds": 300,
+   "basin_id": "basin:green-duwamish",
    "nwis_id": null,
    "tier": "B",
    "reasons": [

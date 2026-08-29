@@ -26,7 +26,7 @@ export interface LabelStyle {
 }
 
 const WHITE = { r: 1, g: 1, b: 1, a: 0.96 };
-const QUIET_WHITE = { r: 1, g: 1, b: 1, a: 0.62 };
+const QUIET_WHITE = { r: 1, g: 1, b: 1, a: 0.5 };
 /** The water hue family the network layer already draws in (design-system cyan, lightened). */
 const WATER = { r: 0.75, g: 0.91, b: 1, a: 0.95 };
 const HALO = { r: 0.04, g: 0.09, b: 0.13, a: 0.85 };
@@ -38,13 +38,17 @@ export const LABEL_STYLE: Record<LabelKind, LabelStyle> = {
   town: { font: `400 12px ${SANS}`, fill: WHITE, outline: HALO, outlineWidth: 3, transform: 'none', prefix: '' },
   river: { font: `italic 500 12.5px ${SANS}`, fill: WATER, outline: HALO, outlineWidth: 3, transform: 'none', prefix: '' },
   water: { font: `italic 400 11px ${SANS}`, fill: WATER, outline: HALO, outlineWidth: 3, transform: 'none', prefix: '' },
-  basin: { font: `600 12.5px ${SANS}`, fill: QUIET_WHITE, outline: HALO, outlineWidth: 3, transform: 'uppercase-spaced', prefix: '' },
+  basin: { font: `500 10.5px ${SANS}`, fill: QUIET_WHITE, outline: HALO, outlineWidth: 3, transform: 'uppercase-spaced', prefix: '' },
   peak: { font: `400 11px ${SANS}`, fill: WHITE, outline: HALO, outlineWidth: 3, transform: 'none', prefix: '▲ ' },
 };
 
 /** THIN SPACE letterspacing for the basin frame (canvas fonts have no letter-spacing). */
 export function displayText(name: string, kind: LabelKind): string {
   const style = LABEL_STYLE[kind];
-  const text = style.transform === 'uppercase-spaced' ? name.toUpperCase().split('').join(' ') : name;
+  // A basin label SAYS it is a basin — "SKAGIT BASIN", never a bare name masquerading as a
+  // town (the conceptual fix of this pass): "Cedar / Lake Washington" -> "CEDAR–LAKE
+  // WASHINGTON BASIN".
+  const base = kind === 'basin' ? `${name.replace(/ \/ /g, '–')} basin` : name;
+  const text = style.transform === 'uppercase-spaced' ? base.toUpperCase().split('').join(' ') : base;
   return style.prefix + text;
 }

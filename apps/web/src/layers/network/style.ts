@@ -4,18 +4,17 @@
  *
  * Two registers meet here WITHOUT blurring. The skeleton — where the rivers are, which is the
  * mainstem, one water-cyan hue — is CARTOGRAPHIC. On top of it, `intensity` carries the
- * contract's `flow_visual_intensity` (the sanctioned display hint: the station's day-of-year
- * flow percentile / 100, VISUALIZATION_CONTRACTS §3), and it modulates ONLY width and alpha —
- * presence, a non-colour carrier (§7.2). The hue never changes and no category is ever
- * encoded: a swollen river reads bigger, not redder. `intensity: null` is the honest absence
- * — the line falls back to the cartographic base, so a river nothing is known about looks
- * like a map, never like a calm river. The hint's provenance (gauge, record span, freshness)
- * renders in the basin panel beside the percentile itself.
+ * contract's `flow_visual_intensity` (the station's day-of-year percentile / 100) and
+ * modulates ONLY width and alpha — presence, a non-colour carrier (§7.2). `intensity: null`
+ * falls back to the cartographic base. The hint's provenance renders in the basin panel.
  *
- * "Rivers as first-class visual objects" (design direction 2026-08-28): the hydrologic
- * network is the skeleton of Cascadia's world and draws from the overview down — mainstems
- * from orbit, the full network once a basin has the frame, and the rivers RESPOND where a
- * defensible percentile exists.
+ * BAND-AWARE WEIGHT (visual-continuity pass 2026-08-29): a river must gain visual presence
+ * as the camera approaches — a constant-width centerline perceptually vanishes as the world
+ * gains detail. Widths are SCREEN PIXELS per semantic band, a cartographic hierarchy, and
+ * explicitly NOT a claim about physical channel width. Tributaries stay quiet at basin band
+ * (the whole network at full voice was clutter over imagery — measured 2026-08-29 baseline)
+ * and come up as the camera descends. Mainstems of the selected basin may carry a restrained
+ * glow at river/local bands — presence, never neon.
  */
 import { COLOR, type Hsl } from '../../design-system/tokens';
 import type { Band } from '../../scene/bands';
@@ -34,22 +33,47 @@ export interface RiverLineStyle {
   widthPx: number;
   color: Hsl;
   alpha: number;
+  /** Restrained glow material for selected mainstems near the ground — presence, not neon. */
+  glow: boolean;
 }
 
-/** Full-intensity width growth, in px: a p100 mainstem doubles its cartographic width. */
-const STEM_SWELL_PX = 1.8;
-const TRIB_SWELL_PX = 0.8;
-/** Full-intensity alpha lift — small on purpose; presence is carried by width first. */
-const ALPHA_LIFT = 0.15;
+/** Cartographic base width in screen px per band: [mainstem, tributary]. */
+const BAND_WIDTH: Record<Band, readonly [number, number]> = {
+  orbital: [1.2, 0],
+  state: [1.6, 0.8],
+  basin: [2.2, 1.0],
+  river: [3.2, 1.7],
+  local: [4.6, 2.5],
+};
+/** Base alpha per band: [mainstem, tributary]. Tributaries whisper until the camera is low. */
+const BAND_ALPHA: Record<Band, readonly [number, number]> = {
+  orbital: [0.8, 0],
+  state: [0.7, 0.2],
+  basin: [0.8, 0.26],
+  river: [0.85, 0.45],
+  local: [0.9, 0.55],
+};
+/** Full-intensity presence multiplier on width (p100 river ~1.8x its cartographic base). */
+const INTENSITY_WIDTH_GAIN = 0.8;
+const INTENSITY_ALPHA_GAIN = 0.12;
 
 export function riverLine(s: RiverLineSemantic): RiverLineStyle {
   const overview = s.band === 'orbital';
   if (overview && !s.mainstem) {
-    return { show: false, widthPx: 0, color: COLOR.cyan, alpha: 0 };
+    return { show: false, widthPx: 0, color: COLOR.cyan, alpha: 0, glow: false };
   }
   const lift = s.intensity == null ? 0 : Math.min(Math.max(s.intensity, 0), 1);
-  const baseWidth = s.mainstem ? (overview ? 1.4 : 1.8) : 1.0;
-  const width = baseWidth + (s.mainstem ? STEM_SWELL_PX : TRIB_SWELL_PX) * lift;
-  const alpha = ((s.mainstem ? 0.8 : 0.4) + ALPHA_LIFT * lift) * (s.inSelectedBasin ? 1.15 : 1);
-  return { show: true, widthPx: width, color: COLOR.cyan, alpha: Math.min(alpha, 0.95) };
+  const [stemWidth, tribWidth] = BAND_WIDTH[s.band];
+  const [stemAlpha, tribAlpha] = BAND_ALPHA[s.band];
+  const baseWidth = s.mainstem ? stemWidth : tribWidth;
+  const width = baseWidth * (1 + INTENSITY_WIDTH_GAIN * lift);
+  const alpha = (s.mainstem ? stemAlpha : tribAlpha) + INTENSITY_ALPHA_GAIN * lift;
+  const selectedBoost = s.inSelectedBasin ? 1.12 : 1;
+  return {
+    show: true,
+    widthPx: width,
+    color: COLOR.cyan,
+    alpha: Math.min(alpha * selectedBoost, 0.95),
+    glow: s.mainstem && s.inSelectedBasin && (s.band === 'river' || s.band === 'local'),
+  };
 }

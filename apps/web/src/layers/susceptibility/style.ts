@@ -62,7 +62,7 @@ export interface SusceptibilityFill {
  *  read as texture rather than banding on every seed basin, from the Cedar to the Skagit. */
 export const HATCH_SPACING_DEG = 0.04;
 /** The carrier's opacity — above every wash alpha (the greyscale separation lives here). */
-export const HATCH_ALPHA = 0.30;
+export const HATCH_ALPHA = 0.22;
 
 /**
  * Level → tone. Cyan for nominal, amber as tension rises, and nothing beyond amber.
@@ -91,11 +91,14 @@ const LEVEL_WORD: Record<SurfaceLevel, string> = {
 
 /** Lower confidence reads fainter — it never changes the tone, which would restate the level.
  *  Halved 2026-08-28: the wash is context under a fine hatch now, not the statement itself. */
+// Rebalanced 2026-08-29 for the satellite ground: over dark forest imagery the previous
+// washes (0.15/0.12/0.09) plus hatch plus snow stacked into an opaque sheet that hid the
+// terrain — the world must stay visible under every derived statement.
 const CONFIDENCE_ALPHA: Record<ConfidenceLabel, number> = {
-  high: 0.15,
-  moderate: 0.12,
-  low: 0.09,
-  unknown: 0.07,
+  high: 0.10,
+  moderate: 0.08,
+  low: 0.055,
+  unknown: 0.045,
 };
 
 export function susceptibilityFill(s: SusceptibilitySemantic): SusceptibilityFill {
@@ -123,7 +126,7 @@ export function susceptibilityFill(s: SusceptibilitySemantic): SusceptibilityFil
   return {
     show: overview,
     color: LEVEL_TONE[s.state],
-    alpha: Math.min(alpha, 0.20),
+    alpha: Math.min(alpha, 0.13),
     striped: s.experimental,
     hatchAlpha: s.experimental ? HATCH_ALPHA : 0,
     outlineOnly: false,

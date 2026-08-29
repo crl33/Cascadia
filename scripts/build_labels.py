@@ -153,19 +153,41 @@ def main() -> int:
             })
             n_rivers += 1
 
-    # Basins: anchored at a representative INTERIOR point computed from the seed geometry
-    # (the seed carries no precomputed centroid, and a centroid of a concave basin can land
-    # outside it — representative_point cannot).
-    from shapely.geometry import shape
+    # Basins: CURATED editorial anchors (visual-continuity pass 2026-08-29). A basin label is
+    # analytical region context, not a place — the raw representative point landed labels in
+    # the populated lowlands where they collided with cities and read as misplaced towns
+    # ("CEDAR / LAKE WASHINGTON" overlapping Seattle, measured in the 2026-08-29 baseline).
+    # These anchors sit in each basin's open upper country, away from its cities, rivers'
+    # label anchors and neighbors. There is no mathematically correct point; this is
+    # cartographic judgment, verified inside the basin geometry at build time (a curated
+    # point that drifts outside the polygon falls back to representative_point, loudly).
+    from shapely.geometry import Point, shape
     from shapely.ops import unary_union
+
+    BASIN_ANCHORS = {
+        "basin:skagit": (-121.30, 48.62),               # upper Skagit high country
+        "basin:nooksack": (-121.95, 48.87),             # middle-fork foothills east of Deming
+        "basin:snohomish-snoqualmie": (-121.45, 47.78), # Cascade front east of Sultan
+        "basin:cedar": (-121.72, 47.37),                # Cedar watershed uplands
+        "basin:green-duwamish": (-121.60, 47.22),       # upper Green gorge country
+        "basin:puyallup-white": (-121.75, 46.98),       # upper basin toward the Rainier flank
+    }
 
     seed = json.loads(gzip.decompress((GEO / "basins_seed_full.geojson.gz").read_bytes()))
     for feature in seed["features"]:
         props = feature["properties"]
-        anchor = unary_union(shape(feature["geometry"])).representative_point()
+        geom = unary_union(shape(feature["geometry"]))
+        curated = BASIN_ANCHORS.get(props["id"])
+        if curated and geom.contains(Point(curated)):
+            lon, lat = curated
+        else:
+            fallback = geom.representative_point()
+            lon, lat = fallback.x, fallback.y
+            if curated:
+                print(f"curated anchor for {props['id']} fell outside its geometry; representative_point used", file=sys.stderr)
         labels.append({
             "name": str(props.get("name", props["id"])), "kind": "basin", "tier": 1,
-            "lon": round(anchor.x, 5), "lat": round(anchor.y, 5), "basin_id": props["id"],
+            "lon": round(lon, 5), "lat": round(lat, 5), "basin_id": props["id"],
         })
 
     doc = {
@@ -175,7 +197,7 @@ def main() -> int:
             "sources": {
                 "names_coordinates": f"USGS GNIS Domestic Names (public domain), {GNIS_URL}",
                 "river_anchors": "tests/fixtures/geo/river_network.json.gz mainstem midpoints (method:river-network-osm@1.0.0)",
-                "basin_anchors": "representative interior points of the seeded HUC8-union geometry",
+                "basin_anchors": "curated editorial anchors in each basin's open upper country (cartographic judgment, contains-verified; fallback representative_point)",
             },
             "editorial_note": (
                 "Which names label at which band is cartographic judgment recorded in "

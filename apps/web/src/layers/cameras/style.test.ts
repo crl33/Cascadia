@@ -8,9 +8,9 @@ describe('cameraMarker', () => {
       expect(cameraMarker({ tier: 'A', band, pinned: true, attention: false }).show).toBe(false);
     }
   });
-  it('tier gates the bands: A from basin, B from river, C local only', () => {
+  it('tier gates the bands: A and B from basin (the network must read as one), C local only', () => {
     expect(cameraMarker({ tier: 'A', band: 'basin', pinned: false, attention: false }).show).toBe(true);
-    expect(cameraMarker({ tier: 'B', band: 'basin', pinned: false, attention: false }).show).toBe(false);
+    expect(cameraMarker({ tier: 'B', band: 'basin', pinned: false, attention: false }).show).toBe(true);
     expect(cameraMarker({ tier: 'B', band: 'river', pinned: false, attention: false }).show).toBe(true);
     expect(cameraMarker({ tier: 'C', band: 'river', pinned: false, attention: false }).show).toBe(false);
     expect(cameraMarker({ tier: 'C', band: 'local', pinned: false, attention: false }).show).toBe(true);
@@ -29,12 +29,12 @@ describe('cameraMarker', () => {
 
 describe('official attention', () => {
   it('promotes the corridor one band and rings the glyph — official evidence only', () => {
-    const idle = cameraMarker({ tier: 'B', band: 'basin', pinned: false, attention: false });
-    const noticed = cameraMarker({ tier: 'B', band: 'basin', pinned: false, attention: true });
+    const idle = cameraMarker({ tier: 'C', band: 'river', pinned: false, attention: false });
+    const noticed = cameraMarker({ tier: 'C', band: 'river', pinned: false, attention: true });
     expect(idle.show).toBe(false);
     expect(noticed.show).toBe(true);
     expect(noticed.ring).toBe(true);
-    expect(noticed.sizePx).toBeGreaterThan(cameraMarker({ tier: 'A', band: 'basin', pinned: false, attention: false }).sizePx);
+    expect(noticed.sizePx).toBeGreaterThan(cameraMarker({ tier: 'A', band: 'river', pinned: false, attention: false }).sizePx);
   });
   it('attention never reaches orbital or state — cameras stay local evidence', () => {
     expect(cameraMarker({ tier: 'A', band: 'state', pinned: false, attention: true }).show).toBe(false);

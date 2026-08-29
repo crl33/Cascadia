@@ -69,6 +69,12 @@ export const usgsImagery: BasemapProvider = {
   attribution: USGS_IMAGERY_ATTRIBUTION,
   // Content stops at the service's stated 1:9,028 scale; requesting deeper returns upsampled
   // or empty tiles, so the ceiling is declared rather than discovered per camera move.
+  // Known data characteristics, verified against source tiles 2026-08-29: (1) collection
+  // seams — adjacent NAIP campaigns differ in tone, so straight-edged brightness steps are
+  // in the JPEGs themselves (e.g. the bright urban rectangle over Seattle at basin band);
+  // (2) offshore voids — where no ortho collection exists at a mid LOD the service bakes
+  // OPAQUE WHITE into the tile (tile 11/705/324 over the San Juans carries a white square).
+  // Neither is a loading bug; recolouring another agency's imagery per-tile is out of scope.
   usage: { maxZoom: 16, prefetchAllowed: true },
   cspHosts: ['https://basemap.nationalmap.gov'],
   requiresKey: false,

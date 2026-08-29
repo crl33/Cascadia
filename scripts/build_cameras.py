@@ -185,18 +185,43 @@ def main() -> int:
             "attribution": "USGS Hydrologic Imagery Visualization and Information System (public domain)",
         })
 
-    # --- WSDOT curated ----------------------------------------------------------------------
-    ids = ",".join(str(i) for i in WSDOT_CURATED)
+    # --- WSDOT: curated seeds + machine-verified river-named cameras -------------------------
+    # Coverage expansion (2026-08-29): beyond the 4 image-verified seeds, EVERY camera in the
+    # live WSDOT layer whose OFFICIAL title names flowing water (river/slough/creek) AND whose
+    # imagery is WSDOT-hosted (images.wsdot.wa.gov — the layer mixes in third-party cameras
+    # identifiable only by URL host) AND whose point falls in a seeded basin bbox. The title
+    # is provider metadata, not our guess; image verification remains pending for non-seeds,
+    # which the tiering already expresses (named-but-unverified ranks below at-gauge).
+    west = min(b[0] for b in bboxes.values()); south = min(b[1] for b in bboxes.values())
+    east = max(b[2] for b in bboxes.values()); north = max(b[3] for b in bboxes.values())
     doc = fetch(WSDOT_LAYER, {
-        "where": f"OBJECTID IN ({ids})", "outFields": "OBJECTID,CameraTitle,ImageURL,CompassDirection",
-        "returnGeometry": "true", "outSR": 4326, "f": "json",
+        "where": "1=1",
+        "geometry": json.dumps({"xmin": west, "ymin": south, "xmax": east, "ymax": north,
+                                "spatialReference": {"wkid": 4326}}),
+        "geometryType": "esriGeometryEnvelope", "inSR": 4326, "spatialRel": "esriSpatialRelIntersects",
+        "outFields": "OBJECTID,CameraTitle,ImageURL,CompassDirection",
+        "returnGeometry": "true", "outSR": 4326, "f": "json", "resultRecordCount": 2000,
     })
-    got = {f["attributes"]["OBJECTID"] for f in doc.get("features", [])}
-    missing = set(WSDOT_CURATED) - got
+    features = []
+    seen_ids = set()
+    for f in doc.get("features", []):
+        a = f["attributes"]
+        oid = a["OBJECTID"]
+        title = (a.get("CameraTitle") or "").lower()
+        url = a.get("ImageURL") or ""
+        lon, lat = f["geometry"]["x"], f["geometry"]["y"]
+        named = any(w in title for w in RIVER_WORDS)
+        wsdot_hosted = url.startswith("https://images.wsdot.wa.gov/")
+        in_basin = basin_of(lon, lat) is not None
+        if oid in WSDOT_CURATED or (named and wsdot_hosted and in_basin):
+            if oid not in seen_ids:
+                features.append(f)
+                seen_ids.add(oid)
+    missing = set(WSDOT_CURATED) - seen_ids
     if missing:
         print(f"curated WSDOT cameras missing from the live layer: {sorted(missing)} — fix the curation", file=sys.stderr)
         return 1
-    for f in doc["features"]:
+    for f in features:
         a = f["attributes"]
         lon, lat = f["geometry"]["x"], f["geometry"]["y"]
         bid = basin_of(lon, lat)

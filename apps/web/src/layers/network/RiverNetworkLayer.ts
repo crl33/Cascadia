@@ -12,7 +12,7 @@
  * is the SAME object only restyles: intensity refreshes arrive on query cadence and must not
  * rebuild thousands of polylines.
  */
-import { Cartesian3, CustomDataSource, ColorMaterialProperty, Color, type Viewer } from 'cesium';
+import { Cartesian3, CustomDataSource, ColorMaterialProperty, Color, PolylineGlowMaterialProperty, type Viewer } from 'cesium';
 import type { RiverNetwork } from '../../contracts/schemas';
 import type { MotionPreference } from '../../design-system/motion';
 import type { Band } from '../../scene/bands';
@@ -147,7 +147,9 @@ export class RiverNetworkLayer implements SceneLayer<RiverNetworkDisplay> {
         entity.show = style.show && this.visible;
         if (!entity.show) continue;
         polyline.width = Math.max(style.widthPx, 0.5) as never;
-        polyline.material = new ColorMaterialProperty(hslToColor(style.color, style.alpha));
+        polyline.material = style.glow
+          ? new PolylineGlowMaterialProperty({ color: hslToColor(style.color, Math.min(style.alpha + 0.05, 1)), glowPower: 0.28, taperPower: 1 })
+          : new ColorMaterialProperty(hslToColor(style.color, style.alpha));
       }
     }
     this.viewer?.scene.requestRender();
