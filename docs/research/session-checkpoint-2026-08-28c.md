@@ -92,3 +92,30 @@ baselines regenerated twice (1.5.0→1.6.0, version-string-only diffs).
 6. C4: WPC QPF as forecast fields (same field_raster machinery; timeline-future design).
 7. Pierce KiWIS terms verification → ingestion; CO-OPS tide gauges for tidal reaches.
 8. Perf lab pass: entity counts under all layers at river band; imagery request counts/tier.
+
+## Final amendment (2026-08-29 ~01:2x UTC)
+
+Additional commits after the checkpoint body above:
+
+- `ffb49a7` — e2e visual scenes gate on `data-tiles-pending` (SceneController stamps it from
+  `tileLoadProgressEvent`); the mid-load-baseline flake class is closed and the pinned river
+  scene now shows Mount Vernon's ring levees crisply.
+- `f0bfaa3` — official-evidence camera attention (ring glyph + one-band tier promotion, CAP
+  alert or official 72 h category ≥ action, straight off the envelope; derived surfaces can
+  never light a camera; card states the reason verbatim) + the phone bottom-sheet pass
+  (≤640 px: panel capped 46vh, the world stays the interface; verified 390×844).
+
+**Deployment blocker (external):** Railway's builder was wedged from ~23:56Z — one build
+stuck BUILDING 75+ min, its superseding deploy REMOVED by an async-completing cancel
+mutation that had "timed out" (lesson: Railway cancels are async; a timeout is not a no-op),
+then two consecutive deployments stuck QUEUED without ever building (00:37, 00:53). The old
+container (`c9739e5`, contract 1.5.0) served healthily throughout — health `ok` 17/17 at
+every probe — and the already-deployed NEW Pages client degrades gracefully (satellite
+imagery + terrain live now; labels/cameras/flood/horizons 404 → honest absence until the
+swap). No action needed on recovery: the newest commit auto-deploys. FIRST verification
+after the swap: /system/version = f0bfaa3+, /geo/{labels,cameras,flood} 200 (flood wire
+~1.3 MB gzip), horizons non-empty on MVEW1, SSE content-type intact, then the live-world
+scene pass + committed proofs.
+
+**Session totals:** 6 commits (`64c1dfc`…`f0bfaa3`); contract 1.6.0; gates at close: backend
+581 + 16 pg, web 238, e2e 22×4 runs, doctor 100, ruff/mypy/lint-imports clean, budgets 17.
