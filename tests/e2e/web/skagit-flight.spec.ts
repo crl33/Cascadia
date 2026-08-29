@@ -127,6 +127,9 @@ test('reduced motion: a selection cuts and settles immediately', async ({ page }
 });
 
 test('screenshot of the basin scene', async ({ page }) => {
+  // Two full ground-settle cycles (30 s cap each since the continuity pass preloads sibling
+  // tiles) plus two large software-GL captures overflow the default budget on 2-core CI.
+  test.slow();
   await page.goto('/?basin=basin:skagit&motion=reduced');
   const renderer = await rendererState(page);
   await expect(page.getByTestId('basin-panel-name')).toHaveText('Skagit');

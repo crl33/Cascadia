@@ -84,7 +84,9 @@ test('snap-to-now restores live mode: banner gone, as_of dropped from the URL', 
 
   await page.getByTestId('snap-to-now').click();
   await expect(page.getByTestId('as-of-banner')).toBeHidden();
-  await expect(page).not.toHaveURL(/[?&]as_of=/);
+  // The URL write lands in an effect the renderer can starve on 2-core CI (software GL tile
+  // decode pegs the main thread after the live refetch) — give it renderer-load headroom.
+  await expect(page).not.toHaveURL(/[?&]as_of=/, { timeout: 15_000 });
   await expect(page.getByTestId('river-panel-name')).toHaveText('Skagit River near Mount Vernon');
 });
 
