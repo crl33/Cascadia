@@ -166,7 +166,11 @@ body { background: var(--canvas); color: var(--text-primary); font-family: var(-
    * have been unreadable with it. Below 640 px the panel takes the width it needs; the scene
    * stays interactive because `.panels` keeps `pointer-events: none` and only the panel itself
    * re-enables them. */
-  .panels { left: 12px; width: auto; max-width: none; }
+  /* Satellite-first refinement: on a phone the MAP is the interface too — the panel
+   * becomes a bottom sheet capped at 46% of the viewport so the world stays visible;
+   * everything in it already scrolls. The field legend tucks above the sheet. */
+  .panels { left: 12px; width: auto; max-width: none; top: auto; bottom: 96px; max-height: 46vh; }
+  .horizon-strip { flex-wrap: wrap; }
   .t0 { padding-left: 8px; }
   .t0-line { gap: 4px; }
   .t0-figure { font-size: 13px; }
@@ -264,3 +268,12 @@ body { background: var(--canvas); color: var(--text-primary); font-family: var(-
 .horizon-lead { font-size: 9px; letter-spacing: 0.08em; color: var(--text-muted, #7f94a8); }
 .horizon-value { font-size: 11.5px; font-weight: 600; color: var(--text-primary, #e6eef5); white-space: nowrap; }
 .horizon-register { position: absolute; right: 8px; bottom: 3px; font-size: 8px; letter-spacing: 0.06em; color: var(--text-muted, #74889c); }
+
+/* Narrow-viewport ordering fix: these must trail every base rule they override. */
+@media (max-width: 640px) {
+  .field-legend { bottom: calc(46vh + 104px); left: 8px; right: 8px; flex-wrap: wrap; row-gap: 2px; }
+  .camera-card { width: 200px; }
+  .camera-card.expanded { width: min(300px, 86vw); }
+}
+
+.camera-card-attention { font-size: 10px; color: #ffd9a0; }

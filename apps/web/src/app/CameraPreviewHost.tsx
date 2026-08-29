@@ -16,21 +16,23 @@
  */
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { API_BASE } from '../api/client';
-import { useCameras } from '../api/hooks';
+import { useCameras, useVizBasins } from '../api/hooks';
 import type { CameraRecord } from '../contracts/schemas';
 import type { SceneController } from '../scene/SceneController';
 import { useSceneStore } from '../state/store';
+import { cameraAttentionByBasin } from '../layers/cameras/attention';
 import { frameSrc, previewCameraIds } from './camera-preview-math';
 
 interface Props {
   controller: SceneController;
 }
 
-function PreviewCard({ controller, cam, pinned, expanded }: {
+function PreviewCard({ controller, cam, pinned, expanded, attention }: {
   controller: SceneController;
   cam: CameraRecord;
   pinned: boolean;
   expanded: boolean;
+  attention: { kind: string; detail: string } | null;
 }) {
   const cardRef = useRef<HTMLDivElement>(null);
   const pinCamera = useSceneStore((s) => s.pinCamera);
@@ -87,6 +89,11 @@ function PreviewCard({ controller, cam, pinned, expanded }: {
           />
         )}
         <footer className="camera-card-meta">
+          {attention ? (
+            <span className="camera-card-attention" data-testid="camera-card-attention">
+              Highlighted: {attention.detail} — camera {cam.reasons[0]?.replaceAll('_', ' ') ?? 'in this basin'}
+            </span>
+          ) : null}
           <span className="camera-card-attribution">{cam.attribution}</span>
           <span className="camera-card-freshness">
             refresh ≤ {Math.round(cam.refresh_seconds / 60)} min
@@ -108,6 +115,8 @@ function PreviewCard({ controller, cam, pinned, expanded }: {
 
 export function CameraPreviewHost({ controller }: Props) {
   const cameraSet = useCameras();
+  const vizBasins = useVizBasins();
+  const attention = useMemo(() => cameraAttentionByBasin(vizBasins.data), [vizBasins.data]);
   const band = useSceneStore((s) => s.altitudeBand);
   const selectedBasinId = useSceneStore((s) => s.selectedBasinId);
   const pinnedCameraId = useSceneStore((s) => s.pinnedCameraId);
@@ -130,6 +139,7 @@ export function CameraPreviewHost({ controller }: Props) {
           cam={cam}
           pinned={cam.id === pinnedCameraId}
           expanded={cam.id === pinnedCameraId}
+          attention={cam.basin_id !== null ? attention[cam.basin_id] ?? null : null}
         />
       ))}
     </div>

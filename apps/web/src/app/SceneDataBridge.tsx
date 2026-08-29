@@ -6,6 +6,7 @@ import { useEffect, useMemo } from 'react';
 import { useBasinGeometries, useBasinGeometry, useBasins, useCameras, useFloodGeography, useLabels, useRiverNetwork, useVizBasins, useVizField, useVizRivers } from '../api/hooks';
 import type { FloodCategory, GeoFeature } from '../contracts/schemas';
 import type { BasinSusceptibility } from '../layers/susceptibility/BasinSusceptibilityLayer';
+import { cameraAttentionByBasin } from '../layers/cameras/attention';
 import { riverIntensities } from '../layers/network/match';
 import type { SceneController } from '../scene/SceneController';
 import { useSceneStore } from '../state/store';
@@ -94,9 +95,12 @@ export function SceneDataBridge({ controller }: Props) {
 
   const cameraSet = useCameras();
   const pinnedCameraId = useSceneStore((s) => s.pinnedCameraId);
+  // Official evidence only: alerts + the official 72 h hazard category, straight off the
+  // envelope the map already fetches. Derived surfaces never light a camera.
+  const cameraAttention = useMemo(() => cameraAttentionByBasin(vizBasins.data), [vizBasins.data]);
   useEffect(() => {
-    if (cameraSet.data) controller.setData('cameras', { cameras: cameraSet.data.cameras, pinnedCameraId });
-  }, [controller, cameraSet.data, pinnedCameraId]);
+    if (cameraSet.data) controller.setData('cameras', { cameras: cameraSet.data.cameras, pinnedCameraId, attention: cameraAttention });
+  }, [controller, cameraSet.data, pinnedCameraId, cameraAttention]);
 
   const flood = useFloodGeography();
   useEffect(() => {

@@ -26,14 +26,16 @@ import { cameraMarker, type CameraTier } from './style';
 export interface CameraSetData {
   cameras: CameraRecord[];
   pinnedCameraId: string | null;
+  /** basin id -> official attention (attention.ts); presentation only, official register. */
+  attention: Record<string, { kind: string; detail: string }>;
 }
 
 const TAG_PREFIX = 'cameras|';
 const glyphCache = new Map<string, HTMLCanvasElement>();
 
 /** A small rounded camera badge: body + lens, dark slate on white ring for both-theme legibility. */
-function cameraGlyph(sizePx: number, pinned: boolean): HTMLCanvasElement {
-  const key = `${sizePx}|${pinned}`;
+function cameraGlyph(sizePx: number, pinned: boolean, ring: boolean): HTMLCanvasElement {
+  const key = `${sizePx}|${pinned}|${ring}`;
   const cached = glyphCache.get(key);
   if (cached) return cached;
   const scale = 2; // crispness on HiDPI
@@ -59,6 +61,14 @@ function cameraGlyph(sizePx: number, pinned: boolean): HTMLCanvasElement {
     // viewfinder nub
     ctx.fillStyle = pinned ? 'rgba(10,16,24,0.9)' : 'rgba(255,255,255,0.85)';
     ctx.fillRect(s * 0.3, s * 0.12, s * 0.2, s * 0.1);
+    if (ring) {
+      // official attention: a double ring, not a colour — the register stays with the words
+      ctx.strokeStyle = 'rgba(255,255,255,0.95)';
+      ctx.lineWidth = s * 0.05;
+      ctx.beginPath();
+      ctx.arc(s * 0.5, s * 0.5, s * 0.44, 0, Math.PI * 2);
+      ctx.stroke();
+    }
   }
   glyphCache.set(key, canvas);
   return canvas;
@@ -138,11 +148,12 @@ export class CameraLayer implements SceneLayer<CameraSetData> {
     this.collection.removeAll();
     for (const cam of this.data.cameras) {
       const pinned = cam.id === this.data.pinnedCameraId;
-      const style = cameraMarker({ tier: cam.tier as CameraTier, band: this.band, pinned });
+      const attention = cam.basin_id !== null && cam.basin_id in this.data.attention;
+      const style = cameraMarker({ tier: cam.tier as CameraTier, band: this.band, pinned, attention });
       if (!style.show) continue;
       const billboard = this.collection.add({
         position: Cartesian3.fromDegrees(cam.lon, cam.lat),
-        image: cameraGlyph(style.sizePx, pinned),
+        image: cameraGlyph(style.sizePx, pinned, style.ring),
         width: style.sizePx,
         height: style.sizePx,
         verticalOrigin: VerticalOrigin.BOTTOM,
