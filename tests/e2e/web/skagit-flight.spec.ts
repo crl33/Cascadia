@@ -8,6 +8,21 @@ import { resolve } from 'node:path';
 
 const screenshots = resolve(__dirname, '../__screenshots__');
 
+/** Wait for the imagery ground to finish loading (SceneController stamps data-tiles-pending),
+ * bounded: satellite tiles from a live government server can be slow, and a mid-load baseline
+ * is worse than a slightly longer test. Falls back to a fixed settle when the renderer is
+ * unavailable (no canvas = nothing to load). */
+async function settledGround(page: import('@playwright/test').Page, renderer: string): Promise<void> {
+  if (renderer !== 'ready') {
+    await page.waitForTimeout(1_000);
+    return;
+  }
+  await page
+    .waitForFunction(() => document.querySelector('.scene-canvas')?.getAttribute('data-tiles-pending') === '0', undefined, { timeout: 30_000 })
+    .catch(() => {}); // bounded: capture whatever ground loaded rather than failing the scene
+  await page.waitForTimeout(1_200); // outline fades + one settled frame
+}
+
 // E2E_LIVE_API=1 runs the same suite against the real API on :8000 (start it with
 // CASCADE_CORS_ORIGINS=http://localhost:4173 so the preview origin is allowed). Live values differ
 // from the committed fixtures, so only their *shape* (unit + datum) is asserted in that mode; the
@@ -116,11 +131,11 @@ test('screenshot of the basin scene', async ({ page }) => {
   const renderer = await rendererState(page);
   await expect(page.getByTestId('basin-panel-name')).toHaveText('Skagit');
   if (renderer === 'ready') await expect(page.getByTestId('band-indicator')).toHaveText('BASIN', { timeout: 15_000 });
-  await page.waitForTimeout(2_500); // let tiles and the outline fade settle (no pixel comparison is made)
+  await settledGround(page, renderer);
   await page.screenshot({ path: resolve(screenshots, 'skagit-basin-scene.png'), fullPage: false });
   await page.goto('/?basin=basin:skagit&fp=MVEW1&motion=reduced');
   await expect(page.getByTestId('observed-stage')).toHaveText(observedStage);
   if (renderer === 'ready') await expect(page.getByTestId('band-indicator')).toHaveText('RIVER', { timeout: 15_000 });
-  await page.waitForTimeout(2_500);
+  await settledGround(page, renderer);
   await page.screenshot({ path: resolve(screenshots, 'mvew1-river-scene.png'), fullPage: false });
 });

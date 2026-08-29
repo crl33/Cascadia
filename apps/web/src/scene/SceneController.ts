@@ -131,6 +131,16 @@ export class SceneController {
       this.setSelection({ ...this.selection, hovered });
     }, ScreenSpaceEventType.MOUSE_MOVE);
 
+    // Tile-load diagnostic for tests and tooling: the container carries the pending-tile
+    // count as a data attribute (imperative DOM, no React) so a visual spec can await a
+    // settled ground instead of guessing a timeout — the source of the mid-load baselines.
+    const onTileProgress = (pending: number) => {
+      container.dataset.tilesPending = String(pending);
+    };
+    this.viewer.scene.globe.tileLoadProgressEvent.addEventListener(onTileProgress);
+    container.dataset.tilesPending = '0';
+    this.unsubscribes.push(() => this.viewer.scene.globe.tileLoadProgressEvent.removeEventListener(onTileProgress));
+
     // A render-loop error stops rendering; surface it as a degraded scene instead of Cesium's modal panel.
     const onRenderError = (_scene: unknown, error: unknown) => {
       const message = error instanceof Error ? error.message : String(error);
