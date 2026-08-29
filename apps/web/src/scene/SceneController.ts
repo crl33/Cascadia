@@ -4,7 +4,7 @@
  * and hover, band → layer visibility, and disposal. Geography (basin bboxes, forecast-point
  * locations) arrives through setGeography/setData — the controller never fetches.
  */
-import { Cartesian2, Cartesian3, CesiumTerrainProvider, Clock, ClockRange, ClockStep, Credit, CreditDisplay, Entity, JulianDate, SceneTransforms, ScreenSpaceEventHandler, ScreenSpaceEventType, Viewer } from 'cesium';
+import { Cartesian2, Cartesian3, CesiumTerrainProvider, Clock, ClockRange, ClockStep, Color, Credit, CreditDisplay, Entity, JulianDate, SceneTransforms, ScreenSpaceEventHandler, ScreenSpaceEventType, Viewer } from 'cesium';
 import 'cesium/Build/Cesium/Widgets/widgets.css';
 import { CameraController } from '../camera/CameraController';
 import type { FlightReason } from '../camera/types';
@@ -95,6 +95,17 @@ export class SceneController {
     this.viewer.clock.currentTime = clock.currentTime;
     this.viewer.clock.shouldAnimate = false;
     this.viewer.scene.globe.enableLighting = false;
+    // Continuity tuning (visual-continuity pass 2026-08-29): keep ancestors AND siblings of
+    // visible tiles warm so pans/zooms reveal composed ground instead of a tile checkerboard,
+    // and hold ~6x the default tile cache so revisiting a band re-shows instantly instead of
+    // re-fetching. Memory cost measured in the session checkpoint; requests unchanged at rest.
+    this.viewer.scene.globe.preloadAncestors = true;
+    this.viewer.scene.globe.preloadSiblings = true;
+    this.viewer.scene.globe.tileCacheSize = 600;
+    // Unloaded ground reads as night-dark earth, not Cesium's white void: while imagery
+    // composes, missing tiles must recede into the design's canvas instead of flashing —
+    // the sweep caught whole coastlines floating on white during a basin cut.
+    this.viewer.scene.globe.baseColor = Color.fromCssColorString('hsl(222, 52%, 6%)');
     // Stays false WITH terrain too, deliberately: every hydrologic layer drapes (clamped
     // polylines, ground hatches), and a gauge marker hidden behind a ridge would be a
     // legibility bug, not realism (ADR-0021 exit test names this decision).
@@ -134,8 +145,16 @@ export class SceneController {
     // Tile-load diagnostic for tests and tooling: the container carries the pending-tile
     // count as a data attribute (imperative DOM, no React) so a visual spec can await a
     // settled ground instead of guessing a timeout — the source of the mid-load baselines.
+    // The same event drives onGroundComposed for the loading veil: the FIRST time the count
+    // returns to zero after real loading, the opening frame is composed.
     const onTileProgress = (pending: number) => {
       container.dataset.tilesPending = String(pending);
+      if (pending > 0) this.groundSawLoading = true;
+      if (pending === 0 && this.groundSawLoading && !this.groundComposed) {
+        this.groundComposed = true;
+        this.groundComposedHandlers.forEach((h) => h());
+        this.groundComposedHandlers.clear();
+      }
     };
     this.viewer.scene.globe.tileLoadProgressEvent.addEventListener(onTileProgress);
     container.dataset.tilesPending = '0';
@@ -292,6 +311,22 @@ export class SceneController {
     this.viewer.scene.postRender.addEventListener(listener);
     this.viewer.scene.requestRender();
     return () => this.viewer.scene.postRender.removeEventListener(listener);
+  }
+
+  private groundSawLoading = false;
+  private groundComposed = false;
+  private readonly groundComposedHandlers = new Set<() => void>();
+
+  /** Fires ONCE, the first time the globe's tile queue empties after having loaded — the
+   * moment the opening ground is a composed picture rather than an assembly in progress.
+   * Fires immediately if that already happened. Returns a disposer. */
+  onGroundComposed(handler: () => void): () => void {
+    if (this.groundComposed) {
+      handler();
+      return () => {};
+    }
+    this.groundComposedHandlers.add(handler);
+    return () => this.groundComposedHandlers.delete(handler);
   }
 
   private hitAt(position: { x: number; y: number }): LayerHit | null {

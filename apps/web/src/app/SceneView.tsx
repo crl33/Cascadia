@@ -10,6 +10,7 @@ import { attachScene } from '../scene/bridge';
 import { SceneController } from '../scene/SceneController';
 import { useSceneStore } from '../state/store';
 import { CameraPreviewHost } from './CameraPreviewHost';
+import { LoadingVeil } from './LoadingVeil';
 import { SceneDataBridge } from './SceneDataBridge';
 
 export function SceneView() {
@@ -56,6 +57,7 @@ export function SceneView() {
           <strong>Renderer degraded</strong> — rendering stopped: <span className="mono">{degraded}</span>. Panels and provenance remain authoritative.
         </div>
       ) : null}
+      <LoadingVeil controller={controller} />
       {controller ? <SceneDataBridge controller={controller} /> : null}
       {controller ? <CameraPreviewHost controller={controller} /> : null}
     </div>
