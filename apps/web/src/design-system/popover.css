@@ -7,10 +7,12 @@
   width: min(320px, 76vw);
   color: var(--text-primary);
   padding: 10px;
-  background: var(--glass-solid);
-  border: 1px dashed var(--stroke);
+  background: var(--glass-popover);
+  border: 1px dashed var(--stroke); /* dashed = the provenance-inspection register, kept */
   border-radius: 8px;
-  box-shadow: 0 8px 24px var(--canvas);
+  box-shadow: var(--glass-shadow), var(--glass-highlight);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
   animation: prov-popover-in var(--dur-micro) var(--ease-standard);
 }
 @keyframes prov-popover-in { from { opacity: 0; transform: translateY(-2px); } to { opacity: 1; transform: none; } }

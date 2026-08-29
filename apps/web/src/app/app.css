@@ -16,21 +16,31 @@ body { background: var(--canvas); color: var(--text-primary); font-family: var(-
 .scene-credits a:hover, .scene-credits a:focus-visible { color: var(--text-primary); text-decoration: underline; }
 .scene-veil { position: absolute; inset: 0; background: var(--canvas); opacity: 0; pointer-events: none; transition: opacity 140ms var(--ease-calm); z-index: 2; }
 .scene-veil.is-on { opacity: 1; }
-.scene-degraded { position: absolute; left: 12px; bottom: 104px; z-index: 3; max-width: 520px; padding: 8px 12px; background: var(--glass); border: 1px solid var(--amber-elevated); border-radius: 8px; font-size: 12px; }
+.scene-degraded { position: absolute; left: 12px; bottom: 104px; z-index: 3; max-width: 520px; padding: 8px 12px; background: var(--glass-popover); border: 1px solid var(--amber-elevated); border-radius: 8px; font-size: 12px; backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)); -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)); }
 .scene-fallback { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; padding: 24px; background: var(--canvas-2); }
 
 .top-strip {
   /* Compacted 2026-08-28: chrome earns its pixels — same content, less viewport. */
   position: absolute; top: 8px; left: 8px; right: 8px; z-index: 5;
   display: flex; align-items: center; gap: 10px; padding: 5px 10px;
-  background: var(--glass); border: 1px solid var(--stroke); border-radius: var(--radius); backdrop-filter: blur(10px);
+  background: var(--glass-chrome); border: 1px solid var(--glass-hairline); border-radius: var(--radius);
+  box-shadow: var(--glass-shadow), var(--glass-highlight);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
 }
 .wordmark { font-weight: 600; letter-spacing: 0.04em; white-space: nowrap; }
 .search { position: relative; flex: 1; max-width: 420px; }
-.search-input { width: 100%; padding: 6px 30px 6px 10px; background: var(--canvas-2); color: var(--text-primary); border: 1px solid var(--stroke); border-radius: 6px; font: inherit; }
+.search-input { width: 100%; padding: 6px 30px 6px 10px; background: hsl(var(--glass-tint) / 0.45); color: var(--text-primary); border: 1px solid var(--glass-hairline); border-radius: 6px; font: inherit; }
+.search-input::placeholder { color: var(--text-muted); }
 .search-input:focus { outline: 2px solid var(--cyan); outline-offset: 1px; }
 .search-kbd { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); padding: 0 6px; font-family: var(--font-mono); font-size: 11px; line-height: 1.6; color: var(--text-muted); border: 1px solid var(--stroke); border-radius: 4px; pointer-events: none; }
-.search-results { position: absolute; top: calc(100% + 6px); left: 0; right: 0; padding: 4px; background: var(--glass-solid); border: 1px solid var(--stroke); border-radius: 8px; max-height: 340px; overflow: auto; }
+.search-results {
+  position: absolute; top: calc(100% + 6px); left: 0; right: 0; padding: 4px; max-height: 340px; overflow: auto;
+  background: var(--glass-popover); border: 1px solid var(--glass-hairline); border-radius: 8px;
+  box-shadow: var(--glass-shadow), var(--glass-highlight);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+}
 .search-results ul { margin: 0; padding: 0; list-style: none; }
 .search-status { padding: 6px 10px; font-size: 12px; }
 .search-group-label { padding: 8px 10px 2px; font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); }
@@ -47,7 +57,14 @@ body { background: var(--canvas); color: var(--text-primary); font-family: var(-
 .health-down { background: var(--flood-red); }
 
 .panels { position: absolute; top: 64px; right: 12px; bottom: 96px; width: min(420px, 40vw); z-index: 4; display: flex; flex-direction: column; gap: 10px; overflow: auto; pointer-events: none; }
-.panel { pointer-events: auto; background: var(--glass); border: 1px solid var(--stroke); border-radius: var(--radius); padding: 14px 16px; backdrop-filter: blur(10px); animation: panel-in var(--dur-panel) var(--ease-standard); }
+.panel {
+  pointer-events: auto; padding: 14px 16px;
+  background: var(--glass-panel); border: 1px solid var(--glass-hairline); border-radius: var(--radius);
+  box-shadow: var(--glass-shadow), var(--glass-highlight);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  animation: panel-in var(--dur-panel) var(--ease-standard);
+}
 @keyframes panel-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
 .panel-header h2 { margin: 2px 0 4px; font-size: 18px; font-weight: 600; }
 .panel-header p { margin: 0 0 8px; }
@@ -100,14 +117,25 @@ body { background: var(--canvas); color: var(--text-primary); font-family: var(-
 .inspector-row dt { color: var(--text-muted); font-family: var(--font-mono); }
 .inspector-row dd { margin: 0; word-break: break-word; }
 
-.disclaimer { position: absolute; left: 8px; right: 8px; bottom: 6px; z-index: 5; padding: 3px 10px; font-size: 11px; color: var(--text-muted); background: var(--glass); border: 1px solid var(--stroke); border-radius: 8px; }
+/* The footer speaks quietly but its words are mandatory: the not-an-alert-authority line and
+   the imagery/terrain attribution NEVER hide (mission §17) — calm comes from the compact
+   glass and muted ink, not from omission. */
+.disclaimer {
+  position: absolute; left: 8px; right: 8px; bottom: 6px; z-index: 5; padding: 3px 10px;
+  font-size: 11px; color: var(--text-muted);
+  background: var(--glass-compact); border: 1px solid var(--glass-hairline); border-radius: 8px;
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+}
 
 .replay-banner {
   position: absolute; top: 64px; left: 50%; transform: translateX(-50%); z-index: 6;
   max-width: min(720px, calc(100vw - 24px)); padding: 6px 14px;
-  background: var(--glass); border: 1px solid var(--amber-watch); border-radius: 999px;
+  background: var(--glass-compact); border: 1px solid var(--amber-watch); border-radius: 999px;
   color: var(--amber-watch); font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  backdrop-filter: blur(10px);
+  box-shadow: var(--glass-shadow);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
 }
 .replay-banner strong { letter-spacing: 0.08em; }
 .replay-banner .mono { color: var(--text-primary); }
@@ -170,6 +198,12 @@ body { background: var(--canvas); color: var(--text-primary); font-family: var(-
    * becomes a bottom sheet capped at 46% of the viewport so the world stays visible;
    * everything in it already scrolls. The field legend tucks above the sheet. */
   .panels { left: 12px; width: auto; max-width: none; top: auto; bottom: 96px; max-height: 46vh; }
+  .panel { background: var(--glass-sheet); } /* the bottom sheet reads over whatever the phone shows */
+  /* The strip must never clip its own controls off-screen (sweep J caught the motion toggle
+   * cut in half at 390 px): drop the redundant flight-state word and let the rest wrap. */
+  .top-strip { flex-wrap: wrap; row-gap: 4px; }
+  .flight-state { display: none; }
+  .search { min-width: 160px; }
   .horizon-strip { flex-wrap: wrap; }
   .t0 { padding-left: 8px; }
   .t0-line { gap: 4px; }
@@ -203,9 +237,11 @@ body { background: var(--canvas); color: var(--text-primary); font-family: var(-
   display: flex;
   gap: 10px;
   padding: 3px 8px;
-  background: rgba(10, 16, 24, 0.72);
-  border: 1px solid rgba(122, 156, 186, 0.25);
-  border-radius: 4px;
+  background: var(--glass-compact);
+  border: 1px solid var(--glass-hairline);
+  border-radius: 8px;
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
   font-size: 10px;
   z-index: 5;
   align-items: center;
@@ -236,11 +272,13 @@ body { background: var(--canvas); color: var(--text-primary); font-family: var(-
 }
 .camera-card-body {
   transform: translate(-50%, calc(-100% - 30px));
-  background: rgba(10, 16, 24, 0.9);
-  border: 1px solid rgba(160, 190, 215, 0.35);
+  background: var(--glass-popover);
+  border: 1px solid var(--glass-hairline);
   border-radius: 6px;
   overflow: hidden;
-  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.45);
+  box-shadow: var(--glass-shadow), var(--glass-highlight);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
 }
 .camera-card-header { display: flex; align-items: center; gap: 6px; padding: 5px 8px; }
 .camera-card-name { font-size: 11px; font-weight: 600; color: #e8f1f8; flex: 1; }
@@ -277,3 +315,33 @@ body { background: var(--canvas); color: var(--text-primary); font-family: var(-
 }
 
 .camera-card-attention { font-size: 10px; color: #ffd9a0; }
+
+/* --- loading veil: the cinematic cold start ---------------------------------------------- */
+.loading-veil {
+  position: fixed; inset: 0; z-index: 100;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 46px;
+  background:
+    radial-gradient(120% 90% at 50% 110%, hsl(213 45% 14% / 1) 0%, hsl(220 45% 7% / 1) 55%, hsl(226 50% 4% / 1) 100%);
+  opacity: 1; transition: opacity 650ms ease;
+}
+.loading-veil.leaving { opacity: 0; pointer-events: none; }
+@media (prefers-reduced-motion: reduce) { .loading-veil { transition: none; } }
+.loading-veil-mark { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.loading-veil-word { font-size: 26px; font-weight: 650; letter-spacing: 0.42em; margin-right: -0.42em; color: hsl(210 40% 96% / 0.95); }
+.loading-veil-sub { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.55em; margin-right: -0.55em; color: hsl(207 35% 70% / 0.6); }
+.loading-veil-capsule {
+  display: flex; flex-direction: column; align-items: center; gap: 10px; min-width: 260px;
+  padding: 12px 22px; border-radius: 999px;
+  background: hsl(216 40% 55% / 0.07);
+  border: 1px solid hsl(210 40% 80% / 0.12);
+  backdrop-filter: blur(6px);
+}
+.loading-veil-stage { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.22em; margin-right: -0.22em; color: hsl(203 60% 78% / 0.85); }
+.loading-veil-shimmer { width: 180px; height: 2px; border-radius: 2px; background: hsl(207 40% 60% / 0.18); position: relative; overflow: hidden; }
+.loading-veil-shimmer[data-active='true']::after {
+  content: ''; position: absolute; inset: 0 auto 0 -40%; width: 40%;
+  background: linear-gradient(90deg, transparent, hsl(197 80% 70% / 0.75), transparent);
+  animation: veil-shimmer 1.4s ease-in-out infinite;
+}
+@keyframes veil-shimmer { to { left: 100%; } }
+@media (prefers-reduced-motion: reduce) { .loading-veil-shimmer[data-active='true']::after { animation: none; background: hsl(197 80% 70% / 0.4); inset: 0; width: 100%; } }

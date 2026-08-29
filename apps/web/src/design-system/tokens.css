@@ -26,6 +26,46 @@
   --font-ui: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
   --radius: 10px;
+
+  /* Glass family (visual-continuity pass 2026-08-29): five surfaces, one material. The
+     material is translucency + blur + saturation so the world stays visible through every
+     piece of chrome; only the alpha varies by surface — denser where text must win over
+     arbitrary satellite brightness (popover), lighter where the surface is a frame
+     (chrome, compact). Semantic border colours (amber, glacier) stay on their surfaces;
+     the hairline is the default edge. */
+  --glass-tint: 221 42% 9%;
+  --glass-blur: 16px;
+  --glass-saturate: 150%;
+  --glass-chrome: hsl(var(--glass-tint) / 0.58);
+  --glass-panel: hsl(var(--glass-tint) / 0.66);
+  --glass-sheet: hsl(var(--glass-tint) / 0.72);
+  --glass-popover: hsl(var(--glass-tint) / 0.84);
+  --glass-compact: hsl(var(--glass-tint) / 0.52);
+  --glass-hairline: hsl(206 65% 88% / 0.13);
+  --glass-highlight: inset 0 1px 0 hsl(206 80% 92% / 0.06);
+  --glass-shadow: 0 10px 30px hsl(224 60% 3% / 0.4);
+}
+
+/* No backdrop-filter → translucency would be unreadable noise; the surfaces go near-opaque
+   and the design degrades to the pre-glass look instead of degrading legibility. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  :root {
+    --glass-chrome: hsl(var(--glass-tint) / 0.92);
+    --glass-panel: hsl(var(--glass-tint) / 0.93);
+    --glass-sheet: hsl(var(--glass-tint) / 0.94);
+    --glass-popover: hsl(var(--glass-tint) / 0.97);
+    --glass-compact: hsl(var(--glass-tint) / 0.9);
+  }
+}
+/* More contrast is a request for less world through the chrome, not a different design. */
+@media (prefers-contrast: more) {
+  :root {
+    --glass-chrome: hsl(var(--glass-tint) / 0.94);
+    --glass-panel: hsl(var(--glass-tint) / 0.95);
+    --glass-sheet: hsl(var(--glass-tint) / 0.95);
+    --glass-popover: hsl(var(--glass-tint) / 0.98);
+    --glass-compact: hsl(var(--glass-tint) / 0.92);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

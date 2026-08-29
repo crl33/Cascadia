@@ -1,9 +1,13 @@
 /* Timeline chrome. Colours only via tokens.css variables; no animation — time is data. */
 .timeline-bar {
-  /* Compacted 2026-08-28: chrome earns its pixels — same controls, less viewport. */
+  /* Compacted 2026-08-28: chrome earns its pixels — same controls, less viewport.
+     Glass capsule 2026-08-29: the time control floats as one rounded instrument. */
   position: absolute; left: 8px; right: 8px; bottom: 34px; z-index: 5;
-  display: flex; align-items: center; gap: 10px; padding: 5px 10px;
-  background: var(--glass); border: 1px solid var(--stroke); border-radius: var(--radius); backdrop-filter: blur(10px);
+  display: flex; align-items: center; gap: 10px; padding: 6px 14px;
+  background: var(--glass-chrome); border: 1px solid var(--glass-hairline); border-radius: 999px;
+  box-shadow: var(--glass-shadow), var(--glass-highlight);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
 }
 .timeline-chip { font-size: 11px; letter-spacing: 0.06em; border: 1px solid currentColor; border-radius: 999px; padding: 2px 10px; white-space: nowrap; }
 .timeline-chip-now { color: var(--cyan); }
