@@ -532,3 +532,57 @@ with the count. Production is where the round trip is ~176 ms: 120 × 176 ms was
   computing one feature, rows on the far side of the knowledge clock.
 - **Prefetch purity.** `test_the_prefetches_are_pure_warm_up` deletes every prefetch and asserts
   the body does not move while the count does, at two knowledge times.
+
+## The browser harness — real GPU only, SwiftShader timings are never cited
+
+`perf-harness.mjs` sits beside the Python query-budget harness and shares nothing with it. It is
+the measurement gate for every cinematic change (plan row 11 / step 1.1; method in
+`docs/research/cesium-cinematic-performance-2026-09-01.md` §2, §7, §9.1). It drives the built
+app in Playwright's **new-headless full Chromium** (`channel: 'chromium'`), injects the WebGL
+`powerPreference` so the integrated or the discrete GPU can be chosen on a dual-GPU Mac, and
+reports per scenario: rAF Δ p50/p95/worst, GPU time per frame from
+`EXT_disjoint_timer_query_webgl2` (or `n/a` when the extension is absent), frames run vs frames
+actually drawn during idle, JS heap, imagery request counts, and the canvas drawing-buffer size —
+medians across 5 measured runs after one discarded warm-up. It uses only public app hooks
+(`data-scene-state`, `data-tiles-pending`, `loading-veil`, the search, flight-state and timeline
+testids); `window.__cascadiaScene` is dev-only and deliberately unused.
+
+**SwiftShader timings are never cited.** The e2e suite (`tests/e2e/playwright.config.ts`) runs on
+ANGLE-on-SwiftShader on purpose — deterministic pixels, no GPU dependence — and every earlier
+"measured" frame number in this repository came from that renderer. Those are correctness runs,
+not performance runs: software GL is 4–10× slower than the integrated GPU and different in kind
+(no timer query, no memory API, its own frame cadence). The harness reads `UNMASKED_RENDERER`
+through `WEBGL_debug_renderer_info` before it records anything and **exits with code 2** if the
+string contains `SwiftShader` (or the browser's own command line carries `--use-angle=swiftshader`).
+A CI image installed with `--only-shell` lands on the shell binary and fails this check loudly;
+that is the intended behaviour. CI runs on a GPU-less runner are relative at best and are not
+gates; absolute numbers come from the owner's machine.
+
+Every artifact carries its provenance: the renderer string, the GPU devices and browser command
+line from `SystemInfo.getInfo`, the globe shader `#define`s, the drawing-buffer size, whether the
+page came from `vite dev` (unminified modules — CPU numbers are not the production build's) or a
+static preview, and the requests per host (a CORS refusal from the API silently removes every
+vector layer and makes the scene look ~13 % cheaper — the stub allowlists only `:5173`/`:4173`,
+so a dev server on another port needs `CASCADE_CORS_ORIGINS=http://localhost:<port>` on the stub).
+
+### Run it against the owner's machine
+
+```bash
+# from apps/web — the dev server on :5177 and an API on :8000 must already be up
+npm run perf:owner                                 # = node ../../tests/perf/perf-harness.mjs http://localhost:5177
+npm run perf:owner -- --gpu=high-performance       # the discrete GPU (default is low-power = integrated)
+npm run perf:owner -- --runs=1 --warmup=0          # a quick smoke, no medians
+npm run perf:owner -- --label=after --msaa=off     # an A/B lever; artifacts are named by label
+
+# without the app: only launch, print the renderer, apply the refusal
+node ../../tests/perf/perf-harness.mjs --probe --gpu=low-power
+node ../../tests/perf/perf-harness.mjs --probe --browser=shell   # demonstrates the exit-2 refusal
+```
+
+Exit test E1.1: `--gpu=low-power` prints an `UNMASKED_RENDERER` containing `Intel`, the default
+high-performance run prints `AMD`, and the shell probe refuses. Artifacts land in
+`tests/e2e/.results/perf/` (gitignored) as `<label>.<gpu>.<mode>.<WxH@dpr>[.msaa-off].json` plus
+one `.runN.json` per measured run; `--out=DIR` moves them. A production-like number needs a
+built preview, not the dev server: `VITE_API_BASE=http://localhost:8000 VITE_DOMAIN_WARM=off npm run build && npm run preview`
+then point the harness at `http://localhost:4173` (COOP/COEP on the preview, which the memory API
+needs, is a preview-config decision the doc leaves open — the harness prints `n/a` for it until then).

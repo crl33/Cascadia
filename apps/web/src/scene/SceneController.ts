@@ -30,6 +30,8 @@ import { CESIUM_RENDERER_CREDIT_HTML } from './credits';
 import { SemanticZoomController } from './SemanticZoomController';
 import { TransitionPlate } from './TransitionPlate';
 import type { Band } from './bands';
+import { classifyProbe, downgradeAfterWindow, resolveTier, type ExperienceChoice, type GestureWindow, type QualityTier } from './quality';
+import { applyTierBudget, probeRenderCost, watchGestureFrames } from './render-quality';
 
 /** A transient queue-zero between LOD generations must not read as a composed ground; the
  * queue has to stay empty this long before the opening frame counts as coherent (F2). */
@@ -74,6 +76,11 @@ export class SceneController {
   private readonly emptyClickHandlers = new Set<() => void>();
   private readonly followSelectHandlers = new Set<(basinId: string) => void>();
   private readonly renderErrorHandlers = new Set<(message: string) => void>();
+  private readonly qualityHandlers = new Set<(tier: QualityTier, detected: QualityTier | null) => void>();
+  private experience: ExperienceChoice = 'auto';
+  private detectedTier: QualityTier | null = null;
+  private effectiveTier: QualityTier | null = null;
+  private budgetMissStreak = 0;
   private readonly eventHandler: ScreenSpaceEventHandler;
   private readonly unsubscribes: (() => void)[] = [];
   private disposed = false;
@@ -133,6 +140,22 @@ export class SceneController {
     this.viewer.scene.backgroundColor = Color.fromCssColorString('hsl(222, 52%, 6%)');
     if (this.viewer.scene.skyBox) this.viewer.scene.skyBox.show = false;
     if (this.viewer.scene.skyAtmosphere) this.viewer.scene.skyAtmosphere.show = false;
+    // RENDER HYGIENE (research 2026-09-01, render-surface §10): two HIDDEN tints were
+    // washing every band — the ground atmosphere (a blue scattering haze tuned for the
+    // globe view) and distance fog — and the imagery grade had been tuned around them
+    // without knowing. At nadir over a bounded region both are noise. The sun and moon
+    // sprites and the ocean specular are globe-view props with no place on this map.
+    this.viewer.scene.globe.showGroundAtmosphere = false;
+    this.viewer.scene.fog.renderable = false; // the culling stays, the tint goes
+    if (this.viewer.scene.sun) this.viewer.scene.sun.show = false;
+    if (this.viewer.scene.moon) this.viewer.scene.moon.show = false;
+    this.viewer.scene.globe.showWaterEffect = false;
+    // EXPLICIT RENDERING: a still nadir map costs nothing at rest. Camera motion and
+    // pending tiles force their own frames inside Cesium; every mutation point in this
+    // file and the layers requests one; the clock is frozen so nothing is time-driven.
+    // VITE_REQUEST_RENDER=off restores the continuous loop for diagnosis.
+    this.viewer.scene.requestRenderMode = import.meta.env.VITE_REQUEST_RENDER !== 'off';
+    this.viewer.scene.maximumRenderTimeChange = Number.POSITIVE_INFINITY;
     // Fallback chain, bottom-up: coarse base plate (always-valid earth) → main imagery
     // (voids transparent) → domain vignette. A void pixel now reveals real coarse ground.
     const basePlate = this.basemap.createBasePlate?.();
@@ -280,6 +303,18 @@ export class SceneController {
 
     this.camera.setInitialView();
     this.applyBand(this.zoom.band);
+
+    // QUALITY (PERFORMANCE.md §3, owner 2026-09-01): the renderer starts on the measured-
+    // safe BALANCED budget, measures itself at Cinematic's real cost once the ground has
+    // composed (under the veil), then runs whatever the user's choice resolves to. A
+    // gesture window that misses the frame floor three times steps one tier down, inside
+    // the chosen experience only. VITE_QUALITY_PROBE=off pins the e2e build to BALANCED.
+    this.applyQuality();
+    if (import.meta.env.VITE_QUALITY_PROBE !== 'off') this.onGroundComposed(() => { void this.runQualityProbe(); });
+    this.unsubscribes.push(watchGestureFrames(this.viewer.scene, this.viewer.scene.canvas, (w) => this.onGestureWindow(w)));
+    const onResize = () => { if (this.effectiveTier) applyTierBudget(this.viewer, this.effectiveTier); };
+    window.addEventListener('resize', onResize);
+    this.unsubscribes.push(() => window.removeEventListener('resize', onResize));
     // Dev-only escape hatch for in-browser diagnosis; never present in production builds.
     if (import.meta.env.DEV) (window as unknown as { __cascadiaScene?: SceneController }).__cascadiaScene = this;
   }
@@ -290,6 +325,54 @@ export class SceneController {
   }
 
   get band(): Band { return this.zoom.band; }
+
+  /** The user's product-level choice; the detection decides the tier inside it. */
+  setExperience(choice: ExperienceChoice): void {
+    if (choice === this.experience) return;
+    this.experience = choice;
+    this.applyQuality();
+  }
+
+  /** Fires with the EFFECTIVE tier (and the detection behind it) whenever it changes; immediately if already resolved. */
+  onQualityResolved(handler: (tier: QualityTier, detected: QualityTier | null) => void): () => void {
+    this.qualityHandlers.add(handler);
+    if (this.effectiveTier) handler(this.effectiveTier, this.detectedTier);
+    return () => this.qualityHandlers.delete(handler);
+  }
+
+  get qualityTier(): QualityTier | null { return this.effectiveTier; }
+
+  private applyQuality(): void {
+    const tier = resolveTier(this.experience, this.detectedTier);
+    if (tier === this.effectiveTier) return;
+    this.effectiveTier = tier;
+    this.budgetMissStreak = 0;
+    applyTierBudget(this.viewer, tier);
+    this.qualityHandlers.forEach((h) => h(tier, this.detectedTier));
+  }
+
+  private async runQualityProbe(): Promise<void> {
+    if (this.disposed) return;
+    // Measure what Cinematic would cost HERE: native backing store, MSAA 4. The veil is
+    // still up at this point, so the temporary switch is invisible.
+    applyTierBudget(this.viewer, 'high');
+    const sample = await probeRenderCost(this.viewer.scene);
+    if (this.disposed) return;
+    this.detectedTier = sample ? classifyProbe(sample) : null;
+    if (import.meta.env.DEV) console.info('quality probe', sample, '→', this.detectedTier);
+    this.effectiveTier = null; // the probe moved the knobs: re-apply whatever resolves now
+    this.applyQuality();
+  }
+
+  private onGestureWindow(window: GestureWindow): void {
+    if (!this.effectiveTier) return;
+    const verdict = downgradeAfterWindow(window, this.budgetMissStreak, this.experience, this.detectedTier, this.effectiveTier);
+    this.budgetMissStreak = verdict.missStreak;
+    if (verdict.detected === null) return;
+    this.detectedTier = verdict.detected;
+    if (import.meta.env.DEV) console.info('quality monitor: frame floor missed, stepping to', verdict.detected, window);
+    this.applyQuality();
+  }
 
   onPicked(handler: PickedHandler): () => void {
     this.pickedHandlers.add(handler);
@@ -416,6 +499,7 @@ export class SceneController {
   private setSelection(selection: SelectionState): void {
     this.selection = selection;
     this.layers.forEach((layer) => layer.setSelection(selection));
+    this.viewer.scene.requestRender();
   }
 
   private applyBand(band: Band): void {
@@ -427,6 +511,7 @@ export class SceneController {
       layer.setVisible(visible);
       layer.setBand(band);
     }
+    this.viewer.scene.requestRender();
   }
 
   private reconcile(): void {

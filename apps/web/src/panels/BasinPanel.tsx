@@ -34,6 +34,7 @@ import { SurfaceRow } from './SurfaceRow';
 import { SurfaceValue } from './SurfaceValue';
 import { Tier0Section } from './Tier0Section';
 import { formatUtc, words } from './format';
+import { useArrivalGate } from './useArrivalGate';
 
 type Surfaces = BasinVisualizationState['surfaces'];
 type ModelProbability = NonNullable<Surfaces['hazard']['model_probability']>;
@@ -55,8 +56,11 @@ export function BasinPanel() {
   const query = useBasinState(selectedBasinId);
   // The outlet's river state rides the same query the map's responding-rivers already make.
   const rivers = useVizRivers(selectedBasinId);
+  // Film rule 3: the panel is part of the arrival — it mounts only once the flight has
+  // settled and the ground has had its beat (arrival-gate.ts), never over a moving globe.
+  const arrival = useArrivalGate();
 
-  if (!selectedBasinId) return null;
+  if (!selectedBasinId || arrival === 'hold') return null;
   if (query.isPending) return <section className="panel glass-surface glass-panel shape-panel" data-testid="basin-panel"><p className="muted">Loading basin state…</p></section>;
   if (query.isError) return <section className="panel glass-surface glass-panel shape-panel" data-testid="basin-panel"><p className="error">Basin state unavailable: {query.error.message}</p></section>;
 

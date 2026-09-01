@@ -1,7 +1,8 @@
 /**
  * scene/bridge.ts — the ONLY module that subscribes the Zustand store to the controllers, and
  * the only place controller events write back to the store. Store → controller: selection,
- * motion preference, layer intents. Controller → store: altitude band, flight state, picks.
+ * motion preference, layer intents, experience choice. Controller → store: altitude band,
+ * flight state, picks, the resolved quality tier.
  */
 import { shallow } from 'zustand/shallow';
 import { resolveMotion } from '../design-system/motion';
@@ -25,6 +26,8 @@ export function attachScene(controller: SceneController, store: SceneStoreApi): 
     ),
     store.subscribe((s) => resolveMotion(s.motionSetting, s.systemReducedMotion), (motion) => controller.setMotion(motion), { fireImmediately: true }),
     store.subscribe((s) => s.activeLayers, (layers) => controller.setLayerIntents(layers), { fireImmediately: true }),
+    store.subscribe((s) => s.experience, (choice) => controller.setExperience(choice), { fireImmediately: true }),
+    controller.onQualityResolved((tier, detected) => store.getState().setQualityResolved(tier, detected)),
     controller.zoom.on('bandChanged', (e) => store.getState().setAltitudeBand(e.next)),
     controller.camera.on('started', () => store.getState().setFlightState('flying')),
     controller.camera.on('settled', () => store.getState().setFlightState('settled')),

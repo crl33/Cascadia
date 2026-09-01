@@ -125,6 +125,29 @@ including a globe that navigates. OPEN QUESTION (from ADR-0006): a 2.5D renderer
 was kept as a candidate; the decision criterion is whether the `low` tier of the primary
 renderer can meet the §2 `low` floors on Tier C/D. If yes, one renderer; if not, an ADR.
 
+### 3.0 Product surface (2026-09-01)
+
+The four tiers are the renderer's vocabulary; the product exposes **two experiences**
+(owner decision, [cesium-cinematic-plan-2026-09-01.md](research/cesium-cinematic-plan-2026-09-01.md)
+§10 Q2): **Essential** = BALANCED/LOW budgets (CSS-pixel backing store, MSAA off, no
+lighting), **Cinematic** = HIGH/ULTRA (native device pixels, MSAA 4, and — after its A/B —
+hillshade). Implementation: `apps/web/src/scene/quality.ts` (pure: budgets, `resolveTier`,
+`classifyProbe`, the downgrade ladder) and `scene/render-quality.ts` (Cesium-facing:
+`applyTierBudget`, `probeRenderCost`, `watchGestureFrames`). The store carries the user's
+`experience` choice (persisted per browser), the `detectedTier`, and the effective
+`qualityTier` that CSS and the glass system read.
+
+Auto-detection replaces the synthetic probe scene in §3.1: after the ground composes (still
+under the loading veil) the controller switches to Cinematic's real budget and measures ≈45
+forced frames — GPU timer query where `EXT_disjoint_timer_query_webgl2` exists, CPU render
+time and frame arrival everywhere; frames with tiles still uploading are not counted, and a
+clearly slow machine exits after 20. Thresholds are the perf research §6 table (GPU p50
+≤ 5 / 9 / 16 ms; frame-delta p95 ≤ 17 / 34 ms). The runtime downgrade is a gesture-window
+monitor (p95 of rendered-frame deltas across one wheel/drag), stepping one tier after three
+consecutive misses of the tier's floor — never across an explicit choice. Cesium's
+`FrameRateMonitor` is not used: under `requestRenderMode` an idle scene renders nothing,
+which it would read as 0 fps.
+
 ### 3.1 Automatic detection
 
 ```ts

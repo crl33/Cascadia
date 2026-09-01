@@ -357,3 +357,18 @@ body { background: var(--canvas); color: var(--text-primary); font-family: var(-
 .settings-choice { display: grid; grid-template-columns: auto auto 1fr; align-items: baseline; gap: 8px; font-size: 13px; cursor: pointer; padding: 2px 0; }
 .settings-choice input { accent-color: var(--cyan); }
 .settings-hint { font-size: 11px; color: var(--text-muted); text-align: right; }
+/* the two-way experience switch: one segmented control, the running side lit */
+.settings-segmented {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 2px; padding: 2px;
+  border-radius: 10px; background: color-mix(in oklab, var(--text-primary) 8%, transparent);
+}
+.settings-segment {
+  border: 0; background: transparent; color: var(--text-muted); font: inherit; font-size: 12px;
+  padding: 6px 8px; border-radius: 8px; cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; gap: 2px; text-align: center;
+}
+.settings-segment small { font-size: 10px; color: var(--text-muted); }
+.settings-segment[aria-pressed='true'] { background: color-mix(in oklab, var(--cyan) 22%, transparent); color: var(--text-primary); }
+.settings-segment:focus-visible { outline: 2px solid var(--cyan); outline-offset: 1px; }
+.settings-auto { margin: 4px 0 0; font-size: 11px; color: var(--text-muted); display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.settings-auto .link-button { font-size: 11px; padding: 0; }

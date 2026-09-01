@@ -480,3 +480,71 @@ here; (1) adds the `requestVertexNormals` prerequisite to row 19 and (5) fixes a
 derived from the 19.3 tiles/s USGS rate (the service varied 2× within a day); the WebP ≈ 0.7 ×
 JPEG ratio; timer-query availability in shipping Chrome/Safari/Firefox; Apple-silicon numbers;
 CDSE S3 prerequisites and mosaic sizes; the WEBP quality option name for `gdal raster tile`.
+
+---
+
+## 10. Owner decisions (2026-09-01)
+
+The five open questions in §7 were answered by the owner on 2026-09-01. Each answer is
+recorded verbatim in intent, followed by what it changes in the plan above. Where an answer
+reframes the question (Q2), the reframing is the decision.
+
+| Q | Owner's answer | What changes in this plan |
+|---|---|---|
+| **Q1** Is "no angles" permanent? | **3D stays. No SCENE2D.** "No angles" is temporary — until the ground can carry angles (terrain + hillshade + the mosaic must read as one ground before a local-band oblique returns). | Rows 12 (orthographic frustum in 3D) and 19 (fixed-sun hillshade) **stay**; row 12 remains the reversible first step. **Row 21 (SCENE2D + WebMercator migration) is withdrawn** — its line in §2 and §6.10's "compose by shifting the destination" note remain as the record of why. The 3D-only investments §7 Q1 warned against (relief, hillshade, exaggeration, slope materials, tilt plumbing) are no longer at risk of being thrown away; tilt plumbing itself stays out of scope until the ground carries angles. |
+| **Q2** Which machine defines BALANCED? | Reframed: **the product exposes exactly two experiences — "Essential" (stripped) and "Cinematic" (full).** Internal tiers map onto them. | Row 6's four internal tiers (ULTRA / HIGH / BALANCED / LOW) stay as the renderer's vocabulary but **surface as two product modes**: Essential (LOW + BALANCED budgets: MSAA 1, `resolutionScale` 0.5, no hillshade, no native DPR) and Cinematic (HIGH + ULTRA: native DPR, MSAA 4, hillshade, full effects). **Auto-detect picks the default** (the 90-idle-frame probe after `onGroundComposed` plus `FrameRateMonitor.fromScene` downgrade, step 1.4); **Settings overrides** it with a two-way switch, not a four-way one. The Intel UHD 630 measurement remains the anchor for what Essential must hold (E1.4); the M-class harness run still settles where auto-detect draws the line, but it no longer blocks shipping. |
+| **Q3** Hillshade taste | **The most-cinematic option, on Cinematic.** | Row 19 (fixed-sun hillshade: `requestVertexNormals: true`, `DirectionalLight` from the NW, low `lambertDiffuseMultiplier`, optional `verticalExaggeration ≈ 1.3`) **ships on the Cinematic mode after the harness A/B** (step 3.6, E3.6 — the blind pick on Skagit and Puyallup and the BALANCED GPU p95 ≤ 14 ms budget still gate it). Essential never lights the terrain. The "double-shades NAIP's noon sun" concern is now a grading question for the mosaic build (per-source histogram match, ADR-0022 invariant 3), not a reason to withhold relief. |
+| **Q4** The mosaic ADR and the tiles hostname | **Approved**, both. | **Phase 3 is approved as written.** [ADR-0022](../adr/ADR-0022-imagery-is-a-self-built-pnw-mosaic-in-r2.md) records the decision (option C now, z0–z14; option D next, NAIP z15–z16), the licence table, the build invariants, serving (plain z/x/y objects on `tiles.papsukkal.com`, immutable headers, not PMTiles), cost, and E3.1–E3.5 as its Accepted gate. Terrain moves onto the same host (step 3.1), retiring the r2.dev hazard. Row 14 is now the plan's largest approved item; row 10 (GIBS Blue Marble live layer) stays the interim only while the build runs. |
+| **Q5** Grade ownership | **Grades stay per-layer uniforms.** | **Row 20 (custom `PostProcessStage` film grade / GPU vignette) is withdrawn.** The three layers keep their three grades (`ImageryLayer` saturation/brightness/contrast/gamma uniforms); once the mosaic ships, the imagery grade is baked at build time and the client uniform becomes identity (ADR-0022 invariant 2), so the per-layer surface shrinks rather than grows. The existing edge-vignette layer stays the only vignette (F rule 14). `cesium_dev_kit` moves from "read only, for row 20" to "not needed". |
+
+Net effect on the phases: Phase 1 step 1.4 gains the two-mode product surface (store field,
+`SettingsMenu` two-way switch, auto-detect default) on top of the four internal tiers; Phase 2 is
+unchanged; Phase 3 proceeds in parallel from day one as §3 already allowed, with 3.6 (hillshade)
+now a Cinematic-mode deliverable rather than a conditional A/B. Rows 20 and 21 leave the ranked
+table's live set; nothing else moves.
+
+## 11. Phase 1 landed (2026-09-01)
+
+Everything in the §9 Phase 1 step table shipped in one commit, verified on the owner's Mac with
+the new real-GPU harness path (full Chromium channel, ANGLE-Metal on the Intel UHD 630 — the
+BALANCED anchor of X §6). Measured, not inferred:
+
+| Step | What landed | Evidence |
+|---|---|---|
+| 1.1 | `tests/perf/perf-harness.mjs` + `npm run perf:owner`; refuses SwiftShader (exit 2) | probe path: Intel on `--gpu=low-power`, AMD 5300M on `high-performance`, refusal on the headless shell — all three printed |
+| 1.2 | Hygiene block: ground atmosphere off, fog not renderable (culling kept), sun/moon hidden, water effect off | A/B at the orbital home frame, 2880×1800: **60 of 5,184,000 pixels differ by more than 8/255** (0.001 %, mean 0.000) — the two tints contributed nothing visible at nadir over the domain, so `IMAGERY_GRADE` is unchanged by measurement, not by omission |
+| 1.3 | `scene.requestRenderMode = true` (`VITE_REQUEST_RENDER=off` restores the loop), `maximumRenderTimeChange = ∞`; every controller mutation point and the basin fade (a rAF pump in `BasinsLayer`) request their own frames | idle 3 s at the composed home frame: **0 frames rendered**; a 10-tick wheel gesture: 80 frames, band ORBITAL → RIVER, tiles settled |
+| 1.4 | `scene/quality.ts` (pure) + `scene/render-quality.ts` (Cesium-facing): four tiers, two experiences, probe, gesture-window monitor; store `experience` / `detectedTier` / `qualityTier`; Settings two-way switch with an automatic reset | probe on the Intel: GPU p50 7.8 ms, CPU 1.8 ms, frame-delta p95 18.2 ms → BALANCED (the doc's anchor). Switch to Cinematic: backing store 1440×900 → **2880×1800**, MSAA 1 → 4, cache 400 → 600; back to Essential restores; choice persists across reload (e2e `quality.spec.ts`) |
+| 1.5 | Native DPR on HIGH/ULTRA only | the 2880×1800 above; Essential stays at CSS pixels |
+| 1.6 | Arrival gate (`panels/arrival-gate.ts`, 400 ms) + weather hold (`app/weather-hold.ts`) | e2e `arrival.spec.ts` (a) panel mounts 410 ms after settle, (b) no weather `setData` between started and settled |
+| 1.7 | `maximumHeight` on `flyToBoundingSphere` = Cesium's own default apex clamped to `ZOOM_CEILING_M` | the skeptic caught the builder's swapped axes against `CameraFlightPath.js` (UP first, RIGHT second); fixed, pinned by `flight-apex.test.ts` with Cesium's own numbers (43,301 m / 69,282 m) |
+| 1.8 | stale "~260" comments were already 434 in the tree; `Texture.defaultColor` left at Cesium's default — no black rectangle was reproducible after the plate landed | — |
+
+Two notes for whoever runs the harness next. The in-app browser pane is hidden while an agent
+works and throttles rAF to a few frames per minute; every renderer conclusion must come from the
+headless full-Chromium path (the pane showed a black world and "12 frames in 30 s" that were
+entirely its own). And the probe's classification on this machine sits right at the HIGH/BALANCED
+boundary by frame arrival (18.2 ms vs the 17 ms cap) while its GPU time (7.8 ms) is HIGH-class;
+the discrete AMD path is expected to classify HIGH — the first `perf:owner` run on
+`--gpu=high-performance` decides whether the delta cap is too tight for Cinematic by default.
+
+First harness baseline (`npm run perf:owner -- --runs=1 --warmup=0`, 1280×800 @ DPR 1, vite-dev
+server so CPU numbers are not the production build's; the app's own probe picked the tier, so the
+Intel row ran BALANCED/MSAA 1 and the AMD row whatever it classified; ms, p95 unless noted):
+
+| GPU | boot | idle-home drawn/frames | zoom-in rAF p95 · GPU p50 | pan p95 | zoom-out p95 | basin-flight p95 · GPU p50 | scrub p95 | imagery req/run | heap end |
+|---|---|---|---|---|---|---|---|---|---|
+| Intel UHD 630 (low-power) | 8.4 s | **1 / 182** | 50.1 · 11.8 | 33.3 | 33.4 | 16.8 · 8.6 | 16.8 | 1,738 | 154 MB |
+| AMD 5300M (high-performance) | 7.8 s | **1 / 182** | 33.3 · 3.3 | 16.7 | 16.8 | 16.7 · 2.4 | 16.8 | 1,777 | 141 MB |
+
+Read against X §6: the AMD row passes every HIGH gesture budget except zoom-in's 16.7 ms rAF
+(33.3 — inside the BALANCED floor, so a HIGH classification holds and the monitor would not
+step it down); the Intel row's zoom-in (50.1) sits exactly at the LOW frame floor and its
+GPU p50 (11.8) is BALANCED-class — the probe's BALANCED verdict is the right one. Both rows
+show the explicit-rendering dividend directly: one drawn frame in 182 at rest. Single runs, one
+machine, dev server: a calibration point, not a gate — the 5-run protocol in X §7 turns it into
+one. The artefacts are in `tests/e2e/.results/perf/` (gitignored).
+
+Next: Phase 2 (§9) — stage-composed framing, the orthographic frustum, the van Wijk path,
+cut-versus-fly, landing-LOD prefetch, the weather crossfade, the GIBS plate — and Phase 3's
+mosaic build under ADR-0022.

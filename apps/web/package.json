@@ -12,7 +12,8 @@
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint src",
-    "e2e": "VITE_API_BASE=http://localhost:8000 VITE_DOMAIN_WARM=off npm run build && playwright test -c ../../tests/e2e/playwright.config.ts",
+    "e2e": "VITE_API_BASE=http://localhost:8000 VITE_DOMAIN_WARM=off VITE_QUALITY_PROBE=off npm run build && playwright test -c ../../tests/e2e/playwright.config.ts",
+    "perf:owner": "node ../../tests/perf/perf-harness.mjs http://localhost:5177",
     "contracts:gen": "node scripts/gen-contracts.mjs",
     "contracts:check": "node scripts/gen-contracts.mjs --check",
     "doctor": "npx react-doctor@latest --verbose"

@@ -9,11 +9,12 @@ import { create } from 'zustand';
 import { subscribeWithSelector } from 'zustand/middleware';
 import type { MotionSetting } from '../design-system/motion';
 import type { Band } from '../scene/bands';
+import { EXPERIENCE_STORAGE_KEY, parseExperienceChoice, type ExperienceChoice, type QualityTier } from '../scene/quality';
 import { windowEndingAt, type TimelineWindow } from '../timeline/window';
 
 export type EntityId = string;
 export type LayerId = 'basemap' | 'basins' | 'rivers' | 'basin_susceptibility' | 'river_network' | 'precip_observed' | 'snow_cover' | 'labels' | 'cameras' | 'floodplain' | 'levees';
-export type QualityTier = 'ultra' | 'high' | 'balanced' | 'low';
+export type { ExperienceChoice, QualityTier } from '../scene/quality';
 export type FlightState = 'idle' | 'flying' | 'settled';
 export type TimelineMode = 'now' | 'past' | 'event';
 
@@ -62,6 +63,11 @@ export interface SceneState {
   time: { valid: 'now' };
   timeline: TimelineState;
   cameraPose: CameraPose | null;
+  /** The user's product-level choice (Settings): Essential, Cinematic, or let the probe decide. Persisted per browser. */
+  experience: ExperienceChoice;
+  /** What the renderer measured this machine to be (probe, then gesture monitor); null until measured. */
+  detectedTier: QualityTier | null;
+  /** The EFFECTIVE tier the renderer is running — resolved by the controller from the two above; CSS and glass read it. */
   qualityTier: QualityTier;
   flightState: FlightState;
 }
@@ -72,7 +78,9 @@ export interface SceneActions {
   selectForecastPoint(id: EntityId | null, basinId?: EntityId | null): void;
   setAltitudeBand(band: Band): void;
   setMotionSetting(setting: MotionSetting): void;
-  setQualityTier(tier: QualityTier): void;
+  setExperience(choice: ExperienceChoice): void;
+  /** Written only by scene/bridge.ts from the controller's resolution — never by UI. */
+  setQualityResolved(tier: QualityTier, detected: QualityTier | null): void;
   setSystemReducedMotion(reduced: boolean): void;
   setLayerActive(layer: LayerId, active: boolean): void;
   setFlightState(state: FlightState): void;
@@ -94,14 +102,34 @@ export const DEFAULT_STATE: SceneState = {
   time: { valid: 'now' },
   timeline: { mode: 'now', asOf: null, window: windowEndingAt(new Date().toISOString()), eventId: null, at: null },
   cameraPose: null,
+  experience: 'auto',
+  detectedTier: null,
   qualityTier: 'balanced',
   flightState: 'idle',
 };
+
+/** The choice survives reloads (a per-machine preference); storage may be absent or refused. */
+function readPersistedExperience(): ExperienceChoice {
+  try {
+    return parseExperienceChoice(globalThis.localStorage?.getItem(EXPERIENCE_STORAGE_KEY));
+  } catch {
+    return 'auto';
+  }
+}
+function persistExperience(choice: ExperienceChoice): void {
+  try {
+    if (choice === 'auto') globalThis.localStorage?.removeItem(EXPERIENCE_STORAGE_KEY);
+    else globalThis.localStorage?.setItem(EXPERIENCE_STORAGE_KEY, choice);
+  } catch {
+    // a refused write loses nothing but persistence
+  }
+}
 
 export function createSceneStore(initial: Partial<SceneState> = {}) {
   return create<SceneStore>()(
     subscribeWithSelector((set) => ({
       ...DEFAULT_STATE,
+      experience: readPersistedExperience(),
       ...initial,
       // A new selection reframes the camera, so a previously captured pose no longer describes the view.
       selectBasin: (id) => set({ selectedBasinId: id, selectedForecastPointId: null, cameraPose: null }),
@@ -110,7 +138,11 @@ export function createSceneStore(initial: Partial<SceneState> = {}) {
         set((s) => ({ selectedForecastPointId: id, selectedBasinId: basinId === undefined ? s.selectedBasinId : basinId, cameraPose: null })),
       setAltitudeBand: (band) => set({ altitudeBand: band }),
       setMotionSetting: (setting) => set({ motionSetting: setting }),
-      setQualityTier: (tier) => set({ qualityTier: tier }),
+      setExperience: (choice) => {
+        persistExperience(choice);
+        set({ experience: choice });
+      },
+      setQualityResolved: (tier, detected) => set({ qualityTier: tier, detectedTier: detected }),
       setSystemReducedMotion: (reduced) => set({ systemReducedMotion: reduced }),
       setLayerActive: (layer, active) =>
         set((s) => ({ activeLayers: active ? [...new Set([...s.activeLayers, layer])] : s.activeLayers.filter((l) => l !== layer) })),

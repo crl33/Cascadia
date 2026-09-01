@@ -13,12 +13,15 @@ import type { ProvenanceRef } from '../contracts/schemas';
 import { Hydrograph } from './Hydrograph';
 import { ProvenanceLine } from './ProvenanceLine';
 import { formatNumber, formatQuantity, formatUtc, words } from './format';
+import { useArrivalGate } from './useArrivalGate';
 
 export function RiverPanel() {
   const forecastPointId = useSceneStore((s) => s.selectedForecastPointId);
   const query = useRiverState(forecastPointId);
+  // Film rule 3: the panel arrives after the camera does (arrival-gate.ts).
+  const arrival = useArrivalGate();
 
-  if (!forecastPointId) return null;
+  if (!forecastPointId || arrival === 'hold') return null;
   if (query.isPending) return <section className="panel glass-surface glass-panel shape-panel" data-testid="river-panel"><p className="muted">Loading forecast point…</p></section>;
   if (query.isError) return <section className="panel glass-surface glass-panel shape-panel" data-testid="river-panel"><p className="error">Forecast point unavailable: {query.error.message}</p></section>;
 

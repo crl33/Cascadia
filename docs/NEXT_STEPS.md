@@ -18,7 +18,20 @@ keys available when wanted: WSDOT Traveler AccessCode (free email form), King Co
 subscription, Snohomish Contrail login. Highest-value verified-ingestable sensor gap: Pierce
 County KiWIS (keyless, 338 stations; REDISTRIBUTION TERMS UNVERIFIED — check before ingest).
 
-**Next, in order:** (1) oblique-camera crest showcase (gates ADR-0021 Accepted; churns e2e
+**2026-09-01 delta (cinematic research → plan → Phase 1):** seven verified lenses in
+`research/cesium-cinematic-*-2026-09-01.md` and one ranked plan (`cesium-cinematic-plan-2026-09-01.md`,
+owner decisions §10, Phase 1 record §11). Landed: render hygiene (the two hidden tints measured at
+0.001 % of pixels), explicit rendering (0 idle frames), the two product experiences — **Essential /
+Cinematic** over four internal tiers with a measured probe and a gesture monitor (`PERFORMANCE.md`
+§3.0), native DPR on Cinematic, arrival gate + weather hold, flight apex cap, and the real-GPU
+browser harness (`npm run perf:owner`; SwiftShader refused). ADR-0022 (self-built PNW mosaic in R2 at
+`tiles.papsukkal.com`) is owner-approved. The camera is pure nadir for now by owner decision —
+angles return only when the ground (terrain + hillshade + mosaic) can carry them.
+
+**Next, in order:** (0) cinematic plan Phase 2 (stage-composed framing, orthographic frustum,
+van Wijk path, cut-versus-fly, landing-LOD prefetch, weather crossfade, GIBS plate) with Phase 3's
+mosaic build in parallel under ADR-0022; (1) oblique-camera crest showcase — DEFERRED until the
+ground carries angles (plan §10 Q1) (gates ADR-0021 Accepted; churns e2e
 baselines deliberately); (2) C3c second half — snow-level over hypsometry on the map;
 (3) C4 forecast fields (WPC QPF rasters ride the same machinery; needs timeline-future
 design); (4) P6 hindcast harness over ADR-0018; (5) VIIRS SCA (owner Earthdata credentials);

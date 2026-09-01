@@ -45,6 +45,9 @@ export class BasinsLayer implements SceneLayer<BasinsLayerData> {
   private visible = true;
   private motion: MotionPreference = 'full';
   private disposed = false;
+  /** Explicit rendering: a fade is time-driven, so the layer pumps frames until it ends. */
+  private fadeUntil = 0;
+  private pumping = false;
 
   mount(scene: SceneHandle): void {
     this.viewer = viewerOf(scene);
@@ -136,9 +139,26 @@ export class BasinsLayer implements SceneLayer<BasinsLayerData> {
       if (style.show && !wasShown) record.shownSince = now;
       if (!style.show) record.shownSince = null;
       const fadeStart = style.fadeIn && this.motion === 'full' && !wasShown ? now : null;
+      if (fadeStart !== null) this.fadeUntil = Math.max(this.fadeUntil, fadeStart + MOTION.duration.state);
       record.entities.forEach((entity) => this.apply(entity, style, fadeStart));
     }
     this.viewer?.scene.requestRender();
+    this.pumpFade();
+  }
+
+  /** One rAF loop per layer, alive only while a fade is in flight — each frame asks the
+   * scene to render so the CallbackProperty is sampled (requestRenderMode renders nothing
+   * on its own once the camera is still). */
+  private pumpFade(): void {
+    if (this.pumping || performance.now() >= this.fadeUntil) return;
+    this.pumping = true;
+    const tick = () => {
+      if (this.disposed || !this.viewer) { this.pumping = false; return; }
+      this.viewer.scene.requestRender();
+      if (performance.now() < this.fadeUntil) window.requestAnimationFrame(tick);
+      else this.pumping = false;
+    };
+    window.requestAnimationFrame(tick);
   }
 
   private apply(entity: Entity, style: EdgeStyle, fadeStart: number | null): void {

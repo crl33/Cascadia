@@ -448,6 +448,21 @@ interface TerrainProvider {
   orthophoto/canopy as 3D Tiles or imagery, loaded only in the `local` band at HIGH/ULTRA.
   Never required: every intelligence function works with none of them loaded.
 
+- **The production ground is a self-built PNW mosaic** (DECIDED 2026-09-01, owner-approved;
+  [ADR-0022](adr/ADR-0022-imagery-is-a-self-built-pnw-mosaic-in-r2.md)). The live USGS service
+  has no orthoimagery north of the 49th parallel or offshore — 61 % of the domain's z12 tiles are
+  white or 404 — and no client knob (discard, plate, warm) reaches an *availability* gap. The
+  answer is a `cascadia-mosaic` `BasemapProvider`: a z0–z14 pyramid (Blue Marble → Sentinel-2
+  120 m plate → Sentinel-2 10 m fill for BC/ocean → USGS harvest for US land; NAIP z15–z16 next)
+  built once from public-domain and CC-BY inputs, graded once, tone-matched per source, opaque
+  by assertion, and served as immutable `z/x/y` objects from `tiles.papsukkal.com` (R2 custom
+  domain; terrain moves there too). `usgs-imagery` stays registered as the live fallback — the
+  mosaic is enhancement, never dependency. The whole cinematic trajectory this sits in — hygiene,
+  explicit rendering, the Essential/Cinematic product modes, stage-composed framing, the van Wijk
+  path, hillshade on Cinematic — is the plan in
+  [research/cesium-cinematic-plan-2026-09-01.md](research/cesium-cinematic-plan-2026-09-01.md)
+  (owner decisions in its §10).
+
 ## 11. Quality tiers
 
 | Tier | Terrain | Imagery | 3D Tiles | Raster layers | Cinematic effects | Budget |

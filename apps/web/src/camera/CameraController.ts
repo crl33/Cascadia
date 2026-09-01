@@ -8,7 +8,8 @@
 import { BoundingSphere, Cartesian3, Cartographic, HeadingPitchRange, Math as CesiumMath, Matrix4, PerspectiveFrustum, Rectangle, type Viewer } from 'cesium';
 import { MOTION, minimumJerk, type MotionPreference } from '../design-system/motion';
 import type { CameraSample } from '../scene/SemanticZoomController';
-import { computeFlightDuration, framingRange } from './flight-math';
+import { ZOOM_CEILING_M } from './envelope';
+import { cappedArcApexM, computeFlightDuration, defaultArcApexM, framingRange } from './flight-math';
 import type { Bbox, CameraEvents, FlightHandle, FlightOptions, FlightResult, InterruptReason } from './types';
 
 // Top-down intelligence camera (owner 2026-09-01: "just make it a top down view, no
@@ -28,11 +29,16 @@ export class CameraController {
   private readonly sampleListeners = new Set<(sample: CameraSample) => void>();
   private lastSampleAt = 0;
   private readonly veil: HTMLDivElement;
+  /** The scene container (the same element SceneController stamps data-tiles-pending on):
+   * flights write `data-flight-max-height` here so a spec can log the apex — imperative DOM,
+   * written only when the running maximum rises, never per frame into React. */
+  private readonly container: HTMLElement;
   private readonly removeDomListeners: () => void;
   private readonly removeCameraListeners: () => void;
 
   constructor(private readonly viewer: Viewer, container: HTMLElement, motion: MotionPreference) {
     this.motion = motion;
+    this.container = container;
     this.veil = document.createElement('div');
     this.veil.className = 'scene-veil';
     this.veil.setAttribute('aria-hidden', 'true');
@@ -133,33 +139,71 @@ export class CameraController {
       this.emit('started', { flightId: id, durationMs: 0, cut: true, reason: options.reason });
       this.veil.classList.add('is-on');
       this.cutTo(sphere.center, offset);
+      this.container.dataset.flightMaxHeight = String(Math.round(this.viewer.camera.positionCartographic.height));
       this.publishSample(true, true);
       this.emit('settled', { flightId: id, cut: true });
       window.setTimeout(() => this.veil.classList.remove('is-on'), MOTION.duration.micro);
       return { id, settled: Promise.resolve({ outcome: 'settled', band: 'orbital', cut: true } satisfies FlightResult), interrupt: () => {} };
     }
 
-    const from = this.viewer.camera.positionCartographic;
+    const camera = this.viewer.camera;
+    const from = camera.positionCartographic;
     const to = Cartographic.fromCartesian(sphere.center);
     const distance = Cartesian3.distance(Cartesian3.fromRadians(from.longitude, from.latitude), sphere.center);
     const durationMs = computeFlightDuration(distance, Math.abs(from.height - (offset.range ?? 0)), 1);
     let resolveSettled: (r: FlightResult) => void = () => {};
     const settled = new Promise<FlightResult>((resolve) => { resolveSettled = resolve; });
 
+    // Flight apex cap (plan row 3 / step 1.7): a basin→basin arc must never rise above the
+    // composed home frame, where the discard boundary and vignette edge flash into view.
+    // `maximumHeight` passes straight through flyToBoundingSphere (Camera.js:3756) into
+    // CameraFlightPath, where it is the apex itself — so reproduce Cesium's default apex
+    // (flight-math.ts) and clamp it to the envelope ceiling rather than hand over the ceiling.
+    // Every framing is nadir, so the destination sits `range` straight above the centre.
+    const end = Cartesian3.fromRadians(to.longitude, to.latitude, to.height + offset.range);
+    const diff = Cartesian3.subtract(camera.position, end, new Cartesian3());
+    const frustum = camera.frustum;
+    const perspective = frustum instanceof PerspectiveFrustum && frustum.fovy !== undefined && frustum.aspectRatio !== undefined
+      ? { fovyRad: frustum.fovy, aspectRatio: frustum.aspectRatio }
+      : null;
+    const maximumHeight = cappedArcApexM(
+      // Cesium's order: the UP component first, the RIGHT component second (flight-math.ts).
+      defaultArcApexM(Math.abs(Cartesian3.dot(diff, camera.up)), Math.abs(Cartesian3.dot(diff, camera.right)), perspective),
+      ZOOM_CEILING_M,
+    );
+
+    // Apex log for tests/tooling: the running maximum of positionCartographic.height over the
+    // flight, sampled from preRender and written to the container only when it rises.
+    let maxHeight = from.height;
+    this.container.dataset.flightMaxHeight = String(Math.round(maxHeight));
+    const scene = this.viewer.scene;
+    const trackApex = () => {
+      const h = camera.positionCartographic.height;
+      if (h <= maxHeight) return;
+      maxHeight = h;
+      this.container.dataset.flightMaxHeight = String(Math.round(maxHeight));
+    };
+    scene.preRender.addEventListener(trackApex);
+    const stopTracking = () => scene.preRender.removeEventListener(trackApex);
+
     this.active = {
       id,
       cancel: () => {
-        this.viewer.camera.cancelFlight();
+        stopTracking();
+        camera.cancelFlight();
         resolveSettled({ outcome: 'interrupted', band: 'orbital', cut: false });
       },
     };
     this.emit('started', { flightId: id, durationMs, cut: false, reason: options.reason });
-    this.viewer.camera.flyToBoundingSphere(sphere, {
+    camera.flyToBoundingSphere(sphere, {
       offset,
       duration: durationMs / 1000,
       easingFunction: minimumJerk,
+      maximumHeight,
       complete: () => {
         if (this.active?.id !== id) return;
+        stopTracking();
+        trackApex();
         this.active = null;
         this.publishSample(true, true);
         this.emit('settled', { flightId: id, cut: false });
@@ -167,12 +211,12 @@ export class CameraController {
       },
       cancel: () => {
         if (this.active?.id !== id) return;
+        stopTracking();
         this.active = null;
         this.emit('interrupted', { flightId: id, reason: 'user-input' });
         resolveSettled({ outcome: 'interrupted', band: 'orbital', cut: false });
       },
     });
-    void to;
     return { id, settled, interrupt: (reason = 'superseded') => { if (this.active?.id === id) this.interrupt(reason); } };
   }
 

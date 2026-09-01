@@ -20,6 +20,35 @@ export function framingRange(radiusM: number, halfAngleRad: number, paddingFacto
   return (radiusM / Math.sin(angle)) * paddingFactor;
 }
 
+/**
+ * Cesium's own default arc apex, reproduced from CameraFlightPath.js (createHeightFunction →
+ * getAltitude): the flight peaks at 20 % of the height from which the current frustum would
+ * span the start→end offset. Cesium's argument order is the non-obvious part and is kept
+ * VERBATIM here: `getAltitude(frustum, verticalDistance, horizontalDistance)` divides the
+ * offset's component along the camera's UP axis by (aspectRatio · tan θ) and the component
+ * along the RIGHT axis by tan θ — so `upM` is |dot(diff, camera.up)| and `rightM` is
+ * |dot(diff, camera.right)|. Cesium falls back to a plain height lerp (no arc) whenever this
+ * apex is below max(startHeight, endHeight), so the value only matters on long hops.
+ * `perspective` is null for a non-perspective frustum (Cesium: max of the two).
+ */
+export function defaultArcApexM(upM: number, rightM: number, perspective: { fovyRad: number; aspectRatio: number } | null): number {
+  const spanned = perspective
+    ? Math.max(upM / (perspective.aspectRatio * Math.tan(0.5 * perspective.fovyRad)), rightM / Math.tan(0.5 * perspective.fovyRad))
+    : Math.max(upM, rightM);
+  return Math.min(spanned * 0.2, 1_000_000_000);
+}
+
+/**
+ * The apex to hand `flyTo*` as `maximumHeight`. That option IS the apex Cesium flies through
+ * (createHeightFunction takes it verbatim, CameraFlightPath.js:81-83), not an upper bound —
+ * passing the ceiling alone would LIFT every short basin→basin hop to 1,250 km. So the cap
+ * reproduces the default and clamps it: never higher than the ceiling, never higher than what
+ * Cesium would have flown anyway.
+ */
+export function cappedArcApexM(defaultApexM: number, ceilingM: number): number {
+  return Math.min(defaultApexM, ceilingM);
+}
+
 /** Approximate great-circle distance between two lon/lat points (metres), enough for durations. */
 export function haversineM(lon1: number, lat1: number, lon2: number, lat2: number): number {
   const R = 6_371_000;

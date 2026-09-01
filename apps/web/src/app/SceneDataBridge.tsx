@@ -4,14 +4,29 @@
  */
 import { useEffect, useMemo } from 'react';
 import { useBasinGeometries, useBasinGeometry, useBasins, useCameras, useFloodGeography, useLabels, useRiverNetwork, useVizBasins, useVizField, useVizRivers } from '../api/hooks';
-import type { FloodCategory, GeoFeature } from '../contracts/schemas';
+import type { FieldRasterState, FloodCategory, GeoFeature } from '../contracts/schemas';
 import type { BasinSusceptibility } from '../layers/susceptibility/BasinSusceptibilityLayer';
 import { cameraAttentionByBasin } from '../layers/cameras/attention';
 import { riverIntensities } from '../layers/network/match';
 import type { SceneController } from '../scene/SceneController';
 import { useSceneStore } from '../state/store';
+import { createWeatherHold } from './weather-hold';
 
 interface Props { controller: SceneController }
+
+/**
+ * Store-free DOM stamps for tests and tooling (like data-tiles-pending): the count of weather
+ * setData calls that reached the renderer, and '1' while a document is held for the settle.
+ */
+function stampWeatherApplied(): void {
+  const root = document.documentElement;
+  root.dataset.weatherSetData = String(Number(root.dataset.weatherSetData ?? '0') + 1);
+}
+function stampWeatherDeferred(holding: boolean): void {
+  const root = document.documentElement;
+  if (holding) root.dataset.weatherDeferred = '1';
+  else delete root.dataset.weatherDeferred;
+}
 
 export function SceneDataBridge({ controller }: Props) {
   const basins = useBasins();
@@ -73,20 +88,30 @@ export function SceneDataBridge({ controller }: Props) {
   }, [controller, stateLod, susceptibility]);
 
   useEffect(() => { if (rivers.data) controller.setData('rivers', rivers.data); }, [controller, rivers.data]);
-  // The cartographic river network: fetched once, drawn for the app's lifetime.
+  // Weather fields ride the arrival, not the flight (film rule 3): a document that lands while
+  // the camera is flying is held by weather-hold.ts and applied on settle — one effect keyed on
+  // the store's coarse flightState, never per frame. The hold instance is bound to the
+  // controller it feeds; the DOM stamps let an e2e observe the deferral without React state.
+  const flightState = useSceneStore((s) => s.flightState);
+  const weatherHold = useMemo(
+    () => createWeatherHold<FieldRasterState | null>((layer, doc) => { controller.setData(layer, doc); stampWeatherApplied(); }, stampWeatherDeferred),
+    [controller],
+  );
+  useEffect(() => { weatherHold.setFlying(flightState === 'flying'); }, [weatherHold, flightState]);
+
   const precipField = useVizField('precip_observed');
   useEffect(() => {
     // A 404 ("nothing current to draw") pushes null: the layer clears rather than letting a
     // stale hour linger as if it were now. While loading, push nothing — no flicker to empty.
-    if (precipField.data) controller.setData('precip_observed', precipField.data);
-    else if (precipField.isError) controller.setData('precip_observed', null);
-  }, [controller, precipField.data, precipField.isError]);
+    if (precipField.data) weatherHold.offer('precip_observed', precipField.data);
+    else if (precipField.isError) weatherHold.offer('precip_observed', null);
+  }, [weatherHold, precipField.data, precipField.isError]);
 
   const snowField = useVizField('snow_cover');
   useEffect(() => {
-    if (snowField.data) controller.setData('snow_cover', snowField.data);
-    else if (snowField.isError) controller.setData('snow_cover', null);
-  }, [controller, snowField.data, snowField.isError]);
+    if (snowField.data) weatherHold.offer('snow_cover', snowField.data);
+    else if (snowField.isError) weatherHold.offer('snow_cover', null);
+  }, [weatherHold, snowField.data, snowField.isError]);
 
   const labelSet = useLabels();
   useEffect(() => {
