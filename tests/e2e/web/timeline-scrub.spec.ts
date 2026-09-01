@@ -73,6 +73,10 @@ test('scrub into the past: AS OF banner appears, as_of enters the URL, the panel
 });
 
 test('snap-to-now restores live mode: banner gone, as_of dropped from the URL', async ({ page }) => {
+  // The post-snap live refetch triggers a tile storm that pegs the 2-core CI runner's main
+  // thread for tens of seconds (React commits starve; timers stall). The URL write itself
+  // is synchronous on replay-exit — the budget is what CI needs, not the app.
+  test.slow();
   await page.goto('/?basin=basin:skagit&fp=MVEW1&motion=reduced');
   await expect(page.getByTestId('river-panel-name')).toHaveText('Skagit River near Mount Vernon');
 
