@@ -4,7 +4,7 @@
  * draws the best it HAS, and never-visited regions only have the coarse base. So the whole
  * bounded PNW pyramid is made AVAILABLE up front:
  *
- *   boot   z5–z9 across HARD_DOMAIN (~260 tiles, ~10–15 MB once) — a REAL loading-screen
+ *   boot   z5–z9 across HARD_DOMAIN (434 tiles, ~8–16 MB once) — a REAL loading-screen
  *          stage with real counts; tiles land in the browser HTTP cache (max-age 86400),
  *          so Cesium's own requests then resolve from disk in milliseconds and every
  *          state/basin-band zoom or pan renders from complete, uniform data;
@@ -70,7 +70,7 @@ async function fetchInto(tiles: TileAddress[], concurrency: number, onOne?: () =
 }
 
 /** Boot warm: reports real progress for the manifest. VITE_DOMAIN_WARM=off (the e2e/CI
- * build) completes the stage instantly — every Playwright context is cache-fresh and 260
+ * build) completes the stage instantly — every Playwright context is cache-fresh and 434
  * external fetches per spec would hammer the public service; the weighting itself stays
  * pinned by unit tests. */
 export async function warmDomainForBoot(
