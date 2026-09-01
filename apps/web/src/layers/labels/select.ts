@@ -44,7 +44,7 @@ export const BAND_BUDGET: Record<Band, number> = { orbital: 8, state: 14, basin:
 /** Class band windows — the semantic core. */
 const CLASS_BANDS: Record<LabelKind, readonly Band[]> = {
   basin: ['orbital', 'state', 'basin'],
-  city: ['state', 'basin', 'river', 'local'],
+  city: ['orbital', 'state', 'basin', 'river', 'local'],
   town: ['basin', 'river', 'local'],
   river: ['basin', 'river', 'local'],
   water: ['river', 'local'],
@@ -82,6 +82,9 @@ export function selectLabels(
 ): LabelEntry[] {
   const eligible = labels.filter((entry) => {
     if (!CLASS_BANDS[entry.kind].includes(band)) return false;
+    // the opening scene must still orient by its major cities (mission §27) — but only
+    // the tier-1 anchors join the basin frame at orbital
+    if (entry.kind === 'city' && band === 'orbital' && entry.tier > 1) return false;
     // towns/rivers keep their editorial depth tiers inside their class window
     if ((entry.kind === 'town' || entry.kind === 'river') && band === 'basin' && entry.tier > 2) return false;
     if (entry.kind === 'town' && band === 'river' && entry.tier > 3) return false;

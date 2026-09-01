@@ -14,7 +14,7 @@ import type { Bbox, CameraEvents, FlightHandle, FlightOptions, FlightResult, Int
 // Top-down intelligence camera (mission §3): orbital→river fly near-nadir so terrain, the
 // river network and basin relationships read as a map, not a Google-Earth glide. Only the
 // local band leans — a controlled oblique where ground detail justifies it.
-export const CASCADIA_VIEW = { lon: -122.3, lat: 47.6, rangeM: 1_500_000, pitchDeg: -85, headingDeg: 0 } as const;
+export const CASCADIA_VIEW = { lon: -122.3, lat: 47.6, rangeM: 1_150_000, pitchDeg: -85, headingDeg: 0 } as const;
 export const BASIN_FRAMING = { pitchDeg: -85, paddingFactor: 1.1 } as const;
 export const FORECAST_POINT_FRAMING = { rangeM: 12_000, pitchDeg: -50 } as const;
 const SAMPLE_MIN_INTERVAL_MS = 100;
@@ -84,7 +84,7 @@ export class CameraController {
    * against a flight that is already going somewhere deliberate. */
   get flightActive(): boolean { return this.active !== null; }
 
-  /** Initial view: Cascadia at ~1,500 km with a gentle pitch. Always a cut (first frame is the final frame). */
+  /** Initial view: Cascadia near-nadir at ~1,150 km — the domain fills the frame. Always a cut (first frame is the final frame). */
   setInitialView(): void {
     this.cutTo(Cartesian3.fromDegrees(CASCADIA_VIEW.lon, CASCADIA_VIEW.lat), new HeadingPitchRange(CesiumMath.toRadians(CASCADIA_VIEW.headingDeg), CesiumMath.toRadians(CASCADIA_VIEW.pitchDeg), CASCADIA_VIEW.rangeM));
     this.publishSample(true, true);

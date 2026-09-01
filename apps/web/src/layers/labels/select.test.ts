@@ -6,13 +6,14 @@ const entry = (over: Partial<LabelEntry> & { name: string }): LabelEntry => ({
 });
 
 describe('selectLabels — class semantics', () => {
-  it('orbital shows basin names only — orientation, nothing else', () => {
+  it('orbital orients: basin frames plus tier-1 city anchors, nothing deeper', () => {
     const labels = [
       entry({ name: 'Skagit', kind: 'basin', tier: 1, lon: -121.5 }),
       entry({ name: 'Seattle', kind: 'city', tier: 1, lon: -122.33, lat: 47.6 }),
+      entry({ name: 'Everett', kind: 'city', tier: 2, lon: -122.2, lat: 47.98 }),
       entry({ name: 'Skagit River', kind: 'river', tier: 2, lon: -121.8 }),
     ];
-    expect(selectLabels(labels, 'orbital', null).map((l) => l.name)).toEqual(['Skagit']);
+    expect(selectLabels(labels, 'orbital', null).map((l) => l.name).sort()).toEqual(['Seattle', 'Skagit']);
   });
 
   it('A BASIN IS NOT A PLACE: basin labels vanish at river and local bands — the river wins its valley', () => {
