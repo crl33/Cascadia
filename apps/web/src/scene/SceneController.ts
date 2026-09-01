@@ -33,9 +33,6 @@ import type { Band } from './bands';
 /** A transient queue-zero between LOD generations must not read as a composed ground; the
  * queue has to stay empty this long before the opening frame counts as coherent (F2). */
 const GROUND_SUSTAINED_ZERO_MS = 600;
-/** After the last wheel/pointer gesture, refinement stays frozen this long, then restores
- * for one composed refine pass. */
-const INTERACTION_IDLE_MS = 350;
 
 export interface SceneControllerOptions { motion: MotionPreference; basemap?: BasemapProvider }
 export interface Selection { basinId: string | null; forecastPointId: string | null }
@@ -73,6 +70,7 @@ export class SceneController {
   private pending: { target: string; options: SelectOptions } | null = null;
   private readonly pickedHandlers = new Set<PickedHandler>();
   private readonly emptyClickHandlers = new Set<() => void>();
+  private readonly followSelectHandlers = new Set<(basinId: string) => void>();
   private readonly renderErrorHandlers = new Set<(message: string) => void>();
   private readonly eventHandler: ScreenSpaceEventHandler;
   private readonly unsubscribes: (() => void)[] = [];
@@ -134,6 +132,10 @@ export class SceneController {
     this.viewer.scene.backgroundColor = Color.fromCssColorString('hsl(222, 52%, 6%)');
     if (this.viewer.scene.skyBox) this.viewer.scene.skyBox.show = false;
     if (this.viewer.scene.skyAtmosphere) this.viewer.scene.skyAtmosphere.show = false;
+    // Fallback chain, bottom-up: coarse base plate (always-valid earth) → main imagery
+    // (voids transparent) → domain vignette. A void pixel now reveals real coarse ground.
+    const basePlate = this.basemap.createBasePlate?.();
+    if (basePlate) this.viewer.imageryLayers.add(basePlate, 0);
     const vignette = createDomainVignetteLayer();
     if (vignette) this.viewer.imageryLayers.add(vignette);
     const sscc = this.viewer.scene.screenSpaceCameraController;
@@ -153,34 +155,17 @@ export class SceneController {
     this.unsubscribes.push(this.camera.onSample((sample) => this.zoom.onCameraSample(sample)));
     this.unsubscribes.push(this.zoom.on('bandChanged', (e) => this.applyBand(e.next)));
     this.envelope = new CameraEnvelope(this.viewer, this.camera, () => this.zoom.band, options.motion);
+    const onFollowMoveEnd = () => this.evaluateFollowSelect();
+    this.viewer.camera.moveEnd.addEventListener(onFollowMoveEnd);
+    this.unsubscribes.push(() => this.viewer.camera.moveEnd.removeEventListener(onFollowMoveEnd));
 
-    // Freeze refinement while the camera is in motion (mission §5) — programmatic flights
-    // AND manual gestures: the preloaded ancestors carry a stable, uniformly coarse frame
-    // (coherence beats mixed sharpness — harness frame A-007's LOD ring), then the error
-    // threshold restores once on idle and the view refines in a single composed pass.
-    const freeze = () => { this.viewer.scene.globe.maximumScreenSpaceError = 3.5; };
-    const restore = () => { this.viewer.scene.globe.maximumScreenSpaceError = 2; this.viewer.scene.requestRender(); };
-    this.unsubscribes.push(
-      this.camera.on('started', freeze),
-      this.camera.on('settled', restore),
-      this.camera.on('interrupted', () => { /* a gesture follows; the idle timer restores */ }),
-    );
-    let idleTimer: number | null = null;
-    const onGesture = () => {
-      freeze();
-      if (idleTimer !== null) window.clearTimeout(idleTimer);
-      idleTimer = window.setTimeout(() => { idleTimer = null; restore(); }, INTERACTION_IDLE_MS);
-    };
-    const gestureCanvas = this.viewer.scene.canvas;
-    gestureCanvas.addEventListener('wheel', onGesture, { passive: true });
-    gestureCanvas.addEventListener('pointerdown', onGesture);
-    gestureCanvas.addEventListener('pointermove', onGesture);
-    this.unsubscribes.push(() => {
-      gestureCanvas.removeEventListener('wheel', onGesture);
-      gestureCanvas.removeEventListener('pointerdown', onGesture);
-      gestureCanvas.removeEventListener('pointermove', onGesture);
-      if (idleTimer !== null) window.clearTimeout(idleTimer);
-    });
+    // LESSON (owner-verified regression, 2026-08-31): raising maximumScreenSpaceError does
+    // not merely pause loading — Cesium RE-SELECTS coarser tiles it already has, so a
+    // gesture-triggered freeze visibly softened loaded imagery and the restore sharpened
+    // it again: the "flashes between sat view and closer view" complaint. The gesture
+    // freeze is REMOVED. Coherence during refinement comes from loadingDescendantLimit
+    // (whole-region substitution) + preloaded ancestors/siblings; the error threshold
+    // never changes at runtime, so the rendered LOD of loaded imagery never regresses.
 
     for (const layer of [
       new WeatherFieldLayer({ id: 'snow_cover', displayName: 'Snow water equivalent (SNODAS, daily)', truthClass: 'authoritative_model', pixel: snowPixel }),
@@ -276,6 +261,45 @@ export class SceneController {
   onEmptyClick(handler: () => void): () => void {
     this.emptyClickHandlers.add(handler);
     return () => this.emptyClickHandlers.delete(handler);
+  }
+
+  /** VIEWPORT-FOLLOW SELECTION (owner request 2026-08-31): while a basin panel is open,
+   * panning the world re-selects the basin under the view centre — the intelligence
+   * follows the map, without a flight (framed is pre-set so the bridge's select is a
+   * no-op for the camera). Fires with the basin id when the centre settles over a
+   * DIFFERENT seeded basin. */
+  onFollowSelect(handler: (basinId: string) => void): () => void {
+    this.followSelectHandlers.add(handler);
+    return () => this.followSelectHandlers.delete(handler);
+  }
+
+  private evaluateFollowSelect(): void {
+    if (this.selection.basinId === null) return; // no menu open — never grab a selection
+    if (this.camera.flightActive) return;
+    if (this.zoom.band === 'orbital') return;
+    const canvas = this.viewer.scene.canvas;
+    const center = new Cartesian2(canvas.clientWidth / 2, canvas.clientHeight / 2);
+    const picked = this.viewer.camera.pickEllipsoid(center, this.viewer.scene.globe.ellipsoid);
+    if (!picked) return;
+    const carto = this.viewer.scene.globe.ellipsoid.cartesianToCartographic(picked);
+    const lon = CesiumMath.toDegrees(carto.longitude);
+    const lat = CesiumMath.toDegrees(carto.latitude);
+    const contains = (b: BasinListItem): boolean => {
+      const [w, so, e, n] = b.bbox;
+      return lon >= w && lon <= e && lat >= so && lat <= n;
+    };
+    const current = this.basins.get(this.selection.basinId);
+    if (current && contains(current)) return; // hysteresis: stay while still over it
+    let best: { id: string; d: number } | null = null;
+    for (const b of this.basins.values()) {
+      if (!contains(b)) continue;
+      const [w, so, e, n] = b.bbox;
+      const d = Math.hypot(lon - (w + e) / 2, lat - (so + n) / 2);
+      if (best === null || d < best.d) best = { id: b.id, d };
+    }
+    if (best === null || best.id === this.selection.basinId) return;
+    this.framed = best.id; // the follow is selection-only: the user is already looking there
+    this.followSelectHandlers.forEach((h) => h(best.id));
   }
 
   setMotion(motion: MotionPreference): void {

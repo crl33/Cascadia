@@ -29,6 +29,10 @@ export function attachScene(controller: SceneController, store: SceneStoreApi): 
     controller.camera.on('started', () => store.getState().setFlightState('flying')),
     controller.camera.on('settled', () => store.getState().setFlightState('settled')),
     controller.camera.on('interrupted', () => store.getState().setFlightState('settled')),
+    controller.onFollowSelect((basinId) => {
+      const state = store.getState();
+      if (state.selectedBasinId !== basinId) state.selectBasin(basinId);
+    }),
     controller.onEmptyClick(() => {
       const state = store.getState();
       if (state.pinnedCameraId !== null) state.pinCamera(null);

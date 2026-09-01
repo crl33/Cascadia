@@ -46,10 +46,10 @@ export interface RiverLineStyle {
 
 /** Cartographic base width in screen px per band: [mainstem, tributary]. */
 const BAND_WIDTH: Record<Band, readonly [number, number]> = {
-  orbital: [1.2, 0],
-  state: [1.6, 0.8],
-  basin: [2.2, 1.0],
-  river: [3.2, 1.7],
+  orbital: [1.3, 0],
+  state: [1.8, 0.8],
+  basin: [2.6, 1.1],
+  river: [3.4, 1.7],
   local: [4.6, 2.5],
 };
 /** Base alpha per band: [mainstem, tributary]. Tributaries whisper until the camera is low;

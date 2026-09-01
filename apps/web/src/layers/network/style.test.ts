@@ -44,7 +44,7 @@ describe('riverLine', () => {
 
   it('two registers, separated (§10): geometry is the water hue, and it never changes', () => {
     const s = riverLine({ mainstem: true, band: 'local', inSelectedBasin: true, intensity: 0.95 });
-    expect(s.color).toEqual({ h: 203, s: 62, l: 52 }); // COLOR.water — physical register
+    expect(s.color).toEqual({ h: 202, s: 74, l: 50 }); // COLOR.water — physical register
   });
 
   it('glow is STATE, not proximity: an unselected calm mainstem near the ground stays plain', () => {

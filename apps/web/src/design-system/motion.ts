@@ -11,7 +11,7 @@ export const MOTION = {
   },
   duration: { micro: 140, ui: 220, panel: 320, state: 520, ambient: 2400 },
   profile: { flight: 'minimum-jerk' },
-  flight: { minMs: 600, maxMs: 4200, baseMs: 600, perDoublingMs: 550, scaleKm: 5, heightWeight: 2, balancedTierScale: 0.8 },
+  flight: { minMs: 500, maxMs: 2400, baseMs: 500, perDoublingMs: 420, scaleKm: 5, heightWeight: 2, balancedTierScale: 0.8 }, // owner 2026-08-31: basin selection was too slow — cap 4.2s→2.4s
 } as const;
 
 export type MotionPreference = 'full' | 'reduced';

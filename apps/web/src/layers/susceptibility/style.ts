@@ -123,12 +123,16 @@ export function susceptibilityFill(s: SusceptibilitySemantic): SusceptibilityFil
   }
 
   const alpha = CONFIDENCE_ALPHA[s.confidence] * (s.selected ? 1.25 : 1);
+  // The hatch is the ATTENTION texture (owner pass 2026-08-31): a LOW basin under a full
+  // diagonal grid read as visual noise across the whole scene. Quiet levels keep the faint
+  // tonal wash; the experimental register stays carried by the striped badge + label text.
+  const demandsAttention = s.state === 'moderate' || s.state === 'high' || s.state === 'very_high';
   return {
     show: overview,
     color: LEVEL_TONE[s.state],
     alpha: Math.min(alpha, 0.13),
-    striped: s.experimental,
-    hatchAlpha: s.experimental ? HATCH_ALPHA : 0,
+    striped: s.experimental && demandsAttention,
+    hatchAlpha: s.experimental && demandsAttention ? HATCH_ALPHA : 0,
     outlineOnly: false,
     badge,
     labelText: `Susceptibility ${LEVEL_WORD[s.state]} · confidence ${s.confidence}${suffix}`,

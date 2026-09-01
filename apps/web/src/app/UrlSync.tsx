@@ -50,7 +50,16 @@ export function UrlSync() {
     write();
     const unsubscribe = useSceneStore.subscribe(
       (s) => [s.selectedBasinId, s.selectedForecastPointId, s.motionSetting, s.timeline.asOf, s.timeline.eventId, s.timeline.at, s.cameraPose, s.pinnedCameraId] as const,
-      schedule,
+      (next, prev) => {
+        // Leaving replay is a semantic transition, not pose churn: as_of must vanish from
+        // the URL NOW — a pegged main thread (2-core CI under software-GL tile decode)
+        // can stall debounce timers for tens of seconds.
+        if (next[3] === null && prev[3] !== null) {
+          flush();
+          return;
+        }
+        schedule();
+      },
       { equalityFn: shallow },
     );
     return () => {

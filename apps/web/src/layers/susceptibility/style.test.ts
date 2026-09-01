@@ -49,12 +49,15 @@ describe('susceptibility fill', () => {
     expect(susceptibilityFill(base({ state: 'very_high' })).color).toEqual(COLOR.amberElevated);
   });
 
-  it('carries a non-colour cue whenever it is experimental', () => {
-    // §7.2: a greyscale screenshot must still distinguish experimental from official. Hue alone
-    // cannot do that, so the stripe is on for every experimental level — not only the high ones.
+  it('the hatch is the ATTENTION texture; the experimental register always keeps its words', () => {
+    // Owner pass 2026-08-31: a LOW basin under a full diagonal grid was scene-wide noise.
+    // §7.2 still holds — every experimental level carries its badge and label words (the
+    // non-colour carriers); the map hatch is reserved for levels that demand attention.
     for (const state of LEVELS.filter((l) => l !== 'unknown')) {
       const fill = susceptibilityFill(base({ state }));
-      expect(fill.striped).toBe(true);
+      const demandsAttention = state === 'moderate' || state === 'high' || state === 'very_high';
+      expect(fill.striped).toBe(demandsAttention);
+      expect(fill.hatchAlpha > 0).toBe(demandsAttention);
       expect(fill.badge).toBe('Cascadia assessment');
       expect(fill.labelText).toContain('EXPERIMENTAL');
     }
@@ -130,12 +133,16 @@ describe('susceptibility fill', () => {
 });
 
 describe('the restrained treatment (design direction 2026-08-28)', () => {
-  it('keeps the carrier stronger than the wash — greyscale separation lives in the hatch now', () => {
-    for (const state of ['low', 'moderate', 'high', 'very_high'] as const) {
+  it('where the hatch appears it stays stronger than the wash; the wash never masks', () => {
+    for (const state of ['moderate', 'high', 'very_high'] as const) {
       for (const confidence of ['high', 'moderate', 'low', 'unknown'] as const) {
         const fill = susceptibilityFill(base({ state, confidence }));
-        expect(fill.hatchAlpha).toBeGreaterThan(fill.alpha);
-        expect(fill.alpha).toBeLessThanOrEqual(0.20 * 1.25); // context, never a mask
+        expect(fill.hatchAlpha).toBeGreaterThan(fill.alpha); // attention levels: carrier over wash
+      }
+    }
+    for (const state of ['low', 'moderate', 'high', 'very_high'] as const) {
+      for (const confidence of ['high', 'moderate', 'low', 'unknown'] as const) {
+        expect(susceptibilityFill(base({ state, confidence })).alpha).toBeLessThanOrEqual(0.20 * 1.25);
       }
     }
   });

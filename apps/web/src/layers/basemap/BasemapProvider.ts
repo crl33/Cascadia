@@ -48,6 +48,10 @@ export interface BasemapProvider {
   terrainLevel: 'ellipsoid' | 'global' | 'regional_dem';
   grade: BasemapGrade;
   createImagery(key?: string): ImageryLayer;
+  /** Optional coarse ALWAYS-VALID plate rendered UNDER the main imagery: wherever a void
+   * pixel goes transparent or a tile is discarded, real low-res earth shows through —
+   * never the bare canvas (§5's "retain lower-resolution imagery", as a layer). */
+  createBasePlate?(key?: string): ImageryLayer | null;
   createTerrain(key?: string): TerrainProvider;
 }
 
@@ -113,6 +117,22 @@ export const usgsImagery: BasemapProvider = {
       ),
       IMAGERY_GRADE,
     )),
+  // The under-plate: same public-domain product, capped at z7 (a handful of tiles for the
+  // whole domain, cached forever). Discard still applies (a coarse baked-white would
+  // otherwise resurface); no colorToAlpha — this IS the bottom of the fallback chain.
+  createBasePlate: () =>
+    graded(
+      new ImageryLayer(
+        new UrlTemplateImageryProvider({
+          url: 'https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryOnly/MapServer/tile/{z}/{y}/{x}',
+          maximumLevel: 7,
+          credit: new Credit(USGS_IMAGERY_ATTRIBUTION, false),
+          tileDiscardPolicy: new WhiteTileDiscardPolicy(),
+        }),
+        { rectangle: Rectangle.fromDegrees(HARD_DOMAIN.west, HARD_DOMAIN.south, HARD_DOMAIN.east, HARD_DOMAIN.north) },
+      ),
+      IMAGERY_GRADE,
+    ),
   createTerrain: () => new EllipsoidTerrainProvider(),
 };
 

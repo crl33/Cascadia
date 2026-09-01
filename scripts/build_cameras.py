@@ -155,6 +155,19 @@ def main() -> int:
             return "B", reasons
         return "C", reasons
 
+    def flood_evidenced(reasons: list[str]) -> bool:
+        """Owner rule 2026-08-31: only cameras whose VIEW would show actual flooding.
+        A river word in a highway camera's title is not evidence the lens sees the river
+        (I-405 'Coal Creek Pkwy' shows freeway lanes) — geospatial flood evidence is
+        required: at a gauge, inside mapped floodway/1%-floodplain, or within 600 m of a
+        seeded mainstem (river-crossing viewpoints)."""
+        for r in reasons:
+            if r in ("at_usgs_gauge", "inside_floodway", "inside_1pct_floodplain"):
+                return True
+            if r.endswith("_m_from_mainstem_river") and int(r.split("_")[0]) <= 600:
+                return True
+        return False
+
     cameras: list[dict] = []
 
     # --- USGS NIMS ---------------------------------------------------------------------------
@@ -246,6 +259,13 @@ def main() -> int:
             "attribution": "WSDOT Traveler Information (low-volume use; hold-harmless terms)",
         })
 
+    for cam in [c for c in cameras if not flood_evidenced(c['reasons'])]:
+
+        print(f"dropped (no flood evidence in view): {cam['id']} — {cam['name']}", file=sys.stderr)
+
+    cameras = [c for c in cameras if flood_evidenced(c['reasons'])]
+
+
     doc_out = {
         "_provenance": {
             "method_id": METHOD_ID,
@@ -258,7 +278,10 @@ def main() -> int:
                 "Tiers carry their reasons and never a numeric score. A: at a USGS gauge, or "
                 "river-named title near the mainstem, or inside a mapped floodway. B: inside the "
                 "1% floodplain, near the mainstem, or river-named. C: in-basin, coverage "
-                "unverified. Orientation only when the provider states it; unknown stays unknown."
+                "unverified. Orientation only when the provider states it; unknown stays unknown. "
+                "Owner rule 2026-08-31: geospatial flood evidence REQUIRED (gauge, floodway, "
+                "1% floodplain, or ≤600 m from a seeded mainstem) — a river word in a highway "
+                "camera title is not evidence the lens sees the river."
             ),
             "privacy_note": "Environmental/infrastructure context only. No face, person, plate or biometric processing, ever.",
             "excluded": "Kent Green River levee cameras (probed 2026-08-28: frozen at 2025-12-11 / 404 — HTTP 200 is not freshness).",
