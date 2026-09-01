@@ -9,11 +9,14 @@
 import { ImageryLayer, Rectangle, SingleTileImageryProvider } from 'cesium';
 import { HARD_DOMAIN } from '../../camera/envelope';
 
-/** Fraction of the domain's span that fades at each edge. */
-const FEATHER = 0.16;
+/** Fraction of the domain's span that fades at each edge. Owner 2026-09-01: the previous
+ * wide rounded feather made max-out read as an iOS APP ICON — the fade is now narrow,
+ * square-edged and partial, so the world reads as a map sheet dimming at its margin. */
+const FEATHER = 0.06;
+const EDGE_ALPHA = 0.82;
 const SIZE = 512;
 /** Matches --canvas / globe.baseColor: hsl(222 52% 6%). */
-const CANVAS_DARK = 'rgb(7, 12, 23)';
+const CANVAS_DARK = 'rgba(7, 12, 23,';
 
 export function createDomainVignetteLayer(): ImageryLayer | null {
   const canvas = document.createElement('canvas');
@@ -21,16 +24,21 @@ export function createDomainVignetteLayer(): ImageryLayer | null {
   canvas.height = SIZE;
   const ctx = canvas.getContext('2d');
   if (!ctx) return null;
-  ctx.fillStyle = CANVAS_DARK;
-  ctx.fillRect(0, 0, SIZE, SIZE);
-  // punch a soft transparent interior: a blurred inset rectangle removed from the frame
+  // four straight-edged linear fades — no rounded geometry anywhere
   const inset = Math.round(SIZE * FEATHER);
-  ctx.globalCompositeOperation = 'destination-out';
-  ctx.filter = `blur(${Math.round(inset * 0.55)}px)`;
-  ctx.fillStyle = 'rgb(0,0,0)';
-  ctx.beginPath();
-  ctx.roundRect(inset, inset, SIZE - inset * 2, SIZE - inset * 2, inset * 0.8);
-  ctx.fill();
+  const edges: [number, number, number, number, number, number, number, number][] = [
+    [0, 0, 0, inset, 0, 0, SIZE, inset], // top: gradient from y0..inset over full width
+    [0, SIZE, 0, SIZE - inset, 0, SIZE - inset, SIZE, inset], // bottom
+    [0, 0, inset, 0, 0, 0, inset, SIZE], // left
+    [SIZE, 0, SIZE - inset, 0, SIZE - inset, 0, inset, SIZE], // right
+  ];
+  for (const [gx0, gy0, gx1, gy1, rx, ry, rw, rh] of edges) {
+    const g = ctx.createLinearGradient(gx0, gy0, gx1, gy1);
+    g.addColorStop(0, `${CANVAS_DARK} ${EDGE_ALPHA})`);
+    g.addColorStop(1, `${CANVAS_DARK} 0)`);
+    ctx.fillStyle = g;
+    ctx.fillRect(rx, ry, rw, rh);
+  }
   const layer = new ImageryLayer(
     new SingleTileImageryProvider({
       url: canvas.toDataURL('image/png'),

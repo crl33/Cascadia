@@ -14,6 +14,7 @@
  */
 import { useEffect, useRef, useState } from 'react';
 import { useBasins, useCameras, useFloodGeography, useLabels, useRiverNetwork, useVizBasins } from '../api/hooks';
+import { warmDomainDeep, warmDomainForBoot } from '../layers/basemap/domain-warmer';
 import type { SceneController } from '../scene/SceneController';
 import { createBootProgress } from './boot-progress';
 
@@ -24,6 +25,7 @@ const FADE_MS = 700;
 const STAGE_TEXT = {
   earth: 'STARTING RENDERER',
   terrain: 'COMPOSING TERRAIN',
+  regional: 'PREPARING REGIONAL MAP',
   hydrography: 'LOADING HYDROGRAPHY',
   live: 'CHECKING LIVE CONDITIONS',
   ready: 'READY',
@@ -34,6 +36,7 @@ const settled = (q: { isSuccess: boolean; isError: boolean }) => q.isSuccess || 
 export function LoadingVeil({ controller }: { controller: SceneController | null }) {
   const [ground, setGround] = useState(false);
   const [groundProgress, setGroundProgress] = useState(0);
+  const [regional, setRegional] = useState<{ done: number; total: number }>({ done: 0, total: 1 });
   const [leaving, setLeaving] = useState(false);
   const [revealed, setRevealed] = useState(false);
   const publishRef = useRef<ReturnType<typeof createBootProgress> | null>(null);
@@ -56,6 +59,14 @@ export function LoadingVeil({ controller }: { controller: SceneController | null
     };
   }, [controller]);
 
+  // The availability stage: the whole PNW pyramid z5–z9 into the HTTP cache, with REAL
+  // counts. Runs once; near-instant when the cache is already warm.
+  useEffect(() => {
+    const aborter = new AbortController();
+    void warmDomainForBoot((done, total) => setRegional({ done, total }), aborter.signal);
+    return () => aborter.abort();
+  }, []);
+
   const dataTasks = [basins, labels, network, cameras, flood];
   const publish = publishRef.current;
   const { percent, ready } = publish({
@@ -65,6 +76,8 @@ export function LoadingVeil({ controller }: { controller: SceneController | null
     dataTasksDone: dataTasks.filter(settled).length,
     dataTasksTotal: dataTasks.length,
     liveSettled: settled(viz),
+    regionalDone: regional.done,
+    regionalTotal: regional.total,
   });
 
   useEffect(() => {
@@ -82,11 +95,23 @@ export function LoadingVeil({ controller }: { controller: SceneController | null
     const fade = window.setTimeout(() => setRevealed(true), FADE_MS);
     return () => window.clearTimeout(fade);
   }, [leaving, revealed]);
+  // Post-reveal deep warm: z10 across the domain, quietly — within the first minute the
+  // whole basin-band working area is local too.
+  useEffect(() => {
+    if (!revealed) return;
+    const aborter = new AbortController();
+    const start = window.setTimeout(() => { void warmDomainDeep(aborter.signal); }, 6_000);
+    return () => {
+      window.clearTimeout(start);
+      aborter.abort();
+    };
+  }, [revealed]);
 
   if (revealed) return null;
   const stage =
     controller === null ? 'earth'
     : !ground ? 'terrain'
+    : regional.done < regional.total ? 'regional'
     : dataTasks.filter(settled).length < dataTasks.length ? 'hydrography'
     : !settled(viz) ? 'live'
     : 'ready';

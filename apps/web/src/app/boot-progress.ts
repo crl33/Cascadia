@@ -5,10 +5,11 @@
  * The weights are documented product decisions, not physics:
  *
  *   renderer   5 %  — the Cesium viewer exists (one discrete task; cheap but blocking)
- *   ground    55 %  — the imagery/terrain tile queue's drain against its high-water mark
- *                     (the dominant real cost of a cold start, measured 21–27 s headless)
- *   data      25 %  — the discrete boot queries (basins, labels, river network, cameras),
- *                     tasks complete / total
+ *   ground    40 %  — the imagery/terrain tile queue's drain against its high-water mark
+ *   regional  15 %  — the WHOLE PNW pyramid z5–z9 fetched into the HTTP cache (domain-
+ *                     warmer; tiles done / total — the availability guarantee behind
+ *                     "no patchwork while scrolling"; near-instant on a warm cache)
+ *   data      25 %  — the discrete boot queries, tasks complete / total
  *   live      15 %  — the first hydrologic envelope (optional: an error DEGRADES and
  *                     completes the slice — the world says UNKNOWN elsewhere; the bar must
  *                     never sit at 94 % because one provider is down)
@@ -33,10 +34,14 @@ export interface BootState {
   dataTasksTotal: number;
   /** The live envelope settled (success) or degraded (error) — both complete the slice. */
   liveSettled: boolean;
+  /** Regional-map warm progress: tiles fetched / total (domain-warmer). */
+  regionalDone: number;
+  regionalTotal: number;
 }
 
 const WEIGHT_RENDERER = 0.05;
-const WEIGHT_GROUND = 0.55;
+const WEIGHT_GROUND = 0.4;
+const WEIGHT_REGIONAL = 0.15;
 const WEIGHT_DATA = 0.25;
 const WEIGHT_LIVE = 0.15;
 
@@ -50,9 +55,10 @@ export function bootPercent(s: BootState): number {
   const ground = s.groundComposed ? 1 : Math.min(clamp01(s.groundProgress), 0.96);
   const data = s.dataTasksTotal > 0 ? clamp01(s.dataTasksDone / s.dataTasksTotal) : 1;
   const live = s.liveSettled ? 1 : 0;
+  const regional = s.regionalTotal > 0 ? clamp01(s.regionalDone / s.regionalTotal) : 0;
   return (
     100 *
-    (WEIGHT_RENDERER * renderer + WEIGHT_GROUND * ground + WEIGHT_DATA * data + WEIGHT_LIVE * live)
+    (WEIGHT_RENDERER * renderer + WEIGHT_GROUND * ground + WEIGHT_REGIONAL * regional + WEIGHT_DATA * data + WEIGHT_LIVE * live)
   );
 }
 
@@ -63,6 +69,8 @@ export function sceneVisualReady(s: BootState): boolean {
     s.groundComposed &&
     s.dataTasksTotal > 0 &&
     s.dataTasksDone >= s.dataTasksTotal &&
+    s.regionalTotal > 0 &&
+    s.regionalDone >= s.regionalTotal &&
     s.liveSettled
   );
 }
