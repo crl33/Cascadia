@@ -10,6 +10,7 @@ import { useSceneStore } from '../state/store';
 import { serializeDeepLink } from './deep-link';
 
 const URL_DEBOUNCE_MS = 200;
+const URL_MAX_LATENCY_MS = 1_000;
 
 export function UrlSync() {
   useEffect(() => {
@@ -31,9 +32,20 @@ export function UrlSync() {
       const next = `${window.location.pathname}${qs}`;
       if (next !== `${window.location.pathname}${window.location.search}`) window.history.replaceState(null, '', next);
     };
+    // Trailing debounce WITH a hard deadline: camera-pose churn under a slow renderer can
+    // reschedule the trailing timer indefinitely (observed as a CI-only "as_of never left
+    // the URL" flake) — after MAX_LATENCY the write happens regardless.
+    let deadline: number | null = null;
+    const flush = () => {
+      deadline = null;
+      if (timer !== null) window.clearTimeout(timer);
+      timer = null;
+      write();
+    };
     const schedule = () => {
       if (timer !== null) window.clearTimeout(timer);
-      timer = window.setTimeout(write, URL_DEBOUNCE_MS);
+      timer = window.setTimeout(flush, URL_DEBOUNCE_MS);
+      if (deadline === null) deadline = window.setTimeout(flush, URL_MAX_LATENCY_MS);
     };
     write();
     const unsubscribe = useSceneStore.subscribe(
@@ -43,6 +55,7 @@ export function UrlSync() {
     );
     return () => {
       if (timer !== null) window.clearTimeout(timer);
+      if (deadline !== null) window.clearTimeout(deadline);
       unsubscribe();
     };
   }, []);
