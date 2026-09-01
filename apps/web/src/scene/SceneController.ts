@@ -78,7 +78,7 @@ export class SceneController {
   private readonly renderErrorHandlers = new Set<(message: string) => void>();
   private readonly qualityHandlers = new Set<(tier: QualityTier, detected: QualityTier | null) => void>();
   private experience: ExperienceChoice = 'auto';
-  private detectedTier: QualityTier | null = null;
+  private detectedTier_: QualityTier | null = null;
   private effectiveTier: QualityTier | null = null;
   private budgetMissStreak = 0;
   private readonly eventHandler: ScreenSpaceEventHandler;
@@ -305,12 +305,12 @@ export class SceneController {
     this.applyBand(this.zoom.band);
 
     // QUALITY (PERFORMANCE.md §3, owner 2026-09-01): the renderer starts on the measured-
-    // safe BALANCED budget, measures itself at Cinematic's real cost once the ground has
-    // composed (under the veil), then runs whatever the user's choice resolves to. A
-    // gesture window that misses the frame floor three times steps one tier down, inside
-    // the chosen experience only. VITE_QUALITY_PROBE=off pins the e2e build to BALANCED.
+    // safe BALANCED budget; the loading veil asks it to measure itself (measureQuality) in
+    // its own QUIET boot stage — after the ground, the regional warm and the data queries
+    // have settled, still under the opaque veil — then it runs whatever the user's choice
+    // resolves to. A gesture window that misses the frame floor three times steps one
+    // tier down, inside the chosen experience only.
     this.applyQuality();
-    if (import.meta.env.VITE_QUALITY_PROBE !== 'off') this.onGroundComposed(() => { void this.runQualityProbe(); });
     this.unsubscribes.push(watchGestureFrames(this.viewer.scene, this.viewer.scene.canvas, (w) => this.onGestureWindow(w)));
     const onResize = () => { if (this.effectiveTier) applyTierBudget(this.viewer, this.effectiveTier); };
     window.addEventListener('resize', onResize);
@@ -336,40 +336,52 @@ export class SceneController {
   /** Fires with the EFFECTIVE tier (and the detection behind it) whenever it changes; immediately if already resolved. */
   onQualityResolved(handler: (tier: QualityTier, detected: QualityTier | null) => void): () => void {
     this.qualityHandlers.add(handler);
-    if (this.effectiveTier) handler(this.effectiveTier, this.detectedTier);
+    if (this.effectiveTier) handler(this.effectiveTier, this.detectedTier_);
     return () => this.qualityHandlers.delete(handler);
   }
 
   get qualityTier(): QualityTier | null { return this.effectiveTier; }
+  get detectedTier(): QualityTier | null { return this.detectedTier_; }
+
+  /** A detection carried in from persistence (scene/bridge.ts) — the probe is then skipped this boot. */
+  setDetectedTier(tier: QualityTier | null): void {
+    this.detectedTier_ = tier;
+    this.applyQuality();
+  }
+
+  /**
+   * Measures what Cinematic would cost HERE (native backing store, MSAA 4) and resolves the
+   * detected tier. Meant to run under the loading veil in a quiet stage: the temporary switch
+   * is invisible and nothing else contends for the frame. VITE_QUALITY_PROBE=off (the e2e
+   * build) resolves null at once, which keeps auto on BALANCED.
+   */
+  async measureQuality(): Promise<QualityTier | null> {
+    if (this.disposed || import.meta.env.VITE_QUALITY_PROBE === 'off') return null;
+    applyTierBudget(this.viewer, 'high');
+    const sample = await probeRenderCost(this.viewer.scene);
+    if (this.disposed) return null;
+    this.detectedTier_ = sample ? classifyProbe(sample) : null;
+    if (import.meta.env.DEV) console.info('quality probe', sample, '→', this.detectedTier_);
+    this.effectiveTier = null; // the probe moved the knobs: re-apply whatever resolves now
+    this.applyQuality();
+    return this.detectedTier_;
+  }
 
   private applyQuality(): void {
-    const tier = resolveTier(this.experience, this.detectedTier);
+    const tier = resolveTier(this.experience, this.detectedTier_);
     if (tier === this.effectiveTier) return;
     this.effectiveTier = tier;
     this.budgetMissStreak = 0;
     applyTierBudget(this.viewer, tier);
-    this.qualityHandlers.forEach((h) => h(tier, this.detectedTier));
-  }
-
-  private async runQualityProbe(): Promise<void> {
-    if (this.disposed) return;
-    // Measure what Cinematic would cost HERE: native backing store, MSAA 4. The veil is
-    // still up at this point, so the temporary switch is invisible.
-    applyTierBudget(this.viewer, 'high');
-    const sample = await probeRenderCost(this.viewer.scene);
-    if (this.disposed) return;
-    this.detectedTier = sample ? classifyProbe(sample) : null;
-    if (import.meta.env.DEV) console.info('quality probe', sample, '→', this.detectedTier);
-    this.effectiveTier = null; // the probe moved the knobs: re-apply whatever resolves now
-    this.applyQuality();
+    this.qualityHandlers.forEach((h) => h(tier, this.detectedTier_));
   }
 
   private onGestureWindow(window: GestureWindow): void {
     if (!this.effectiveTier) return;
-    const verdict = downgradeAfterWindow(window, this.budgetMissStreak, this.experience, this.detectedTier, this.effectiveTier);
+    const verdict = downgradeAfterWindow(window, this.budgetMissStreak, this.experience, this.detectedTier_, this.effectiveTier);
     this.budgetMissStreak = verdict.missStreak;
     if (verdict.detected === null) return;
-    this.detectedTier = verdict.detected;
+    this.detectedTier_ = verdict.detected;
     if (import.meta.env.DEV) console.info('quality monitor: frame floor missed, stepping to', verdict.detected, window);
     this.applyQuality();
   }

@@ -10,18 +10,20 @@ const state = (over: Partial<BootState>): BootState => ({
   liveSettled: false,
   regionalDone: 0,
   regionalTotal: 260,
+  deviceMeasured: false,
   ...over,
 });
 
 describe('boot manifest — a percentage that corresponds to real work', () => {
   it('nothing done is 0; everything done is 100; weights are the documented split', () => {
     expect(bootPercent(state({}))).toBe(0);
-    const done = state({ renderer: true, groundProgress: 1, groundComposed: true, dataTasksDone: 4, liveSettled: true, regionalDone: 260 });
+    const done = state({ renderer: true, groundProgress: 1, groundComposed: true, dataTasksDone: 4, liveSettled: true, regionalDone: 260, deviceMeasured: true });
     expect(bootPercent(done)).toBe(100);
-    // renderer alone = 5; data alone = 25; live alone = 15
+    // renderer alone = 5; data alone = 25; live alone = 10; device alone = 5
     expect(bootPercent(state({ renderer: true }))).toBeCloseTo(5);
     expect(bootPercent(state({ dataTasksDone: 4 }))).toBeCloseTo(25);
-    expect(bootPercent(state({ liveSettled: true }))).toBeCloseTo(15);
+    expect(bootPercent(state({ liveSettled: true }))).toBeCloseTo(10);
+    expect(bootPercent(state({ deviceMeasured: true }))).toBeCloseTo(5);
   });
 
   it('a transiently-empty tile queue cannot claim the full ground slice — composed is the gate', () => {
@@ -36,13 +38,16 @@ describe('boot manifest — a percentage that corresponds to real work', () => {
     const missingData = state({ renderer: true, groundComposed: true, dataTasksDone: 3, liveSettled: true, regionalDone: 260 });
     expect(sceneVisualReady(missingData)).toBe(false);
     // the regional map is CRITICAL: without complete availability, scrolling is patchwork
-    const missingRegional = state({ renderer: true, groundComposed: true, dataTasksDone: 4, liveSettled: true, regionalDone: 100 });
+    const missingRegional = state({ renderer: true, groundComposed: true, dataTasksDone: 4, liveSettled: true, regionalDone: 100, deviceMeasured: true });
     expect(sceneVisualReady(missingRegional)).toBe(false);
+    // the device measurement is the LAST stage: everything else done is still not ready
+    const missingDevice = state({ renderer: true, groundComposed: true, dataTasksDone: 4, liveSettled: true, regionalDone: 260 });
+    expect(sceneVisualReady(missingDevice)).toBe(false);
   });
 
   it('an optional live failure degrades and completes — the bar never parks at 94 %', () => {
     // liveSettled is success OR error by construction upstream; here it simply completes.
-    const degraded = state({ renderer: true, groundComposed: true, groundProgress: 1, dataTasksDone: 4, liveSettled: true, regionalDone: 260 });
+    const degraded = state({ renderer: true, groundComposed: true, groundProgress: 1, dataTasksDone: 4, liveSettled: true, regionalDone: 260, deviceMeasured: true });
     expect(sceneVisualReady(degraded)).toBe(true);
     expect(bootPercent(degraded)).toBe(100);
   });
@@ -60,12 +65,12 @@ describe('boot manifest — a percentage that corresponds to real work', () => {
   it('only SCENE_VISUAL_READY publishes 100 — 99 is the cap while anything is outstanding', () => {
     const publish = createBootProgress();
     const almost = publish(
-      state({ renderer: true, groundProgress: 1, groundComposed: true, dataTasksDone: 4, liveSettled: false, regionalDone: 260 }),
+      state({ renderer: true, groundProgress: 1, groundComposed: true, dataTasksDone: 4, liveSettled: false, regionalDone: 260, deviceMeasured: true }),
     );
     expect(almost.percent).toBeLessThanOrEqual(99);
     expect(almost.ready).toBe(false);
     const done = publish(
-      state({ renderer: true, groundProgress: 1, groundComposed: true, dataTasksDone: 4, liveSettled: true, regionalDone: 260 }),
+      state({ renderer: true, groundProgress: 1, groundComposed: true, dataTasksDone: 4, liveSettled: true, regionalDone: 260, deviceMeasured: true }),
     );
     expect(done.percent).toBe(100);
     expect(done.ready).toBe(true);

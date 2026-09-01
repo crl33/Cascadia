@@ -6,12 +6,17 @@
  */
 import { shallow } from 'zustand/shallow';
 import { resolveMotion } from '../design-system/motion';
+import { readPersistedDetection } from './quality';
 import type { SceneStoreApi } from '../state/store';
 import type { SceneController } from './SceneController';
 
 export function attachScene(controller: SceneController, store: SceneStoreApi): () => void {
   const unsubscribes: (() => void)[] = [];
   const initial = store.getState();
+
+  // A detection measured on this device within the day is carried in; the veil then skips
+  // the probe (LoadingVeil.tsx) and the renderer opens on the right budget at once.
+  controller.setDetectedTier(readPersistedDetection());
 
   // Deep-link load is a cut regardless of motion preference (docs/CAMERA_SYSTEM.md §7).
   if (initial.selectedBasinId || initial.selectedForecastPointId) {

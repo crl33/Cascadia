@@ -137,16 +137,20 @@ hillshade). Implementation: `apps/web/src/scene/quality.ts` (pure: budgets, `res
 `experience` choice (persisted per browser), the `detectedTier`, and the effective
 `qualityTier` that CSS and the glass system read.
 
-Auto-detection replaces the synthetic probe scene in §3.1: after the ground composes (still
-under the loading veil) the controller switches to Cinematic's real budget and measures ≈45
-forced frames — GPU timer query where `EXT_disjoint_timer_query_webgl2` exists, CPU render
+Auto-detection replaces the synthetic probe scene in §3.1: in the boot's LAST stage
+("MEASURING THIS DEVICE", 5 % of the manifest — after the ground, the regional warm, the data
+queries and the live envelope have all settled, still under the opaque veil, so nothing contends
+for the frame) the controller switches to Cinematic's real budget and measures ≈45 forced frames — GPU timer query where `EXT_disjoint_timer_query_webgl2` exists, CPU render
 time and frame arrival everywhere; frames with tiles still uploading are not counted, and a
 clearly slow machine exits after 20. Thresholds are the perf research §6 table (GPU p50
 ≤ 5 / 9 / 16 ms; frame-delta p95 ≤ 17 / 34 ms). The runtime downgrade is a gesture-window
 monitor (p95 of rendered-frame deltas across one wheel/drag), stepping one tier after three
 consecutive misses of the tier's floor — never across an explicit choice. Cesium's
 `FrameRateMonitor` is not used: under `requestRenderMode` an idle scene renders nothing,
-which it would read as 0 fps.
+which it would read as 0 fps. A detection persists per device for 24 h (`cascadia.detectedTier`),
+so the stage is instant on later visits; measured during the regional warm instead, the same
+Intel machine classified LOW on one production boot and BALANCED on the next — the quiet stage is
+the fix, not a wider threshold.
 
 ### 3.1 Automatic detection
 

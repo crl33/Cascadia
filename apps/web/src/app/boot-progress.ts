@@ -10,13 +10,18 @@
  *                     warmer; tiles done / total — the availability guarantee behind
  *                     "no patchwork while scrolling"; near-instant on a warm cache)
  *   data      25 %  — the discrete boot queries, tasks complete / total
- *   live      15 %  — the first hydrologic envelope (optional: an error DEGRADES and
+ *   live      10 %  — the first hydrologic envelope (optional: an error DEGRADES and
  *                     completes the slice — the world says UNKNOWN elsewhere; the bar must
  *                     never sit at 94 % because one provider is down)
+ *   device     5 %  — the renderer's quality measurement (scene/render-quality.ts): ≈45
+ *                     forced frames at Cinematic's real cost, run LAST so nothing else
+ *                     contends for the frame; instant when a detection from the last day
+ *                     is persisted, or when the build pins the probe off
  *
  * 100 % ⇔ SCENE_VISUAL_READY: renderer up, ground composed (sustained-empty queue, not a
- * transient zero), all data tasks settled, live settled-or-degraded. The veil reveals only
- * at 100 % (plus a brief settle); a hard timeout elsewhere remains the honesty valve.
+ * transient zero), all data tasks settled, live settled-or-degraded, device measured. The
+ * veil reveals only at 100 % (plus a brief settle); a hard timeout elsewhere remains the
+ * honesty valve.
  *
  * Monotonicity is enforced here: the tile queue legitimately grows (progress would dip as
  * the high-water rises), so the published percentage is clamped to never decrease.
@@ -37,13 +42,16 @@ export interface BootState {
   /** Regional-map warm progress: tiles fetched / total (domain-warmer). */
   regionalDone: number;
   regionalTotal: number;
+  /** The quality probe resolved (or was skipped: persisted detection / probe pinned off). */
+  deviceMeasured: boolean;
 }
 
 const WEIGHT_RENDERER = 0.05;
 const WEIGHT_GROUND = 0.4;
 const WEIGHT_REGIONAL = 0.15;
 const WEIGHT_DATA = 0.25;
-const WEIGHT_LIVE = 0.15;
+const WEIGHT_LIVE = 0.1;
+const WEIGHT_DEVICE = 0.05;
 
 const clamp01 = (n: number): number => Math.max(0, Math.min(1, n));
 
@@ -56,9 +64,10 @@ export function bootPercent(s: BootState): number {
   const data = s.dataTasksTotal > 0 ? clamp01(s.dataTasksDone / s.dataTasksTotal) : 1;
   const live = s.liveSettled ? 1 : 0;
   const regional = s.regionalTotal > 0 ? clamp01(s.regionalDone / s.regionalTotal) : 0;
+  const device = s.deviceMeasured ? 1 : 0;
   return (
     100 *
-    (WEIGHT_RENDERER * renderer + WEIGHT_GROUND * ground + WEIGHT_REGIONAL * regional + WEIGHT_DATA * data + WEIGHT_LIVE * live)
+    (WEIGHT_RENDERER * renderer + WEIGHT_GROUND * ground + WEIGHT_REGIONAL * regional + WEIGHT_DATA * data + WEIGHT_LIVE * live + WEIGHT_DEVICE * device)
   );
 }
 
@@ -71,7 +80,8 @@ export function sceneVisualReady(s: BootState): boolean {
     s.dataTasksDone >= s.dataTasksTotal &&
     s.regionalTotal > 0 &&
     s.regionalDone >= s.regionalTotal &&
-    s.liveSettled
+    s.liveSettled &&
+    s.deviceMeasured
   );
 }
 

@@ -150,3 +150,45 @@ export function downgradeAfterWindow(
 export function parseExperienceChoice(raw: unknown): ExperienceChoice {
   return raw === 'essential' || raw === 'cinematic' ? raw : 'auto';
 }
+
+/**
+ * A measured detection is a fact about THIS device, so it is kept for a day: the probe is
+ * real boot time (≈1 s on a capable machine, up to ~3 s on a weak one) and the same machine
+ * gives the same answer. The gesture monitor still guards a regression inside the day.
+ */
+export const DETECTION_STORAGE_KEY = 'cascadia.detectedTier';
+export const DETECTION_TTL_MS = 24 * 60 * 60 * 1000;
+
+export function serializeDetection(tier: QualityTier, nowMs: number): string {
+  return JSON.stringify({ tier, at: nowMs });
+}
+
+export function parseDetection(raw: unknown, nowMs: number): QualityTier | null {
+  if (typeof raw !== 'string') return null;
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (typeof parsed !== 'object' || parsed === null) return null;
+    const { tier, at } = parsed as { tier?: unknown; at?: unknown };
+    if (typeof at !== 'number' || nowMs - at > DETECTION_TTL_MS || nowMs < at) return null;
+    return TIER_LADDER.includes(tier as QualityTier) ? (tier as QualityTier) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function readPersistedDetection(nowMs = Date.now()): QualityTier | null {
+  try {
+    return parseDetection(globalThis.localStorage?.getItem(DETECTION_STORAGE_KEY), nowMs);
+  } catch {
+    return null;
+  }
+}
+
+export function writePersistedDetection(tier: QualityTier | null, nowMs = Date.now()): void {
+  try {
+    if (tier === null) globalThis.localStorage?.removeItem(DETECTION_STORAGE_KEY);
+    else globalThis.localStorage?.setItem(DETECTION_STORAGE_KEY, serializeDetection(tier, nowMs));
+  } catch {
+    // storage refused: the next boot measures again
+  }
+}

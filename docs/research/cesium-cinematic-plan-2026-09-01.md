@@ -545,6 +545,14 @@ show the explicit-rendering dividend directly: one drawn frame in 182 at rest. S
 machine, dev server: a calibration point, not a gate — the 5-run protocol in X §7 turns it into
 one. The artefacts are in `tests/e2e/.results/perf/` (gitignored).
 
+Production check (real GPU, 2026-09-01, first deploy): the switch, persistence and native
+backing store all held on cascadia.papsukkal.com, but the probe — then triggered at
+ground-composed, while the 434-tile regional warm and the data queries were still running —
+classified the Intel LOW on one boot and BALANCED on the next. Fixed the same evening: the
+measurement is the boot's own last stage ("MEASURING THIS DEVICE", 5 % of the manifest, run
+after everything else has settled under the opaque veil) and the detection persists per
+device for a day. The probe's noise was contention, not the thresholds.
+
 Next: Phase 2 (§9) — stage-composed framing, the orthographic frustum, the van Wijk path,
 cut-versus-fly, landing-LOD prefetch, the weather crossfade, the GIBS plate — and Phase 3's
 mosaic build under ADR-0022.

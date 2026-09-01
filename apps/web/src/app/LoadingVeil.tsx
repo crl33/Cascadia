@@ -2,9 +2,16 @@
  * LoadingVeil: the cinematic cold start, now with a REAL percentage (mission §7–8).
  *
  * The number is the boot manifest's weighted aggregate (`boot-progress.ts`): renderer 5 %,
- * tile-queue drain 55 %, discrete boot queries 25 %, live envelope 15 %. Every point is
- * measured work; the module clamps it monotonic and reserves 100 for SCENE_VISUAL_READY
- * (renderer + sustained-empty tile queue + all queries settled + live settled-or-degraded).
+ * tile-queue drain 40 %, regional warm 15 %, discrete boot queries 25 %, live envelope 10 %,
+ * device measurement 5 %. Every point is measured work; the module clamps it monotonic and
+ * reserves 100 for SCENE_VISUAL_READY (renderer + sustained-empty tile queue + regional map
+ * available + all queries settled + live settled-or-degraded + device measured).
+ *
+ * The device stage runs LAST and under the opaque veil on purpose: the renderer measures
+ * itself at Cinematic's real cost (native pixels, MSAA) and nothing else may contend for
+ * the frame — measured during the regional warm it classified the same machine LOW on one
+ * boot and BALANCED on the next (production, 2026-09-01). A detection persists per device
+ * for a day, so the stage is instant on every later visit.
  *
  * Reveal: 100 % → a short settle beat → one fade. The hard timeout stays as the honesty
  * valve — a degraded world that says so beats an eternal veil — but with the bar showing
@@ -15,6 +22,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useBasins, useCameras, useFloodGeography, useLabels, useRiverNetwork, useVizBasins } from '../api/hooks';
 import { warmDomainDeep, warmDomainForBoot } from '../layers/basemap/domain-warmer';
+import { writePersistedDetection } from '../scene/quality';
 import type { SceneController } from '../scene/SceneController';
 import { createBootProgress } from './boot-progress';
 
@@ -28,6 +36,7 @@ const STAGE_TEXT = {
   regional: 'PREPARING REGIONAL MAP',
   hydrography: 'LOADING HYDROGRAPHY',
   live: 'CHECKING LIVE CONDITIONS',
+  device: 'MEASURING THIS DEVICE',
   ready: 'READY',
 } as const;
 
@@ -37,6 +46,7 @@ export function LoadingVeil({ controller }: { controller: SceneController | null
   const [ground, setGround] = useState(false);
   const [groundProgress, setGroundProgress] = useState(0);
   const [regional, setRegional] = useState<{ done: number; total: number }>({ done: 0, total: 1 });
+  const [device, setDevice] = useState<'pending' | 'measuring' | 'done'>('pending');
   const [leaving, setLeaving] = useState(false);
   const [revealed, setRevealed] = useState(false);
   const publishRef = useRef<ReturnType<typeof createBootProgress> | null>(null);
@@ -68,16 +78,41 @@ export function LoadingVeil({ controller }: { controller: SceneController | null
   }, []);
 
   const dataTasks = [basins, labels, network, cameras, flood];
+  const dataDone = dataTasks.filter(settled).length;
+  const liveSettled = settled(viz);
+  const regionalDone = regional.done >= regional.total;
+  // The quiet stage: everything else settled, veil still opaque, then measure once. A
+  // detection carried in from persistence (scene/bridge.ts) makes this a no-op.
+  const quiet = controller !== null && ground && regionalDone && dataDone === dataTasks.length && liveSettled;
+  // Starts exactly once and is never cancelled by its own state change: the first version
+  // keyed this effect on `device`, so flipping to 'measuring' re-ran the cleanup, the
+  // completion was discarded and the veil sat at 95 % until the honesty timeout.
+  const measureStarted = useRef(false);
+  useEffect(() => {
+    if (!quiet || !controller || measureStarted.current) return;
+    measureStarted.current = true;
+    if (controller.detectedTier !== null) {
+      setDevice('done');
+      return;
+    }
+    setDevice('measuring');
+    void controller.measureQuality().then((tier) => {
+      writePersistedDetection(tier);
+      setDevice('done');
+    });
+  }, [quiet, controller]);
+
   const publish = publishRef.current;
   const { percent, ready } = publish({
     renderer: controller !== null,
     groundProgress,
     groundComposed: ground,
-    dataTasksDone: dataTasks.filter(settled).length,
+    dataTasksDone: dataDone,
     dataTasksTotal: dataTasks.length,
-    liveSettled: settled(viz),
+    liveSettled,
     regionalDone: regional.done,
     regionalTotal: regional.total,
+    deviceMeasured: device === 'done',
   });
 
   useEffect(() => {
@@ -112,8 +147,9 @@ export function LoadingVeil({ controller }: { controller: SceneController | null
     controller === null ? 'earth'
     : !ground ? 'terrain'
     : regional.done < regional.total ? 'regional'
-    : dataTasks.filter(settled).length < dataTasks.length ? 'hydrography'
-    : !settled(viz) ? 'live'
+    : dataDone < dataTasks.length ? 'hydrography'
+    : !liveSettled ? 'live'
+    : device !== 'done' ? 'device'
     : 'ready';
   return (
     <div className={`loading-veil${leaving ? ' leaving' : ''}`} data-testid="loading-veil" role="status" aria-live="polite">

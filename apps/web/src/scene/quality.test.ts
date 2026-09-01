@@ -1,14 +1,17 @@
 import { describe, expect, it } from 'vitest';
 import {
+  DETECTION_TTL_MS,
   DOWNGRADE_MISSES,
   TIER_BUDGET,
   classifyProbe,
   downgradeAfterWindow,
   experienceOf,
+  parseDetection,
   parseExperienceChoice,
   percentile,
   resolutionScaleFor,
   resolveTier,
+  serializeDetection,
   stepDown,
 } from './quality';
 
@@ -135,5 +138,18 @@ describe('persisted choice parsing', () => {
     expect(parseExperienceChoice('cinematic')).toBe('cinematic');
     expect(parseExperienceChoice('ultra')).toBe('auto');
     expect(parseExperienceChoice(null)).toBe('auto');
+  });
+});
+
+describe('persisted detection', () => {
+  it('round-trips inside the TTL and expires after it; garbage is null', () => {
+    const now = 1_700_000_000_000;
+    const raw = serializeDetection('high', now);
+    expect(parseDetection(raw, now + 1000)).toBe('high');
+    expect(parseDetection(raw, now + DETECTION_TTL_MS + 1)).toBeNull();
+    expect(parseDetection(raw, now - 1)).toBeNull(); // a clock that went backwards is not trusted
+    expect(parseDetection('{"tier":"turbo","at":' + now + '}', now)).toBeNull();
+    expect(parseDetection('not json', now)).toBeNull();
+    expect(parseDetection(null, now)).toBeNull();
   });
 });
