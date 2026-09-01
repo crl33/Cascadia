@@ -6,12 +6,18 @@
 import { formatUtc } from '../panels/format';
 import { useSceneStore } from '../state/store';
 
+const localLabel = (iso: string): string =>
+  new Date(iso).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+
 export function ReplayBanner() {
   const timeline = useSceneStore((s) => s.timeline);
   if (timeline.mode !== 'past' || timeline.asOf === null) return null;
+  // ONE temporal statement (mission §21): local time here, exact UTC on hover; the
+  // timeline chip below stays a bare AS OF so the moment is never printed twice.
   return (
-    <div className="replay-banner" role="status" data-testid="as-of-banner">
-      <strong>AS OF <span className="mono">{formatUtc(timeline.asOf)}</span></strong> — replay: showing what was known then; nothing learned later is shown.
+    <div className="replay-banner glass-surface glass-compact shape-capsule" role="status" data-testid="as-of-banner">
+      <strong>AS OF <span className="mono" title={formatUtc(timeline.asOf)}>{localLabel(timeline.asOf)}</span></strong>
+      {' '}— showing what was known then; nothing learned later is shown.
     </div>
   );
 }

@@ -104,7 +104,7 @@ test('scrubbing the event clock changes the selected forecast run with zero look
   // not a feed that has fallen behind: it wears ARCHIVED, and its age names today as the clock it
   // is measured from. A bare "STALE · age N d" here reads as the value's age at the event time —
   // a quantity the system never computes.
-  await expect(crestLine).toContainText('ARCHIVED');
+  await expect(crestLine).toContainText('Archived');
   await expect(crestLine).toContainText('before today');
   await expect(crestLine).not.toContainText('STALE');
 });

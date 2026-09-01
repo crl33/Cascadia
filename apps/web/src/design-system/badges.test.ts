@@ -12,8 +12,8 @@ describe('badge mapping', () => {
     expect(Object.keys(SOURCE_KIND_BADGE).sort()).toEqual([...SourceKindSchema.options].sort());
   });
   it('prints the doctrine words', () => {
-    expect(badgeForSourceKind('OBSERVED').label).toBe('OBSERVED');
-    expect(badgeForSourceKind('OFFICIAL_FORECAST').label).toBe('OFFICIAL FORECAST');
+    expect(badgeForSourceKind('OBSERVED').label).toBe('Observed');
+    expect(badgeForSourceKind('OFFICIAL_FORECAST').label).toBe('Official forecast');
     expect(badgeForSourceKind('UNKNOWN').tone).toBe('neutral');
   });
   it('never gives red to anything but moderate/major categories', () => {

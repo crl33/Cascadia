@@ -1,0 +1,98 @@
+/* ============================================================================
+ * THE GLASS SURFACE SYSTEM (UX reconstruction 2026-08-31, mission §13–15).
+ *
+ * One material, five densities, five silhouettes. EVERY floating surface in the
+ * app composes from these classes — no component invents its own background,
+ * border, blur, radius or shadow again (the camera card missing the material is
+ * the defect that forced this system).
+ *
+ *   material:  .glass-surface  + one of .glass-chrome/.glass-panel/.glass-sheet/
+ *              .glass-popover/.glass-compact   (background alpha per density)
+ *   shape:     .shape-capsule/.shape-control/.shape-card/.shape-sheet/.shape-panel
+ *              (Apple-continuous corners on Chromium via corner-shape; plain radius
+ *              elsewhere — the ONLY two techniques that keep backdrop-filter,
+ *              hairline, highlight and shadow on one coherent silhouette)
+ *   rim:       ::after specular ring (mask-composite cut; measured from macOS —
+ *              bright horizontal hairlines, dark flanks). All browsers, ~free.
+ *   refraction: [data-glass-refract] surfaces get edge-band backdrop displacement
+ *              (design-system/refraction.ts, Chromium + ULTRA/HIGH tiers only).
+ *              When the attribute is absent this file renders EXACTLY the frosted
+ *              fallback — that IS the LOW tier and the Safari/Firefox path.
+ * ==========================================================================*/
+
+:root {
+  /* base radius = what Safari/Firefox render; the squircle upgrade multiplies
+     ~1.75x so perceived corner weight matches the continuous curve */
+  --shape-control-r: 10px; --shape-control-R: 18px;
+  --shape-card-r: 14px;    --shape-card-R: 25px;
+  --shape-sheet-r: 18px;   --shape-sheet-R: 32px;
+  --shape-panel-r: 20px;   --shape-panel-R: 36px;
+
+  --glass-rim-lit: hsl(206 80% 92% / 0.25);
+  --glass-rim-dark: hsl(224 60% 3% / 0.28);
+  --glass-rim-fade: 12px;
+  --glass-rim-side: 5px;
+}
+
+/* ---------- material ----------
+ * No `position` here: many surfaces are absolutely positioned by their own layout rules,
+ * and a material class must never fight them (it silently relocated the timeline once).
+ * In-flow surfaces declare their own position: relative for the rim ::after. */
+.glass-surface {
+  border: 1px solid var(--glass-hairline);
+  box-shadow: var(--glass-shadow);
+  /* identical prefixed/unprefixed values — lightningcss treats them as a pair */
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+}
+.glass-chrome { background: var(--glass-chrome); }
+.glass-panel { background: var(--glass-panel); }
+.glass-sheet { background: var(--glass-sheet); }
+.glass-popover { background: var(--glass-popover); }
+.glass-compact { background: var(--glass-compact); }
+
+/* ---------- specular rim (replaces the old flat inset highlight) ---------- */
+.glass-surface::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  corner-shape: inherit;
+  padding: 1px;
+  pointer-events: none;
+  background:
+    linear-gradient(to right, var(--glass-rim-dark) 0, transparent var(--glass-rim-side),
+      transparent calc(100% - var(--glass-rim-side)), var(--glass-rim-dark) 100%),
+    linear-gradient(to bottom, var(--glass-rim-lit) 0, var(--glass-rim-lit) 1px,
+      transparent var(--glass-rim-fade), transparent calc(100% - var(--glass-rim-fade)),
+      var(--glass-rim-lit) calc(100% - 1px), var(--glass-rim-lit) 100%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+}
+[data-quality='low'] .glass-surface::after { content: none; }
+
+/* ---------- silhouettes ---------- */
+.shape-capsule { border-radius: 999px; } /* a pill IS a circle-ended shape — never squircled */
+.shape-control { border-radius: var(--shape-control-r); }
+.shape-card { border-radius: var(--shape-card-r); }
+.shape-sheet { border-radius: var(--shape-sheet-r); }
+.shape-panel { border-radius: var(--shape-panel-r); }
+
+@supports (corner-shape: squircle) {
+  .shape-control { border-radius: var(--shape-control-R); corner-shape: squircle; }
+  .shape-card { border-radius: var(--shape-card-R); corner-shape: squircle; }
+  .shape-sheet { border-radius: var(--shape-sheet-R); corner-shape: squircle; }
+  /* large panels: a slightly gentler curve reads better at size */
+  .shape-panel { border-radius: var(--shape-panel-R); corner-shape: superellipse(1.8); }
+}
+
+/* ---------- edge refraction contract (set by refraction.ts, Chromium only) ----------
+ * The engine supplies --glass-refract: url(#…) and the data attribute per surface.
+ * Interior blur drops when refracting (the lens supplies the material read); the map's
+ * neutral center keeps text over undistorted, tinted world. Absent attribute = frosted. */
+[data-glass-refract] {
+  -webkit-backdrop-filter: var(--glass-refract) blur(var(--glass-refract-blur, 7px)) saturate(var(--glass-saturate));
+  backdrop-filter: var(--glass-refract) blur(var(--glass-refract-blur, 7px)) saturate(var(--glass-saturate));
+}

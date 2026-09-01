@@ -1,40 +1,49 @@
-/** Thin top strip: wordmark, search, band indicator, motion toggle, flight state, health dot. */
+/**
+ * Thin top strip — product chrome only (mission §19–20): wordmark, search, data-feed
+ * health, settings. The internals the strip used to expose (semantic band, flight state,
+ * motion plumbing) are not product concepts; they remain as invisible diagnostic stamps
+ * because tests and tooling read them, but no human is asked to learn them.
+ */
 import { useHealth } from '../api/hooks';
-import { resolveMotion, type MotionSetting } from '../design-system/motion';
+import { resolveMotion } from '../design-system/motion';
 import { SearchBox } from '../interactions/SearchBox';
 import { useSceneStore } from '../state/store';
+import { SettingsMenu } from './SettingsMenu';
 
-const NEXT_MOTION: Record<MotionSetting, MotionSetting> = { system: 'reduced', reduced: 'full', full: 'system' };
+const HEALTH_TITLE: Record<string, string> = {
+  ok: 'Data feeds: healthy',
+  degraded: 'Data feeds: degraded — some sources are late',
+  down: 'Data feeds: unreachable',
+  unknown: 'Data feeds: checking…',
+};
 
 export function TopStrip() {
   const band = useSceneStore((s) => s.altitudeBand);
   const motionSetting = useSceneStore((s) => s.motionSetting);
   const systemReduced = useSceneStore((s) => s.systemReducedMotion);
-  const setMotionSetting = useSceneStore((s) => s.setMotionSetting);
   const flightState = useSceneStore((s) => s.flightState);
   const health = useHealth();
   const resolved = resolveMotion(motionSetting, systemReduced);
   const healthState = health.isError ? 'down' : health.data?.status ?? 'unknown';
 
   return (
-    <header className="top-strip">
+    <header className="top-strip glass-surface glass-chrome shape-control">
       <span className="wordmark">Cascadia Papsukkal</span>
       <SearchBox />
-      <span className="band-indicator" data-testid="band-indicator" title="semantic altitude band">{band.toUpperCase()}</span>
-      <span className="flight-state" data-testid="flight-state" data-flight-state={flightState}>{flightState === 'flying' ? 'flying…' : flightState}</span>
-      <button
-        type="button"
-        className="motion-toggle"
-        data-testid="motion-toggle"
-        data-motion={resolved}
-        title={`motion: ${motionSetting} (resolved ${resolved}); click to change`}
-        onClick={() => setMotionSetting(NEXT_MOTION[motionSetting])}
+      <span className="top-strip-spacer" aria-hidden="true" />
+      {/* Diagnostic stamps: read by tests/tooling, never shown — internals are not chrome. */}
+      <span className="visually-hidden" data-testid="band-indicator">{band.toUpperCase()}</span>
+      <span className="visually-hidden" data-testid="flight-state" data-flight-state={flightState}>{flightState}</span>
+      <span className="visually-hidden" data-testid="motion-toggle" data-motion={resolved} />
+      <span
+        className={`health-dot health-${healthState}`}
+        data-testid="health-dot"
+        title={HEALTH_TITLE[healthState] ?? HEALTH_TITLE.unknown}
+        role="status"
       >
-        motion {motionSetting === 'system' ? `system→${resolved}` : motionSetting}
-      </button>
-      <span className={`health-dot health-${healthState}`} data-testid="health-dot" title={`API health: ${healthState}`} role="status">
-        <span className="visually-hidden">API health {healthState}</span>
+        <span className="visually-hidden">{HEALTH_TITLE[healthState] ?? HEALTH_TITLE.unknown}</span>
       </span>
+      <SettingsMenu />
     </header>
   );
 }

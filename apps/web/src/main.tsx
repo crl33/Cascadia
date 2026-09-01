@@ -9,6 +9,7 @@ import { eventById, eventBootTimeline } from './event/registry';
 import { useSceneStore } from './state/store';
 import { anchorForBoot, truncateToMinute, windowEndingAt } from './timeline/window';
 import './design-system/tokens.css';
+import './design-system/surface.css';
 import './app/app.css';
 
 const link = parseDeepLink(window.location.search);

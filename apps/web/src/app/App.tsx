@@ -11,6 +11,7 @@ import { ForecastEvolution } from '../event/ForecastEvolution';
 import { BasinPanel } from '../panels/BasinPanel';
 import { RiverPanel } from '../panels/RiverPanel';
 import { resolveMotion } from '../design-system/motion';
+import { setRefractionQuality } from '../design-system/refraction';
 import { resolveBasemap } from '../layers/basemap/BasemapProvider';
 import { useSceneStore } from '../state/store';
 import { FieldLegend } from './FieldLegend';
@@ -21,8 +22,15 @@ export const DISCLAIMER = 'Not an official alert authority; official forecasts a
 
 export function App() {
   const motion = useSceneStore((s) => resolveMotion(s.motionSetting, s.systemReducedMotion));
+  const qualityTier = useSceneStore((s) => s.qualityTier);
   const [timelineController] = useState(() => new TimelineController(useSceneStore, queryClient));
   useEffect(() => () => timelineController.dispose(), [timelineController]);
+  // Quality tier fans out once, at the root: CSS reads <html data-quality>; the refraction
+  // module re-tunes or strips its Chromium enhancement (mission §31).
+  useEffect(() => {
+    document.documentElement.dataset.quality = qualityTier;
+    setRefractionQuality(qualityTier);
+  }, [qualityTier]);
   return (
     <div className="app" data-motion={motion}>
       <SceneView />
@@ -36,7 +44,7 @@ export function App() {
       </aside>
       <ErrorBoundary name="Field legend"><FieldLegend /></ErrorBoundary>
       <ErrorBoundary name="Timeline"><TimelineBar controller={timelineController} /></ErrorBoundary>
-      <footer className="disclaimer" data-testid="disclaimer">
+      <footer className="disclaimer glass-surface glass-compact shape-control" data-testid="disclaimer">
         <span>{DISCLAIMER}.</span>
         <span className="muted"> Imagery: {resolveBasemap().attribution}. Terrain: USGS 3DEP.</span>
       </footer>

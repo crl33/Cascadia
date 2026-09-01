@@ -162,7 +162,7 @@ export function SearchBox() {
       />
       {nav.query === '' ? <kbd className="search-kbd" aria-hidden="true">/</kbd> : null}
       {nav.open ? (
-        <div className="search-results" data-testid="search-results">
+        <div className="search-results glass-surface glass-popover shape-card" data-testid="search-results">
           {status ? <div className={`search-status ${status.tone}`} role="status">{status.text}</div> : null}
           <ul role="listbox" id={listId} aria-label="Search results">
             {groups.map((group) => (

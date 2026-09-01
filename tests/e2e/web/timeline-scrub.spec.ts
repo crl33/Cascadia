@@ -102,6 +102,7 @@ test('a deep link carrying as_of boots directly into replay with an as_of-keyed 
   const banner = page.getByTestId('as-of-banner');
   await expect(banner).toBeVisible();
   await expect(banner).toContainText('AS OF');
-  await expect(banner).toContainText('2026-08-22'); // the knowledge time itself is shown
+  // The banner speaks local time; the exact UTC instant rides the hover title (§21).
+  await expect(banner.locator('[title]')).toHaveAttribute('title', /2026-08-22 06:00 UTC/);
   await expect(page).toHaveURL(/[?&]as_of=/);
 });

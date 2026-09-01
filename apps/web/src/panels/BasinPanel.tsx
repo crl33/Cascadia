@@ -57,24 +57,26 @@ export function BasinPanel() {
   const rivers = useVizRivers(selectedBasinId);
 
   if (!selectedBasinId) return null;
-  if (query.isPending) return <section className="panel" data-testid="basin-panel"><p className="muted">Loading basin state…</p></section>;
-  if (query.isError) return <section className="panel" data-testid="basin-panel"><p className="error">Basin state unavailable: {query.error.message}</p></section>;
+  if (query.isPending) return <section className="panel glass-surface glass-panel shape-panel" data-testid="basin-panel"><p className="muted">Loading basin state…</p></section>;
+  if (query.isError) return <section className="panel glass-surface glass-panel shape-panel" data-testid="basin-panel"><p className="error">Basin state unavailable: {query.error.message}</p></section>;
 
   const item: BasinVisualizationState | undefined = query.data.items[0];
   const outlet = rivers.data?.items.find((r) => r.id === item?.outlet_forecast_point_id) ?? null;
   const refs = query.data.provenance_refs;
-  if (!item) return <section className="panel" data-testid="basin-panel"><p className="muted">No basin item in the document.</p></section>;
+  if (!item) return <section className="panel glass-surface glass-panel shape-panel" data-testid="basin-panel"><p className="muted">No basin item in the document.</p></section>;
 
   const { susceptibility, forcing, hazard, agreement } = item.surfaces;
   const hazardProv = hazard.official_prov ?? hazard.prov;
   const drivers = item.headline_drivers ?? [];
 
   return (
-    <section className="panel" data-testid="basin-panel" aria-label="Basin panel">
+    <section className="panel glass-surface glass-panel shape-panel" data-testid="basin-panel" aria-label="Basin panel">
       <header className="panel-header">
-        <span className="eyebrow">BASIN · {item.id}</span>
+        {/* Internal ids and validity plumbing are inspector material, not headline chrome
+            (mission §17): the id rides the title attribute; regulation and the document's
+            valid time live in the Context fold below. */}
+        <span className="eyebrow" title={item.id}>BASIN</span>
         <h2 data-testid="basin-panel-name">{item.name}</h2>
-        <p className="muted">regulation: <span className="mono">{words(item.regulation_class)}</span> · valid {formatUtc(query.data.time.valid)} ({query.data.time.mode})</p>
       </header>
 
       <BasinSummary item={item} refs={refs} />
@@ -184,12 +186,14 @@ export function BasinPanel() {
       </Disclosure>
 
       <Disclosure id="context" label="Context">
+        <p className="reason" data-testid="basin-context-meta">
+          Regulation: {words(item.regulation_class)} · document valid {formatUtc(query.data.time.valid)} ({query.data.time.mode})
+          {item.outlet_forecast_point_id ? <> · outlet <span className="mono">{item.outlet_forecast_point_id}</span></> : null}
+        </p>
         <AntecedentSection entries={item.antecedent_precip ?? []} refs={refs} />
         <ReservoirsSection basinId={item.id} />
         <FloodMappingNote basinId={item.id} />
       </Disclosure>
-
-      {item.outlet_forecast_point_id ? <p className="muted">outlet forecast point: <span className="mono">{item.outlet_forecast_point_id}</span></p> : null}
     </section>
   );
 }

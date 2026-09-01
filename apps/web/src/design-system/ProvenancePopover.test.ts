@@ -64,7 +64,7 @@ describe('ProvenancePopover rendering', () => {
       }),
     );
     expect(html).toContain('data-testid="layer-inspector"');
-    expect(html).toContain('OFFICIAL FORECAST');
+    expect(html).toContain('Official forecast');
     for (const field of toProvenanceFields(FULL_REF, 'authoritative_model')) {
       expect(html).toContain(field.key);
       expect(html.replace(/&#x27;|&quot;/g, '')).toContain(field.value.replace(/'/g, ''));
@@ -74,7 +74,7 @@ describe('ProvenancePopover rendering', () => {
     const html = renderToStaticMarkup(
       createElement(ProvenancePopover, { provKey: 'k', prov: FULL_REF, truth: null }),
     );
-    expect(html).toContain('OFFICIAL FORECAST');
+    expect(html).toContain('Official forecast');
     expect(html).not.toContain('layer-inspector');
   });
   it('a missing ref renders the UNKNOWN badge and an incomplete-document explanation', () => {

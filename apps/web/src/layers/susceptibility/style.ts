@@ -54,7 +54,7 @@ export interface SusceptibilityFill {
   /** Outline-only, no saturated fill — the UNKNOWN treatment. */
   outlineOnly: boolean;
   /** Printed on the label. Never null while `experimental` is true. */
-  badge: 'EXPERIMENTAL' | null;
+  badge: 'Cascadia assessment' | null;
   labelText: string;
 }
 
@@ -102,7 +102,7 @@ const CONFIDENCE_ALPHA: Record<ConfidenceLabel, number> = {
 };
 
 export function susceptibilityFill(s: SusceptibilitySemantic): SusceptibilityFill {
-  const badge = s.experimental ? ('EXPERIMENTAL' as const) : null;
+  const badge = s.experimental ? ('Cascadia assessment' as const) : null;
   const suffix = s.experimental ? ' · EXPERIMENTAL index, not a probability' : '';
 
   // Only the overview bands carry a basin-wide wash. Closer in, the basin fill would sit under

@@ -50,19 +50,19 @@ test('search Skagit → basin selected → BasinPanel shows Skagit with an OFFIC
   await first.click();
 
   await expect(page.getByTestId('basin-panel-name')).toHaveText('Skagit');
-  await expect(page.getByTestId('surface-hazard-badge')).toContainText('OFFICIAL FORECAST');
+  await expect(page.getByTestId('surface-hazard-badge')).toContainText('Official forecast');
   // The stub serves a REAL production capture (2026-08-28) since the pre-P3 envelope was
   // The compact summary answers first (progressive disclosure, 2026-08-28)...
-  await expect(page.getByTestId('summary-susceptibility')).toContainText('LOW SUSCEPTIBILITY');
-  await expect(page.getByTestId('summary-forcing')).toContainText('LOW');
+  await expect(page.getByTestId('summary-susceptibility')).toContainText('Low flood susceptibility');
+  await expect(page.getByTestId('summary-forcing')).toContainText('Little rain expected');
   // ...and the forensic layer is one fold deeper, intact.
   await page.getByTestId('disclosure-why').locator('summary.disclosure-summary').click();
   await page.getByTestId('disclosure-forecasts').locator('summary.disclosure-summary').click();
   await page.getByTestId('disclosure-context').locator('summary.disclosure-summary').click();
   await expect(page.getByTestId('surface-susceptibility-state')).toHaveText('LOW');
   await expect(page.getByTestId('surface-forcing-state')).toHaveText('LOW');
-  await expect(page.getByTestId('surface-susceptibility-badge')).toContainText('EXPERIMENTAL');
-  await expect(page.getByTestId('hazard-category')).toContainText('NONE');
+  await expect(page.getByTestId('surface-susceptibility-badge')).toContainText('Cascadia assessment');
+  await expect(page.getByTestId('hazard-category')).toContainText('None');
   // 1.4.0: observed antecedent windows, with the underestimate caveat ON the partial one and
   // the window's observed end printed. Capture-pinned (2026-08-28 09:3xZ: 8 ingested hours —
   // the 6 h window is FULL and carries no caveat; the 72 h window declares its 64 missing).
@@ -70,7 +70,7 @@ test('search Skagit → basin selected → BasinPanel shows Skagit with an OFFIC
   await expect(page.getByTestId('antecedent-6h')).toContainText('(6/6 hours)');
   await expect(page.getByTestId('antecedent-72h-reason')).toContainText('64 of 72 hours missing');
   await expect(page.getByTestId('antecedent-window-end')).toContainText('UTC');
-  await expect(page.getByTestId('antecedent-badge')).toContainText('OBSERVED');
+  await expect(page.getByTestId('antecedent-badge')).toContainText('Observed');
   await expect(page).toHaveURL(/sel=basin%3Askagit/);
 
   if (renderer === 'ready') {
@@ -88,15 +88,15 @@ test('deep link ?basin=basin:skagit&fp=MVEW1&motion=reduced → RiverPanel shows
   await expect(page.getByTestId('river-panel-name')).toHaveText('Skagit River near Mount Vernon');
   await expect(page.getByTestId('observed-stage')).toHaveText(observedStage);
   await expect(page.getByTestId('observed-flow')).toHaveText(observedFlow);
-  await expect(page.getByTestId('observed-badge')).toContainText('OBSERVED');
+  await expect(page.getByTestId('observed-badge')).toContainText('Observed');
   await expect(page.getByTestId('observed')).toContainText('provisional');
   await expect(page.getByTestId('threshold-action')).toHaveText('23.5');
   await expect(page.getByTestId('thresholds')).toContainText('NGVD29');
-  await expect(page.getByTestId('thresholds-badge')).toContainText('OFFICIAL FORECAST');
+  await expect(page.getByTestId('thresholds-badge')).toContainText('Official forecast');
   await expect(page.getByTestId('forecast-crest')).toHaveText(forecastCrest);
-  await expect(page.getByTestId('forecast-badge')).toContainText('OFFICIAL FORECAST');
-  await expect(page.getByTestId('trend-badge')).toContainText('DERIVED');
-  await expect(page.getByTestId('headroom-badge')).toContainText('DERIVED');
+  await expect(page.getByTestId('forecast-badge')).toContainText('Official forecast');
+  await expect(page.getByTestId('trend-badge')).toContainText('Derived');
+  await expect(page.getByTestId('headroom-badge')).toContainText('Derived');
   await expect(page.getByTestId('basin-panel-name')).toHaveText('Skagit');
   await expect(page).toHaveURL(/sel=fp%3Anwps%3AMVEW1&basin=basin%3Askagit&motion=reduced/);
 

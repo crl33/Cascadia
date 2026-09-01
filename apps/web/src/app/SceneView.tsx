@@ -53,7 +53,7 @@ export function SceneView() {
         </div>
       ) : null}
       {degraded ? (
-        <div className="scene-degraded" role="status" data-testid="scene-degraded">
+        <div className="scene-degraded glass-surface glass-popover shape-card" role="status" data-testid="scene-degraded">
           <strong>Renderer degraded</strong> — rendering stopped: <span className="mono">{degraded}</span>. Panels and provenance remain authoritative.
         </div>
       ) : null}

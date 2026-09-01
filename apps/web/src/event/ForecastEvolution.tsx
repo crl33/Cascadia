@@ -72,7 +72,7 @@ export function ForecastEvolution() {
   };
 
   return (
-    <section className="panel" data-testid="forecast-evolution" aria-label="Forecast evolution">
+    <section className="panel glass-surface glass-panel shape-panel" data-testid="forecast-evolution" aria-label="Forecast evolution">
       <header className="panel-header">
         <span className="eyebrow">FORECAST EVOLUTION · {event.label}</span>
         <h2>Runs vs observed crest</h2>

@@ -14,10 +14,11 @@
  * never claims a capture time the provider did not state. Tier reasons are visible on
  * demand. No face/person/plate processing exists anywhere in this system.
  */
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { API_BASE } from '../api/client';
 import { useCameras, useVizBasins } from '../api/hooks';
 import type { CameraRecord } from '../contracts/schemas';
+import { ignoreCanvas, useDismiss } from '../design-system/dismiss';
 import type { SceneController } from '../scene/SceneController';
 import { useSceneStore } from '../state/store';
 import { cameraAttentionByBasin } from '../layers/cameras/attention';
@@ -47,6 +48,12 @@ function PreviewCard({ controller, cam, pinned, expanded, attention }: {
   const src = useMemo(() => frameSrc(cam, nowMs, API_BASE), [cam, nowMs]);
   const failed = failedSrc === src;
 
+  // Dismissal §12: outside pointer or Escape closes a pinned card. Canvas clicks are
+  // excluded — the pick pipeline owns them (marker toggles/replaces, empty map closes
+  // via SceneController.onEmptyClick), so the two owners never race.
+  const unpin = useCallback(() => pinCamera(null), [pinCamera]);
+  useDismiss(cardRef, unpin, { enabled: pinned, ignore: ignoreCanvas });
+
   useEffect(() => {
     const node = cardRef.current;
     if (!node) return;
@@ -63,7 +70,7 @@ function PreviewCard({ controller, cam, pinned, expanded, attention }: {
   return (
     <div ref={cardRef} className={`camera-card${expanded ? ' expanded' : ''}`} data-testid={`camera-card-${cam.id}`}>
       <div className="camera-card-anchor" aria-hidden="true" />
-      <div className="camera-card-body">
+      <div className="camera-card-body glass-surface glass-popover shape-card">
         <header className="camera-card-header">
           <span className="camera-card-name">{cam.name}</span>
           <button
@@ -100,7 +107,7 @@ function PreviewCard({ controller, cam, pinned, expanded, attention }: {
             {cam.orientation ? ` · facing ${cam.orientation.cardinal}` : ' · orientation unknown'}
           </span>
           <details className="camera-card-reasons">
-            <summary>tier {cam.tier} — why</summary>
+            <summary>Why this camera?</summary>
             <ul>
               {cam.reasons.map((reason) => (
                 <li key={reason}>{reason.replaceAll('_', ' ')}</li>

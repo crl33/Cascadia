@@ -1,12 +1,15 @@
 /**
- * TimelineBar: the bottom scrub bar for replay time. In live/past mode dragging replays the
- * past 72 h of KNOWLEDGE time through the TimelineController (one store commit per frame;
- * superseded requests aborted); in event mode the same slider scrubs the archived EVENT
- * window in EVENT time (valid/issued time — no as_of anywhere; see event/registry). The chip
- * states the mode (NOW live / AS OF <time> past / EVENT REPLAY); NOW returns to live from
- * either replay. The readout prints the position in UTC and local time. No value is ever
- * animated — time is data, and the replayed freshness on every badge comes from the server
- * document, never from client-now math.
+ * TimelineBar: ONE temporal mental model (mission §21). The user sees local time, once.
+ *
+ *   LIVE     `LIVE` chip · slider at the right edge · "Aug 31 · 4:58 PM"
+ *   PAST     `AS OF` chip · slider in the window · "Aug 30 · 1:35 PM · 27 h ago" — the
+ *            top banner explains replay semantics; this bar never repeats the timestamp
+ *   EVENT    archived replay — edges become ABSOLUTE dates (an event window is not
+ *            relative to now), chip names the event
+ *
+ * Edge labels are relative (−72 h ↔ now) in live/past, absolute UTC only in event mode.
+ * Full UTC stays available on hover/aria (technical register), never as chrome text.
+ * No value is ever animated — time is data.
  */
 import type { ChangeEvent } from 'react';
 import { eventById } from '../event/registry';
@@ -19,7 +22,12 @@ import './timeline.css';
 interface TimelineBarProps { controller: TimelineController }
 
 const localLabel = (ms: number): string =>
-  new Date(ms).toLocaleString(undefined, { month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+  new Date(ms).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+
+const agoLabel = (ms: number, nowMs: number): string => {
+  const hours = Math.round((nowMs - ms) / 3_600_000);
+  return hours <= 0 ? 'now' : `${hours} h ago`;
+};
 
 export function TimelineBar({ controller }: TimelineBarProps) {
   const timeline = useSceneStore((s) => s.timeline);
@@ -33,18 +41,20 @@ export function TimelineBar({ controller }: TimelineBarProps) {
     if (timeline.mode === 'event') controller.scrubEvent(iso);
     else controller.scrub(iso);
   };
-  const chip = timeline.mode === 'now'
-    ? 'NOW · live'
-    : timeline.mode === 'past'
-      ? `AS OF ${formatUtc(timeline.asOf)} · past`
-      : `EVENT REPLAY · ${event?.chipLabel ?? timeline.eventId}`;
+
+  const chip = timeline.mode === 'now' ? 'LIVE' : timeline.mode === 'past' ? 'AS OF' : `EVENT REPLAY · ${event?.chipLabel ?? timeline.eventId}`;
+  const eventMode = timeline.mode === 'event';
+  const readout =
+    timeline.mode === 'past' ? `${localLabel(positionMs)} · ${agoLabel(positionMs, endMs)}` : localLabel(positionMs);
 
   return (
-    <div className="timeline-bar" data-testid="timeline" data-mode={timeline.mode} role="group" aria-label="Timeline">
+    <div className="timeline-bar glass-surface glass-chrome shape-capsule" data-testid="timeline" data-mode={timeline.mode} role="group" aria-label="Timeline">
       <span className={`timeline-chip mono timeline-chip-${timeline.mode}`} data-testid="timeline-mode-chip">
         {chip}
       </span>
-      <span className="timeline-edge mono" data-testid="timeline-window-start">{formatUtc(timeline.window[0])}</span>
+      <span className="timeline-edge mono" data-testid="timeline-window-start" title={formatUtc(timeline.window[0])}>
+        {eventMode ? formatUtc(timeline.window[0]) : '−72 h'}
+      </span>
       <input
         type="range"
         className="timeline-scrubber"
@@ -53,24 +63,27 @@ export function TimelineBar({ controller }: TimelineBarProps) {
         max={endMs}
         step={SCRUB_STEP_MS}
         value={positionMs}
-        aria-label={timeline.mode === 'event' ? 'Event time (scrub the archived event window)' : 'Knowledge time (scrub the past 72 hours)'}
+        aria-label={eventMode ? 'Event time (scrub the archived event window)' : 'Knowledge time (scrub the past 72 hours)'}
         aria-valuetext={`${formatUtc(positionIso)} (${localLabel(positionMs)} local)`}
         onChange={onScrub}
       />
-      <span className="timeline-edge mono" data-testid="timeline-window-end">{formatUtc(timeline.window[1])}</span>
-      <span className="timeline-readout mono" data-testid="timeline-readout">
-        {formatUtc(positionIso)} · {localLabel(positionMs)} local
+      <span className="timeline-edge mono" data-testid="timeline-window-end" title={formatUtc(timeline.window[1])}>
+        {eventMode ? formatUtc(timeline.window[1]) : 'now'}
       </span>
-      <button
-        type="button"
-        className="timeline-now link-button"
-        data-testid="snap-to-now"
-        onClick={() => controller.snapToNow()}
-        disabled={timeline.mode === 'now'}
-        title={timeline.mode === 'event' ? 'Exit event replay to live NOW' : 'Return to live NOW'}
-      >
-        NOW
-      </button>
+      <span className="timeline-readout mono" data-testid="timeline-readout" title={formatUtc(positionIso)}>
+        {readout}
+      </span>
+      {timeline.mode === 'now' ? null : (
+        <button
+          type="button"
+          className="timeline-now link-button"
+          data-testid="snap-to-now"
+          onClick={() => controller.snapToNow()}
+          title={eventMode ? 'Exit event replay to live' : 'Return to live'}
+        >
+          NOW
+        </button>
+      )}
     </div>
   );
 }

@@ -16,17 +16,13 @@ body { background: var(--canvas); color: var(--text-primary); font-family: var(-
 .scene-credits a:hover, .scene-credits a:focus-visible { color: var(--text-primary); text-decoration: underline; }
 .scene-veil { position: absolute; inset: 0; background: var(--canvas); opacity: 0; pointer-events: none; transition: opacity 140ms var(--ease-calm); z-index: 2; }
 .scene-veil.is-on { opacity: 1; }
-.scene-degraded { position: absolute; left: 12px; bottom: 104px; z-index: 3; max-width: 520px; padding: 8px 12px; background: var(--glass-popover); border: 1px solid var(--amber-elevated); border-radius: 8px; font-size: 12px; backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)); -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)); }
+.scene-degraded { position: absolute; left: 12px; bottom: 104px; z-index: 3; max-width: 520px; padding: 8px 12px; border-color: var(--amber-elevated); font-size: 12px; }
 .scene-fallback { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; padding: 24px; background: var(--canvas-2); }
 
 .top-strip {
-  /* Compacted 2026-08-28: chrome earns its pixels — same content, less viewport. */
+  /* Material and silhouette come from the glass system (surface.css); only layout here. */
   position: absolute; top: 8px; left: 8px; right: 8px; z-index: 5;
   display: flex; align-items: center; gap: 10px; padding: 5px 10px;
-  background: var(--glass-chrome); border: 1px solid var(--glass-hairline); border-radius: var(--radius);
-  box-shadow: var(--glass-shadow), var(--glass-highlight);
-  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
 }
 .wordmark { font-weight: 600; letter-spacing: 0.04em; white-space: nowrap; }
 .search { position: relative; flex: 1; max-width: 420px; }
@@ -36,10 +32,6 @@ body { background: var(--canvas); color: var(--text-primary); font-family: var(-
 .search-kbd { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); padding: 0 6px; font-family: var(--font-mono); font-size: 11px; line-height: 1.6; color: var(--text-muted); border: 1px solid var(--stroke); border-radius: 4px; pointer-events: none; }
 .search-results {
   position: absolute; top: calc(100% + 6px); left: 0; right: 0; padding: 4px; max-height: 340px; overflow: auto;
-  background: var(--glass-popover); border: 1px solid var(--glass-hairline); border-radius: 8px;
-  box-shadow: var(--glass-shadow), var(--glass-highlight);
-  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
 }
 .search-results ul { margin: 0; padding: 0; list-style: none; }
 .search-status { padding: 6px 10px; font-size: 12px; }
@@ -58,14 +50,13 @@ body { background: var(--canvas); color: var(--text-primary); font-family: var(-
 
 .panels { position: absolute; top: 64px; right: 12px; bottom: 96px; width: min(420px, 40vw); z-index: 4; display: flex; flex-direction: column; gap: 10px; overflow: auto; pointer-events: none; }
 .panel {
+  position: relative; /* anchors the glass rim ::after (in-flow surface) */
   pointer-events: auto; padding: 14px 16px;
-  background: var(--glass-panel); border: 1px solid var(--glass-hairline); border-radius: var(--radius);
-  box-shadow: var(--glass-shadow), var(--glass-highlight);
-  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  /* opacity-only entrance: a transform here would make the panel a backdrop root
+     and silently kill the glass blur while animating (filter-effects-2) */
   animation: panel-in var(--dur-panel) var(--ease-standard);
 }
-@keyframes panel-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+@keyframes panel-in { from { opacity: 0; } to { opacity: 1; } }
 .panel-header h2 { margin: 2px 0 4px; font-size: 18px; font-weight: 600; }
 .panel-header p { margin: 0 0 8px; }
 .eyebrow { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.1em; color: var(--text-muted); }
@@ -118,24 +109,18 @@ body { background: var(--canvas); color: var(--text-primary); font-family: var(-
 .inspector-row dd { margin: 0; word-break: break-word; }
 
 /* The footer speaks quietly but its words are mandatory: the not-an-alert-authority line and
-   the imagery/terrain attribution NEVER hide (mission §17) — calm comes from the compact
-   glass and muted ink, not from omission. */
+   the imagery/terrain attribution NEVER hide — calm comes from the compact glass and muted
+   ink, not from omission. */
 .disclaimer {
   position: absolute; left: 8px; right: 8px; bottom: 6px; z-index: 5; padding: 3px 10px;
   font-size: 11px; color: var(--text-muted);
-  background: var(--glass-compact); border: 1px solid var(--glass-hairline); border-radius: 8px;
-  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
 }
 
 .replay-banner {
-  position: absolute; top: 64px; left: 50%; transform: translateX(-50%); z-index: 6;
-  max-width: min(720px, calc(100vw - 24px)); padding: 6px 14px;
-  background: var(--glass-compact); border: 1px solid var(--amber-watch); border-radius: 999px;
+  position: absolute; top: 64px; left: 12px; z-index: 6;
+  max-width: min(620px, calc(100vw - 460px)); padding: 6px 14px;
+  border-color: var(--amber-watch); /* the semantic register keeps its border colour */
   color: var(--amber-watch); font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  box-shadow: var(--glass-shadow);
-  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
 }
 .replay-banner strong { letter-spacing: 0.08em; }
 .replay-banner .mono { color: var(--text-primary); }
@@ -225,7 +210,8 @@ body { background: var(--canvas); color: var(--text-primary); font-family: var(-
 /* The compact basin summary */
 .basin-summary { padding: 10px 0 6px; display: flex; flex-direction: column; gap: 6px; }
 .summary-line { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
-.summary-state { font-family: var(--font-mono); font-size: 15px; letter-spacing: 0.08em; font-weight: 600; }
+.summary-state { font-size: 15px; font-weight: 600; letter-spacing: 0.01em; }
+.summary-sentence { font-size: 13.5px; color: var(--text-primary); }
 .summary-key { font-family: var(--font-mono); font-size: 14px; font-variant-numeric: tabular-nums; }
 .summary-tag { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.06em; color: var(--text-muted); text-transform: uppercase; min-width: 74px; }
 
@@ -237,20 +223,18 @@ body { background: var(--canvas); color: var(--text-primary); font-family: var(-
   display: flex;
   gap: 10px;
   padding: 3px 8px;
-  background: var(--glass-compact);
-  border: 1px solid var(--glass-hairline);
-  border-radius: 8px;
-  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
   font-size: 10px;
   z-index: 5;
   align-items: center;
 }
-.field-legend-entry { display: inline-flex; align-items: center; gap: 5px; }
+.field-legend-heading { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-muted); margin-right: 2px; }
+.field-legend-entry { display: inline-flex; align-items: center; gap: 6px; }
+.field-legend-toggle { display: inline-flex; align-items: center; gap: 5px; cursor: pointer; }
+.field-legend-toggle input { accent-color: var(--cyan); margin: 0; }
 .field-swatch { width: 14px; height: 8px; border-radius: 2px; display: inline-block; }
 .field-swatch-precip_observed { background: linear-gradient(90deg, rgba(96, 190, 235, 0.25), rgba(36, 130, 215, 0.6)); }
 .field-swatch-snow_cover { background: linear-gradient(90deg, rgba(180, 200, 255, 0.25), rgba(240, 245, 255, 0.6)); }
-.field-legend-label { letter-spacing: 0.08em; color: var(--text-secondary, #9fb3c8); }
+.field-legend-label { color: var(--text-secondary); font-size: 11px; }
 .field-legend-time { color: var(--text-muted, #6b7f94); }
 
 /* --- camera preview windows: spatially anchored ground truth --------------------------- */
@@ -271,14 +255,9 @@ body { background: var(--canvas); color: var(--text-primary); font-family: var(-
   position: absolute;
 }
 .camera-card-body {
+  position: relative; /* anchors the glass rim ::after (in-flow surface) */
   transform: translate(-50%, calc(-100% - 30px));
-  background: var(--glass-popover);
-  border: 1px solid var(--glass-hairline);
-  border-radius: 6px;
   overflow: hidden;
-  box-shadow: var(--glass-shadow), var(--glass-highlight);
-  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
 }
 .camera-card-header { display: flex; align-items: center; gap: 6px; padding: 5px 8px; }
 .camera-card-name { font-size: 11px; font-weight: 600; color: #e8f1f8; flex: 1; }
@@ -307,9 +286,13 @@ body { background: var(--canvas); color: var(--text-primary); font-family: var(-
 .horizon-value { font-size: 11.5px; font-weight: 600; color: var(--text-primary, #e6eef5); white-space: nowrap; }
 .horizon-register { position: absolute; right: 8px; bottom: 3px; font-size: 8px; letter-spacing: 0.06em; color: var(--text-muted, #74889c); }
 
-/* Narrow-viewport ordering fix: these must trail every base rule they override. */
+/* Narrow-viewport ordering fix: these must trail every base rule they override.
+ * Phone stack, bottom-up: disclaimer (3 lines tall) → timeline capsule → bottom sheet →
+ * weather legend. Each band clears the one below it; nothing occludes the timeline. */
 @media (max-width: 640px) {
-  .field-legend { bottom: calc(46vh + 104px); left: 8px; right: 8px; flex-wrap: wrap; row-gap: 2px; }
+  .timeline-bar { bottom: 84px; }
+  .panels { bottom: 132px; }
+  .field-legend { bottom: calc(46vh + 174px); left: 8px; right: 8px; flex-wrap: wrap; row-gap: 2px; }
   .camera-card { width: 200px; }
   .camera-card.expanded { width: min(300px, 86vw); }
 }
@@ -337,11 +320,26 @@ body { background: var(--canvas); color: var(--text-primary); font-family: var(-
   backdrop-filter: blur(6px);
 }
 .loading-veil-stage { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.22em; margin-right: -0.22em; color: hsl(203 60% 78% / 0.85); }
-.loading-veil-shimmer { width: 180px; height: 2px; border-radius: 2px; background: hsl(207 40% 60% / 0.18); position: relative; overflow: hidden; }
-.loading-veil-shimmer[data-active='true']::after {
-  content: ''; position: absolute; inset: 0 auto 0 -40%; width: 40%;
-  background: linear-gradient(90deg, transparent, hsl(197 80% 70% / 0.75), transparent);
-  animation: veil-shimmer 1.4s ease-in-out infinite;
+.loading-veil-percent { font-size: 22px; font-weight: 600; letter-spacing: 0.04em; color: hsl(210 40% 96% / 0.95); font-variant-numeric: tabular-nums; }
+.loading-veil-track { width: 220px; height: 3px; border-radius: 3px; background: hsl(207 40% 60% / 0.16); overflow: hidden; }
+.loading-veil-fill {
+  display: block; height: 100%; border-radius: 3px;
+  background: linear-gradient(90deg, hsl(197 70% 55% / 0.9), hsl(191 92% 62% / 0.95));
+  transition: width 260ms var(--ease-calm);
 }
-@keyframes veil-shimmer { to { left: 100%; } }
-@media (prefers-reduced-motion: reduce) { .loading-veil-shimmer[data-active='true']::after { animation: none; background: hsl(197 80% 70% / 0.4); inset: 0; width: 100%; } }
+@media (prefers-reduced-motion: reduce) { .loading-veil-fill { transition: none; } }
+
+
+/* --- settings: preferences live behind one quiet control (mission §19) ------------------ */
+.top-strip-spacer { flex: 1; }
+.settings-anchor { position: relative; display: inline-flex; }
+.settings-button { font-size: 14px; line-height: 1; padding: 4px 8px; }
+.settings-menu {
+  position: absolute; top: calc(100% + 8px); right: 0; z-index: 7;
+  min-width: 240px; padding: 10px 12px; display: flex; flex-direction: column; gap: 10px;
+}
+.settings-group { border: 0; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.settings-group legend { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); padding: 0 0 4px; }
+.settings-choice { display: grid; grid-template-columns: auto auto 1fr; align-items: baseline; gap: 8px; font-size: 13px; cursor: pointer; padding: 2px 0; }
+.settings-choice input { accent-color: var(--cyan); }
+.settings-hint { font-size: 11px; color: var(--text-muted); text-align: right; }

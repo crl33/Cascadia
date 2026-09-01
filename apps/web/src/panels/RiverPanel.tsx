@@ -19,17 +19,17 @@ export function RiverPanel() {
   const query = useRiverState(forecastPointId);
 
   if (!forecastPointId) return null;
-  if (query.isPending) return <section className="panel" data-testid="river-panel"><p className="muted">Loading forecast point…</p></section>;
-  if (query.isError) return <section className="panel" data-testid="river-panel"><p className="error">Forecast point unavailable: {query.error.message}</p></section>;
+  if (query.isPending) return <section className="panel glass-surface glass-panel shape-panel" data-testid="river-panel"><p className="muted">Loading forecast point…</p></section>;
+  if (query.isError) return <section className="panel glass-surface glass-panel shape-panel" data-testid="river-panel"><p className="error">Forecast point unavailable: {query.error.message}</p></section>;
 
   const item = query.data.items[0];
   const refs: Record<string, ProvenanceRef> = query.data.provenance_refs;
-  if (!item) return <section className="panel" data-testid="river-panel"><p className="muted">No forecast point item in the document.</p></section>;
+  if (!item) return <section className="panel glass-surface glass-panel shape-panel" data-testid="river-panel"><p className="muted">No forecast point item in the document.</p></section>;
   const observedQuality = item.observed ? refs[item.observed.prov]?.quality ?? [] : [];
   const { observed, trend, headroom, official_forecast: forecast, thresholds } = item;
 
   return (
-    <section className="panel" data-testid="river-panel" aria-label="River panel">
+    <section className="panel glass-surface glass-panel shape-panel" data-testid="river-panel" aria-label="River panel">
       <header className="panel-header">
         <span className="eyebrow">FORECAST POINT · {item.id}</span>
         <h2 data-testid="river-panel-name">{item.name}</h2>

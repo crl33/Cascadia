@@ -55,7 +55,7 @@ describe('susceptibility fill', () => {
     for (const state of LEVELS.filter((l) => l !== 'unknown')) {
       const fill = susceptibilityFill(base({ state }));
       expect(fill.striped).toBe(true);
-      expect(fill.badge).toBe('EXPERIMENTAL');
+      expect(fill.badge).toBe('Cascadia assessment');
       expect(fill.labelText).toContain('EXPERIMENTAL');
     }
   });

@@ -13,7 +13,7 @@ export function EventBanner() {
   if (timeline.mode !== 'event' || timeline.eventId === null) return null;
   const event = eventById(timeline.eventId);
   return (
-    <div className="replay-banner event-banner" role="status" data-testid="event-banner">
+    <div className="replay-banner event-banner glass-surface glass-compact shape-capsule" role="status" data-testid="event-banner">
       <strong>EVENT REPLAY — {event?.label ?? timeline.eventId}</strong>
       {' · event time '}
       <span className="mono">{formatUtc(timeline.at)}</span>

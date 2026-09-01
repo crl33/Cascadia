@@ -45,7 +45,7 @@ describe('ReservoirsSection', () => {
     expect(html).toContain('k-acre-feet');
     expect(html).toContain('cubic feet per second');
     expect(html).toContain('(datum unstated)');
-    expect(html).toContain('OBSERVED');
+    expect(html).toContain('Observed');
   });
 
   it('renders nothing at all for an unregulated basin — no section, no empty shell', () => {

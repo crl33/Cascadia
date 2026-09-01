@@ -60,7 +60,7 @@ test('MVEW1: SVG hydrograph with labeled threshold lines (unit + datum) and an O
   // observed/forecast boundary is marked (registers never blur — doctrine §2).
   await expect(page.getByTestId('hydrograph-series-observed')).toHaveCount(1);
   await expect(page.getByTestId('hydrograph-series-forecast')).toHaveCount(1);
-  await expect(page.getByTestId('hydrograph-forecast-badge')).toContainText('OFFICIAL FORECAST');
+  await expect(page.getByTestId('hydrograph-forecast-badge')).toContainText('Official forecast');
   await expect(page.getByTestId('hydrograph-register-boundary')).toHaveCount(1);
 
   await page.screenshot({ path: resolve(screenshots, 'mvew1-hydrograph.png'), fullPage: false });

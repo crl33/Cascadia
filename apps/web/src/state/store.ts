@@ -72,6 +72,7 @@ export interface SceneActions {
   selectForecastPoint(id: EntityId | null, basinId?: EntityId | null): void;
   setAltitudeBand(band: Band): void;
   setMotionSetting(setting: MotionSetting): void;
+  setQualityTier(tier: QualityTier): void;
   setSystemReducedMotion(reduced: boolean): void;
   setLayerActive(layer: LayerId, active: boolean): void;
   setFlightState(state: FlightState): void;
@@ -109,6 +110,7 @@ export function createSceneStore(initial: Partial<SceneState> = {}) {
         set((s) => ({ selectedForecastPointId: id, selectedBasinId: basinId === undefined ? s.selectedBasinId : basinId, cameraPose: null })),
       setAltitudeBand: (band) => set({ altitudeBand: band }),
       setMotionSetting: (setting) => set({ motionSetting: setting }),
+      setQualityTier: (tier) => set({ qualityTier: tier }),
       setSystemReducedMotion: (reduced) => set({ systemReducedMotion: reduced }),
       setLayerActive: (layer, active) =>
         set((s) => ({ activeLayers: active ? [...new Set([...s.activeLayers, layer])] : s.activeLayers.filter((l) => l !== layer) })),

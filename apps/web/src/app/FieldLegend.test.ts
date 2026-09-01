@@ -35,13 +35,15 @@ function render(withPrecip: boolean): string {
 }
 
 describe('FieldLegend', () => {
-  it('names, times and provenance-chips a drawn field', () => {
+  it('a drawn field gets a TOGGLE, a human name, a quiet source line, and the inspector chip', () => {
     const html = render(true);
     expect(html).toContain('field-legend-precip_observed');
-    expect(html).toContain('RAIN');
-    expect(html).toContain('2026-08-28 20:00');
+    expect(html).toContain('field-toggle-precip_observed'); // clicking Rain shows/hides rain (§22)
+    expect(html).toContain('Rain');
+    expect(html).toContain('radar ·'); // the source speaks human; the truth class lives in the inspector
+    expect(html).toContain('2026-08-28T20:00:00Z'); // exact instant preserved on the title
     expect(html).toContain('MRMS'); // the provenance popover carries the label
-    expect(html).not.toContain('SNOW'); // the snow field was not drawn, so it is not advertised
+    expect(html).not.toContain('Snow'); // the snow field was not drawn, so it is not advertised
   });
   it('renders nothing at all when no field is drawn', () => {
     expect(render(false)).toBe('');
