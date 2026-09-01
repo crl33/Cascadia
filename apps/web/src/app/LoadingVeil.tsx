@@ -92,11 +92,13 @@ export function LoadingVeil({ controller }: { controller: SceneController | null
     : 'ready';
   return (
     <div className={`loading-veil${leaving ? ' leaving' : ''}`} data-testid="loading-veil" role="status" aria-live="polite">
-      <div className="loading-veil-mark">
-        <span className="loading-veil-word">CASCADIA</span>
-        <span className="loading-veil-sub">PAPSUKKAL</span>
-      </div>
-      <div className="loading-veil-capsule">
+      {/* One composed glass object (owner 2026-09-01): the loading menu is the same
+          material as every other surface — system glass, sheet squircle, specular rim. */}
+      <div className="loading-veil-card glass-surface glass-panel shape-sheet">
+        <div className="loading-veil-mark">
+          <span className="loading-veil-word">CASCADIA</span>
+          <span className="loading-veil-sub">PAPSUKKAL</span>
+        </div>
         <span className="loading-veil-percent mono" data-testid="loading-percent">{percent}%</span>
         <span className="loading-veil-stage">{STAGE_TEXT[stage]}</span>
         <span className="loading-veil-track" aria-hidden="true">
