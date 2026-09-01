@@ -11,9 +11,12 @@ import type { CameraSample } from '../scene/SemanticZoomController';
 import { computeFlightDuration, framingRange } from './flight-math';
 import type { Bbox, CameraEvents, FlightHandle, FlightOptions, FlightResult, InterruptReason } from './types';
 
-export const CASCADIA_VIEW = { lon: -122.3, lat: 47.6, rangeM: 1_500_000, pitchDeg: -55, headingDeg: 0 } as const;
-export const BASIN_FRAMING = { pitchDeg: -60, paddingFactor: 1.1 } as const;
-export const FORECAST_POINT_FRAMING = { rangeM: 12_000, pitchDeg: -45 } as const;
+// Top-down intelligence camera (mission §3): orbital→river fly near-nadir so terrain, the
+// river network and basin relationships read as a map, not a Google-Earth glide. Only the
+// local band leans — a controlled oblique where ground detail justifies it.
+export const CASCADIA_VIEW = { lon: -122.3, lat: 47.6, rangeM: 1_500_000, pitchDeg: -85, headingDeg: 0 } as const;
+export const BASIN_FRAMING = { pitchDeg: -85, paddingFactor: 1.1 } as const;
+export const FORECAST_POINT_FRAMING = { rangeM: 12_000, pitchDeg: -50 } as const;
 const SAMPLE_MIN_INTERVAL_MS = 100;
 
 type Listener<E extends keyof CameraEvents> = (event: CameraEvents[E]) => void;
@@ -76,6 +79,10 @@ export class CameraController {
   }
 
   get motionPreference(): MotionPreference { return this.motion; }
+
+  /** True while a programmatic flight is in progress — the envelope must not spring back
+   * against a flight that is already going somewhere deliberate. */
+  get flightActive(): boolean { return this.active !== null; }
 
   /** Initial view: Cascadia at ~1,500 km with a gentle pitch. Always a cut (first frame is the final frame). */
   setInitialView(): void {

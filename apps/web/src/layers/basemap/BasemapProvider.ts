@@ -19,13 +19,17 @@
  * amber tension — stay the only saturated voices without the ground going grey.
  */
 import {
+  Cartesian2,
   Credit,
+  DiscardMissingTileImagePolicy,
   EllipsoidTerrainProvider,
   ImageryLayer,
   OpenStreetMapImageryProvider,
+  Rectangle,
   UrlTemplateImageryProvider,
   type TerrainProvider,
 } from 'cesium';
+import { HARD_DOMAIN } from '../../camera/envelope';
 
 export interface BasemapGrade {
   saturation: number;
@@ -73,8 +77,10 @@ export const usgsImagery: BasemapProvider = {
   // seams — adjacent NAIP campaigns differ in tone, so straight-edged brightness steps are
   // in the JPEGs themselves (e.g. the bright urban rectangle over Seattle at basin band);
   // (2) offshore voids — where no ortho collection exists at a mid LOD the service bakes
-  // OPAQUE WHITE into the tile (tile 11/705/324 over the San Juans carries a white square).
-  // Neither is a loading bug; recolouring another agency's imagery per-tile is out of scope.
+  // OPAQUE WHITE into the tile. (1) is out of scope (recolouring another agency's imagery
+  // per-tile); (2) is HANDLED below: a DiscardMissingTileImagePolicy keyed on a verified
+  // all-white tile (13/2830/1291, 872 B — byte-identical across zooms, checked 2026-08-31)
+  // marks white tiles INVALID so the quadtree renders the PARENT's real imagery instead.
   usage: { maxZoom: 16, prefetchAllowed: true },
   cspHosts: ['https://basemap.nationalmap.gov'],
   requiresKey: false,
@@ -87,7 +93,15 @@ export const usgsImagery: BasemapProvider = {
           url: 'https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryOnly/MapServer/tile/{z}/{y}/{x}',
           maximumLevel: 16,
           credit: new Credit(USGS_IMAGERY_ATTRIBUTION, true),
+          tileDiscardPolicy: new DiscardMissingTileImagePolicy({
+            missingImageUrl:
+              'https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryOnly/MapServer/tile/13/2830/1291',
+            pixelsToCheck: [new Cartesian2(0, 0), new Cartesian2(120, 120), new Cartesian2(200, 20)],
+          }),
         }),
+        // The operating envelope is an imagery fact too: nothing outside the PNW domain is
+        // ever requested or drawn (mission §2 — the planet is not the product).
+        { rectangle: Rectangle.fromDegrees(HARD_DOMAIN.west, HARD_DOMAIN.south, HARD_DOMAIN.east, HARD_DOMAIN.north) },
       ),
       IMAGERY_GRADE,
     ),

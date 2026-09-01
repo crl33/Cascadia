@@ -4,9 +4,11 @@
  * and hover, band → layer visibility, and disposal. Geography (basin bboxes, forecast-point
  * locations) arrives through setGeography/setData — the controller never fetches.
  */
-import { Cartesian2, Cartesian3, CesiumTerrainProvider, Clock, ClockRange, ClockStep, Color, Credit, CreditDisplay, Entity, JulianDate, SceneTransforms, ScreenSpaceEventHandler, ScreenSpaceEventType, Viewer } from 'cesium';
+import { Cartesian2, Cartesian3, CesiumTerrainProvider, Clock, ClockRange, ClockStep, Color, Credit, CreditDisplay, Entity, JulianDate, Math as CesiumMath, Rectangle, SceneTransforms, ScreenSpaceEventHandler, ScreenSpaceEventType, Viewer } from 'cesium';
 import 'cesium/Build/Cesium/Widgets/widgets.css';
 import { CameraController } from '../camera/CameraController';
+import { CameraEnvelope } from '../camera/CameraEnvelope';
+import { HARD_DOMAIN, TILT_CAP_DEG_BY_BAND, ZOOM_CEILING_M, ZOOM_FLOOR_M } from '../camera/envelope';
 import type { FlightReason } from '../camera/types';
 import type { BasinListItem, FieldRasterState, FloodGeography, RiverEnvelope } from '../contracts/schemas';
 import type { MotionPreference } from '../design-system/motion';
@@ -26,6 +28,10 @@ import { RiversLayer } from '../layers/rivers/RiversLayer';
 import { CESIUM_RENDERER_CREDIT_HTML } from './credits';
 import { SemanticZoomController } from './SemanticZoomController';
 import type { Band } from './bands';
+
+/** A transient queue-zero between LOD generations must not read as a composed ground; the
+ * queue has to stay empty this long before the opening frame counts as coherent (F2). */
+const GROUND_SUSTAINED_ZERO_MS = 600;
 
 export interface SceneControllerOptions { motion: MotionPreference; basemap?: BasemapProvider }
 export interface Selection { basinId: string | null; forecastPointId: string | null }
@@ -48,6 +54,7 @@ interface LayerDataMap {
 export class SceneController {
   readonly viewer: Viewer;
   readonly camera: CameraController;
+  private readonly envelope: CameraEnvelope;
   readonly zoom: SemanticZoomController;
   readonly basemap: BasemapProvider;
 
@@ -61,6 +68,7 @@ export class SceneController {
   private framed: string | null = null;
   private pending: { target: string; options: SelectOptions } | null = null;
   private readonly pickedHandlers = new Set<PickedHandler>();
+  private readonly emptyClickHandlers = new Set<() => void>();
   private readonly renderErrorHandlers = new Set<(message: string) => void>();
   private readonly eventHandler: ScreenSpaceEventHandler;
   private readonly unsubscribes: (() => void)[] = [];
@@ -106,6 +114,27 @@ export class SceneController {
     // composes, missing tiles must recede into the design's canvas instead of flashing —
     // the sweep caught whole coastlines floating on white during a basin cut.
     this.viewer.scene.globe.baseColor = Color.fromCssColorString('hsl(222, 52%, 6%)');
+    // Refinement arrives in composed passes, not tile-by-tile (mission §4): with a high
+    // descendant limit the ancestor keeps rendering until a whole region's children are
+    // ready, so detail lands as an area, never a checkerboard.
+    this.viewer.scene.globe.loadingDescendantLimit = 64;
+
+    // THE CASCADIA OPERATING ENVELOPE (mission §2–3): this is a Pacific-Northwest
+    // instrument. The globe is not drawn outside the hard domain (a shader discard —
+    // beyond it lies the design's own canvas, not space), the zoom band keeps the planet
+    // out of reach, look is disabled, and the rotate gesture stays north-up. The dark
+    // background + no stars/atmosphere make the domain edge dissolve instead of cutting.
+    this.viewer.scene.globe.cartographicLimitRectangle = Rectangle.fromDegrees(
+      HARD_DOMAIN.west, HARD_DOMAIN.south, HARD_DOMAIN.east, HARD_DOMAIN.north,
+    );
+    this.viewer.scene.backgroundColor = Color.fromCssColorString('hsl(222, 52%, 6%)');
+    if (this.viewer.scene.skyBox) this.viewer.scene.skyBox.show = false;
+    if (this.viewer.scene.skyAtmosphere) this.viewer.scene.skyAtmosphere.show = false;
+    const sscc = this.viewer.scene.screenSpaceCameraController;
+    sscc.minimumZoomDistance = ZOOM_FLOOR_M;
+    sscc.maximumZoomDistance = ZOOM_CEILING_M;
+    sscc.enableLook = false;
+    this.viewer.camera.constrainedAxis = Cartesian3.UNIT_Z;
     // Stays false WITH terrain too, deliberately: every hydrologic layer drapes (clamped
     // polylines, ground hatches), and a gauge marker hidden behind a ridge would be a
     // legibility bug, not realism (ADR-0021 exit test names this decision).
@@ -117,6 +146,17 @@ export class SceneController {
     this.zoom = new SemanticZoomController();
     this.unsubscribes.push(this.camera.onSample((sample) => this.zoom.onCameraSample(sample)));
     this.unsubscribes.push(this.zoom.on('bandChanged', (e) => this.applyBand(e.next)));
+    this.envelope = new CameraEnvelope(this.viewer, this.camera, () => this.zoom.band, options.motion);
+
+    // Freeze refinement while the camera is in motion (mission §5): the preloaded
+    // ancestors carry a stable coarse frame through the flight; on arrival the error
+    // threshold restores and the view refines ONCE, in place, instead of churning
+    // underneath the moving camera.
+    this.unsubscribes.push(
+      this.camera.on('started', () => { this.viewer.scene.globe.maximumScreenSpaceError = 3.5; }),
+      this.camera.on('settled', () => { this.viewer.scene.globe.maximumScreenSpaceError = 2; this.viewer.scene.requestRender(); }),
+      this.camera.on('interrupted', () => { this.viewer.scene.globe.maximumScreenSpaceError = 2; this.viewer.scene.requestRender(); }),
+    );
 
     for (const layer of [
       new WeatherFieldLayer({ id: 'snow_cover', displayName: 'Snow water equivalent (SNODAS, daily)', truthClass: 'authoritative_model', pixel: snowPixel }),
@@ -133,6 +173,7 @@ export class SceneController {
     this.eventHandler.setInputAction((e: ScreenSpaceEventHandler.PositionedEvent) => {
       const hit = this.hitAt(e.position);
       if (hit) this.pickedHandlers.forEach((h) => h(hit));
+      else this.emptyClickHandlers.forEach((h) => h());
     }, ScreenSpaceEventType.LEFT_CLICK);
     this.eventHandler.setInputAction((e: ScreenSpaceEventHandler.MotionEvent) => {
       const hit = this.hitAt(e.endPosition);
@@ -145,20 +186,40 @@ export class SceneController {
     // Tile-load diagnostic for tests and tooling: the container carries the pending-tile
     // count as a data attribute (imperative DOM, no React) so a visual spec can await a
     // settled ground instead of guessing a timeout — the source of the mid-load baselines.
-    // The same event drives onGroundComposed for the loading veil: the FIRST time the count
-    // returns to zero after real loading, the opening frame is composed.
+    //
+    // Ground progress for the boot manifest (UX reconstruction 2026-08-31): the queue's
+    // high-water mark is the denominator, so `1 - pending/highWater` is measured work, not a
+    // timer. "Composed" requires the queue to stay empty for a beat — the first transient
+    // zero can land between the coarse pass and child-tile discovery, and revealing there is
+    // exactly the blurry opening frame the audit recorded (F2).
     const onTileProgress = (pending: number) => {
       container.dataset.tilesPending = String(pending);
-      if (pending > 0) this.groundSawLoading = true;
-      if (pending === 0 && this.groundSawLoading && !this.groundComposed) {
-        this.groundComposed = true;
-        this.groundComposedHandlers.forEach((h) => h());
-        this.groundComposedHandlers.clear();
+      if (pending > 0) {
+        this.groundSawLoading = true;
+        this.groundHighWater = Math.max(this.groundHighWater, pending);
+        if (this.groundZeroTimer !== null) {
+          window.clearTimeout(this.groundZeroTimer);
+          this.groundZeroTimer = null;
+        }
+      }
+      const progress = this.groundHighWater > 0 ? 1 - pending / this.groundHighWater : 0;
+      this.groundProgressHandlers.forEach((h) => h(Math.max(0, Math.min(1, progress))));
+      if (pending === 0 && this.groundSawLoading && !this.groundComposed && this.groundZeroTimer === null) {
+        this.groundZeroTimer = window.setTimeout(() => {
+          this.groundZeroTimer = null;
+          if (this.groundComposed) return;
+          this.groundComposed = true;
+          this.groundComposedHandlers.forEach((h) => h());
+          this.groundComposedHandlers.clear();
+        }, GROUND_SUSTAINED_ZERO_MS);
       }
     };
     this.viewer.scene.globe.tileLoadProgressEvent.addEventListener(onTileProgress);
     container.dataset.tilesPending = '0';
-    this.unsubscribes.push(() => this.viewer.scene.globe.tileLoadProgressEvent.removeEventListener(onTileProgress));
+    this.unsubscribes.push(() => {
+      this.viewer.scene.globe.tileLoadProgressEvent.removeEventListener(onTileProgress);
+      if (this.groundZeroTimer !== null) window.clearTimeout(this.groundZeroTimer);
+    });
 
     // A render-loop error stops rendering; surface it as a degraded scene instead of Cesium's modal panel.
     const onRenderError = (_scene: unknown, error: unknown) => {
@@ -171,6 +232,8 @@ export class SceneController {
 
     this.camera.setInitialView();
     this.applyBand(this.zoom.band);
+    // Dev-only escape hatch for in-browser diagnosis; never present in production builds.
+    if (import.meta.env.DEV) (window as unknown as { __cascadiaScene?: SceneController }).__cascadiaScene = this;
   }
 
   onRenderError(handler: (message: string) => void): () => void {
@@ -185,8 +248,15 @@ export class SceneController {
     return () => this.pickedHandlers.delete(handler);
   }
 
+  /** A click on the world that hit nothing — the map's own "click away" (dismissal §12). */
+  onEmptyClick(handler: () => void): () => void {
+    this.emptyClickHandlers.add(handler);
+    return () => this.emptyClickHandlers.delete(handler);
+  }
+
   setMotion(motion: MotionPreference): void {
     this.camera.setMotionPreference(motion);
+    this.envelope.setMotionPreference(motion);
     this.layers.forEach((layer) => layer.setMotion(motion));
   }
 
@@ -249,6 +319,7 @@ export class SceneController {
     this.unsubscribes.forEach((u) => u());
     this.eventHandler.destroy();
     this.layers.forEach((layer) => layer.dispose());
+    this.envelope.dispose();
     this.camera.dispose();
     this.viewer.destroy();
     this.creditsContainer.remove(); // the credits div is ours, not the Viewer's; remove it so a remount cannot leave orphan attribution strips
@@ -260,6 +331,9 @@ export class SceneController {
   }
 
   private applyBand(band: Band): void {
+    // Band ⇒ how far the tilt gesture may lean (mission §3): analytical bands stay near
+    // nadir; only local earns a controlled oblique. Radians from nadir at the pivot.
+    this.viewer.scene.screenSpaceCameraController.maximumTiltAngle = CesiumMath.toRadians(TILT_CAP_DEG_BY_BAND[band]);
     for (const layer of this.layers.values()) {
       const visible = (this.intents.get(layer.id) ?? true) && layer.bands[band] !== 'hidden';
       layer.setVisible(visible);
@@ -315,11 +389,14 @@ export class SceneController {
 
   private groundSawLoading = false;
   private groundComposed = false;
+  private groundHighWater = 0;
+  private groundZeroTimer: number | null = null;
   private readonly groundComposedHandlers = new Set<() => void>();
+  private readonly groundProgressHandlers = new Set<(progress: number) => void>();
 
-  /** Fires ONCE, the first time the globe's tile queue empties after having loaded — the
-   * moment the opening ground is a composed picture rather than an assembly in progress.
-   * Fires immediately if that already happened. Returns a disposer. */
+  /** Fires ONCE, when the globe's tile queue has stayed empty for a sustained beat after
+   * having loaded — the moment the opening ground is a composed picture rather than an
+   * assembly in progress. Fires immediately if that already happened. Returns a disposer. */
   onGroundComposed(handler: () => void): () => void {
     if (this.groundComposed) {
       handler();
@@ -327,6 +404,17 @@ export class SceneController {
     }
     this.groundComposedHandlers.add(handler);
     return () => this.groundComposedHandlers.delete(handler);
+  }
+
+  /** Measured ground-composition progress in [0,1]: the tile queue's drain against its
+   * high-water mark. Real work, not a timer — feeds the boot manifest's largest slice. */
+  onGroundProgress(handler: (progress: number) => void): () => void {
+    if (this.groundComposed) {
+      handler(1);
+      return () => {};
+    }
+    this.groundProgressHandlers.add(handler);
+    return () => this.groundProgressHandlers.delete(handler);
   }
 
   private hitAt(position: { x: number; y: number }): LayerHit | null {

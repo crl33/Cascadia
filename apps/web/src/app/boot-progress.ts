@@ -1,0 +1,80 @@
+/**
+ * Boot manifest → one real percentage (UX reconstruction 2026-08-31, mission §7–8).
+ *
+ * Every point of the number corresponds to measured work; nothing advances on a timer.
+ * The weights are documented product decisions, not physics:
+ *
+ *   renderer   5 %  — the Cesium viewer exists (one discrete task; cheap but blocking)
+ *   ground    55 %  — the imagery/terrain tile queue's drain against its high-water mark
+ *                     (the dominant real cost of a cold start, measured 21–27 s headless)
+ *   data      25 %  — the discrete boot queries (basins, labels, river network, cameras),
+ *                     tasks complete / total
+ *   live      15 %  — the first hydrologic envelope (optional: an error DEGRADES and
+ *                     completes the slice — the world says UNKNOWN elsewhere; the bar must
+ *                     never sit at 94 % because one provider is down)
+ *
+ * 100 % ⇔ SCENE_VISUAL_READY: renderer up, ground composed (sustained-empty queue, not a
+ * transient zero), all data tasks settled, live settled-or-degraded. The veil reveals only
+ * at 100 % (plus a brief settle); a hard timeout elsewhere remains the honesty valve.
+ *
+ * Monotonicity is enforced here: the tile queue legitimately grows (progress would dip as
+ * the high-water rises), so the published percentage is clamped to never decrease.
+ */
+
+export interface BootState {
+  /** The Cesium viewer/controller exists. */
+  renderer: boolean;
+  /** Tile-queue drain in [0,1] (1 - pending/highWater). May regress at the source. */
+  groundProgress: number;
+  /** The queue stayed empty for the sustained beat — the opening frame is composed. */
+  groundComposed: boolean;
+  /** Discrete boot queries settled (success or error), out of dataTasksTotal. */
+  dataTasksDone: number;
+  dataTasksTotal: number;
+  /** The live envelope settled (success) or degraded (error) — both complete the slice. */
+  liveSettled: boolean;
+}
+
+const WEIGHT_RENDERER = 0.05;
+const WEIGHT_GROUND = 0.55;
+const WEIGHT_DATA = 0.25;
+const WEIGHT_LIVE = 0.15;
+
+const clamp01 = (n: number): number => Math.max(0, Math.min(1, n));
+
+/** Raw weighted aggregate in [0,100]. Pure; may regress if groundProgress regresses. */
+export function bootPercent(s: BootState): number {
+  const renderer = s.renderer ? 1 : 0;
+  // Ground counts fully only once COMPOSED — a momentarily-empty queue is not a composed
+  // frame, so its slice caps at 96 % until the sustained-zero confirms.
+  const ground = s.groundComposed ? 1 : Math.min(clamp01(s.groundProgress), 0.96);
+  const data = s.dataTasksTotal > 0 ? clamp01(s.dataTasksDone / s.dataTasksTotal) : 1;
+  const live = s.liveSettled ? 1 : 0;
+  return (
+    100 *
+    (WEIGHT_RENDERER * renderer + WEIGHT_GROUND * ground + WEIGHT_DATA * data + WEIGHT_LIVE * live)
+  );
+}
+
+/** SCENE_VISUAL_READY — the definition of done for the opening frame. */
+export function sceneVisualReady(s: BootState): boolean {
+  return (
+    s.renderer &&
+    s.groundComposed &&
+    s.dataTasksTotal > 0 &&
+    s.dataTasksDone >= s.dataTasksTotal &&
+    s.liveSettled
+  );
+}
+
+/** Stateful monotonic wrapper: the published percentage never decreases, and only
+ * SCENE_VISUAL_READY can publish 100. */
+export function createBootProgress() {
+  let published = 0;
+  return (s: BootState): { percent: number; ready: boolean } => {
+    const ready = sceneVisualReady(s);
+    const raw = ready ? 100 : Math.min(bootPercent(s), 99);
+    published = Math.max(published, raw);
+    return { percent: Math.round(published), ready };
+  };
+}
