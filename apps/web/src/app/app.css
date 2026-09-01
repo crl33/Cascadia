@@ -15,6 +15,9 @@ body { background: var(--canvas); color: var(--text-primary); font-family: var(-
 .scene-credits a { color: var(--text-secondary); text-decoration: none; }
 .scene-credits a:hover, .scene-credits a:focus-visible { color: var(--text-primary); text-decoration: underline; }
 .scene-veil { position: absolute; inset: 0; background: var(--canvas); opacity: 0; pointer-events: none; transition: opacity 140ms var(--ease-calm); z-index: 2; }
+/* The snapshot plate: pixel-equal copy of the last frame held while tiles warm beneath,
+   then one crossfade — tiles appear all at once (owner 2026-09-01). Under all chrome. */
+.transition-plate { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; display: none; }
 .scene-veil.is-on { opacity: 1; }
 .scene-degraded { position: absolute; left: 12px; bottom: 104px; z-index: 3; max-width: 520px; padding: 8px 12px; border-color: var(--amber-elevated); font-size: 12px; }
 .scene-fallback { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; padding: 24px; background: var(--canvas-2); }

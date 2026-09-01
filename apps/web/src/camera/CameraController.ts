@@ -11,12 +11,11 @@ import type { CameraSample } from '../scene/SemanticZoomController';
 import { computeFlightDuration, framingRange } from './flight-math';
 import type { Bbox, CameraEvents, FlightHandle, FlightOptions, FlightResult, InterruptReason } from './types';
 
-// Top-down intelligence camera (mission §3): orbital→river fly near-nadir so terrain, the
-// river network and basin relationships read as a map, not a Google-Earth glide. Only the
-// local band leans — a controlled oblique where ground detail justifies it.
-export const CASCADIA_VIEW = { lon: -122.3, lat: 47.6, rangeM: 1_150_000, pitchDeg: -85, headingDeg: 0 } as const;
-export const BASIN_FRAMING = { pitchDeg: -85, paddingFactor: 1.1 } as const;
-export const FORECAST_POINT_FRAMING = { rangeM: 12_000, pitchDeg: -50 } as const;
+// Top-down intelligence camera (owner 2026-09-01: "just make it a top down view, no
+// angles"): every framing is pure nadir; the tilt gesture is disabled outright.
+export const CASCADIA_VIEW = { lon: -122.3, lat: 47.6, rangeM: 1_150_000, pitchDeg: -90, headingDeg: 0 } as const;
+export const BASIN_FRAMING = { pitchDeg: -90, paddingFactor: 1.1 } as const;
+export const FORECAST_POINT_FRAMING = { rangeM: 12_000, pitchDeg: -90 } as const; // owner 2026-09-01: top down, no angles — anywhere
 const SAMPLE_MIN_INTERVAL_MS = 100;
 
 type Listener<E extends keyof CameraEvents> = (event: CameraEvents[E]) => void;

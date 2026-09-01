@@ -6,7 +6,7 @@ const resting = (over: Partial<CameraPoseSample>): CameraPoseSample => ({
   latDeg: 47.6,
   heightM: 400_000,
   headingDeg: 0,
-  pitchDeg: -88,
+  pitchDeg: -90,
   band: 'basin',
   ...over,
 });
@@ -28,11 +28,10 @@ describe('the Cascadia envelope — a frame, not a wall', () => {
     expect(clampToEnvelope(resting({ heightM: 50 }))?.heightM).toBe(ZOOM_FLOOR_M);
   });
 
-  it('analytical bands stay near-nadir; local may lean', () => {
-    // basin cap 20° ⇒ pitch floor -70: a -55 pitch is corrected
-    expect(clampToEnvelope(resting({ pitchDeg: -55, band: 'basin' }))?.pitchDeg).toBe(-70);
-    // local cap 50° ⇒ -55 is a legitimate oblique there
-    expect(clampToEnvelope(resting({ pitchDeg: -55, band: 'local' }))).toBeNull();
+  it('no angles, anywhere (owner 2026-09-01): every band springs back to pure nadir', () => {
+    expect(clampToEnvelope(resting({ pitchDeg: -55, band: 'basin' }))?.pitchDeg).toBe(-90);
+    expect(clampToEnvelope(resting({ pitchDeg: -55, band: 'local' }))?.pitchDeg).toBe(-90);
+    expect(clampToEnvelope(resting({ pitchDeg: -90, band: 'local' }))).toBeNull();
   });
 
   it('heading springs to north the short way, with a small tolerance', () => {

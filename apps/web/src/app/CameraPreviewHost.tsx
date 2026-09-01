@@ -18,7 +18,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { API_BASE } from '../api/client';
 import { useCameras, useVizBasins } from '../api/hooks';
 import type { CameraRecord } from '../contracts/schemas';
-import { ignoreCanvas, useDismiss } from '../design-system/dismiss';
+import { useDismiss } from '../design-system/dismiss';
 import type { SceneController } from '../scene/SceneController';
 import { useSceneStore } from '../state/store';
 import { cameraAttentionByBasin } from '../layers/cameras/attention';
@@ -56,11 +56,12 @@ function PreviewCard({ controller, cam, pinned, expanded, attention }: {
   const src = useMemo(() => frameSrc(cam, nowMs, API_BASE), [cam, nowMs]);
   const failed = failedSrc === src;
 
-  // Dismissal §12: outside pointer or Escape closes a pinned card. Canvas clicks are
-  // excluded — the pick pipeline owns them (marker toggles/replaces, empty map closes
-  // via SceneController.onEmptyClick), so the two owners never race.
+  // Dismissal (owner 2026-09-01): MAP clicks minimize the preview — and only map clicks.
+  // Canvas interactions route through the pick pipeline (empty map or another entity →
+  // unpin; marker → toggle/replace); clicks on panels and menus never touch the card and
+  // never fall through. Escape and the ✕ remain.
   const unpin = useCallback(() => pinCamera(null), [pinCamera]);
-  useDismiss(cardRef, unpin, { enabled: pinned, ignore: ignoreCanvas });
+  useDismiss(cardRef, unpin, { enabled: pinned, pointer: false });
 
   useEffect(() => {
     const node = cardRef.current;
@@ -124,7 +125,7 @@ function PreviewCard({ controller, cam, pinned, expanded, attention }: {
   return (
     <div ref={cardRef} className={`camera-card${expanded ? ' expanded' : ''}`} data-testid={`camera-card-${cam.id}`}>
       <div ref={connectorRef} className="camera-card-connector" aria-hidden="true" />
-      <div className="camera-card-body glass-surface glass-popover shape-card">
+      <div className="camera-card-body glass-surface glass-panel shape-sheet">
         <header className="camera-card-header">
           <span className="camera-card-name">{cam.name}</span>
           <button

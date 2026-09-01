@@ -19,7 +19,6 @@
  * amber tension — stay the only saturated voices without the ground going grey.
  */
 import {
-  Color,
   Credit,
   EllipsoidTerrainProvider,
   ImageryLayer,
@@ -71,16 +70,10 @@ function graded(layer: ImageryLayer, grade: BasemapGrade): ImageryLayer {
   return layer;
 }
 
-/** NEVER SHOW A WHITE TILE (§5 invariant), per-pixel half: tiles that are only PARTLY
- * baked-white (coastal void edges) cannot be discarded without losing their real half —
- * instead the void pixels themselves go transparent in the globe shader. Verified in
- * GlobeFS.glsl: colorToAlpha compares the RAW sampled texture (pre-grade), so exact-white
- * voids match; the ~2/255 threshold spares textured snow (verified over Mount Baker). */
-function whiteVoidsTransparent(layer: ImageryLayer): ImageryLayer {
-  layer.colorToAlpha = Color.WHITE;
-  layer.colorToAlphaThreshold = 0.008;
-  return layer;
-}
+/** LESSON (owner screenshots 2026-09-01): per-pixel white removal makes WHITE FRINGES —
+ * JPEG ringing (240–249) around punched-out voids survives any tight threshold, outlining
+ * every void. Per-pixel surgery is retired; the WhiteTileDiscardPolicy now discards ANY
+ * tile with a substantial void region, so the parent's real imagery renders whole. */
 
 export const usgsImagery: BasemapProvider = {
   id: 'usgs-imagery',
@@ -103,7 +96,7 @@ export const usgsImagery: BasemapProvider = {
   terrainLevel: 'regional_dem', // SceneController upgrades to the ADR-0021 pyramid post-construction
   grade: IMAGERY_GRADE,
   createImagery: () =>
-    whiteVoidsTransparent(graded(
+    graded(
       new ImageryLayer(
         new UrlTemplateImageryProvider({
           url: 'https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryOnly/MapServer/tile/{z}/{y}/{x}',
@@ -116,7 +109,7 @@ export const usgsImagery: BasemapProvider = {
         { rectangle: Rectangle.fromDegrees(HARD_DOMAIN.west, HARD_DOMAIN.south, HARD_DOMAIN.east, HARD_DOMAIN.north) },
       ),
       IMAGERY_GRADE,
-    )),
+    ),
   // The under-plate: same public-domain product, capped at z7 (a handful of tiles for the
   // whole domain, cached forever). Discard still applies (a coarse baked-white would
   // otherwise resurface); no colorToAlpha — this IS the bottom of the fallback chain.

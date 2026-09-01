@@ -39,14 +39,15 @@ export const ZOOM_FLOOR_M = 600;
  * sheet in a void. */
 export const ZOOM_CEILING_M = 1_250_000;
 
-/** Max user-gesture tilt, DEGREES from nadir (0 = straight down). Cesium's
- * ScreenSpaceCameraController.maximumTiltAngle takes radians from nadir at the pivot. */
+/** Max user-gesture tilt, DEGREES from nadir (0 = straight down). Owner 2026-09-01:
+ * "no angles" — the map is pure nadir at every band; the tilt gesture is disabled in
+ * SceneController and any drifted pitch springs back to −90. */
 export const TILT_CAP_DEG_BY_BAND: Record<Band, number> = {
-  orbital: 15,
-  state: 15,
-  basin: 20,
-  river: 25,
-  local: 50,
+  orbital: 0,
+  state: 0,
+  basin: 0,
+  river: 0,
+  local: 0,
 };
 
 /** Heading further from north than this springs back on idle (degrees). */

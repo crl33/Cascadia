@@ -20,6 +20,10 @@ export interface DismissOptions {
    * toggle/replace, an empty-map click closes via SceneController.onEmptyClick). Escape
    * still dismisses regardless. */
   ignore?: (target: EventTarget | null) => boolean;
+  /** false = keyboard-only: Escape dismisses, outside pointers never do. For surfaces
+   * whose dismissal is owned by the map's pick pipeline (owner 2026-09-01: clicks on
+   * other menus must not touch the camera preview). */
+  pointer?: boolean;
 }
 
 export function useDismiss(
@@ -27,10 +31,11 @@ export function useDismiss(
   onDismiss: () => void,
   options: DismissOptions = {},
 ): void {
-  const { enabled = true, ignore } = options;
+  const { enabled = true, ignore, pointer = true } = options;
   useEffect(() => {
     if (!enabled) return;
     const onPointerDown = (event: PointerEvent) => {
+      if (!pointer) return;
       const el = ref.current;
       if (!el) return;
       if (event.target instanceof Node && el.contains(event.target)) return;
@@ -46,7 +51,7 @@ export function useDismiss(
       document.removeEventListener('pointerdown', onPointerDown, true);
       document.removeEventListener('keydown', onKeyDown, true);
     };
-  }, [ref, onDismiss, enabled, ignore]);
+  }, [ref, onDismiss, enabled, ignore, pointer]);
 }
 
 /** The standard ignore predicate for world-anchored surfaces: canvas interaction belongs

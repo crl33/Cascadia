@@ -16,17 +16,24 @@
  * render loop's hot path.
  */
 
-/** All-samples floor: JPEG ringing keeps voids ≥254; graded snow shadows dip far below. */
-const WHITE_FLOOR = 250;
+/** Region floor: a service void averages ≥252 across a whole ninth; textured snow/cloud
+ * regions carry shadow and dip below. */
+const WHITE_FLOOR = 252;
 const GRID = 3;
+/** This many void ninths and the WHOLE tile falls back to its parent (owner screenshots
+ * 2026-09-01: per-pixel removal fringed every void; partial voids must fall back whole —
+ * a slightly softer coastal tile beats any white block, black block, or outline). One
+ * lone bright ninth stays: a single blown cloud/snow region must not soften real land. */
+const VOID_REGIONS_TO_DISCARD = 2;
 
-/** Pure decision over RGBA samples — every pixel of every channel at/above the floor. */
+/** Pure decision over the GRID² region samples. */
 export function samplesAreWhite(rgba: Uint8ClampedArray, floor = WHITE_FLOOR): boolean {
   if (rgba.length === 0) return false;
+  let voidRegions = 0;
   for (let i = 0; i < rgba.length; i += 4) {
-    if (rgba[i]! < floor || rgba[i + 1]! < floor || rgba[i + 2]! < floor) return false;
+    if (rgba[i]! >= floor && rgba[i + 1]! >= floor && rgba[i + 2]! >= floor) voidRegions += 1;
   }
-  return true;
+  return voidRegions >= VOID_REGIONS_TO_DISCARD;
 }
 
 type DiscardableImage = HTMLImageElement | HTMLCanvasElement | ImageBitmap;

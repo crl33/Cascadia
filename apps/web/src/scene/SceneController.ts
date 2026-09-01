@@ -28,6 +28,7 @@ import { snowPixel } from '../layers/snow/style';
 import { RiversLayer } from '../layers/rivers/RiversLayer';
 import { CESIUM_RENDERER_CREDIT_HTML } from './credits';
 import { SemanticZoomController } from './SemanticZoomController';
+import { TransitionPlate } from './TransitionPlate';
 import type { Band } from './bands';
 
 /** A transient queue-zero between LOD generations must not read as a composed ground; the
@@ -56,6 +57,7 @@ export class SceneController {
   readonly viewer: Viewer;
   readonly camera: CameraController;
   private readonly envelope: CameraEnvelope;
+  private readonly plate: TransitionPlate;
   readonly zoom: SemanticZoomController;
   readonly basemap: BasemapProvider;
 
@@ -116,10 +118,9 @@ export class SceneController {
     // composes, missing tiles must recede into the design's canvas instead of flashing —
     // the sweep caught whole coastlines floating on white during a basin cut.
     this.viewer.scene.globe.baseColor = Color.fromCssColorString('hsl(222, 52%, 6%)');
-    // Refinement arrives in composed passes, not tile-by-tile (mission §4): with a high
-    // descendant limit the ancestor keeps rendering until a whole region's children are
-    // ready, so detail lands as an area, never a checkerboard.
-    this.viewer.scene.globe.loadingDescendantLimit = 128;
+    // LESSON (owner screenshot 2026-09-01): a high loadingDescendantLimit batches
+    // refinement into HALF-SCREEN generation blocks whose boundaries are far uglier than
+    // granular replacement. Cesium's default (20) is the tuned balance — leave it alone.
 
     // THE CASCADIA OPERATING ENVELOPE (mission §2–3): this is a Pacific-Northwest
     // instrument. The globe is not drawn outside the hard domain (a shader discard —
@@ -142,6 +143,7 @@ export class SceneController {
     sscc.minimumZoomDistance = ZOOM_FLOOR_M;
     sscc.maximumZoomDistance = ZOOM_CEILING_M;
     sscc.enableLook = false;
+    sscc.enableTilt = false; // owner 2026-09-01: top-down, no angles — no tilt gesture at all
     this.viewer.camera.constrainedAxis = Cartesian3.UNIT_Z;
     // Stays false WITH terrain too, deliberately: every hydrologic layer drapes (clamped
     // polylines, ground hatches), and a gauge marker hidden behind a ridge would be a
@@ -155,6 +157,10 @@ export class SceneController {
     this.unsubscribes.push(this.camera.onSample((sample) => this.zoom.onCameraSample(sample)));
     this.unsubscribes.push(this.zoom.on('bandChanged', (e) => this.applyBand(e.next)));
     this.envelope = new CameraEnvelope(this.viewer, this.camera, () => this.zoom.band, options.motion);
+    // Tiles appear all at once: the last gesture/flight frame holds while the scene warms
+    // beneath, then one crossfade (TransitionPlate — the §2 composition layer).
+    this.plate = new TransitionPlate(this.viewer, container);
+    this.unsubscribes.push(this.camera.on('settled', () => this.plate.onFlightSettled()));
     const onFollowMoveEnd = () => this.evaluateFollowSelect();
     this.viewer.camera.moveEnd.addEventListener(onFollowMoveEnd);
     this.unsubscribes.push(() => this.viewer.camera.moveEnd.removeEventListener(onFollowMoveEnd));
@@ -367,6 +373,7 @@ export class SceneController {
     this.unsubscribes.forEach((u) => u());
     this.eventHandler.destroy();
     this.layers.forEach((layer) => layer.dispose());
+    this.plate.dispose();
     this.envelope.dispose();
     this.camera.dispose();
     this.viewer.destroy();
