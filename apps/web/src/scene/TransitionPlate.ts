@@ -87,6 +87,14 @@ export class TransitionPlate {
     this.maybeHold();
   }
 
+  /** Capture and hold the CURRENT frame unconditionally — used at gesture-end BEFORE the
+   * detail threshold restores, so the coarse→sharp reload happens entirely under the
+   * plate and reveals as one crossfade. If nothing ends up loading, the settle path
+   * releases within a beat. */
+  holdNow(): void {
+    this.capture(true);
+  }
+
   dispose(): void {
     this.drop();
     this.disposers.forEach((d) => d());
@@ -94,8 +102,12 @@ export class TransitionPlate {
   }
 
   private maybeHold(): void {
+    this.capture(false);
+  }
+
+  private capture(force: boolean): void {
     if (this.holding) return;
-    if (this.pending < PENDING_WORTH_HOLDING) return; // nearly loaded: nothing worth hiding
+    if (!force && this.pending < PENDING_WORTH_HOLDING) return; // nearly loaded: nothing worth hiding
     const source = this.viewer.scene.canvas;
     if (source.width === 0 || source.height === 0) return;
     this.plate.width = source.width;
@@ -112,6 +124,13 @@ export class TransitionPlate {
     this.plate.style.display = 'block';
     this.holding = true;
     this.holdTimer = window.setTimeout(() => this.release(), MAX_HOLD_MS);
+    // a forced hold with an empty queue must still release promptly if nothing loads
+    if (this.pending === 0 && this.settleTimer === null) {
+      this.settleTimer = window.setTimeout(() => {
+        this.settleTimer = null;
+        if (this.pending === 0) this.release();
+      }, SETTLE_SUSTAIN_MS * 2);
+    }
   }
 
   /** One crossfade: the crisp scene appears as a single event. */

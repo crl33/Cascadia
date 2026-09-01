@@ -113,7 +113,7 @@ export class SceneController {
     // re-fetching. Memory cost measured in the session checkpoint; requests unchanged at rest.
     this.viewer.scene.globe.preloadAncestors = true;
     this.viewer.scene.globe.preloadSiblings = true;
-    this.viewer.scene.globe.tileCacheSize = 600;
+    this.viewer.scene.globe.tileCacheSize = 800;
     // Unloaded ground reads as night-dark earth, not Cesium's white void: while imagery
     // composes, missing tiles must recede into the design's canvas instead of flashing —
     // the sweep caught whole coastlines floating on white during a basin cut.
@@ -165,13 +165,46 @@ export class SceneController {
     this.viewer.camera.moveEnd.addEventListener(onFollowMoveEnd);
     this.unsubscribes.push(() => this.viewer.camera.moveEnd.removeEventListener(onFollowMoveEnd));
 
-    // LESSON (owner-verified regression, 2026-08-31): raising maximumScreenSpaceError does
-    // not merely pause loading — Cesium RE-SELECTS coarser tiles it already has, so a
-    // gesture-triggered freeze visibly softened loaded imagery and the restore sharpened
-    // it again: the "flashes between sat view and closer view" complaint. The gesture
-    // freeze is REMOVED. Coherence during refinement comes from loadingDescendantLimit
-    // (whole-region substitution) + preloaded ancestors/siblings; the error threshold
-    // never changes at runtime, so the rendered LOD of loaded imagery never regresses.
+    // UNIFORM GENERATION DURING MOTION (owner 2026-09-01: "cinematic shifting while
+    // scrolling"): mid-gesture the renderer can only scale what it has, and mixed
+    // generations ARE the patchwork. So while a zoom/pan gesture is ACTIVE the whole
+    // world renders one LOD step softer — uniformly, no crisp-next-to-blurry — and the
+    // moment the hand lifts, the TransitionPlate captures that uniform frame FIRST, the
+    // threshold restores UNDER the plate, and full detail reveals as one crossfade.
+    // The earlier version of this idea flashed because HOVER armed it and the restore
+    // was naked; now only wheel and button-down drags count, and the restore is hidden.
+    const MOTION_SSE = 3.2;
+    const MOTION_IDLE_MS = 260;
+    let motionIdle: number | null = null;
+    let dragging = false;
+    const motionStart = () => {
+      this.viewer.scene.globe.maximumScreenSpaceError = MOTION_SSE;
+      if (motionIdle !== null) window.clearTimeout(motionIdle);
+      motionIdle = window.setTimeout(() => {
+        motionIdle = null;
+        this.plate.holdNow(); // capture the uniform frame BEFORE sharpening begins
+        this.viewer.scene.globe.maximumScreenSpaceError = 2;
+        this.viewer.scene.requestRender();
+      }, MOTION_IDLE_MS);
+    };
+    const sceneCanvas = this.viewer.scene.canvas;
+    const onWheelMotion = () => motionStart();
+    const onPointerDownMotion = () => { dragging = true; };
+    const onPointerMoveMotion = () => { if (dragging) motionStart(); };
+    const onPointerUpMotion = () => { dragging = false; };
+    sceneCanvas.addEventListener('wheel', onWheelMotion, { passive: true });
+    sceneCanvas.addEventListener('pointerdown', onPointerDownMotion);
+    sceneCanvas.addEventListener('pointermove', onPointerMoveMotion);
+    sceneCanvas.addEventListener('pointerup', onPointerUpMotion);
+    sceneCanvas.addEventListener('pointerleave', onPointerUpMotion);
+    this.unsubscribes.push(() => {
+      sceneCanvas.removeEventListener('wheel', onWheelMotion);
+      sceneCanvas.removeEventListener('pointerdown', onPointerDownMotion);
+      sceneCanvas.removeEventListener('pointermove', onPointerMoveMotion);
+      sceneCanvas.removeEventListener('pointerup', onPointerUpMotion);
+      sceneCanvas.removeEventListener('pointerleave', onPointerUpMotion);
+      if (motionIdle !== null) window.clearTimeout(motionIdle);
+    });
 
     for (const layer of [
       new WeatherFieldLayer({ id: 'snow_cover', displayName: 'Snow water equivalent (SNODAS, daily)', truthClass: 'authoritative_model', pixel: snowPixel }),
