@@ -13,6 +13,9 @@ export const COLOR = {
   stroke: { h: 215, s: 22, l: 22 },
   cyan: { h: 191, s: 92, l: 55 },
   glacier: { h: 205, s: 88, l: 58 },
+  /** The PHYSICAL water register (mission §10): river/lake geography as calm natural blue.
+   * Cyan stays the STATE/selection voice; a river's geometry is geography, not a signal. */
+  water: { h: 203, s: 62, l: 52 },
   amberWatch: { h: 38, s: 92, l: 58 },
   amberElevated: { h: 32, s: 96, l: 56 },
   floodRed: { h: 6, s: 86, l: 56 },

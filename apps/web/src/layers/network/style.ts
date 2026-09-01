@@ -13,8 +13,15 @@
  * gains detail. Widths are SCREEN PIXELS per semantic band, a cartographic hierarchy, and
  * explicitly NOT a claim about physical channel width. Tributaries stay quiet at basin band
  * (the whole network at full voice was clutter over imagery — measured 2026-08-29 baseline)
- * and come up as the camera descends. Mainstems of the selected basin may carry a restrained
- * glow at river/local bands — presence, never neon.
+ * and come up as the camera descends.
+ *
+ * TWO REGISTERS, SEPARATED (mission §10, 2026-08-31): the line's COLOUR is the PHYSICAL
+ * register — calm natural water blue, constant, geography. STATE arrives only through the
+ * non-colour carriers the doctrine allows: width/alpha lift from `flow_visual_intensity`,
+ * and the restrained glow — which now requires actual state (high intensity) or an active
+ * selection, never mere proximity. At LOCAL band the photography shows the real channel, so
+ * the centerline's alpha steps DOWN and the line reads as an annotation over real water,
+ * not a claim of width. Where only centerlines exist no physical width is ever implied.
  */
 import { COLOR, type Hsl } from '../../design-system/tokens';
 import type { Band } from '../../scene/bands';
@@ -45,22 +52,26 @@ const BAND_WIDTH: Record<Band, readonly [number, number]> = {
   river: [3.2, 1.7],
   local: [4.6, 2.5],
 };
-/** Base alpha per band: [mainstem, tributary]. Tributaries whisper until the camera is low. */
+/** Base alpha per band: [mainstem, tributary]. Tributaries whisper until the camera is low;
+ * at LOCAL the photography carries the channel, so the annotation steps back down. */
 const BAND_ALPHA: Record<Band, readonly [number, number]> = {
   orbital: [0.8, 0],
   state: [0.7, 0.2],
   basin: [0.8, 0.26],
   river: [0.85, 0.45],
-  local: [0.9, 0.55],
+  local: [0.55, 0.35],
 };
 /** Full-intensity presence multiplier on width (p100 river ~1.8x its cartographic base). */
 const INTENSITY_WIDTH_GAIN = 0.8;
 const INTENSITY_ALPHA_GAIN = 0.12;
+/** Glow needs actual hydrologic presence — a day-of-year percentile this high — or an
+ * explicit selection; geography alone never glows. */
+const GLOW_INTENSITY_FLOOR = 0.66;
 
 export function riverLine(s: RiverLineSemantic): RiverLineStyle {
   const overview = s.band === 'orbital';
   if (overview && !s.mainstem) {
-    return { show: false, widthPx: 0, color: COLOR.cyan, alpha: 0, glow: false };
+    return { show: false, widthPx: 0, color: COLOR.water, alpha: 0, glow: false };
   }
   const lift = s.intensity == null ? 0 : Math.min(Math.max(s.intensity, 0), 1);
   const [stemWidth, tribWidth] = BAND_WIDTH[s.band];
@@ -69,11 +80,12 @@ export function riverLine(s: RiverLineSemantic): RiverLineStyle {
   const width = baseWidth * (1 + INTENSITY_WIDTH_GAIN * lift);
   const alpha = (s.mainstem ? stemAlpha : tribAlpha) + INTENSITY_ALPHA_GAIN * lift;
   const selectedBoost = s.inSelectedBasin ? 1.12 : 1;
+  const nearGround = s.band === 'river' || s.band === 'local';
   return {
     show: true,
     widthPx: width,
-    color: COLOR.cyan,
+    color: COLOR.water,
     alpha: Math.min(alpha * selectedBoost, 0.95),
-    glow: s.mainstem && s.inSelectedBasin && (s.band === 'river' || s.band === 'local'),
+    glow: s.mainstem && nearGround && (s.inSelectedBasin || lift >= GLOW_INTENSITY_FLOOR),
   };
 }

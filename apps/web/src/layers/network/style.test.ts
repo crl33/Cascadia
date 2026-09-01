@@ -41,4 +41,24 @@ describe('riverLine', () => {
     expect(over.widthPx).toBe(riverLine({ ...base, mainstem: true, intensity: 1 }).widthPx);
     expect(riverLine({ ...base, intensity: -1 }).widthPx).toBe(riverLine(base).widthPx);
   });
+
+  it('two registers, separated (§10): geometry is the water hue, and it never changes', () => {
+    const s = riverLine({ mainstem: true, band: 'local', inSelectedBasin: true, intensity: 0.95 });
+    expect(s.color).toEqual({ h: 203, s: 62, l: 52 }); // COLOR.water — physical register
+  });
+
+  it('glow is STATE, not proximity: an unselected calm mainstem near the ground stays plain', () => {
+    const calm = riverLine({ mainstem: true, band: 'river', inSelectedBasin: false, intensity: 0.3 });
+    expect(calm.glow).toBe(false);
+    const swollen = riverLine({ mainstem: true, band: 'river', inSelectedBasin: false, intensity: 0.8 });
+    expect(swollen.glow).toBe(true); // high day-of-year percentile earns presence
+    const selected = riverLine({ mainstem: true, band: 'local', inSelectedBasin: true, intensity: null });
+    expect(selected.glow).toBe(true); // selection earns it too
+  });
+
+  it('at LOCAL the photography carries the channel — the annotation steps back', () => {
+    const river = riverLine({ mainstem: true, band: 'river', inSelectedBasin: false, intensity: null });
+    const local = riverLine({ mainstem: true, band: 'local', inSelectedBasin: false, intensity: null });
+    expect(local.alpha).toBeLessThan(river.alpha);
+  });
 });

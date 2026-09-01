@@ -63,7 +63,13 @@ function PreviewCard({ controller, cam, pinned, expanded, attention }: {
         return;
       }
       node.style.display = '';
-      node.style.transform = `translate(${Math.round(pos.x)}px, ${Math.round(pos.y)}px)`;
+      // Clamp the CARD to the viewport (audit F14: half a card off a phone screen). The
+      // anchor stalk stays on the world point; only the body is kept readable. Imperative
+      // DOM per frame by design — no React state here (renderer-boundary rule).
+      const halfW = node.offsetWidth / 2 || 116;
+      const margin = 8;
+      const x = Math.min(Math.max(pos.x, halfW + margin), window.innerWidth - halfW - margin);
+      node.style.transform = `translate(${Math.round(x)}px, ${Math.round(pos.y)}px)`;
     });
   }, [controller, cam.lon, cam.lat]);
 
