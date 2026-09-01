@@ -40,7 +40,7 @@ export function FieldLegend() {
   if (entries.length === 0) return null;
 
   return (
-    <div className="field-legend glass-surface glass-compact shape-control" data-testid="field-legend" aria-label="Weather layers">
+    <div className="field-legend glass-surface glass-compact shape-control" data-occlusion="field-legend" data-testid="field-legend" aria-label="Weather layers">
       <span className="field-legend-heading">Weather</span>
       {entries.map(({ layer, label, source, doc }) => {
         const active = activeSet.has(layer);

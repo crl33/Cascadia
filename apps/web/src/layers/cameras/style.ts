@@ -22,6 +22,9 @@ export interface CameraMarkerSemantic {
   pinned: boolean;
   /** OFFICIAL evidence names this camera's basin (attention.ts) — never derived, never a score. */
   attention: boolean;
+  /** Some OTHER camera is the open preview — this marker steps back so the spatial
+   * correspondence between marker and card is unmistakable (mission §18). */
+  otherPinned?: boolean;
 }
 
 export interface CameraMarkerStyle {
@@ -56,10 +59,12 @@ export function cameraMarker(s: CameraMarkerSemantic): CameraMarkerStyle {
   // imagery. Sizes up, and the glyph itself gained a dark disc + white halo (CameraLayer).
   const base = s.band === 'local' ? 30 : s.band === 'river' ? 26 : 20;
   const emphasized = s.pinned || s.attention;
+  const quieted = s.otherPinned === true && !s.pinned;
   return {
     show: true,
     sizePx: emphasized ? base + 6 : base,
-    alpha: emphasized ? 1 : s.tier === 'A' ? 1 : 0.9,
-    ring: s.attention,
+    alpha: quieted ? 0.45 : emphasized ? 1 : s.tier === 'A' ? 1 : 0.9,
+    // the OPEN camera earns the ring too — the marker↔card correspondence (§18)
+    ring: s.attention || s.pinned,
   };
 }

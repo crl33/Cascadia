@@ -37,14 +37,14 @@ export function App() {
       <TopStrip />
       <ReplayBanner />
       <EventBanner />
-      <aside className="panels" aria-label="Intelligence panels">
+      <aside className="panels" aria-label="Intelligence panels" data-occlusion="panels">
         <ErrorBoundary name="Basin panel"><BasinPanel /></ErrorBoundary>
         <ErrorBoundary name="River panel"><RiverPanel /></ErrorBoundary>
         <ErrorBoundary name="Forecast evolution"><ForecastEvolution /></ErrorBoundary>
       </aside>
       <ErrorBoundary name="Field legend"><FieldLegend /></ErrorBoundary>
       <ErrorBoundary name="Timeline"><TimelineBar controller={timelineController} /></ErrorBoundary>
-      <footer className="disclaimer glass-surface glass-compact shape-control" data-testid="disclaimer">
+      <footer className="disclaimer glass-surface glass-compact shape-control" data-testid="disclaimer" data-occlusion="disclaimer">
         <span>{DISCLAIMER}.</span>
         <span className="muted"> Imagery: {resolveBasemap().attribution}. Terrain: USGS 3DEP.</span>
       </footer>

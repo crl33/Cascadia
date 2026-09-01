@@ -48,7 +48,7 @@ export function TimelineBar({ controller }: TimelineBarProps) {
     timeline.mode === 'past' ? `${localLabel(positionMs)} · ${agoLabel(positionMs, endMs)}` : localLabel(positionMs);
 
   return (
-    <div className="timeline-bar glass-surface glass-chrome shape-capsule" data-testid="timeline" data-mode={timeline.mode} role="group" aria-label="Timeline">
+    <div className="timeline-bar glass-surface glass-chrome shape-capsule" data-occlusion="timeline" data-testid="timeline" data-mode={timeline.mode} role="group" aria-label="Timeline">
       <span className={`timeline-chip mono timeline-chip-${timeline.mode}`} data-testid="timeline-mode-chip">
         {chip}
       </span>

@@ -162,7 +162,7 @@ export class CameraLayer implements SceneLayer<CameraSetData> {
     for (const cam of this.data.cameras) {
       const pinned = cam.id === this.data.pinnedCameraId;
       const attention = cam.basin_id !== null && cam.basin_id in this.data.attention;
-      const style = cameraMarker({ tier: cam.tier as CameraTier, band: this.band, pinned, attention });
+      const style = cameraMarker({ tier: cam.tier as CameraTier, band: this.band, pinned, attention, otherPinned: this.data.pinnedCameraId !== null });
       if (!style.show) {
         hiddenByBand[cam.tier] += 1;
         continue;

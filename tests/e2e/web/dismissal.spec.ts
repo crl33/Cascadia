@@ -39,3 +39,16 @@ test('a click on empty map dismisses the card; a click inside does not', async (
   await page.mouse.click(120, 640);
   await expect(card).toHaveCount(0, { timeout: 5_000 });
 });
+
+test('a click on LAND — which picks the basin polygon — also dismisses (the owner\'s failing case)', async ({ page }) => {
+  await page.goto(`/?sel=basin:skagit&motion=reduced&${PIN}`);
+  await settled(page);
+  const card = page.getByTestId('camera-card-cam:usgs:WA_Skagit_River_near_Mount_Vernon');
+  await expect(card).toBeVisible({ timeout: 15_000 });
+  // mid-basin land: this is a REAL canvas click that resolves to a basin entity hit, the
+  // path where the old empty-click-only rule silently kept the card open
+  await page.mouse.click(700, 420);
+  await expect(card).toHaveCount(0, { timeout: 5_000 });
+  // and the click still did its normal job — the world stays interactive, nothing is eaten
+  await expect(page.getByTestId('basin-panel-name')).toBeVisible();
+});

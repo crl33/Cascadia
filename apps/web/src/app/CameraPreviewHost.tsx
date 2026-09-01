@@ -22,7 +22,14 @@ import { ignoreCanvas, useDismiss } from '../design-system/dismiss';
 import type { SceneController } from '../scene/SceneController';
 import { useSceneStore } from '../state/store';
 import { cameraAttentionByBasin } from '../layers/cameras/attention';
+import { placeCard, type Rect } from './card-layout';
+import { collectOcclusions } from './overlay-layout';
 import { frameSrc, previewCameraIds } from './camera-preview-math';
+
+/** Below this width the card detaches into a bottom sheet (§17) — geographic anchoring
+ * gives way to legibility; the ringed marker keeps the correspondence. */
+const SHEET_BREAKPOINT_PX = 640;
+const OCCLUSION_CACHE_MS = 600;
 
 interface Props {
   controller: SceneController;
@@ -36,6 +43,7 @@ function PreviewCard({ controller, cam, pinned, expanded, attention }: {
   attention: { kind: string; detail: string } | null;
 }) {
   const cardRef = useRef<HTMLDivElement>(null);
+  const connectorRef = useRef<HTMLDivElement>(null);
   const pinCamera = useSceneStore((s) => s.pinCamera);
   // failure tracks the URL it happened on, so a new bucket un-fails without any effect
   const [failedSrc, setFailedSrc] = useState<string | null>(null);
@@ -56,26 +64,66 @@ function PreviewCard({ controller, cam, pinned, expanded, attention }: {
 
   useEffect(() => {
     const node = cardRef.current;
+    const connector = connectorRef.current;
     if (!node) return;
+    // Spatial HUD placement (§11–§14): the solver scores candidate placements against the
+    // viewport and the live [data-occlusion] chrome — never `origin = projected point`,
+    // never a transform (an ancestor transform makes the glass body a Backdrop Root and
+    // silently kills its blur: the flat-dark-card defect). Imperative DOM per frame by
+    // design — no React state here (renderer-boundary rule).
+    let occlusions: Rect[] = [];
+    let occlusionsAt = 0;
+    let lastPlacement: string | null = null;
     return controller.trackScreenPosition(cam.lon, cam.lat, (pos) => {
       if (!pos) {
         node.style.display = 'none';
+        if (connector) connector.style.display = 'none';
         return;
       }
       node.style.display = '';
-      // Clamp the CARD to the viewport (audit F14: half a card off a phone screen). The
-      // anchor stalk stays on the world point; only the body is kept readable. Imperative
-      // DOM per frame by design — no React state here (renderer-boundary rule).
-      const halfW = node.offsetWidth / 2 || 116;
-      const margin = 8;
-      const x = Math.min(Math.max(pos.x, halfW + margin), window.innerWidth - halfW - margin);
-      node.style.transform = `translate(${Math.round(x)}px, ${Math.round(pos.y)}px)`;
+      const sheet = window.innerWidth < SHEET_BREAKPOINT_PX;
+      node.classList.toggle('camera-card-sheet', sheet);
+      if (sheet) {
+        node.style.left = '';
+        node.style.top = '';
+        if (connector) connector.style.display = 'none';
+        return;
+      }
+      const now = performance.now();
+      if (now - occlusionsAt > OCCLUSION_CACHE_MS) {
+        occlusions = collectOcclusions();
+        occlusionsAt = now;
+      }
+      const card = { width: node.offsetWidth || 232, height: node.offsetHeight || 200 };
+      const viewport = { width: window.innerWidth, height: window.innerHeight };
+      const placed = placeCard({ x: pos.x, y: pos.y }, card, viewport, occlusions, lastPlacement);
+      lastPlacement = placed.clamped ? null : placed.name;
+      node.style.left = `${Math.round(placed.left)}px`;
+      node.style.top = `${Math.round(placed.top)}px`;
+      node.dataset.placement = placed.name;
+      if (connector) {
+        // leader line from the card's nearest edge midpoint to the anchor (§18)
+        const cx = Math.min(Math.max(pos.x, placed.left), placed.left + card.width);
+        const cy = Math.min(Math.max(pos.y, placed.top), placed.top + card.height);
+        const dx = pos.x - cx;
+        const dy = pos.y - cy;
+        const len = Math.hypot(dx, dy);
+        if (len < 6) {
+          connector.style.display = 'none';
+        } else {
+          connector.style.display = '';
+          connector.style.left = `${Math.round(cx)}px`;
+          connector.style.top = `${Math.round(cy)}px`;
+          connector.style.width = `${Math.round(len)}px`;
+          connector.style.transform = `rotate(${Math.atan2(dy, dx)}rad)`;
+        }
+      }
     });
   }, [controller, cam.lon, cam.lat]);
 
   return (
     <div ref={cardRef} className={`camera-card${expanded ? ' expanded' : ''}`} data-testid={`camera-card-${cam.id}`}>
-      <div className="camera-card-anchor" aria-hidden="true" />
+      <div ref={connectorRef} className="camera-card-connector" aria-hidden="true" />
       <div className="camera-card-body glass-surface glass-popover shape-card">
         <header className="camera-card-header">
           <span className="camera-card-name">{cam.name}</span>

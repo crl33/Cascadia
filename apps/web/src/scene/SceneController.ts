@@ -17,6 +17,7 @@ import type { LayerHit, LayerId, SceneHandle, SceneLayer, SelectionState } from 
 import { BasinsLayer, type BasinsLayerData } from '../layers/basins/BasinsLayer';
 import { BasinSusceptibilityLayer, type BasinSusceptibilityLayerData } from '../layers/susceptibility/BasinSusceptibilityLayer';
 import { resolveBasemap, type BasemapProvider } from '../layers/basemap/BasemapProvider';
+import { createDomainVignetteLayer } from '../layers/basemap/edge-vignette';
 import { RiverNetworkLayer, type RiverNetworkDisplay } from '../layers/network/RiverNetworkLayer';
 import { LabelsLayer, type LabelSet as LabelSetData } from '../layers/labels/LabelsLayer';
 import { CameraLayer, type CameraSetData } from '../layers/cameras/CameraLayer';
@@ -32,6 +33,9 @@ import type { Band } from './bands';
 /** A transient queue-zero between LOD generations must not read as a composed ground; the
  * queue has to stay empty this long before the opening frame counts as coherent (F2). */
 const GROUND_SUSTAINED_ZERO_MS = 600;
+/** After the last wheel/pointer gesture, refinement stays frozen this long, then restores
+ * for one composed refine pass. */
+const INTERACTION_IDLE_MS = 350;
 
 export interface SceneControllerOptions { motion: MotionPreference; basemap?: BasemapProvider }
 export interface Selection { basinId: string | null; forecastPointId: string | null }
@@ -117,7 +121,7 @@ export class SceneController {
     // Refinement arrives in composed passes, not tile-by-tile (mission §4): with a high
     // descendant limit the ancestor keeps rendering until a whole region's children are
     // ready, so detail lands as an area, never a checkerboard.
-    this.viewer.scene.globe.loadingDescendantLimit = 64;
+    this.viewer.scene.globe.loadingDescendantLimit = 128;
 
     // THE CASCADIA OPERATING ENVELOPE (mission §2–3): this is a Pacific-Northwest
     // instrument. The globe is not drawn outside the hard domain (a shader discard —
@@ -130,6 +134,8 @@ export class SceneController {
     this.viewer.scene.backgroundColor = Color.fromCssColorString('hsl(222, 52%, 6%)');
     if (this.viewer.scene.skyBox) this.viewer.scene.skyBox.show = false;
     if (this.viewer.scene.skyAtmosphere) this.viewer.scene.skyAtmosphere.show = false;
+    const vignette = createDomainVignetteLayer();
+    if (vignette) this.viewer.imageryLayers.add(vignette);
     const sscc = this.viewer.scene.screenSpaceCameraController;
     sscc.minimumZoomDistance = ZOOM_FLOOR_M;
     sscc.maximumZoomDistance = ZOOM_CEILING_M;
@@ -148,15 +154,33 @@ export class SceneController {
     this.unsubscribes.push(this.zoom.on('bandChanged', (e) => this.applyBand(e.next)));
     this.envelope = new CameraEnvelope(this.viewer, this.camera, () => this.zoom.band, options.motion);
 
-    // Freeze refinement while the camera is in motion (mission §5): the preloaded
-    // ancestors carry a stable coarse frame through the flight; on arrival the error
-    // threshold restores and the view refines ONCE, in place, instead of churning
-    // underneath the moving camera.
+    // Freeze refinement while the camera is in motion (mission §5) — programmatic flights
+    // AND manual gestures: the preloaded ancestors carry a stable, uniformly coarse frame
+    // (coherence beats mixed sharpness — harness frame A-007's LOD ring), then the error
+    // threshold restores once on idle and the view refines in a single composed pass.
+    const freeze = () => { this.viewer.scene.globe.maximumScreenSpaceError = 3.5; };
+    const restore = () => { this.viewer.scene.globe.maximumScreenSpaceError = 2; this.viewer.scene.requestRender(); };
     this.unsubscribes.push(
-      this.camera.on('started', () => { this.viewer.scene.globe.maximumScreenSpaceError = 3.5; }),
-      this.camera.on('settled', () => { this.viewer.scene.globe.maximumScreenSpaceError = 2; this.viewer.scene.requestRender(); }),
-      this.camera.on('interrupted', () => { this.viewer.scene.globe.maximumScreenSpaceError = 2; this.viewer.scene.requestRender(); }),
+      this.camera.on('started', freeze),
+      this.camera.on('settled', restore),
+      this.camera.on('interrupted', () => { /* a gesture follows; the idle timer restores */ }),
     );
+    let idleTimer: number | null = null;
+    const onGesture = () => {
+      freeze();
+      if (idleTimer !== null) window.clearTimeout(idleTimer);
+      idleTimer = window.setTimeout(() => { idleTimer = null; restore(); }, INTERACTION_IDLE_MS);
+    };
+    const gestureCanvas = this.viewer.scene.canvas;
+    gestureCanvas.addEventListener('wheel', onGesture, { passive: true });
+    gestureCanvas.addEventListener('pointerdown', onGesture);
+    gestureCanvas.addEventListener('pointermove', onGesture);
+    this.unsubscribes.push(() => {
+      gestureCanvas.removeEventListener('wheel', onGesture);
+      gestureCanvas.removeEventListener('pointerdown', onGesture);
+      gestureCanvas.removeEventListener('pointermove', onGesture);
+      if (idleTimer !== null) window.clearTimeout(idleTimer);
+    });
 
     for (const layer of [
       new WeatherFieldLayer({ id: 'snow_cover', displayName: 'Snow water equivalent (SNODAS, daily)', truthClass: 'authoritative_model', pixel: snowPixel }),

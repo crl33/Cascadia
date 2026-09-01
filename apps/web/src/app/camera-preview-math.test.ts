@@ -21,14 +21,15 @@ describe('previewCameraIds', () => {
     expect(previewCameraIds(cams, 'state', 'basin:skagit', 'cam:usgs:a')).toEqual([]);
     expect(previewCameraIds(cams, 'orbital', 'basin:skagit', null)).toEqual([]);
   });
-  it('auto-previews only at local band, tier A, selected basin, capped — never a wall of feeds', () => {
+  it('ONE preview at a time (§15): a single tier-A auto at local, never a wall of feeds', () => {
     const ids = previewCameraIds(cams, 'local', 'basin:skagit', null);
-    expect(ids).toEqual(['cam:usgs:a', 'cam:usgs:b']);
+    expect(ids).toEqual(['cam:usgs:a']);
     expect(ids.length).toBeLessThanOrEqual(MAX_AUTO_PREVIEWS);
     expect(previewCameraIds(cams, 'river', 'basin:skagit', null)).toEqual([]);
     expect(previewCameraIds(cams, 'local', null, null)).toEqual([]);
   });
-  it('the pinned camera rides along at any camera-showing band and is never doubled', () => {
+  it('the pinned camera IS the preview — alone, at any camera-showing band', () => {
+    expect(previewCameraIds(cams, 'local', 'basin:skagit', 'cam:usgs:c')).toEqual(['cam:usgs:c']);
     expect(previewCameraIds(cams, 'basin', null, 'cam:usgs:c')).toEqual(['cam:usgs:c']);
     const ids = previewCameraIds(cams, 'local', 'basin:skagit', 'cam:usgs:a');
     expect(ids[0]).toBe('cam:usgs:a');

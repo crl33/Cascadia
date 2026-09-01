@@ -78,12 +78,17 @@ areas), `maximumScreenSpaceError` 3.5 during flights → 2 on settle (refine onc
 place). Research doc records the verified "not publicly possible" list (no per-tile fade in
 Cesium 1.144 — upstream #8581) so nobody chases it.
 
-## 11. White tiles
+## 11. White tiles — including the regression the owner caught
 
-`DiscardMissingTileImagePolicy` keyed on verified all-white tile 13/2830/1291 (872 B,
-byte-identical across zooms — hash-checked): white offshore tiles now render the PARENT's
-real imagery. Measured: white-void fraction 0.0 at every descent step (was whole
-coastlines on white).
+First fix: `DiscardMissingTileImagePolicy` keyed on the verified z13 white (872 B). My
+descent probe read 0.0 white — but its path zoomed over land, and the owner's live
+screenshot at basin framing showed z11–z12 San Juans whites sailing through the
+byte-length fast path (the research doc's own residual risk, delivered). General fix:
+`WhiteTileDiscardPolicy` inspects each DECODED tile (3×3 downsample, discard only when
+every region ≥250 — voids are uniform, snow carries shadow; pinned in 4 tests).
+Re-verified at the owner's exact framing: white fraction 0.0 where the screenshot showed
+voids, parents rendering underneath. Lesson recorded: §32's "use it" beats any probe I
+script for myself.
 
 ## 12. River redesign
 
@@ -189,10 +194,11 @@ Chromium-tier-gated and OFF at balanced default) — remaining item 28.
 
 ## 27. Tests/gates
 
-Unit 263 passed (+14 this mission: boot 6, envelope 5, summary-language 5, network 3, less
-consolidations) | e2e 22/22 twice locally + boot.spec 3/3 | react-doctor 100 | tsc, ruff,
-lint-imports clean. E2e specs re-pinned to the human labels and local-time banner (UTC
-moved to title attributes).
+Unit 267 passed (+18 this mission: boot 6, envelope 5, summary-language 5, network 3,
+white-discard 4, less consolidations) | e2e 22/22 twice locally + boot.spec 3/3 +
+dismissal.spec 2/2 (Escape and empty-map click-away proven in the real pick pipeline) |
+react-doctor 100 | tsc, ruff, lint-imports clean. E2e specs re-pinned to the human labels
+and local-time banner (UTC moved to title attributes).
 
 ## 28. Deployed / production-proven
 

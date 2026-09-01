@@ -35,9 +35,16 @@ export function attachScene(controller: SceneController, store: SceneStoreApi): 
     }),
     controller.onPicked((hit) => {
       const state = store.getState();
+      // §12 exact semantics: a click on any NON-camera entity dismisses the preview AND
+      // selects that entity (the owner's failing case was land clicks — they pick the
+      // basin polygon, so the empty-click path never ran).
+      if (hit.entityId.startsWith('cam:')) {
+        state.pinCamera(state.pinnedCameraId === hit.entityId ? null : hit.entityId);
+        return;
+      }
+      if (state.pinnedCameraId !== null) state.pinCamera(null);
       if (hit.entityId.startsWith('basin:')) state.selectBasin(hit.entityId);
       else if (hit.entityId.startsWith('fp:nwps:')) state.selectForecastPoint(hit.entityId, hit.basinId);
-      else if (hit.entityId.startsWith('cam:')) state.pinCamera(state.pinnedCameraId === hit.entityId ? null : hit.entityId);
     }),
   );
   store.getState().setAltitudeBand(controller.zoom.band);

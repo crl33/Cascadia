@@ -240,24 +240,35 @@ body { background: var(--canvas); color: var(--text-primary); font-family: var(-
 /* --- camera preview windows: spatially anchored ground truth --------------------------- */
 .camera-preview-host { position: absolute; inset: 0; pointer-events: none; z-index: 6; }
 .camera-card {
+  /* Positioned by the placement solver (card-layout.ts) via left/top. NO transform
+     anywhere in this subtree: an ancestor transform makes the glass body a Backdrop Root
+     and silently kills its blur (the flat-dark-card defect). */
   position: absolute;
   top: 0; left: 0;
-  will-change: transform;
   pointer-events: auto;
   width: 232px;
 }
 .camera-card.expanded { width: 320px; }
-.camera-card-anchor {
-  width: 2px; height: 26px;
-  background: linear-gradient(to top, rgba(255,255,255,0.85), rgba(255,255,255,0));
-  margin-left: -1px;
-  transform: translateY(-100%);
-  position: absolute;
+/* Leader line, viewport-fixed (§18): from the card's nearest edge to the world anchor.
+   Its own transform is fine — it is a sibling of the glass body, never an ancestor. */
+.camera-card-connector {
+  position: fixed;
+  height: 1.5px;
+  transform-origin: 0 50%;
+  background: linear-gradient(90deg, hsl(206 80% 92% / 0.55), hsl(206 80% 92% / 0.08));
+  pointer-events: none;
+  z-index: 5;
 }
 .camera-card-body {
   position: relative; /* anchors the glass rim ::after (in-flow surface) */
-  transform: translate(-50%, calc(-100% - 30px));
   overflow: hidden;
+}
+/* §17: at phone widths the preview detaches into a bottom sheet above the timeline; the
+   ringed marker keeps the spatial correspondence. */
+.camera-card.camera-card-sheet {
+  position: fixed;
+  left: 12px; right: 12px; top: auto; bottom: 132px;
+  width: auto;
 }
 .camera-card-header { display: flex; align-items: center; gap: 6px; padding: 5px 8px; }
 .camera-card-name { font-size: 11px; font-weight: 600; color: #e8f1f8; flex: 1; }

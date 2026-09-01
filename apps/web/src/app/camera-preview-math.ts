@@ -5,14 +5,14 @@
 import type { CameraRecord } from '../contracts/schemas';
 import type { Band } from '../scene/bands';
 
-/** Never auto-open a wall of feeds: pinned + at most this many automatic previews. */
-export const MAX_AUTO_PREVIEWS = 2;
+/** ONE preview at a time (mission §15): a pinned camera IS the preview; otherwise at most
+ * this many automatic previews (LOCAL band, tier A). Comparison mode is future, explicit. */
+export const MAX_AUTO_PREVIEWS = 1;
 
 /**
- * The preview set: the pinned camera always (when the band shows cameras at all), plus — at
- * LOCAL band only — up to MAX_AUTO_PREVIEWS Tier-A cameras in the selected basin. Band
- * thresholds for the finer ~100–200 m auto-expansion experiment are future ground-band work;
- * this v1 is deliberately band-driven and deterministic.
+ * The preview set: the pinned camera ALONE when pinned (selecting another camera replaces
+ * it — never a second uncontrolled window); else, at LOCAL band, the single best Tier-A
+ * camera of the selected basin. Deterministic by construction.
  */
 export function previewCameraIds(
   cameras: readonly CameraRecord[],
@@ -23,7 +23,7 @@ export function previewCameraIds(
   const out: string[] = [];
   const bandShowsCameras = band === 'basin' || band === 'river' || band === 'local';
   if (pinnedCameraId && bandShowsCameras && cameras.some((c) => c.id === pinnedCameraId)) {
-    out.push(pinnedCameraId);
+    return [pinnedCameraId];
   }
   if (band === 'local' && selectedBasinId) {
     const auto = cameras

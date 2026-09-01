@@ -34,7 +34,10 @@ export const HARD_DOMAIN: DegreesRectangle = { west: -128, south: 44, east: -116
 export const SOFT_ENVELOPE: DegreesRectangle = { west: -124.8, south: 45.8, east: -119.8, north: 49.6 };
 
 export const ZOOM_FLOOR_M = 600;
-export const ZOOM_CEILING_M = 1_800_000;
+/** Max-out IS the composed home framing (mission §23): the ceiling sits just above the
+ * 1,150 km opening view, so the outermost scene is a product screenshot, never a floating
+ * sheet in a void. */
+export const ZOOM_CEILING_M = 1_250_000;
 
 /** Max user-gesture tilt, DEGREES from nadir (0 = straight down). Cesium's
  * ScreenSpaceCameraController.maximumTiltAngle takes radians from nadir at the pivot. */

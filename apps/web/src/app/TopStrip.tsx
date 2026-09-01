@@ -27,7 +27,7 @@ export function TopStrip() {
   const healthState = health.isError ? 'down' : health.data?.status ?? 'unknown';
 
   return (
-    <header className="top-strip glass-surface glass-chrome shape-control">
+    <header className="top-strip glass-surface glass-chrome shape-control" data-occlusion="top-strip">
       <span className="wordmark">Cascadia Papsukkal</span>
       <SearchBox />
       <span className="top-strip-spacer" aria-hidden="true" />
